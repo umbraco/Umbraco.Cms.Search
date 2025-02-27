@@ -2,10 +2,12 @@
 
 public static class IndexConstants
 {
-    public static class Aliases
+    public static class FieldNames
     {
         private const string FieldPrefix = "Umb_"; 
-        
+
+        public const string Score = $"{FieldPrefix}Score";
+
         public const string Id = $"{FieldPrefix}Id";
 
         public const string ParentId = $"{FieldPrefix}ParentId";
@@ -19,5 +21,9 @@ public static class IndexConstants
         public const string CreateDate = $"{FieldPrefix}CreateDate";
 
         public const string UpdateDate = $"{FieldPrefix}UpdateDate";
+
+        public const string Level = $"{FieldPrefix}Level";
+
+        public const string SortOrder = $"{FieldPrefix}SortOrder";
     }
 }

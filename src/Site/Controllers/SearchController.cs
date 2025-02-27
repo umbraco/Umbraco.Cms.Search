@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Package.Models.Searching;
+using Package.Models.Searching.Faceting;
+using Package.Models.Searching.Filtering;
 using Package.Services;
 using Site.Services;
 using Umbraco.Cms.Core.Services;
@@ -32,7 +33,7 @@ public class SearchController : Controller
             : (Facet)new StringExactFacet(f)
         ).ToArray();
         
-        var result = await _searchService.SearchAsync(query, filterValues, facetValues, culture, segment, 0, 100);
+        var result = await _searchService.SearchAsync(query, filterValues, facetValues, null, culture, segment, 0, 100);
 
         return Ok(new
         {

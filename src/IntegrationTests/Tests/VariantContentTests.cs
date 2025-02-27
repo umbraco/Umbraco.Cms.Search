@@ -127,12 +127,12 @@ public class VariantContentTests : VariantTestBase
     private void VerifyDocumentPropertyValues(TestIndexDocument document, string englishTitle, string danishTitle, int count)
         => Assert.Multiple(() =>
         {
-            var titleFields = document.Fields.Where(f => f.Alias == "title").ToArray();
+            var titleFields = document.Fields.Where(f => f.FieldName == "title").ToArray();
             Assert.That(titleFields.Length, Is.EqualTo(2));
             Assert.That(titleFields.SingleOrDefault(f => f.Culture.InvariantEquals("en-US"))?.Value.Texts?.SingleOrDefault(), Is.EqualTo(englishTitle));
             Assert.That(titleFields.SingleOrDefault(f => f.Culture.InvariantEquals("da-DK"))?.Value.Texts?.SingleOrDefault(), Is.EqualTo(danishTitle));
             
-            var countValue = document.Fields.FirstOrDefault(f => f.Alias == "count")?.Value.Integers?.SingleOrDefault();
+            var countValue = document.Fields.FirstOrDefault(f => f.FieldName == "count")?.Value.Integers?.SingleOrDefault();
             Assert.That(countValue, Is.EqualTo(count));
         });
 
@@ -140,10 +140,10 @@ public class VariantContentTests : VariantTestBase
     {
         Assert.Multiple(() =>
         {
-            var contentTypeValue = document.Fields.FirstOrDefault(f => f.Alias == IndexConstants.Aliases.ContentType)?.Value.Keywords?.SingleOrDefault();
+            var contentTypeValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.ContentType)?.Value.Keywords?.SingleOrDefault();
             Assert.That(contentTypeValue, Is.EqualTo("variant"));
 
-            var nameFields = document.Fields.Where(f => f.Alias == IndexConstants.Aliases.Name).ToArray();
+            var nameFields = document.Fields.Where(f => f.FieldName == IndexConstants.FieldNames.Name).ToArray();
             Assert.That(nameFields.Length, Is.EqualTo(2));
             Assert.That(nameFields.SingleOrDefault(f => f.Culture.InvariantEquals("en-US"))?.Value.Texts?.SingleOrDefault(), Is.EqualTo($"{name} EN"));
             Assert.That(nameFields.SingleOrDefault(f => f.Culture.InvariantEquals("da-DK"))?.Value.Texts?.SingleOrDefault(), Is.EqualTo($"{name} DA"));

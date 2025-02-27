@@ -1,3 +1,3 @@
 ﻿namespace Package.Models.Indexing;
 
-public record IndexField(string Alias, IndexValue Value, string? Culture, string? Segment);
+public record IndexField(string FieldName, IndexValue Value, string? Culture, string? Segment);

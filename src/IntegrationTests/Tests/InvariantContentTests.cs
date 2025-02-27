@@ -121,23 +121,23 @@ public class InvariantContentTests : InvariantTestBase
     private void VerifyDocumentPropertyValues(TestIndexDocument document, string title, int count)
         => Assert.Multiple(() =>
         {
-            var titleValue = document.Fields.FirstOrDefault(f => f.Alias == "title")?.Value.Texts?.SingleOrDefault();
+            var titleValue = document.Fields.FirstOrDefault(f => f.FieldName == "title")?.Value.Texts?.SingleOrDefault();
             Assert.That(titleValue, Is.EqualTo(title));
             
-            var countValue = document.Fields.FirstOrDefault(f => f.Alias == "count")?.Value.Integers?.SingleOrDefault();
+            var countValue = document.Fields.FirstOrDefault(f => f.FieldName == "count")?.Value.Integers?.SingleOrDefault();
             Assert.That(countValue, Is.EqualTo(count));
         });
 
     private void VerifyDocumentStructureValues(TestIndexDocument document, Guid id, Guid parentId, params Guid[] ancestorIds)
         => Assert.Multiple(() =>
         {
-            var idValue = document.Fields.FirstOrDefault(f => f.Alias == IndexConstants.Aliases.Id)?.Value.Keywords?.SingleOrDefault();
+            var idValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.Id)?.Value.Keywords?.SingleOrDefault();
             Assert.That(idValue, Is.EqualTo(id.ToString("D")));
             
-            var parentIdValue = document.Fields.FirstOrDefault(f => f.Alias == IndexConstants.Aliases.ParentId)?.Value.Keywords?.SingleOrDefault();
+            var parentIdValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.ParentId)?.Value.Keywords?.SingleOrDefault();
             Assert.That(parentIdValue, Is.EqualTo(parentId.ToString("D")));
 
-            var ancestorIdValues = document.Fields.FirstOrDefault(f => f.Alias == IndexConstants.Aliases.AncestorIds)?.Value.Keywords?.ToArray();
+            var ancestorIdValues = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.AncestorIds)?.Value.Keywords?.ToArray();
             Assert.That(ancestorIdValues, Is.Not.Null);
             Assert.That(ancestorIdValues.Length, Is.EqualTo(ancestorIds.Length));
             Assert.That(ancestorIdValues, Is.EquivalentTo(ancestorIds.Select(ancestorId => ancestorId.ToString("D"))));
@@ -147,10 +147,10 @@ public class InvariantContentTests : InvariantTestBase
     {
         Assert.Multiple(() =>
         {
-            var contentTypeValue = document.Fields.FirstOrDefault(f => f.Alias == IndexConstants.Aliases.ContentType)?.Value.Keywords?.SingleOrDefault();
+            var contentTypeValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.ContentType)?.Value.Keywords?.SingleOrDefault();
             Assert.That(contentTypeValue, Is.EqualTo("invariant"));
 
-            var nameValue = document.Fields.FirstOrDefault(f => f.Alias == IndexConstants.Aliases.Name)?.Value.Texts?.SingleOrDefault();
+            var nameValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.Name)?.Value.Texts?.SingleOrDefault();
             Assert.That(nameValue, Is.EqualTo(name));
         });
     }

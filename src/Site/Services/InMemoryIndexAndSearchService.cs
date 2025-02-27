@@ -1,7 +1,11 @@
 ﻿using Package;
 using Package.Models.Indexing;
 using Package.Models.Searching;
+using Package.Models.Searching.Faceting;
+using Package.Models.Searching.Filtering;
+using Package.Models.Searching.Sorting;
 using Package.Services;
+using Umbraco.Cms.Core;
 
 namespace Site.Services;
 
@@ -31,7 +35,7 @@ internal sealed class InMemoryIndexAndSearchService : IIndexService, ISearchServ
         {
             Remove(key);
             var descendantKeys = Index.Where(v =>
-                    v.Value.Fields.Any(f => f.Alias == IndexConstants.Aliases.AncestorIds && f.Value.Keywords?.Contains($"{key:D}") is true)
+                    v.Value.Fields.Any(f => f.FieldName == IndexConstants.FieldNames.AncestorIds && f.Value.Keywords?.Contains($"{key:D}") is true)
                 )
                 .Select(pair => pair.Key);
             foreach (var descendantKey in descendantKeys)
@@ -54,7 +58,7 @@ internal sealed class InMemoryIndexAndSearchService : IIndexService, ISearchServ
             Index.TryGetValue(key, out var document)
                 ? document
                     .Fields
-                    .Single(f => f.Alias == "My_Stamp")
+                    .Single(f => f.FieldName == "My_Stamp")
                     .Value
                     .Keywords!
                     .First()
@@ -64,7 +68,7 @@ internal sealed class InMemoryIndexAndSearchService : IIndexService, ISearchServ
 
     public IReadOnlyDictionary<Guid, IndexField[]> Dump() => Index.ToDictionary(d => d.Key, d => d.Value.Fields).AsReadOnly();
 
-    public Task<SearchResult> SearchAsync(string? query, IEnumerable<Filter>? filters, IEnumerable<Facet>? facets, string? culture, string? segment, int skip, int take)
+    public Task<SearchResult> SearchAsync(string? query, IEnumerable<Filter>? filters, IEnumerable<Facet>? facets, IEnumerable<Sorter>? sorters, string? culture, string? segment, int skip, int take)
     {
         var result = Index.Where(kvp => kvp
             .Value
@@ -80,10 +84,8 @@ internal sealed class InMemoryIndexAndSearchService : IIndexService, ISearchServ
             result = result.Where(kvp => kvp
                 .Value
                 .Fields
-                .Any(field =>
-                    (field.Culture is null || field.Culture.InvariantEquals(culture))
-                    && (field.Segment is null || field.Segment.InvariantEquals(segment))
-                    && (field.Value.Texts?.Any(text => text.InvariantContains(query)) ?? false)
+                .Any(field => FieldMatcher.IsMatch(field, null, culture, segment)
+                              && (field.Value.Texts?.Any(text => text.InvariantContains(query)) ?? false)
                 )
             );
         }
@@ -91,9 +93,9 @@ internal sealed class InMemoryIndexAndSearchService : IIndexService, ISearchServ
         // filters needs splitting into two parts; regular filters and facet filters
         // - regular filters must be applied before any facets are calculated (they narrow down the potential result set)
         // - facet filters must be applied after facets calculation has begun (additional considerations apply, see comments below)
-        var facetKeys = facets?.Select(facet => facet.Key).ToArray();
-        var facetFilters = filters?.Where(f => facetKeys?.InvariantContains(f.Key) is true).ToArray();
-        var regularFilters = filters?.Where(f => facetKeys?.InvariantContains(f.Key) is not true).ToArray();
+        var facetFieldNames = facets?.Select(facet => facet.FieldName).ToArray();
+        var facetFilters = filters?.Where(f => facetFieldNames?.InvariantContains(f.FieldName) is true).ToArray();
+        var regularFilters = filters?.Where(f => facetFieldNames?.InvariantContains(f.FieldName) is not true).ToArray();
 
         if (regularFilters is not null)
         {
@@ -103,7 +105,7 @@ internal sealed class InMemoryIndexAndSearchService : IIndexService, ISearchServ
         // facets needs splitting into two parts; active facets and passive facets
         // - active facets are facets that have active filters - they need calculating before applying the facet filters
         // - passive facets do not have active filters - they need calculating after applying the facet filters 
-        var activeFacets = facets?.Where(facet => facetFilters?.Any(filter => filter.Key.InvariantEquals(facet.Key)) is true).ToArray();
+        var activeFacets = facets?.Where(facet => facetFilters?.Any(filter => filter.FieldName.InvariantEquals(facet.FieldName)) is true).ToArray();
         var passiveFacets = facets?.Except(activeFacets ?? []).ToArray();
         
         var facetResults = new List<FacetResult>();
@@ -123,6 +125,10 @@ internal sealed class InMemoryIndexAndSearchService : IIndexService, ISearchServ
             result = result.ToArray();
             facetResults.AddRange(ExtractFacets(result, passiveFacets, culture, segment));
         }
+
+        // default sorting = by score, descending
+        sorters ??= [new ScoreSorter(Direction.Descending)];
+        result = SortDocuments(result, sorters.ToArray(), culture, segment);
         
         var resultAsArray = result.ToArray();
         return Task.FromResult(
@@ -140,9 +146,7 @@ internal sealed class InMemoryIndexAndSearchService : IIndexService, ISearchServ
         {
             documents = documents.Where(kvp =>
                 kvp.Value.Fields.Any(field =>
-                    field.Alias.InvariantEquals(filter.Key)
-                    && (field.Culture is null || field.Culture.InvariantEquals(culture))
-                    && (field.Segment is null || field.Segment.InvariantEquals(segment))
+                    FieldMatcher.IsMatch(field, filter.FieldName, culture, segment)
                     && IsFilterMatch(filter, field.Value)
                 )
             );
@@ -174,15 +178,13 @@ internal sealed class InMemoryIndexAndSearchService : IIndexService, ISearchServ
         {
             var facetFields = documents
                 .Select(candidate => candidate.Value.Fields.FirstOrDefault(field =>
-                    field.Alias.InvariantEquals(facet.Key)
-                    && (field.Culture is null || field.Culture.InvariantEquals(culture))
-                    && (field.Segment is null || field.Segment.InvariantEquals(segment))
+                    FieldMatcher.IsMatch(field, facet.FieldName, culture, segment)
                 ))
                 .WhereNotNull();
 
             var facetValues = GetFacetValues(facet,  facetFields.Select(f => f.Value));
 
-            return new FacetResult(facet.Key, facetValues);
+            return new FacetResult(facet.FieldName, facetValues);
 
             // TODO: implement range facets
             // TODO: implement decimal and date facets
@@ -194,8 +196,75 @@ internal sealed class InMemoryIndexAndSearchService : IIndexService, ISearchServ
                     _ => throw new ArgumentOutOfRangeException(nameof(facet), $"Encountered an unsupported facet type: {facet.GetType().Name}")
                 }; 
         }).ToArray();
+        
+    private IEnumerable<KeyValuePair<Guid, IndexDocument>> SortDocuments(IEnumerable<KeyValuePair<Guid, IndexDocument>> documents, Sorter[] sorters, string? culture, string? segment)
+    {
+        var sorter = sorters.FirstOrDefault() ?? throw new ArgumentException("Expected one or more sorters.", nameof(sorters));
+
+        if (sorter is ScoreSorter)
+        {
+            return documents.OrderBy(d => d.Key, sorter.Direction);
+        }
+
+        var comparer = new SorterComparer(sorter, culture, segment);
+        
+        return sorter.Direction is Direction.Ascending
+            ? documents.OrderBy(d => d.Value, comparer)
+            : documents.OrderByDescending(d => d.Value, comparer);
+    }
+
+    private class SorterComparer : IComparer<IndexDocument>
+    {
+        private readonly Sorter _sorter;
+        private readonly string? _culture;
+        private readonly string? _segment;
+
+        public SorterComparer(Sorter sorter, string? culture, string? segment)
+        {
+            _sorter = sorter;
+            _culture = culture;
+            _segment = segment;
+        }
+
+        public int Compare(IndexDocument? x, IndexDocument? y)
+        {
+            var xField = x?.Fields.FirstOrDefault(field => FieldMatcher.IsMatch(field, _sorter.FieldName, _culture, _segment));
+            var yField = y?.Fields.FirstOrDefault(field => FieldMatcher.IsMatch(field, _sorter.FieldName, _culture, _segment));
+
+            var xFieldValue = FieldValue(xField);
+            var yFieldValue = FieldValue(yField);
+
+            return xFieldValue is not null
+                ? xFieldValue.CompareTo(yFieldValue)
+                : yFieldValue is not null
+                    ? 1
+                    : 0;
+        }
+
+        private IComparable? FieldValue(IndexField? field)
+            => field is null
+                ? null
+                : _sorter switch
+                {
+                    DateTimeOffsetSorter => field.Value.DateTimeOffsets?.FirstOrDefault(),
+                    DecimalSorter => field.Value.Decimals?.FirstOrDefault(),
+                    IntegerSorter => field.Value.Integers?.FirstOrDefault(),
+                    StringSorter => field.Value.Texts?.FirstOrDefault(),
+                    _ => throw new ArgumentOutOfRangeException($"Unsupported sorter type: {_sorter.GetType().FullName}")
+                };
+    }
     
     private record IndexDocument(Variation[] Variations, IndexField[] Fields)
     {
+    }
+
+    private static class FieldMatcher
+    {
+        public static bool IsMatch(IndexField field, string? fieldName, string? culture, string? segment)
+        {
+            return (fieldName is null || field.FieldName.InvariantEquals(fieldName))
+                   && (field.Culture is null || field.Culture.InvariantEquals(culture))
+                   && (field.Segment is null || field.Segment.InvariantEquals(segment));
+        }
     }
 }

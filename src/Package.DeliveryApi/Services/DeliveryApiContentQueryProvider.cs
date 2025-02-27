@@ -2,11 +2,14 @@
 using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Package.Helpers;
-using Package.Models.Searching;
+using Package.Models.Searching.Filtering;
+using Package.Models.Searching.Sorting;
 using Package.Services;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.DeliveryApi;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.DeliveryApi;
+using Umbraco.Extensions;
 
 namespace Package.DeliveryApi.Services;
 
@@ -75,8 +78,16 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
             }
         }
 
+        var sorters = sortOptions
+            .Select(sortOption => TryCreateSorter(sortOption.FieldName, sortOption.Direction, out var sorter)
+                ? sorter
+                : null
+            )
+            .WhereNotNull()
+            .ToArray();
+        
         var result = _searchService
-            .SearchAsync(null, filters, null, culture, null, skip, take)
+            .SearchAsync(null, filters, null, sorters, culture, null, skip, take)
             .GetAwaiter()
             .GetResult();
 
@@ -103,23 +114,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
             return false;
         }
 
-        
-        // hardcoded mapping from the old Delivery API fields to the search abstraction ones
-        fieldName = fieldName switch
-        {
-            // AncestorsSelectorIndexer:
-            "itemId" => IndexConstants.Aliases.Id,
-            // ChildrenSelectorIndexer:
-            "parentId" => IndexConstants.Aliases.ParentId,
-            // DescendantsSelectorIndexer:
-            "ancestorIds" => IndexConstants.Aliases.AncestorIds,
-            // ContentTypeFilterIndexer:
-            "contentType" => IndexConstants.Aliases.ContentType,
-            // NameFilterIndexer:
-            "name" => IndexConstants.Aliases.Name,
-            // TODO: add CreateDateSortIndexer, LevelSortIndexer, UpdateDateSortIndexer
-            _ => fieldName
-        };
+        fieldName = MapSystemFieldName(fieldName);
         
         switch (fieldType)
         {
@@ -188,4 +183,59 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
 
         return filter != null;
     }
+
+    private bool TryCreateSorter(string fieldName, Direction direction, [NotNullWhen(true)] out Sorter? sorter)
+    {
+        if (_fieldTypes.TryGetValue(fieldName, out var fieldType) is false)
+        {
+            _logger.LogWarning(
+                "Sorter implementation for field name {FieldName} does not match an index handler implementation, cannot resolve field type.",
+                fieldName);
+            sorter = null;
+            return false;
+        }
+
+        fieldName = MapSystemFieldName(fieldName);
+
+        if (fieldName is IndexConstants.FieldNames.Level or IndexConstants.FieldNames.SortOrder)
+        {
+            sorter = new IntegerSorter(fieldName, direction);
+            return true;
+        }
+
+        sorter = fieldType switch
+        {
+            FieldType.StringRaw or FieldType.StringAnalyzed or FieldType.StringSortable => new StringSorter(fieldName, direction),
+            FieldType.Number => new DecimalSorter(fieldName, direction),
+            FieldType.Date => new DateTimeOffsetSorter(fieldName, direction),
+            _ => throw new ArgumentOutOfRangeException(nameof(fieldType), fieldType, null)
+        };
+
+        return true;
+    }
+
+    // hardcoded mapping from the old Delivery API fields to the search abstraction ones
+    private static string MapSystemFieldName(string fieldName)
+        => fieldName switch
+        {
+            // AncestorsSelectorIndexer:
+            "itemId" => IndexConstants.FieldNames.Id,
+            // ChildrenSelectorIndexer:
+            "parentId" => IndexConstants.FieldNames.ParentId,
+            // DescendantsSelectorIndexer:
+            "ancestorIds" => IndexConstants.FieldNames.AncestorIds,
+            // ContentTypeFilterIndexer:
+            "contentType" => IndexConstants.FieldNames.ContentType,
+            // NameFilterIndexer or NameSortIndexer:
+            "name" or "sortName" => IndexConstants.FieldNames.Name,
+            // CreateDateSortIndexer
+            "createDate" => IndexConstants.FieldNames.CreateDate,
+            // UpdateDateSortIndexer
+            "updateDate" => IndexConstants.FieldNames.UpdateDate,
+            // LevelSortIndexer
+            "level" => IndexConstants.FieldNames.Level,
+            // SortOrderSortIndexer
+            "sortOrder" => IndexConstants.FieldNames.SortOrder,
+            _ => fieldName
+        };
 }

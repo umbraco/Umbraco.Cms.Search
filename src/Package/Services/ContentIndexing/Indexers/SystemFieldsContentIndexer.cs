@@ -64,12 +64,14 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
         // TODO: add tags here
         var fields = new List<IndexField>
         {
-            new(IndexConstants.Aliases.Id, new() { Keywords = [content.Key.ToString("D")] }, null, null),
-            new(IndexConstants.Aliases.ParentId, new() { Keywords = [parentKey.ToString("D")] }, null, null),
-            new(IndexConstants.Aliases.AncestorIds, new() { Keywords = ancestorKeys.Select(ancestorKey => ancestorKey.ToString("D")).ToArray() }, null, null),
-            new(IndexConstants.Aliases.ContentType, new() { Keywords = [content.ContentType.Alias] }, null, null),
-            new(IndexConstants.Aliases.CreateDate, new() { DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(content.CreateDate)] }, null, null),
-            new(IndexConstants.Aliases.UpdateDate, new() { DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(content.UpdateDate)] }, null, null),
+            new(IndexConstants.FieldNames.Id, new() { Keywords = [content.Key.ToString("D")] }, null, null),
+            new(IndexConstants.FieldNames.ParentId, new() { Keywords = [parentKey.ToString("D")] }, null, null),
+            new(IndexConstants.FieldNames.AncestorIds, new() { Keywords = ancestorKeys.Select(ancestorKey => ancestorKey.ToString("D")).ToArray() }, null, null),
+            new(IndexConstants.FieldNames.ContentType, new() { Keywords = [content.ContentType.Alias] }, null, null),
+            new(IndexConstants.FieldNames.CreateDate, new() { DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(content.CreateDate)] }, null, null),
+            new(IndexConstants.FieldNames.UpdateDate, new() { DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(content.UpdateDate)] }, null, null),
+            new(IndexConstants.FieldNames.Level, new() { Integers = [content.Level] }, null, null),
+            new(IndexConstants.FieldNames.SortOrder, new() { Integers = [content.SortOrder] }, null, null),
         };
 
         fields.AddRange(cultures.Select(culture =>
@@ -77,7 +79,7 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
                 var name = content.GetCultureName(culture);
                 if (string.IsNullOrEmpty(name) is false)
                 {
-                    return new IndexField(IndexConstants.Aliases.Name, new() { Texts = [name] }, culture, null);
+                    return new IndexField(IndexConstants.FieldNames.Name, new() { Texts = [name] }, culture, null);
                 }
 
                 _logger.LogWarning(

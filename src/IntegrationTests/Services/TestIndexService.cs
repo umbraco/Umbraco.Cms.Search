@@ -21,7 +21,7 @@ public class TestIndexService : IIndexService
         {
             _documents.Remove(key);
             var descendantDocuments = _documents.Values.Where(document =>
-                document.Fields.Any(f => f.Alias == IndexConstants.Aliases.AncestorIds && f.Value.Keywords?.Contains($"{key:D}") is true)
+                document.Fields.Any(f => f.FieldName == IndexConstants.FieldNames.AncestorIds && f.Value.Keywords?.Contains($"{key:D}") is true)
             );
             foreach (var descendantDocument in descendantDocuments)
             {

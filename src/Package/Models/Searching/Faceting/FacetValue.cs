@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Package.Models.Searching;
+namespace Package.Models.Searching.Faceting;
 
 // TODO: handle polymorphism in a JsonTypeInfoResolver modifier
 [JsonDerivedType(typeof(StringExactFacetValue))]

@@ -36,7 +36,7 @@ public sealed class ContentIndexingDataCollectionService : IContentIndexingDataC
         var systemFieldsIndexer = systemFieldsIndexers.First();
         var systemFields = await systemFieldsIndexer.GetIndexFieldsAsync(content, cultures, published, cancellationToken);
         
-        string Identifier(IndexField field) => $"{field.Alias}|{field.Culture}|{field.Segment}";
+        string Identifier(IndexField field) => $"{field.FieldName}|{field.Culture}|{field.Segment}";
         var fieldsByIdentifier = systemFields.ToDictionary(Identifier);
 
         foreach (var contentIndexer in _contentIndexers.Except(systemFieldsIndexers))
@@ -48,7 +48,7 @@ public sealed class ContentIndexingDataCollectionService : IContentIndexingDataC
                 {
                     _logger.LogWarning(
                         "Duplicate index field with alias {alias} (culture {culture}, segment {segment}) was detected and ignored - caused by indexer {indexer} while indexing content item {contentKey}",
-                        field.Alias,
+                        field.FieldName,
                         field.Culture ?? "[null]",
                         field.Segment ?? "[null]",
                         contentIndexer.GetType().FullName,

@@ -37,22 +37,22 @@ public class PropertyValueHandlerTests : TestBase
         var document = documents.Single();
         Assert.Multiple(() =>
         {
-            var textBoxValue = document.Fields.FirstOrDefault(f => f.Alias == "textBoxValue")?.Value.Texts?.SingleOrDefault();
+            var textBoxValue = document.Fields.FirstOrDefault(f => f.FieldName == "textBoxValue")?.Value.Texts?.SingleOrDefault();
             Assert.That(textBoxValue, Is.EqualTo("The TextBox value"));
 
-            var textAreaValue = document.Fields.FirstOrDefault(f => f.Alias == "textAreaValue")?.Value.Texts?.SingleOrDefault();
+            var textAreaValue = document.Fields.FirstOrDefault(f => f.FieldName == "textAreaValue")?.Value.Texts?.SingleOrDefault();
             Assert.That(textAreaValue, Is.EqualTo("The TextArea value"));
 
-            var integerValue = document.Fields.FirstOrDefault(f => f.Alias == "integerValue")?.Value.Integers?.SingleOrDefault();
+            var integerValue = document.Fields.FirstOrDefault(f => f.FieldName == "integerValue")?.Value.Integers?.SingleOrDefault();
             Assert.That(integerValue, Is.EqualTo(1234));
 
-            var decimalValue = document.Fields.FirstOrDefault(f => f.Alias == "decimalValue")?.Value.Decimals?.SingleOrDefault();
+            var decimalValue = document.Fields.FirstOrDefault(f => f.FieldName == "decimalValue")?.Value.Decimals?.SingleOrDefault();
             Assert.That(decimalValue, Is.EqualTo(56.78m));
 
-            var dateValue = document.Fields.FirstOrDefault(f => f.Alias == "dateValue")?.Value.DateTimeOffsets?.SingleOrDefault();
+            var dateValue = document.Fields.FirstOrDefault(f => f.FieldName == "dateValue")?.Value.DateTimeOffsets?.SingleOrDefault();
             Assert.That(dateValue, Is.EqualTo(new DateTimeOffset(new DateOnly(2001, 02, 03), new TimeOnly(), TimeSpan.Zero)));
 
-            var dateAndTimeValue = document.Fields.FirstOrDefault(f => f.Alias == "dateAndTimeValue")?.Value.DateTimeOffsets?.SingleOrDefault();
+            var dateAndTimeValue = document.Fields.FirstOrDefault(f => f.FieldName == "dateAndTimeValue")?.Value.DateTimeOffsets?.SingleOrDefault();
             Assert.That(dateAndTimeValue, Is.EqualTo(new DateTimeOffset(new DateOnly(2004, 05, 06), new TimeOnly(07, 08, 09), TimeSpan.Zero)));
         });
     }
