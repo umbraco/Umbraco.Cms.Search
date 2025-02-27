@@ -1,9 +1,15 @@
 ﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
 @using Package
 @using Package.Models.Searching.Faceting
+@using Umbraco.Cms.Core.Models
+@inject IVariationContextAccessor VariationContextAccessor;
 @inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<Site.ViewModels.SearchViewModel>
 @{
 	Layout = null;
+	var contentAtRoot = Umbraco.ContentAtRoot().ToArray();
+	var culture = Context.Request.Query["culture"].ToString();
+	var segment = Context.Request.Query["segment"].ToString();
+	VariationContextAccessor.VariationContext = new VariationContext(culture, segment);
 }
 <html xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
 <head>
@@ -11,48 +17,74 @@
 		code {
 			font-weight: bold;
 		}
+		table {
+			border-collapse: collapse;
+			width: 100%;
+		}
+		th, td {
+			border:  1px solid silver;
+			text-align: left;
+			padding: 5px;
+		}
 	</style>
 	<script>
 		window.addEventListener('load', () => {
-			const searchParams = new URLSearchParams(window.location.search);
 
-			document.getElementById('query').value = searchParams.get('query');
-
-			const activeFilters = searchParams.getAll('filters');
-			initFilter(activeFilters, 'integerFilter', 'integer');
-			initFilter(activeFilters, 'dateFilter', 'date');
-			initFilter(activeFilters, 'dropdownFilter', 'dropdown');
+			init();
 			
-			const activeFacets = searchParams.getAll('facets');
-			initFacet(activeFacets, 'integerAsFacet', 'integer');
-			initFacet(activeFacets, 'dropdownAsFacet', 'dropdown');
-
-			const sortBy = searchParams.get('sortBy');
-			if (sortBy) {
-				document.getElementById('sortBy').value = sortBy;
-			}
-
-			const sortDirection = searchParams.get('sortDirection');
-			if (sortDirection) {
-				document.getElementById('sortDirection').value = sortDirection;
-			}
-			
-			document.forms[0].addEventListener('submit', (event) => {
+            document.forms[0].addEventListener('submit', (event) => {
 				event.preventDefault();
 
 				let query = `?query=${document.getElementById('query').value}`;
+	            query += getFilter('scopeFilter', 'Umb_PathIds');
 				query += getFilter('integerFilter', 'integer');
 				query += getFilter('dateFilter', 'date');
 				query += getFilter('dropdownFilter', 'dropdown');
+				query += getFilter('integerFilterVariant', 'integerVariant');
+				query += getFilter('dateFilterVariant', 'dateVariant');
+				query += getFilter('dropdownFilterVariant', 'dropdownVariant');
 
 				query += getFacet('integerAsFacet', 'integer');
 				query += getFacet('dropdownAsFacet', 'dropdown');
+	            query += getFacet('integerVariantAsFacet', 'integerVariant');
+	            query += getFacet('dropdownVariantAsFacet', 'dropdownVariant');
 
 				query += `&sortBy=${document.getElementById('sortBy').value}&sortDirection=${document.getElementById('sortDirection').value}`;
+
+				query += `&culture=${document.getElementById('culture').value}&segment=${document.getElementById('segment').value}`
 				
 				window.location.href = `${window.location.href.split('?')[0]}${query}`;
 			});
 		});
+
+		function init() {
+			const searchParams = new URLSearchParams(window.location.search);
+			if(searchParams.size === 0) {
+				return;
+			}
+
+			document.getElementById('query').value = searchParams.get('query');
+
+			const activeFilters = searchParams.getAll('filters');
+			initFilter(activeFilters, 'scopeFilter', 'Umb_PathIds');
+			initFilter(activeFilters, 'integerFilter', 'integer');
+			initFilter(activeFilters, 'dateFilter', 'date');
+			initFilter(activeFilters, 'dropdownFilter', 'dropdown');
+			initFilter(activeFilters, 'integerFilterVariant', 'integerVariant');
+			initFilter(activeFilters, 'dateFilterVariant', 'dateVariant');
+			initFilter(activeFilters, 'dropdownFilterVariant', 'dropdownVariant');
+
+			const activeFacets = searchParams.getAll('facets');
+			initFacet(activeFacets, 'integerAsFacet', 'integer');
+			initFacet(activeFacets, 'dropdownAsFacet', 'dropdown');
+			initFacet(activeFacets, 'integerVariantAsFacet', 'integerVariant');
+			initFacet(activeFacets, 'dropdownVariantAsFacet', 'dropdownVariant');
+
+			initSelector(searchParams, 'culture');
+			initSelector(searchParams, 'segment');
+			initSelector(searchParams, 'sortBy');
+			initSelector(searchParams, 'sortDirection');
+		}
 
 		function initFilter(activeFilters, elementId, qualifier) {
 			document.getElementById(elementId).value = activeFilters.find((f) => f.startsWith(`${qualifier}:`))?.split(':')[1] ?? '';
@@ -60,6 +92,13 @@
 
 		function initFacet(activeFacets, elementId, qualifier) {
 			document.getElementById(elementId).checked = activeFacets.includes(qualifier);
+		}
+
+		function initSelector(searchParams, elementId) {
+			const value = searchParams.get(elementId)
+			if (value) {
+				document.getElementById(elementId).value = value;
+			}
 		}
 		
 		function getFilter(elementId, qualifier) {
@@ -79,6 +118,32 @@
 	<div>
 		<form method="get" style="display: flex; flex-direction: column; margin: 0">
 			<fieldset>
+				<legend>Scope</legend>
+				<p>
+					<label for="scopeFilter" style="display: block">Search across:</label>
+					<select id="scopeFilter">
+						@foreach (var root in contentAtRoot)
+						{
+							<option value="@root.Key">Descendants of @root.Name("en-US")</option>
+						}
+						<option value="">All content</option>
+					</select>
+				</p>
+				<p>
+					<label for="culture" style="display: block">Search for:</label>
+					<select id="culture">
+						<option value="en-US" selected>English (incl. invariant)</option>
+						<option value="da-DK">Danish (incl. invariant)</option>
+						<option value="">Invariant only</option>
+					</select>
+					<select id="segment">
+						<option value="" selected>Default segment</option>
+						<option value="seg-1">Segment "seg-1"</option>
+						<option value="seg-2">Segment "seg-2"</option>
+					</select>
+				</p>
+			</fieldset>
+			<fieldset>
 				<legend>Free text query</legend>
 				<p>
 					<input type="text" id="query"/>
@@ -86,60 +151,68 @@
 			</fieldset>
 			<fieldset>
 				<legend>Filtering</legend>
-				<p>
+				<p style="margin-bottom: 0">
 					Use <code>[upper,lower]</code> notation for range filtering.<br/>
 					Use <code>one|two|three</code> notation for exact filtering.
 				</p>
-				<p>
-					<label for="integerFilter" style="display: block">Integer:</label>
-					<input type="text" id="integerFilter"/>
-				</p>
-				<p>
-					<label for="dateFilter" style="display: block">Date:</label>
-					<input type="text" id="dateFilter"/>
-				</p>
-				<p>
-					<label for="dropdownFilter" style="display: block">Dropdown:</label>
-					<input type="text" id="dropdownFilter"/>
-				</p>
+				<div style="display: flex;flex-direction: row; gap: 10px">
+					<div>
+						<p>
+							<label for="integerFilter" style="display: block">Integer:</label>
+							<input type="text" id="integerFilter"/>
+						</p>
+						<p>
+							<label for="dateFilter" style="display: block">Date:</label>
+							<input type="text" id="dateFilter"/>
+						</p>
+						<p>
+							<label for="dropdownFilter" style="display: block">Dropdown:</label>
+							<input type="text" id="dropdownFilter"/>
+						</p>
+					</div>
+					<div>
+						<p>
+							<label for="integerFilterVariant" style="display: block">Integer (v):</label>
+							<input type="text" id="integerFilterVariant"/>
+						</p>
+						<p>
+							<label for="dateFilterVariant" style="display: block">Date (v):</label>
+							<input type="text" id="dateFilterVariant"/>
+						</p>
+						<p>
+							<label for="dropdownFilterVariant" style="display: block">Dropdown (v):</label>
+							<input type="text" id="dropdownFilterVariant"/>
+						</p>
+					</div>
+				</div>
+
 			</fieldset>
 			<fieldset>
 				<legend>Faceting</legend>
 				<p>
 					Tick to use filters as facets.
 				</p>
-				@{
-					RenderExactFacetValues<int>("integer");
-					RenderExactFacetValues<string>("dropdown");
-
-					void RenderExactFacetValues<T>(string fieldName)
-					{
-						<p>
-							<input type="checkbox" id="@(fieldName)AsFacet" /> <label for="@(fieldName)AsFacet">@fieldName.ToFirstUpperInvariant()</label><br/>
-						</p>
-
-						var facetResult = Model.Facets.FirstOrDefault(f => f.FieldName == fieldName);
-						if (facetResult is null)
-						{
-							return;
-						}
-
-						<ul>
-							@foreach (var exactFacetValue in facetResult.Values.OfType<ExactFacetValue<T>>())
-							{
-								<li>@exactFacetValue.Key (@exactFacetValue.Count)</li>
-							}
-						</ul>
+				<div style="display: flex">
+					@{
+						RenderExactFacetValues<int>("integer");
+						RenderExactFacetValues<string>("dropdown");
 					}
-				}
+				</div>
+				<div style="display: flex">
+					@{
+						RenderExactFacetValues<int>("integerVariant");
+						RenderExactFacetValues<string>("dropdownVariant");
+					}
+				</div>
+
 			</fieldset>
 			<fieldset>
 				<legend>Sorting</legend>
 				<p>
 					<label for="sortBy" style="display: block">Sort by:</label>
 					<select id="sortBy">
-						<option value="@IndexConstants.FieldNames.Score" selected>Score [system field]</option>
-						<option value="@IndexConstants.FieldNames.Name">Name [system field]</option>
+						<option value="@IndexConstants.FieldNames.Name" selected>Name [system field]</option>
+						<option value="@IndexConstants.FieldNames.Score">Score [system field]</option>
 						<option value="@IndexConstants.FieldNames.Level">Level [system field]</option>
 						<option value="integer">Integer</option>
 						<option value="date">Date</option>
@@ -149,28 +222,81 @@
 				<p>
 					<label for="sortDirection" style="display: block">Sort direction:</label>
 					<select id="sortDirection">
-						<option value="desc" selected>Descending</option>
-						<option value="asc">Ascending</option>
+						<option value="asc" selected>Ascending</option>
+						<option value="desc">Descending</option>
 					</select>
 				</p>
 			</fieldset>
-			<button type="submit" style="margin: 1em">Search 🔍</button>
+			<button type="submit" style="margin: 10px">Search 🔍</button>
 		</form>
 	</div>
-	<div style="display: flex">
-		<fieldset style="flex-direction: column">
-			<legend>Search results (@Model.Documents.Length of @Model.Total)</legend>
-			@foreach (var document in Model.Documents)
-			{
-				<h3>@document.Name</h3>
-				<ul>
-					<li>Integer: @document.Value("integer")</li>
-					<li>Date: @document.Value("date")</li>
-					<li>Dropdown: @(string.Join(", ", document.Value<string[]>("dropdown") ?? []))</li>
-				</ul>
-			}
-		</fieldset>
-	</div>
+	@if (Model.Documents is not null)
+	{
+		<div style="display: flex">
+			<fieldset style="flex-direction: column">
+				<legend>Search results (@Model.Documents.Length of @Model.Total)</legend>
+				@foreach (var document in Model.Documents)
+				{
+					<h3>@document.Name <small>(variation: @document.ContentType.Variations)</small></h3>
+					<table>
+						<thead>
+						<tr>
+							<th>Integer</th>
+							<th>Date</th>
+							<th>Dropdown</th>
+							<th>Title</th>
+							@if (document.ContentType.Variations is not ContentVariation.Nothing)
+							{
+								<th>Integer (v)</th>
+								<th>Date (v)</th>
+								<th>Dropdown (v)</th>
+								<th>Title (v)</th>
+							}
+						</tr>
+						</thead>
+						<tbody>
+						<tr>
+							<td>@document.Value("integer")</td>
+							<td>@document.Value("date")</td>
+							<td>@(string.Join(", ", document.Value<string[]>("dropdown") ?? []))</td>
+							<td>@document.Value("title")</td>
+							@if (document.ContentType.Variations is not ContentVariation.Nothing)
+							{
+								<td>@document.Value("integerVariant")</td>
+								<td>@document.Value("dateVariant")</td>
+								<td>@(string.Join(", ", document.Value<string[]>("dropdownVariant") ?? []))</td>
+								<td>@document.Value("titleVariant")</td>
+							}
+						</tr>
+						</tbody>
+					</table>
+				}
+			</fieldset>
+		</div>
+	}
 </div>
 </body>
 </html>
+
+@{
+	void RenderExactFacetValues<T>(string fieldName)
+	{
+		<div style="flex: 1">
+			<p>
+				<input type="checkbox" id="@(fieldName)AsFacet"/> <label for="@(fieldName)AsFacet">@fieldName.ToFirstUpperInvariant()</label>
+			</p>
+			@{
+				var facetResult = Model.Facets?.FirstOrDefault(f => f.FieldName == fieldName);
+				if (facetResult is not null)
+				{
+					<ul>
+						@foreach (var exactFacetValue in facetResult.Values.OfType<ExactFacetValue<T>>())
+						{
+							<li>@exactFacetValue.Key (@exactFacetValue.Count)</li>
+						}
+					</ul>
+				}
+			}
+		</div>
+	}
+}

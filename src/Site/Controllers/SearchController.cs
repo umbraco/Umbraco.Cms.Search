@@ -38,6 +38,11 @@ public class SearchController : RenderController
 
     public async Task<IActionResult> Index(string? query, string[]? filters, string[]? facets, string? culture, string? segment, string? sortBy, string? sortDirection)
     {
+        if (Request.QueryString.HasValue is false)
+        {
+            return CurrentTemplate(new SearchViewModel());
+        }
+        
         var filterDictionary = SplitParameters(filters);
         var filterValues = filterDictionary?
             .Select(kvp => ParseFilter(kvp.Key, kvp.Value))

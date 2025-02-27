@@ -3,7 +3,7 @@ using Umbraco.Cms.Core.Notifications;
 
 namespace Site.Segments;
 
-internal sealed class ServerVariablesParsingNotificationHandler : INotificationHandler<ServerVariablesParsingNotification>
+internal sealed class EnableSegmentsNotificationHandler : INotificationHandler<ServerVariablesParsingNotification>
 {
     public void Handle(ServerVariablesParsingNotification notification)
     {

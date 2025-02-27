@@ -45,7 +45,7 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
         }  
         
         var ancestorIds = content.GetAncestorIds() ?? [];
-        var ancestorKeys = new List<Guid>();
+        var pathKeys = new List<Guid>();
         foreach (var ancestorId in ancestorIds)
         {
             var attempt = _idKeyMap.GetKeyForId(ancestorId, UmbracoObjectTypes.Document);
@@ -58,15 +58,16 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
                 return [];
             }
 
-            ancestorKeys.Add(attempt.Result);
+            pathKeys.Add(attempt.Result);
         }
+        pathKeys.Add(content.Key);
         
         // TODO: add tags here
         var fields = new List<IndexField>
         {
             new(IndexConstants.FieldNames.Id, new() { Keywords = [content.Key.ToString("D")] }, null, null),
             new(IndexConstants.FieldNames.ParentId, new() { Keywords = [parentKey.ToString("D")] }, null, null),
-            new(IndexConstants.FieldNames.AncestorIds, new() { Keywords = ancestorKeys.Select(ancestorKey => ancestorKey.ToString("D")).ToArray() }, null, null),
+            new(IndexConstants.FieldNames.PathIds, new() { Keywords = pathKeys.Select(key => key.ToString("D")).ToArray() }, null, null),
             new(IndexConstants.FieldNames.ContentType, new() { Keywords = [content.ContentType.Alias] }, null, null),
             new(IndexConstants.FieldNames.CreateDate, new() { DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(content.CreateDate)] }, null, null),
             new(IndexConstants.FieldNames.UpdateDate, new() { DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(content.UpdateDate)] }, null, null),

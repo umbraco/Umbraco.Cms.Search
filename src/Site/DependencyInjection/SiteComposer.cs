@@ -1,4 +1,5 @@
 ﻿using Package.Services;
+using Site.NotificationHandlers;
 using Site.Segments;
 using Site.Services;
 using Umbraco.Cms.Core.Composing;
@@ -14,7 +15,8 @@ public sealed class SiteComposer : IComposer
         builder.Services.AddTransient<ISearchService, InMemoryIndexAndSearchService>();
 
         builder
-            .AddNotificationHandler<ServerVariablesParsingNotification, ServerVariablesParsingNotificationHandler>()
-            .AddNotificationHandler<SendingContentNotification, CreateSegmentsHandler>();
+            .AddNotificationHandler<ServerVariablesParsingNotification, EnableSegmentsNotificationHandler>()
+            .AddNotificationHandler<SendingContentNotification, CreateSegmentsNotificationHandler>()
+            .AddNotificationHandler<UmbracoApplicationStartedNotification, IndexBuildingNotificationHandler>();
     }
 }

@@ -6,11 +6,11 @@ using Umbraco.Cms.Core.Services;
 
 namespace Site.Segments;
 
-internal sealed class CreateSegmentsHandler : INotificationHandler<SendingContentNotification>
+internal sealed class CreateSegmentsNotificationHandler : INotificationHandler<SendingContentNotification>
 {
     private readonly IContentTypeService _contentTypeService;
 
-    public CreateSegmentsHandler(IContentTypeService contentTypeService)
+    public CreateSegmentsNotificationHandler(IContentTypeService contentTypeService)
         => _contentTypeService = contentTypeService;
 
     public void Handle(SendingContentNotification notification)

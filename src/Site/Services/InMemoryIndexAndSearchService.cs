@@ -35,7 +35,7 @@ internal sealed class InMemoryIndexAndSearchService : IIndexService, ISearchServ
         {
             Remove(key);
             var descendantKeys = Index.Where(v =>
-                    v.Value.Fields.Any(f => f.FieldName == IndexConstants.FieldNames.AncestorIds && f.Value.Keywords?.Contains($"{key:D}") is true)
+                    v.Value.Fields.Any(f => f.FieldName == IndexConstants.FieldNames.PathIds && f.Value.Keywords?.Contains($"{key:D}") is true)
                 )
                 .Select(pair => pair.Key);
             foreach (var descendantKey in descendantKeys)

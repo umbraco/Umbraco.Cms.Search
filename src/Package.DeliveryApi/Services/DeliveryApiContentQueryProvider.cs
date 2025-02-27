@@ -99,7 +99,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
 
     private bool TryCreateFilter(string fieldName, FilterOperation filterOperation, string[] values, [NotNullWhen(true)] out Filter? filter)
     {
-        if (values.Length == 0)
+        if (values.Length is 0)
         {
             filter = null;
             return false;
@@ -139,7 +139,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
                     .Select(v => decimal.TryParse(v, CultureInfo.InvariantCulture, out var d) ? d : decimal.MinValue)
                     .Where(d => d > decimal.MinValue)
                     .ToArray();
-                if (decimalValues.Length == 0)
+                if (decimalValues.Length is 0)
                 {
                     _logger.LogWarning("Numeric filter for field name {FieldName} did not yield any numeric values.", fieldName);
                     filter = null;
@@ -161,7 +161,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
                     .Where(d => d > DateTime.MinValue)
                     .Select(_dateTimeOffsetConverter.ToDateTimeOffset)
                     .ToArray();
-                if (dateTimeOffsetValues.Length == 0)
+                if (dateTimeOffsetValues.Length is 0)
                 {
                     _logger.LogWarning("Date filter for field name {FieldName} did not yield any DateTimeOffset values.", fieldName);
                     filter = null;
@@ -224,7 +224,8 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
             // ChildrenSelectorIndexer:
             "parentId" => IndexConstants.FieldNames.ParentId,
             // DescendantsSelectorIndexer:
-            "ancestorIds" => IndexConstants.FieldNames.AncestorIds,
+            // TODO: this is somewhat wrong... PathIds equals ancestors-or-self, but the Delivery API queryes for ancestors only
+            "ancestorIds" => IndexConstants.FieldNames.PathIds,
             // ContentTypeFilterIndexer:
             "contentType" => IndexConstants.FieldNames.ContentType,
             // NameFilterIndexer or NameSortIndexer:

@@ -1,6 +1,8 @@
 ﻿using IntegrationTests.Services;
 using Package;
+using Package.Helpers;
 using Package.Models.Indexing;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services.Changes;
 
 namespace IntegrationTests.Tests;
@@ -112,13 +114,11 @@ public class VariantContentTests : VariantTestBase
 
         Assert.Multiple(() =>
         {
-            VerifyDocumentSystemValues(documents[0], "Root");
-            VerifyDocumentSystemValues(documents[1], "Child");
-            VerifyDocumentSystemValues(documents[2], "Grandchild");
-            VerifyDocumentSystemValues(documents[3], "Great Grandchild");
+            VerifyDocumentSystemValues(documents[0], Root());
+            VerifyDocumentSystemValues(documents[1], Child());
+            VerifyDocumentSystemValues(documents[2], Grandchild());
+            VerifyDocumentSystemValues(documents[3], GreatGrandchild());
         });
-
-        Assert.Inconclusive("Validate create and update dates in this test when they're supported");
     }
 
     private void VerifyDocumentPropertyValues(TestIndexDocument document, string title, int count)
@@ -136,17 +136,31 @@ public class VariantContentTests : VariantTestBase
             Assert.That(countValue, Is.EqualTo(count));
         });
 
-    private void VerifyDocumentSystemValues(TestIndexDocument document, string name)
+    private void VerifyDocumentSystemValues(TestIndexDocument document, IContent content)
     {
+        var dateTimeOffsetConverter = new DateTimeOffsetConverter();
+
         Assert.Multiple(() =>
         {
             var contentTypeValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.ContentType)?.Value.Keywords?.SingleOrDefault();
-            Assert.That(contentTypeValue, Is.EqualTo("variant"));
+            Assert.That(contentTypeValue, Is.EqualTo(content.ContentType.Alias));
 
             var nameFields = document.Fields.Where(f => f.FieldName == IndexConstants.FieldNames.Name).ToArray();
             Assert.That(nameFields.Length, Is.EqualTo(2));
-            Assert.That(nameFields.SingleOrDefault(f => f.Culture.InvariantEquals("en-US"))?.Value.Texts?.SingleOrDefault(), Is.EqualTo($"{name} EN"));
-            Assert.That(nameFields.SingleOrDefault(f => f.Culture.InvariantEquals("da-DK"))?.Value.Texts?.SingleOrDefault(), Is.EqualTo($"{name} DA"));
+            Assert.That(nameFields.SingleOrDefault(f => f.Culture.InvariantEquals("en-US"))?.Value.Texts?.SingleOrDefault(), Is.EqualTo(content.GetCultureName("en-US")));
+            Assert.That(nameFields.SingleOrDefault(f => f.Culture.InvariantEquals("da-DK"))?.Value.Texts?.SingleOrDefault(), Is.EqualTo(content.GetCultureName("da-DK")));
+
+            var createDateValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.CreateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
+            Assert.That(createDateValue, Is.EqualTo(dateTimeOffsetConverter.ToDateTimeOffset(content.CreateDate)));
+
+            var updateDateValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.UpdateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
+            Assert.That(updateDateValue, Is.EqualTo(dateTimeOffsetConverter.ToDateTimeOffset(content.UpdateDate)));
+
+            var levelValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.Level)?.Value.Integers?.SingleOrDefault();
+            Assert.That(levelValue, Is.EqualTo(content.Level));
+
+            var sortOrderValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.SortOrder)?.Value.Integers?.SingleOrDefault();
+            Assert.That(sortOrderValue, Is.EqualTo(content.SortOrder));
         });
     }
 }

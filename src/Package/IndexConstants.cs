@@ -12,7 +12,7 @@ public static class IndexConstants
 
         public const string ParentId = $"{FieldPrefix}ParentId";
 
-        public const string AncestorIds = $"{FieldPrefix}AncestorIds";
+        public const string PathIds = $"{FieldPrefix}PathIds";
 
         public const string Name = $"{FieldPrefix}Name";
 

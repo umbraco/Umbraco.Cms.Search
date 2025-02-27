@@ -1,6 +1,8 @@
 ﻿using IntegrationTests.Services;
 using Package;
+using Package.Helpers;
 using Package.Models.Indexing;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services.Changes;
 
 namespace IntegrationTests.Tests;
@@ -82,10 +84,10 @@ public class InvariantContentTests : InvariantTestBase
 
         Assert.Multiple(() =>
         {
-            VerifyDocumentStructureValues(documents[0], RootKey, Guid.Empty);
-            VerifyDocumentStructureValues(documents[1], ChildKey, RootKey, RootKey);
-            VerifyDocumentStructureValues(documents[2], GrandchildKey, ChildKey, RootKey, ChildKey);
-            VerifyDocumentStructureValues(documents[3], GreatGrandchildKey, GrandchildKey, RootKey, ChildKey, GrandchildKey);
+            VerifyDocumentStructureValues(documents[0], RootKey, Guid.Empty, RootKey);
+            VerifyDocumentStructureValues(documents[1], ChildKey, RootKey, RootKey, ChildKey);
+            VerifyDocumentStructureValues(documents[2], GrandchildKey, ChildKey, RootKey, ChildKey, GrandchildKey);
+            VerifyDocumentStructureValues(documents[3], GreatGrandchildKey, GrandchildKey, RootKey, ChildKey, GrandchildKey, GreatGrandchildKey);
         });
     }
 
@@ -109,13 +111,11 @@ public class InvariantContentTests : InvariantTestBase
 
         Assert.Multiple(() =>
         {
-            VerifyDocumentSystemValues(documents[0], "Root");
-            VerifyDocumentSystemValues(documents[1], "Child");
-            VerifyDocumentSystemValues(documents[2], "Grandchild");
-            VerifyDocumentSystemValues(documents[3], "Great Grandchild");
+            VerifyDocumentSystemValues(documents[0], Root());
+            VerifyDocumentSystemValues(documents[1], Child());
+            VerifyDocumentSystemValues(documents[2], Grandchild());
+            VerifyDocumentSystemValues(documents[3], GreatGrandchild());
         });
-
-        Assert.Inconclusive("Validate create and update dates in this test when they're supported");
     }
 
     private void VerifyDocumentPropertyValues(TestIndexDocument document, string title, int count)
@@ -128,7 +128,7 @@ public class InvariantContentTests : InvariantTestBase
             Assert.That(countValue, Is.EqualTo(count));
         });
 
-    private void VerifyDocumentStructureValues(TestIndexDocument document, Guid id, Guid parentId, params Guid[] ancestorIds)
+    private void VerifyDocumentStructureValues(TestIndexDocument document, Guid id, Guid parentId, params Guid[] pathIds)
         => Assert.Multiple(() =>
         {
             var idValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.Id)?.Value.Keywords?.SingleOrDefault();
@@ -137,21 +137,34 @@ public class InvariantContentTests : InvariantTestBase
             var parentIdValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.ParentId)?.Value.Keywords?.SingleOrDefault();
             Assert.That(parentIdValue, Is.EqualTo(parentId.ToString("D")));
 
-            var ancestorIdValues = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.AncestorIds)?.Value.Keywords?.ToArray();
-            Assert.That(ancestorIdValues, Is.Not.Null);
-            Assert.That(ancestorIdValues.Length, Is.EqualTo(ancestorIds.Length));
-            Assert.That(ancestorIdValues, Is.EquivalentTo(ancestorIds.Select(ancestorId => ancestorId.ToString("D"))));
+            var pathIdsValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.PathIds)?.Value.Keywords?.ToArray();
+            Assert.That(pathIdsValue, Is.Not.Null);
+            Assert.That(pathIdsValue.Length, Is.EqualTo(pathIds.Length));
+            Assert.That(pathIdsValue, Is.EquivalentTo(pathIds.Select(ancestorId => ancestorId.ToString("D"))));
         });
 
-    private void VerifyDocumentSystemValues(TestIndexDocument document, string name)
+    private void VerifyDocumentSystemValues(TestIndexDocument document, IContent content)
     {
+        var dateTimeOffsetConverter = new DateTimeOffsetConverter();
         Assert.Multiple(() =>
         {
             var contentTypeValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.ContentType)?.Value.Keywords?.SingleOrDefault();
-            Assert.That(contentTypeValue, Is.EqualTo("invariant"));
+            Assert.That(contentTypeValue, Is.EqualTo(content.ContentType.Alias));
 
             var nameValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.Name)?.Value.Texts?.SingleOrDefault();
-            Assert.That(nameValue, Is.EqualTo(name));
+            Assert.That(nameValue, Is.EqualTo(content.Name));
+
+            var createDateValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.CreateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
+            Assert.That(createDateValue, Is.EqualTo(dateTimeOffsetConverter.ToDateTimeOffset(content.CreateDate)));
+
+            var updateDateValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.UpdateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
+            Assert.That(updateDateValue, Is.EqualTo(dateTimeOffsetConverter.ToDateTimeOffset(content.UpdateDate)));
+
+            var levelValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.Level)?.Value.Integers?.SingleOrDefault();
+            Assert.That(levelValue, Is.EqualTo(content.Level));
+
+            var sortOrderValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.SortOrder)?.Value.Integers?.SingleOrDefault();
+            Assert.That(sortOrderValue, Is.EqualTo(content.SortOrder));
         });
     }
 }
