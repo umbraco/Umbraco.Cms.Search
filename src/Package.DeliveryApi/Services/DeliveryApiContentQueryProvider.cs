@@ -121,7 +121,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
             case FieldType.StringRaw:
                 filter = filterOperation switch
                 {
-                    FilterOperation.Is or FilterOperation.IsNot => new StringExactFilter(fieldName, values, filterOperation is FilterOperation.IsNot),
+                    FilterOperation.Is or FilterOperation.IsNot => new KeywordFilter(fieldName, values, filterOperation is FilterOperation.IsNot),
                     _ => null
                 };
                 break;
@@ -129,8 +129,8 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
             case FieldType.StringSortable:
                 filter = filterOperation switch
                 {
-                    FilterOperation.Is or FilterOperation.IsNot => new StringExactFilter(fieldName, values, filterOperation is FilterOperation.IsNot),
-                    FilterOperation.Contains or FilterOperation.DoesNotContain => new StringContainsFilter(fieldName, values, filterOperation is FilterOperation.DoesNotContain),
+                    FilterOperation.Is or FilterOperation.IsNot => new KeywordFilter(fieldName, values, filterOperation is FilterOperation.IsNot),
+                    FilterOperation.Contains or FilterOperation.DoesNotContain => new TextFilter(fieldName, values, filterOperation is FilterOperation.DoesNotContain),
                     _ => null
                 };
                 break;
@@ -205,7 +205,8 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
 
         sorter = fieldType switch
         {
-            FieldType.StringRaw or FieldType.StringAnalyzed or FieldType.StringSortable => new StringSorter(fieldName, direction),
+            FieldType.StringRaw => new KeywordSorter(fieldName, direction),
+            FieldType.StringAnalyzed or FieldType.StringSortable => new StringSorter(fieldName, direction),
             FieldType.Number => new DecimalSorter(fieldName, direction),
             FieldType.Date => new DateTimeOffsetSorter(fieldName, direction),
             _ => throw new ArgumentOutOfRangeException(nameof(fieldType), fieldType, null)

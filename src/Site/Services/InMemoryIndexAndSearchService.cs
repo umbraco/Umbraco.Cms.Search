@@ -94,8 +94,8 @@ internal sealed class InMemoryIndexAndSearchService : IIndexService, ISearchServ
         // - regular filters must be applied before any facets are calculated (they narrow down the potential result set)
         // - facet filters must be applied after facets calculation has begun (additional considerations apply, see comments below)
         var facetFieldNames = facets?.Select(facet => facet.FieldName).ToArray();
-        var facetFilters = filters?.Where(f => facetFieldNames?.InvariantContains(f.FieldName) is true).ToArray();
-        var regularFilters = filters?.Where(f => facetFieldNames?.InvariantContains(f.FieldName) is not true).ToArray();
+        var facetFilters = filters?.Where(f => f is IExactFilter && facetFieldNames?.InvariantContains(f.FieldName) is true).ToArray();
+        var regularFilters = filters?.Except(facetFilters ?? []).ToArray();
 
         if (regularFilters is not null)
         {
@@ -158,8 +158,8 @@ internal sealed class InMemoryIndexAndSearchService : IIndexService, ISearchServ
         {
             var isMatch = filter switch
             {
-                StringContainsFilter stringContainsFilter => value.Texts?.Any(t => stringContainsFilter.Values.Any(t.InvariantContains)) ?? false,
-                StringExactFilter stringExactFilter => value.Keywords?.ContainsAny(stringExactFilter.Values) ?? false,
+                TextFilter textFilter => value.Texts?.Any(t => textFilter.Values.Any(t.InvariantContains)) ?? false,
+                KeywordFilter keywordFilter => value.Keywords?.ContainsAny(keywordFilter.Values) ?? false,
                 IntegerExactFilter integerExactFilter => value.Integers?.ContainsAny(integerExactFilter.Values) ?? false,
                 IntegerRangeFilter integerRangeFilter => value.Integers?.Any(i => i >= (integerRangeFilter.MinimumValue ?? int.MinValue) && i <= (integerRangeFilter.MaximumValue ?? int.MaxValue)) ?? false,
                 DecimalExactFilter decimalExactFilter => value.Decimals?.ContainsAny(decimalExactFilter.Values) ?? false,
@@ -191,7 +191,7 @@ internal sealed class InMemoryIndexAndSearchService : IIndexService, ISearchServ
             IEnumerable<FacetValue> GetFacetValues(Facet facet, IEnumerable<IndexValue> values)
                 => facet switch
                 {
-                    StringExactFacet => values.SelectMany(v => v.Keywords ?? []).GroupBy(v => v).Select(g => new StringExactFacetValue(g.Key, g.Count())),
+                    KeywordFacet => values.SelectMany(v => v.Keywords ?? []).GroupBy(v => v).Select(g => new KeywordFacetValue(g.Key, g.Count())),
                     IntegerExactFacet => values.SelectMany(v => v.Integers ?? []).GroupBy(v => v).Select(g => new IntegerExactFacetValue(g.Key, g.Count())),
                     _ => throw new ArgumentOutOfRangeException(nameof(facet), $"Encountered an unsupported facet type: {facet.GetType().Name}")
                 }; 
@@ -207,7 +207,6 @@ internal sealed class InMemoryIndexAndSearchService : IIndexService, ISearchServ
         }
 
         var comparer = new SorterComparer(sorter, culture, segment);
-        
         return sorter.Direction is Direction.Ascending
             ? documents.OrderBy(d => d.Value, comparer)
             : documents.OrderByDescending(d => d.Value, comparer);
@@ -237,7 +236,7 @@ internal sealed class InMemoryIndexAndSearchService : IIndexService, ISearchServ
             return xFieldValue is not null
                 ? xFieldValue.CompareTo(yFieldValue)
                 : yFieldValue is not null
-                    ? 1
+                    ? -1 * yFieldValue.CompareTo(xFieldValue)
                     : 0;
         }
 
@@ -249,6 +248,7 @@ internal sealed class InMemoryIndexAndSearchService : IIndexService, ISearchServ
                     DateTimeOffsetSorter => field.Value.DateTimeOffsets?.FirstOrDefault(),
                     DecimalSorter => field.Value.Decimals?.FirstOrDefault(),
                     IntegerSorter => field.Value.Integers?.FirstOrDefault(),
+                    KeywordSorter => field.Value.Keywords?.FirstOrDefault(),
                     StringSorter => field.Value.Texts?.FirstOrDefault(),
                     _ => throw new ArgumentOutOfRangeException($"Unsupported sorter type: {_sorter.GetType().FullName}")
                 };

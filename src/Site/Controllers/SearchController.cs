@@ -46,17 +46,20 @@ public class SearchController : RenderController
 
         var facetValues = facets?.Select(f => f.InvariantContains("integer")
             ? new IntegerExactFacet(f)
-            : (Facet)new StringExactFacet(f)
+            : (Facet)new KeywordFacet(f)
         ).ToArray();
 
         var direction = sortDirection == "asc" ? Direction.Ascending : Direction.Descending;
-        Sorter[]? sorters = sortBy.IsNullOrWhiteSpace()
-            ? null
+        Sorter[] sorters = sortBy.IsNullOrWhiteSpace() || sortBy == IndexConstants.FieldNames.Score
+            ? [new ScoreSorter(direction)]
             : sortBy.InvariantContains("integer") || sortBy == IndexConstants.FieldNames.Level
                 ? [new IntegerSorter(sortBy, direction)]
                 : sortBy.InvariantContains("date")
                     ? [new DateTimeOffsetSorter(sortBy, direction)]
-                    : [new StringSorter(sortBy, direction)];
+                    : sortBy.InvariantContains("dropdown")
+                        ? [new KeywordSorter(sortBy, direction)] 
+                        : [new StringSorter(sortBy, direction)];
+
         var result = await _searchService.SearchAsync(query, filterValues, facetValues, sorters, culture, segment, 0, 100);
         
         return CurrentTemplate(
@@ -152,6 +155,6 @@ public class SearchController : RenderController
             return new DateTimeOffsetExactFilter(fieldName, fieldValues, false);
         }
 
-        return new StringExactFilter(fieldName, values, false);
+        return new KeywordFilter(fieldName, values, false);
     }
 }

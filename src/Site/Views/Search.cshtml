@@ -11,9 +11,6 @@
 		code {
 			font-weight: bold;
 		}
-		label {
-			display: block;
-		}
 	</style>
 	<script>
 		window.addEventListener('load', () => {
@@ -94,15 +91,15 @@
 					Use <code>one|two|three</code> notation for exact filtering.
 				</p>
 				<p>
-					<label for="integerFilter">Integer:</label>
+					<label for="integerFilter" style="display: block">Integer:</label>
 					<input type="text" id="integerFilter"/>
 				</p>
 				<p>
-					<label for="dateFilter">Date:</label>
+					<label for="dateFilter" style="display: block">Date:</label>
 					<input type="text" id="dateFilter"/>
 				</p>
 				<p>
-					<label for="dropdownFilter">Dropdown:</label>
+					<label for="dropdownFilter" style="display: block">Dropdown:</label>
 					<input type="text" id="dropdownFilter"/>
 				</p>
 			</fieldset>
@@ -112,53 +109,50 @@
 					Tick to use filters as facets.
 				</p>
 				@{
-					RenderFacet("integer");
-					RenderFacet("dropdown");
+					RenderExactFacetValues<int>("integer");
+					RenderExactFacetValues<string>("dropdown");
 
-					void RenderFacet(string fieldName)
+					void RenderExactFacetValues<T>(string fieldName)
 					{
 						<p>
-							<input type="checkbox" id="@(fieldName)AsFacet" /> @fieldName.ToFirstUpperInvariant() <br/>
+							<input type="checkbox" id="@(fieldName)AsFacet" /> <label for="@(fieldName)AsFacet">@fieldName.ToFirstUpperInvariant()</label><br/>
 						</p>
 
 						var facetResult = Model.Facets.FirstOrDefault(f => f.FieldName == fieldName);
-						if (facetResult is not null)
+						if (facetResult is null)
 						{
-							<ul>
-								@foreach (var facetValue in facetResult.Values)
-								{
-									switch (facetValue)
-									{
-										case IntegerExactFacetValue integerExactFacetValue:
-											<li>@integerExactFacetValue.Key (@integerExactFacetValue.Count)</li>
-											break;
-										case StringExactFacetValue stringExactFacetValue:
-											<li>@stringExactFacetValue.Key (@stringExactFacetValue.Count)</li>
-											break;
-										default:
-											<li>Unknown facet value: @(facetValue.GetType().Name)</li>
-											break;
-									}
-								}
-							</ul>
+							return;
 						}
+
+						<ul>
+							@foreach (var exactFacetValue in facetResult.Values.OfType<ExactFacetValue<T>>())
+							{
+								<li>@exactFacetValue.Key (@exactFacetValue.Count)</li>
+							}
+						</ul>
 					}
 				}
 			</fieldset>
 			<fieldset>
 				<legend>Sorting</legend>
-				<select id="sortBy">
-					<option value="@IndexConstants.FieldNames.Score" selected>Score</option>
-					<option value="@IndexConstants.FieldNames.Name">Name</option>
-					<option value="@IndexConstants.FieldNames.Level">Level</option>
-					<option value="integer">Integer</option>
-					<option value="date">Date</option>
-					<option value="dropdown">Dropdown</option>
-				</select>
-				<select id="sortDirection">
-					<option value="desc" selected>Descending</option>
-					<option value="asc">Ascending</option>
-				</select>
+				<p>
+					<label for="sortBy" style="display: block">Sort by:</label>
+					<select id="sortBy">
+						<option value="@IndexConstants.FieldNames.Score" selected>Score [system field]</option>
+						<option value="@IndexConstants.FieldNames.Name">Name [system field]</option>
+						<option value="@IndexConstants.FieldNames.Level">Level [system field]</option>
+						<option value="integer">Integer</option>
+						<option value="date">Date</option>
+						<option value="dropdown">Dropdown</option>
+					</select>
+				</p>
+				<p>
+					<label for="sortDirection" style="display: block">Sort direction:</label>
+					<select id="sortDirection">
+						<option value="desc" selected>Descending</option>
+						<option value="asc">Ascending</option>
+					</select>
+				</p>
 			</fieldset>
 			<button type="submit" style="margin: 1em">Search 🔍</button>
 		</form>

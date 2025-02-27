@@ -63,8 +63,17 @@ internal sealed class DeliveryApiContentIndexer : IContentIndexer
                     IndexValue? indexValue = null;
                     switch (field.FieldType)
                     {
-                        case FieldType.StringAnalyzed:
                         case FieldType.StringRaw:
+                            var keywords = fieldValue.Values.OfType<string>().ToArray();
+                            if (keywords.Length > 0)
+                            {
+                                indexValue = new()
+                                {
+                                    Keywords = keywords
+                                };
+                            }
+                            break;
+                        case FieldType.StringAnalyzed:
                         case FieldType.StringSortable:
                             var texts = fieldValue.Values.OfType<string>().ToArray();
                             if (texts.Length > 0)
