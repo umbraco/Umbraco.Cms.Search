@@ -1,5 +1,5 @@
-﻿using Package.Models.Indexing;
-using Package.Services.ContentIndexing;
+﻿using Umbraco.Cms.Search.Core.Models.Indexing;
+using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;

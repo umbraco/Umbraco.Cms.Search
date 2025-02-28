@@ -17,8 +17,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Package.DeliveryApi\Package.DeliveryApi.csproj" />
-    <ProjectReference Include="..\Package\Package.csproj" />
+    <ProjectReference Include="..\Umbraco.Cms.Search.DeliveryApi\Umbraco.Cms.Search.DeliveryApi.csproj" />
+    <ProjectReference Include="..\Umbraco.Cms.Search.Core\Umbraco.Cms.Search.Core.csproj" />
+    <ProjectReference Include="..\Umbraco.Cms.Search.Provider.InMemory\Umbraco.Cms.Search.Provider.InMemory.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

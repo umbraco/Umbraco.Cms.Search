@@ -5,11 +5,13 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Site", "site\Site.csproj", "{22DEE944-EB71-4774-90D6-B353B7CB88E4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Package", "Package\Package.csproj", "{3A17D874-22ED-4662-8C82-038E83EAF19E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Umbraco.Cms.Search.Core", "Umbraco.Cms.Search.Core\Umbraco.Cms.Search.Core.csproj", "{3A17D874-22ED-4662-8C82-038E83EAF19E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests", "IntegrationTests\IntegrationTests.csproj", "{70332B6E-4C4C-49CC-8620-1F44EB861FA3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Umbraco.Test.Search.Integration", "Umbraco.Test.Search.Integration\Umbraco.Test.Search.Integration.csproj", "{70332B6E-4C4C-49CC-8620-1F44EB861FA3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Package.DeliveryApi", "Package.DeliveryApi\Package.DeliveryApi.csproj", "{0BC12610-3EE2-4D32-A2C6-A1546709CC40}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Umbraco.Cms.Search.DeliveryApi", "Umbraco.Cms.Search.DeliveryApi\Umbraco.Cms.Search.DeliveryApi.csproj", "{0BC12610-3EE2-4D32-A2C6-A1546709CC40}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Umbraco.Cms.Search.Provider.InMemory", "Umbraco.Cms.Search.Provider.InMemory\Umbraco.Cms.Search.Provider.InMemory.csproj", "{BDE47B6F-840B-4FE5-AFBC-BC3619D48FD7}"
 EndProject
 Global
 	GlobalSection(SolutionProperties) = preSolution
@@ -72,5 +74,17 @@ Global
 		{0BC12610-3EE2-4D32-A2C6-A1546709CC40}.Release|x64.Build.0 = Release|Any CPU
 		{0BC12610-3EE2-4D32-A2C6-A1546709CC40}.Release|x86.ActiveCfg = Release|Any CPU
 		{0BC12610-3EE2-4D32-A2C6-A1546709CC40}.Release|x86.Build.0 = Release|Any CPU
+		{BDE47B6F-840B-4FE5-AFBC-BC3619D48FD7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BDE47B6F-840B-4FE5-AFBC-BC3619D48FD7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BDE47B6F-840B-4FE5-AFBC-BC3619D48FD7}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BDE47B6F-840B-4FE5-AFBC-BC3619D48FD7}.Debug|x64.Build.0 = Debug|Any CPU
+		{BDE47B6F-840B-4FE5-AFBC-BC3619D48FD7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BDE47B6F-840B-4FE5-AFBC-BC3619D48FD7}.Debug|x86.Build.0 = Debug|Any CPU
+		{BDE47B6F-840B-4FE5-AFBC-BC3619D48FD7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BDE47B6F-840B-4FE5-AFBC-BC3619D48FD7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BDE47B6F-840B-4FE5-AFBC-BC3619D48FD7}.Release|x64.ActiveCfg = Release|Any CPU
+		{BDE47B6F-840B-4FE5-AFBC-BC3619D48FD7}.Release|x64.Build.0 = Release|Any CPU
+		{BDE47B6F-840B-4FE5-AFBC-BC3619D48FD7}.Release|x86.ActiveCfg = Release|Any CPU
+		{BDE47B6F-840B-4FE5-AFBC-BC3619D48FD7}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

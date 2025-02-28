@@ -2,14 +2,16 @@
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
-using Package;
-using Package.Helpers;
-using Package.Models.Searching.Faceting;
-using Package.Models.Searching.Filtering;
-using Package.Models.Searching.Sorting;
-using Package.Services;
+using Umbraco.Cms.Search.Core;
+using Umbraco.Cms.Search.Core.Helpers;
+using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
+using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
+using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
+using Umbraco.Cms.Search.Core.Services;
 using Site.ViewModels;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models.PublishedContent;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Web;
 using Umbraco.Cms.Web.Common.Controllers;
 

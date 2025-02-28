@@ -1,4 +1,4 @@
-﻿using Package.Models.Searching.Faceting;
+﻿using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 using Umbraco.Cms.Core.Models.PublishedContent;
 
 namespace Site.ViewModels;
