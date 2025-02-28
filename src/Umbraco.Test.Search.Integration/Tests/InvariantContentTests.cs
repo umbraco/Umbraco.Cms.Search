@@ -111,11 +111,32 @@ public class InvariantContentTests : InvariantTestBase
 
         Assert.Multiple(() =>
         {
-            VerifyDocumentSystemValues(documents[0], Root());
-            VerifyDocumentSystemValues(documents[1], Child());
-            VerifyDocumentSystemValues(documents[2], Grandchild());
-            VerifyDocumentSystemValues(documents[3], GreatGrandchild());
+            VerifyDocumentSystemValues(documents[0], Root(), "tag1", "tag2");
+            VerifyDocumentSystemValues(documents[1], Child(), "tag3", "tag4");
+            VerifyDocumentSystemValues(documents[2], Grandchild(), "tag5", "tag6");
+            VerifyDocumentSystemValues(documents[3], GreatGrandchild(), "tag7", "tag8");
         });
+    }
+
+    [Test]
+    public async Task PublishedStructure_CanUpdateEditableSystemFields()
+    {
+        ContentService.SaveAndPublishBranch(Root(), true);
+
+        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
+        
+        var child = Child();
+        child.Name = "The updated child name";
+        child.SetValue("tags", "[\"updated-tag1\",\"updated-tag2\",\"updated-tag3\"]");
+        ContentService.SaveAndPublish(child);
+
+        await HandleContentChangeAsync(new ContentChange(ChildKey, TreeChangeTypes.RefreshNode));
+
+        var documents = IndexService.Dump();
+        Assert.That(documents, Has.Count.EqualTo(4));
+
+        Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
+        VerifyDocumentSystemValues(documents[1], Child(), "updated-tag1", "updated-tag2", "updated-tag3");
     }
 
     private void VerifyDocumentPropertyValues(TestIndexDocument document, string title, int count)
@@ -143,7 +164,7 @@ public class InvariantContentTests : InvariantTestBase
             Assert.That(pathIdsValue, Is.EquivalentTo(pathIds.Select(ancestorId => ancestorId.ToString("D"))));
         });
 
-    private void VerifyDocumentSystemValues(TestIndexDocument document, IContent content)
+    private void VerifyDocumentSystemValues(TestIndexDocument document, IContent content, params string[] tags)
     {
         var dateTimeOffsetConverter = new DateTimeOffsetConverter();
         Assert.Multiple(() =>
@@ -165,6 +186,9 @@ public class InvariantContentTests : InvariantTestBase
 
             var sortOrderValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.SortOrder)?.Value.Integers?.SingleOrDefault();
             Assert.That(sortOrderValue, Is.EqualTo(content.SortOrder));
+
+            var tagsValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.Tags)?.Value.Keywords;
+            Assert.That(tagsValue, Is.EquivalentTo(tags));
         });
     }
 }

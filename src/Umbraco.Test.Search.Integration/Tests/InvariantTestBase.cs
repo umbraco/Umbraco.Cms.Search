@@ -22,6 +22,11 @@ public abstract class InvariantTestBase : TestBaseWithContent
             .WithDataTypeId(-51)
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
             .Done()
+            .AddPropertyType()
+            .WithAlias("tags")
+            .WithDataTypeId(Constants.DataTypes.Tags)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Tags)
+            .Done()
             .Build();
         ContentTypeService.Save(contentType);
         contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Id, 0)];
@@ -35,7 +40,8 @@ public abstract class InvariantTestBase : TestBaseWithContent
                 new
                 {
                     title = "The root title",
-                    count = 12
+                    count = 12,
+                    tags = "[\"tag1\",\"tag2\"]"
                 })
             .Build();
         ContentService.Save(root);
@@ -49,7 +55,8 @@ public abstract class InvariantTestBase : TestBaseWithContent
                 new
                 {
                     title = "The child title",
-                    count = 34
+                    count = 34,
+                    tags = "[\"tag3\",\"tag4\"]"
                 })
             .Build();
         ContentService.Save(child);
@@ -63,7 +70,8 @@ public abstract class InvariantTestBase : TestBaseWithContent
                 new
                 {
                     title = "The grandchild title",
-                    count = 56
+                    count = 56,
+                    tags = "[\"tag5\",\"tag6\"]"
                 })
             .Build();
         ContentService.Save(grandchild);
@@ -77,7 +85,8 @@ public abstract class InvariantTestBase : TestBaseWithContent
                 new
                 {
                     title = "The great grandchild title",
-                    count = 78
+                    count = 78,
+                    tags = "[\"tag7\",\"tag8\"]"
                 })
             .Build();
         ContentService.Save(greatGrandchild);

@@ -25,5 +25,7 @@ public static class IndexConstants
         public const string Level = $"{FieldPrefix}Level";
 
         public const string SortOrder = $"{FieldPrefix}SortOrder";
+
+        public const string Tags = $"{FieldPrefix}Tags";
     }
 }

@@ -216,10 +216,12 @@ public class VariantStructureTests : VariantTestBase
         Assert.Multiple(() =>
         {
             Assert.That(cultures, Is.Not.Empty);
-            Assert.That(variations, Has.Length.EqualTo(cultures.Length));
+            Assert.That(variations, Has.Length.EqualTo(cultures.Length * 3));
             foreach (var culture in cultures)
             {
-                Assert.That(variations.Any(v => v.Culture.InvariantEquals(culture)), Is.True);
+                Assert.That(variations.Any(v => v.Culture.InvariantEquals(culture) && v.Segment is null), Is.True);
+                Assert.That(variations.Any(v => v.Culture.InvariantEquals(culture) && v.Segment == "segment-1"), Is.True);
+                Assert.That(variations.Any(v => v.Culture.InvariantEquals(culture) && v.Segment == "segment-2"), Is.True);
             }
         });
     }

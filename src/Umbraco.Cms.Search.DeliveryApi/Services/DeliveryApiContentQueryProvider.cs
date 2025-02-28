@@ -225,7 +225,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
             // ChildrenSelectorIndexer:
             "parentId" => IndexConstants.FieldNames.ParentId,
             // DescendantsSelectorIndexer:
-            // TODO: this is somewhat wrong... PathIds equals ancestors-or-self, but the Delivery API queryes for ancestors only
+            // TODO: this is somewhat wrong... PathIds equals ancestors-or-self, but the Delivery API queries for ancestors only
             "ancestorIds" => IndexConstants.FieldNames.PathIds,
             // ContentTypeFilterIndexer:
             "contentType" => IndexConstants.FieldNames.ContentType,

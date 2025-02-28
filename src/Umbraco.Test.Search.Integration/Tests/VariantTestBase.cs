@@ -17,7 +17,7 @@ public abstract class VariantTestBase : TestBaseWithContent
         
         var contentType = new ContentTypeBuilder()
             .WithAlias("variant")
-            .WithContentVariation(ContentVariation.Culture)
+            .WithContentVariation(ContentVariation.CultureAndSegment)
             .AddPropertyType()
             .WithAlias("title")
             .WithVariations(ContentVariation.Culture)
@@ -30,6 +30,12 @@ public abstract class VariantTestBase : TestBaseWithContent
             .WithDataTypeId(-51)
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
             .Done()
+            .AddPropertyType()
+            .WithAlias("message")
+            .WithVariations(ContentVariation.CultureAndSegment)
+            .WithDataTypeId(Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .Done()
             .Build();
         ContentTypeService.Save(contentType);
         contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Id, 0)];
@@ -41,8 +47,8 @@ public abstract class VariantTestBase : TestBaseWithContent
             .WithCultureName("en-US", "Root EN")
             .WithCultureName("da-DK", "Root DA")
             .Build();
-        root.SetValue("title", "The root title in English", "en-US");
-        root.SetValue("title", "The root title in Danish", "da-DK");
+        SetTitle(root, "The root title");
+        SetMessage(root, "The root message");
         root.SetValue("count", 12);
         ContentService.Save(root);
 
@@ -53,8 +59,8 @@ public abstract class VariantTestBase : TestBaseWithContent
             .WithCultureName("da-DK", "Child DA")
             .WithParent(root)
             .Build();
-        child.SetValue("title", "The child title in English", "en-US");
-        child.SetValue("title", "The child title in Danish", "da-DK");
+        SetTitle(child, "The child title");
+        SetMessage(child, "The child message");
         child.SetValue("count", 34);
         ContentService.Save(child);
 
@@ -65,8 +71,8 @@ public abstract class VariantTestBase : TestBaseWithContent
             .WithCultureName("da-DK", "Grandchild DA")
             .WithParent(child)
             .Build();
-        grandchild.SetValue("title", "The grandchild title in English", "en-US");
-        grandchild.SetValue("title", "The grandchild title in Danish", "da-DK");
+        SetTitle(grandchild, "The grandchild title");
+        SetMessage(grandchild, "The grandchild message");
         grandchild.SetValue("count", 56);
         ContentService.Save(grandchild);
 
@@ -77,11 +83,27 @@ public abstract class VariantTestBase : TestBaseWithContent
             .WithCultureName("da-DK", "Great Grandchild DA")
             .WithParent(grandchild)
             .Build();
-        greatGrandchild.SetValue("title", "The great grandchild title in English", "en-US");
-        greatGrandchild.SetValue("title", "The great grandchild title in Danish", "da-DK");
+        SetTitle(greatGrandchild, "The great grandchild title");
+        SetMessage(greatGrandchild, "The great grandchild message");
         greatGrandchild.SetValue("count", 78);
         ContentService.Save(greatGrandchild);
 
         IndexService.Reset();
+    }
+
+    private void SetTitle(IContent content, string title)
+    {
+        content.SetValue("title", $"{title} in English", "en-US");
+        content.SetValue("title", $"{title} in Danish", "da-DK");
+    }
+
+    private void SetMessage(IContent content, string message)
+    {
+        content.SetValue("message", $"{message} in English (default)", "en-US");
+        content.SetValue("message", $"{message} in English (segment-1)", "en-US", "segment-1");
+        content.SetValue("message", $"{message} in English (segment-2)", "en-US", "segment-2");
+        content.SetValue("message", $"{message} in Danish (default)", "da-DK");
+        content.SetValue("message", $"{message} in Danish (segment-1)", "da-DK", "segment-1");
+        content.SetValue("message", $"{message} in Danish (segment-2)", "da-DK", "segment-2");
     }
 }
