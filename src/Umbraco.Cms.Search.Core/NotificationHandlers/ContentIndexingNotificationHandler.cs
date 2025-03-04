@@ -2,22 +2,21 @@
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Scoping;
-using Umbraco.Cms.Core.Sync;
+using Umbraco.Cms.Core.Services.Changes;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
+using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.NotificationHandlers;
 
-internal sealed class ContentIndexingNotificationHandler : INotificationAsyncHandler<ContentCacheRefresherNotification>
+// TODO: add notification handler for content type changes
+internal sealed class ContentIndexingNotificationHandler : IndexingNotificationHandlerBase, INotificationAsyncHandler<ContentCacheRefresherNotification>
 {
-    private readonly ICoreScopeProvider _coreScopeProvider;
     private readonly IContentIndexingService _contentIndexingService;
 
     public ContentIndexingNotificationHandler(ICoreScopeProvider coreScopeProvider, IContentIndexingService contentIndexingService)
-    {
-        _coreScopeProvider = coreScopeProvider;
-        _contentIndexingService = contentIndexingService;
-    }
+        : base(coreScopeProvider)
+        => _contentIndexingService = contentIndexingService;
 
     // TODO: add the ability to populate different indexes at the same time - e.g. update both published and draft document indexes in one go
     public Task HandleAsync(ContentCacheRefresherNotification notification, CancellationToken cancellationToken)
@@ -29,34 +28,18 @@ internal sealed class ContentIndexingNotificationHandler : INotificationAsyncHan
         }
 
         var changes = payloads
-            .Select(payload => new ContentChange(payload.Key!.Value, payload.ChangeTypes))
+            .Select(payload =>
+                payload.ChangeTypes.HasType(TreeChangeTypes.Remove)
+                    ? new ContentChange(payload.Key!.Value, ContentChangeType.Remove)
+                    : payload.ChangeTypes.HasType(TreeChangeTypes.RefreshNode) || payload.ChangeTypes.HasType(TreeChangeTypes.RefreshBranch)
+                        ? new ContentChange(payload.Key!.Value, ContentChangeType.Refresh)
+                        : null
+            )
+            .WhereNotNull()
             .ToList();
 
-        Execute(() => _contentIndexingService.Handle(changes));
+        ExecuteDeferred(() => _contentIndexingService.Handle(changes));
 
         return Task.CompletedTask;
-    }
-    
-    private T[] GetNotificationPayloads<T>(CacheRefresherNotification notification)
-    {
-        if (notification.MessageType != MessageType.RefreshByPayload || notification.MessageObject is not T[] payloads)
-        {
-            throw new NotSupportedException();
-        }
-
-        return payloads;
-    }
-
-    private void Execute(Action action)
-    {
-        var deferredActions = DeferredActions.Get(_coreScopeProvider);
-        if (deferredActions != null)
-        {
-            deferredActions.Add(action);
-        }
-        else
-        {
-            action.Invoke();
-        }
     }
 }

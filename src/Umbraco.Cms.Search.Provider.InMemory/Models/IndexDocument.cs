@@ -2,6 +2,6 @@
 
 namespace Umbraco.Cms.Search.Provider.InMemory.Models;
 
-internal record IndexDocument(Variation[] Variations, IndexField[] Fields)
+internal record IndexDocument(Variation[] Variations, IndexField[] Fields, ContentProtection? Protection)
 {
 }

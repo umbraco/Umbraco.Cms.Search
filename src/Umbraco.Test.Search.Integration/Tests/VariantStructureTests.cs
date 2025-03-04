@@ -1,5 +1,3 @@
-using Umbraco.Cms.Search.Core.Models.Indexing;
-using Umbraco.Cms.Core.Services.Changes;
 using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
@@ -7,11 +5,9 @@ namespace Umbraco.Test.Search.Integration.Tests;
 public class VariantStructureTests : VariantTestBase
 {
     [Test]
-    public async Task PublishedStructureInAllCultures_YieldsAllPublishedDocumentsInAllCultures()
+    public void PublishedStructureInAllCultures_YieldsAllPublishedDocumentsInAllCultures()
     {
         ContentService.SaveAndPublishBranch(Root(), true);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -35,11 +31,9 @@ public class VariantStructureTests : VariantTestBase
     
     [TestCase("en-US")]
     [TestCase("da-DK")]
-    public async Task PublishedStructureSingleCulture_YieldsAllPublishedDocumentsInOneCultures(string culture)
+    public void PublishedStructureSingleCulture_YieldsAllPublishedDocumentsInOneCultures(string culture)
     {
         ContentService.SaveAndPublishBranch(Root(), true, culture);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -62,11 +56,9 @@ public class VariantStructureTests : VariantTestBase
     }
 
     [Test]
-    public async Task PublishedRootInAllCultures_YieldsOnlyRootDocumentInAllCultures()
+    public void PublishedRootInAllCultures_YieldsOnlyRootDocumentInAllCultures()
     {
         ContentService.SaveAndPublish(Root());
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(1));
@@ -75,17 +67,13 @@ public class VariantStructureTests : VariantTestBase
     }
 
     [Test]
-    public async Task PublishedStructureInAllCultures_WithUnpublishedRoot_YieldsNoDocuments()
+    public void PublishedStructureInAllCultures_WithUnpublishedRoot_YieldsNoDocuments()
     {
         ContentService.SaveAndPublishBranch(Root(), true);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
         
         var result = ContentService.Unpublish(Root());
         Assert.That(result.Success, Is.True);
         Assert.That(Child().Published, Is.True);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Is.Empty);
@@ -93,11 +81,9 @@ public class VariantStructureTests : VariantTestBase
 
     [TestCase("en-US", "da-DK")]
     [TestCase("da-DK", "en-US")]
-    public async Task PublishedStructureInAllCultures_WithUnpublishedRootInSingleCulture_YieldsAllDocumentInPublishedRootCulture(string cultureToUnpublish, string expectedCulture)
+    public void PublishedStructureInAllCultures_WithUnpublishedRootInSingleCulture_YieldsAllDocumentInPublishedRootCulture(string cultureToUnpublish, string expectedCulture)
     {
         ContentService.SaveAndPublishBranch(Root(), true);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
         
         var result = ContentService.Unpublish(Root(), cultureToUnpublish);
         Assert.That(result.Success, Is.True);
@@ -111,8 +97,6 @@ public class VariantStructureTests : VariantTestBase
                 Is.EquivalentTo(new [] { expectedCulture.ToLowerInvariant() })
             );
         });
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -135,18 +119,14 @@ public class VariantStructureTests : VariantTestBase
     }
     
     [Test]
-    public async Task PublishedStructureInAllCultures_WithUnpublishedGrandchildInAllCultures_YieldsNothingBelowChild()
+    public void PublishedStructureInAllCultures_WithUnpublishedGrandchildInAllCultures_YieldsNothingBelowChild()
     {
         ContentService.SaveAndPublishBranch(Root(), true);
-    
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
         
         var result = ContentService.Unpublish(Grandchild());
         Assert.That(result.Success, Is.True);
         Assert.That(GreatGrandchild().Published, Is.True);
-    
-        await HandleContentChangeAsync(new ContentChange(GrandchildKey, TreeChangeTypes.RefreshNode));
-           
+
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(2));
            
@@ -165,11 +145,9 @@ public class VariantStructureTests : VariantTestBase
     
     [TestCase("en-US", "da-DK")]
     [TestCase("da-DK", "en-US")]
-    public async Task PublishedStructureInAllCultures_WithUnpublishedGrandchildInSingleCulture_YieldsSingleCultureBelowChild(string cultureToUnpublish, string expectedCulture)
+    public void PublishedStructureInAllCultures_WithUnpublishedGrandchildInSingleCulture_YieldsSingleCultureBelowChild(string cultureToUnpublish, string expectedCulture)
     {
         ContentService.SaveAndPublishBranch(Root(), true);
-    
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
         
         var result = ContentService.Unpublish(Grandchild(), cultureToUnpublish);
         Assert.That(result.Success, Is.True);
@@ -186,9 +164,7 @@ public class VariantStructureTests : VariantTestBase
         });
 
         Assert.That(GreatGrandchild().Published, Is.True);
-    
-        await HandleContentChangeAsync(new ContentChange(GrandchildKey, TreeChangeTypes.RefreshNode));
-           
+
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(4));
  

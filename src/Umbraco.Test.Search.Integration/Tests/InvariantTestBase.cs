@@ -8,7 +8,7 @@ namespace Umbraco.Test.Search.Integration.Tests;
 public abstract class InvariantTestBase : TestBaseWithContent
 {
     [SetUp]
-    public void SetupTest()
+    public virtual void SetupTest()
     {
         var contentType = new ContentTypeBuilder()
             .WithAlias("invariant")

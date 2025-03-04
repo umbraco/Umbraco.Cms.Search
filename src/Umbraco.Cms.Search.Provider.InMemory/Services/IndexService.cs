@@ -12,14 +12,15 @@ internal sealed class IndexService : IIndexService
     public IndexService(DataStore index)
         => _index = index;
 
-    public Task AddOrUpdateAsync(Guid key, string stamp, IEnumerable<Variation> variations, IEnumerable<IndexField> fields)
+    public Task AddOrUpdateAsync(Guid key, string stamp, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)
     {
         Remove(key);
         _index[key] = new IndexDocument(
             variations.ToArray(),
             fields
                 .Union([new IndexField("Umb_DocumentStamp", new IndexValue { Keywords = [stamp] }, null, null)])
-                .ToArray()
+                .ToArray(),
+            protection
         );
         return Task.CompletedTask;
     }

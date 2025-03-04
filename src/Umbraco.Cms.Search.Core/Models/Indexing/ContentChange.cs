@@ -1,7 +1,5 @@
-﻿using Umbraco.Cms.Core.Services.Changes;
+﻿namespace Umbraco.Cms.Search.Core.Models.Indexing;
 
-namespace Umbraco.Cms.Search.Core.Models.Indexing;
-
-public record ContentChange(Guid Id, TreeChangeTypes ChangeTypes)
+public record ContentChange(Guid Key, ContentChangeType ChangeType)
 {
 }

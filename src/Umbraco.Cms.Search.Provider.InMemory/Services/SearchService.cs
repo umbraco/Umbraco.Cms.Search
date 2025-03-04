@@ -17,7 +17,7 @@ internal sealed class SearchService : ISearchService
     public SearchService(DataStore index)
         => _index = index;
 
-    public Task<SearchResult> SearchAsync(string? query, IEnumerable<Filter>? filters, IEnumerable<Facet>? facets, IEnumerable<Sorter>? sorters, string? culture, string? segment, int skip, int take)
+    public Task<SearchResult> SearchAsync(string? query, IEnumerable<Filter>? filters, IEnumerable<Facet>? facets, IEnumerable<Sorter>? sorters, string? culture, string? segment, AccessContext? accessContext, int skip, int take)
     {
         var result = _index.Where(kvp => kvp
             .Value
@@ -28,6 +28,13 @@ internal sealed class SearchService : ISearchService
             )
         );
 
+        var accessKeys = accessContext?.PrincipalKey.Yield().Union(accessContext.GroupKeys ?? []).ToArray();
+        result = result.Where(kvp =>
+            kvp.Value.Protection is null
+            || (accessKeys is not null && kvp.Value.Protection.AccessKeys.ContainsAny(accessKeys)
+            )
+        );
+        
         if (query.IsNullOrWhiteSpace() is false)
         {
             result = result.Where(kvp => kvp

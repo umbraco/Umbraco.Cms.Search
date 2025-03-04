@@ -2,6 +2,6 @@ using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 
 namespace Umbraco.Cms.Search.Core.Models.Searching;
 
-public record SearchResult(long Total, IEnumerable<Guid> Ids, IEnumerable<FacetResult> Facets)
+public record SearchResult(long Total, IEnumerable<Guid> Keys, IEnumerable<FacetResult> Facets)
 {
 }

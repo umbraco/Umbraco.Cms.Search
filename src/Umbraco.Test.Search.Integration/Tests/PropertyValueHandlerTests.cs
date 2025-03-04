@@ -1,8 +1,6 @@
-﻿using Umbraco.Cms.Search.Core.Models.Indexing;
-using Umbraco.Cms.Core;
+﻿using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
-using Umbraco.Cms.Core.Services.Changes;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
@@ -11,7 +9,7 @@ namespace Umbraco.Test.Search.Integration.Tests;
 public class PropertyValueHandlerTests : TestBase
 {
     [Test]
-    public async Task AllSupportedEditors_CanBeIndexed()
+    public void AllSupportedEditors_CanBeIndexed()
     {
         var content = new ContentBuilder()
             .WithContentType(GetContentType())
@@ -29,7 +27,6 @@ public class PropertyValueHandlerTests : TestBase
             .Build();
 
         ContentService.SaveAndPublish(content);
-        await HandleContentChangeAsync(new ContentChange(content.Key, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(1));

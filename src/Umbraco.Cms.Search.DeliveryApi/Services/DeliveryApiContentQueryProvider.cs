@@ -10,6 +10,7 @@ using Umbraco.Cms.Core.DeliveryApi;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.DeliveryApi;
 using Umbraco.Cms.Search.Core;
+using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.DeliveryApi.Services;
@@ -86,13 +87,15 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
             )
             .WhereNotNull()
             .ToArray();
-        
+
+        // TODO: support access context here
+        AccessContext? accessContext = null;
         var result = _searchService
-            .SearchAsync(null, filters, null, sorters, culture, null, skip, take)
+            .SearchAsync(null, filters, null, sorters, culture, null, accessContext, skip, take)
             .GetAwaiter()
             .GetResult();
 
-        return new PagedModel<Guid>(result.Total, result.Ids);
+        return new PagedModel<Guid>(result.Total, result.Keys);
     }
 
     public SelectorOption AllContentSelectorOption()

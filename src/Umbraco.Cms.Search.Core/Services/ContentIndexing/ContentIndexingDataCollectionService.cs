@@ -10,9 +10,7 @@ public sealed class ContentIndexingDataCollectionService : IContentIndexingDataC
     private readonly ISet<IContentIndexer> _contentIndexers;
     private readonly ILogger<ContentIndexingDataCollectionService> _logger;
 
-    public ContentIndexingDataCollectionService(
-        IEnumerable<IContentIndexer> contentIndexers,
-        ILogger<ContentIndexingDataCollectionService> logger)
+    public ContentIndexingDataCollectionService(IEnumerable<IContentIndexer> contentIndexers, ILogger<ContentIndexingDataCollectionService> logger)
     {
         _contentIndexers = contentIndexers.ToHashSet();
         _logger = logger;

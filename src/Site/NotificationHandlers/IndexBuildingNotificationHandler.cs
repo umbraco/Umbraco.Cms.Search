@@ -3,7 +3,6 @@ using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
-using Umbraco.Cms.Core.Services.Changes;
 
 namespace Site.NotificationHandlers;
 
@@ -22,7 +21,7 @@ public class IndexBuildingNotificationHandler : INotificationHandler<UmbracoAppl
     {
         var rootContent = _contentService.GetRootContent();
         var changes = rootContent
-            .Select(c => new ContentChange(c.Key, TreeChangeTypes.RefreshBranch))
+            .Select(c => new ContentChange(c.Key, ContentChangeType.RefreshWithDescendants))
             .ToArray();
 
         if (changes.Length is 0)

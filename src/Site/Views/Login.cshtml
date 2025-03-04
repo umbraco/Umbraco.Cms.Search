@@ -1,0 +1,41 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Umbraco.Cms.Web.Common.Models
+@using Umbraco.Cms.Web.Website.Controllers
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = null;
+    var redirectUrl = Context.Request.Query["ReturnUrl"].ToString();
+    if (redirectUrl.IsNullOrWhiteSpace())
+    {
+        redirectUrl = "/search";
+    }
+    var loginModel = new LoginModel
+    {
+        // important: we must set the redirect URL from the query string
+        RedirectUrl = redirectUrl
+    };
+}
+<html lang="en">
+<head>
+    <title>Login page</title>
+</head>
+<body>
+@using (Html.BeginUmbracoForm<UmbLoginController>("HandleLogin", new { RedirectUrl = loginModel.RedirectUrl }))
+{
+    <h4>Log in with a local account.</h4>
+    <hr />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div>
+        <label asp-for="@loginModel.Username"></label>
+        <input asp-for="@loginModel.Username" required value="test@local" />
+        <span asp-validation-for="@loginModel.Username"></span>
+    </div>
+    <div>
+        <label asp-for="@loginModel.Password"></label>
+        <input asp-for="@loginModel.Password" required value="1234567890" />
+        <span asp-validation-for="@loginModel.Password"></span>
+    </div>
+    <button type="submit" class="btn btn-primary">Log in</button>
+}
+</body>
+</html>

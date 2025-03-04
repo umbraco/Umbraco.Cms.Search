@@ -1,5 +1,7 @@
 ﻿using System.Globalization;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Umbraco.Cms.Search.Core;
@@ -10,9 +12,10 @@ using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
 using Umbraco.Cms.Search.Core.Services;
 using Site.ViewModels;
 using Umbraco.Cms.Core;
-using Umbraco.Cms.Core.Models.PublishedContent;
+using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Web;
+using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Web.Common.Controllers;
 
 namespace Site.Controllers;
@@ -21,17 +24,23 @@ public class SearchController : RenderController
 {
     private readonly ISearchService _searchService;
     private readonly IDateTimeOffsetConverter _dateTimeOffsetConverter;
+    private readonly IMemberManager _memberManager;
+    private readonly IMemberService _memberService;
 
     public SearchController(
         ILogger<RenderController> logger,
         ICompositeViewEngine compositeViewEngine,
         IUmbracoContextAccessor umbracoContextAccessor,
         ISearchService searchService,
-        IDateTimeOffsetConverter dateTimeOffsetConverter)
+        IDateTimeOffsetConverter dateTimeOffsetConverter,
+        IMemberManager memberManager,
+        IMemberService memberService)
         : base(logger, compositeViewEngine, umbracoContextAccessor)
     {
         _searchService = searchService;
         _dateTimeOffsetConverter = dateTimeOffsetConverter;
+        _memberManager = memberManager;
+        _memberService = memberService;
     }
 
     [NonAction]
@@ -67,14 +76,16 @@ public class SearchController : RenderController
                         ? [new KeywordSorter(sortBy, direction)] 
                         : [new StringSorter(sortBy, direction)];
 
-        var result = await _searchService.SearchAsync(query, filterValues, facetValues, sorters, culture, segment, 0, 100);
+        var accessContext = await CurrentMemberAccessContext();
+        
+        var result = await _searchService.SearchAsync(query, filterValues, facetValues, sorters, culture, segment, accessContext, 0, 100);
         
         return CurrentTemplate(
             new SearchViewModel
             {
                 Total = result.Total,
                 Facets = result.Facets.ToArray(),
-                Documents = result.Ids.Select(id => UmbracoContext.Content!.GetById(id)!).ToArray()
+                Documents = result.Keys.Select(key => UmbracoContext.Content!.GetById(key)!).ToArray()
             }
         );
     }
@@ -163,5 +174,30 @@ public class SearchController : RenderController
         }
 
         return new KeywordFilter(fieldName, values, false);
+    }
+
+    private async Task<AccessContext?> CurrentMemberAccessContext()
+    {
+        var authenticateResult = await HttpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
+        if (authenticateResult.Succeeded is false)
+        {
+            return null;
+        }
+
+        var member = await _memberManager.GetUserAsync(authenticateResult.Principal);
+        if (member?.UserName is null)
+        {
+            return null;
+        }
+        
+        var memberRoles = _memberService.GetAllRoles(member.UserName).ToArray();
+        var memberGroupKeys =
+            _memberService
+                .GetAllRoles()
+                .Where(group => memberRoles.InvariantContains(group.Name ?? string.Empty))
+                .Select(group => group.Key)
+                .ToArray();
+
+        return new AccessContext(member.Key, memberGroupKeys);
     }
 }

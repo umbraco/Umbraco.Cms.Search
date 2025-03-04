@@ -1,8 +1,6 @@
 ﻿using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Helpers;
-using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Core.Models;
-using Umbraco.Cms.Core.Services.Changes;
 using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
@@ -10,11 +8,9 @@ namespace Umbraco.Test.Search.Integration.Tests;
 public class VariantContentTests : VariantTestBase
 {
     [Test]
-    public async Task PublishedStructure_YieldsAllPublishedDocuments()
+    public void PublishedStructure_YieldsAllPublishedDocuments()
     {
         ContentService.SaveAndPublishBranch(Root(), true);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -37,11 +33,9 @@ public class VariantContentTests : VariantTestBase
     }
     
     [Test]
-    public async Task PublishedStructure_CanRefreshChild_InSingleCulture()
+    public void PublishedStructure_CanRefreshChild_InSingleCulture()
     {
         ContentService.SaveAndPublishBranch(Root(), true);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
         
         var child = Child();
         child.SetValue("title", "The updated child title in English", "en-US");
@@ -49,8 +43,6 @@ public class VariantContentTests : VariantTestBase
         child.SetValue("message", "The updated child message in English (segment-1)", "en-US", "segment-1");
         child.SetValue("message", "The updated child message in English (segment-2)", "en-US", "segment-2");
         ContentService.SaveAndPublish(child);
-
-        await HandleContentChangeAsync(new ContentChange(ChildKey, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -64,18 +56,14 @@ public class VariantContentTests : VariantTestBase
     }
     
     [Test]
-    public async Task PublishedStructure_CanRefreshChild_InMultipleCultures()
+    public void PublishedStructure_CanRefreshChild_InMultipleCultures()
     {
         ContentService.SaveAndPublishBranch(Root(), true);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
         
         var child = Child();
         child.SetValue("title", "The updated child title in English", "en-US");
         child.SetValue("title", "The updated child title in Danish", "da-DK");
         ContentService.SaveAndPublish(child);
-
-        await HandleContentChangeAsync(new ContentChange(ChildKey, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -84,17 +72,13 @@ public class VariantContentTests : VariantTestBase
     }
 
     [Test]
-    public async Task PublishedStructure_CanRefreshChild_InvariantCulture()
+    public void PublishedStructure_CanRefreshChild_InvariantCulture()
     {
         ContentService.SaveAndPublishBranch(Root(), true);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
         
         var child = Child();
         child.SetValue("count", 123456);
         ContentService.SaveAndPublish(child);
-
-        await HandleContentChangeAsync(new ContentChange(ChildKey, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -103,11 +87,9 @@ public class VariantContentTests : VariantTestBase
     }
 
     [Test]
-    public async Task PublishedStructure_YieldsSystemFields()
+    public void PublishedStructure_YieldsSystemFields()
     {
         ContentService.SaveAndPublishBranch(Root(), true);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(4));

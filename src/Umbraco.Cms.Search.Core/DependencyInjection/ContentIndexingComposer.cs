@@ -9,6 +9,8 @@ using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing.Indexers;
 
+using PublicAccessCacheRefresherNotification = Umbraco.Cms.Search.Core.Cache.PublicAccessCacheRefresherNotification;
+
 namespace Umbraco.Cms.Search.Core.DependencyInjection;
 
 public sealed class ContentIndexingComposer : IComposer
@@ -22,8 +24,11 @@ public sealed class ContentIndexingComposer : IComposer
         builder.Services.AddTransient<IContentIndexer, PropertyValueFieldsContentIndexer>();
 
         builder.Services.AddTransient<IDateTimeOffsetConverter, DateTimeOffsetConverter>();
+        builder.Services.AddTransient<IContentProtectionProvider, ContentProtectionProvider>();
 
-        builder.AddNotificationAsyncHandler<ContentCacheRefresherNotification, ContentIndexingNotificationHandler>();
+        builder
+            .AddNotificationAsyncHandler<ContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
+            .AddNotificationAsyncHandler<PublicAccessCacheRefresherNotification, PublicAccessIndexingNotificationHandler>();
 
         builder
             .WithCollectionBuilder<PropertyValueHandlerCollectionBuilder>()

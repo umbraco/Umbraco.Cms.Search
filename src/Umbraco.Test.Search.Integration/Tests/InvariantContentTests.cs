@@ -1,8 +1,6 @@
 ﻿using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Helpers;
-using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Core.Models;
-using Umbraco.Cms.Core.Services.Changes;
 using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
@@ -10,11 +8,9 @@ namespace Umbraco.Test.Search.Integration.Tests;
 public class InvariantContentTests : InvariantTestBase
 {
     [Test]
-    public async Task PublishedStructure_YieldsAllPublishedDocuments()
+    public void PublishedStructure_YieldsAllPublishedDocuments()
     {
         ContentService.SaveAndPublishBranch(Root(), true);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -37,18 +33,14 @@ public class InvariantContentTests : InvariantTestBase
     }
 
     [Test]
-    public async Task PublishedStructure_CanRefreshChild()
+    public void PublishedStructure_CanRefreshChild()
     {
         ContentService.SaveAndPublishBranch(Root(), true);
 
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
-        
         var child = Child();
         child.SetValue("title", "The updated child title");
         child.SetValue("count", 123456);
         ContentService.SaveAndPublish(child);
-
-        await HandleContentChangeAsync(new ContentChange(ChildKey, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -65,11 +57,9 @@ public class InvariantContentTests : InvariantTestBase
     }
 
     [Test]
-    public async Task PublishedStructure_YieldsStructuralFields()
+    public void PublishedStructure_YieldsStructuralFields()
     {
         ContentService.SaveAndPublishBranch(Root(), true);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -92,11 +82,9 @@ public class InvariantContentTests : InvariantTestBase
     }
 
     [Test]
-    public async Task PublishedStructure_YieldsSystemFields()
+    public void PublishedStructure_YieldsSystemFields()
     {
         ContentService.SaveAndPublishBranch(Root(), true);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -119,18 +107,14 @@ public class InvariantContentTests : InvariantTestBase
     }
 
     [Test]
-    public async Task PublishedStructure_CanUpdateEditableSystemFields()
+    public void PublishedStructure_CanUpdateEditableSystemFields()
     {
         ContentService.SaveAndPublishBranch(Root(), true);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
         
         var child = Child();
         child.Name = "The updated child name";
         child.SetValue("tags", "[\"updated-tag1\",\"updated-tag2\",\"updated-tag3\"]");
         ContentService.SaveAndPublish(child);
-
-        await HandleContentChangeAsync(new ContentChange(ChildKey, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -149,19 +133,19 @@ public class InvariantContentTests : InvariantTestBase
             Assert.That(countValue, Is.EqualTo(count));
         });
 
-    private void VerifyDocumentStructureValues(TestIndexDocument document, Guid id, Guid parentId, params Guid[] pathIds)
+    private void VerifyDocumentStructureValues(TestIndexDocument document, Guid key, Guid parentKey, params Guid[] pathKeys)
         => Assert.Multiple(() =>
         {
             var idValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.Id)?.Value.Keywords?.SingleOrDefault();
-            Assert.That(idValue, Is.EqualTo(id.ToString("D")));
+            Assert.That(idValue, Is.EqualTo(key.ToString("D")));
             
             var parentIdValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.ParentId)?.Value.Keywords?.SingleOrDefault();
-            Assert.That(parentIdValue, Is.EqualTo(parentId.ToString("D")));
+            Assert.That(parentIdValue, Is.EqualTo(parentKey.ToString("D")));
 
             var pathIdsValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.PathIds)?.Value.Keywords?.ToArray();
             Assert.That(pathIdsValue, Is.Not.Null);
-            Assert.That(pathIdsValue.Length, Is.EqualTo(pathIds.Length));
-            Assert.That(pathIdsValue, Is.EquivalentTo(pathIds.Select(ancestorId => ancestorId.ToString("D"))));
+            Assert.That(pathIdsValue.Length, Is.EqualTo(pathKeys.Length));
+            Assert.That(pathIdsValue, Is.EquivalentTo(pathKeys.Select(ancestorId => ancestorId.ToString("D"))));
         });
 
     private void VerifyDocumentSystemValues(TestIndexDocument document, IContent content, params string[] tags)
@@ -189,6 +173,8 @@ public class InvariantContentTests : InvariantTestBase
 
             var tagsValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.Tags)?.Value.Keywords;
             Assert.That(tagsValue, Is.EquivalentTo(tags));
+
+            Assert.That(document.Protection, Is.Null);
         });
     }
 }

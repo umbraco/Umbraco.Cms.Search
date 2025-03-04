@@ -1,5 +1,3 @@
-using Umbraco.Cms.Search.Core.Models.Indexing;
-using Umbraco.Cms.Core.Services.Changes;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Umbraco.Test.Search.Integration.Tests;
@@ -9,11 +7,9 @@ namespace Umbraco.Test.Search.Integration.Tests;
 public class InvariantStructureTests : InvariantTestBase
 {
     [Test]
-    public async Task PublishedStructure_YieldsAllPublishedDocuments()
+    public void PublishedStructure_YieldsAllPublishedDocuments()
     {
         ContentService.SaveAndPublishBranch(Root(), true);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -28,11 +24,9 @@ public class InvariantStructureTests : InvariantTestBase
     }
     
     [Test]
-    public async Task PublishedRoot_YieldsOnlyRootDocument()
+    public void PublishedRoot_YieldsOnlyRootDocument()
     {
         ContentService.SaveAndPublish(Root());
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(1));
@@ -40,34 +34,26 @@ public class InvariantStructureTests : InvariantTestBase
     }
 
     [Test]
-    public async Task PublishedStructure_WithUnpublishedRoot_YieldsNoDocuments()
+    public void PublishedStructure_WithUnpublishedRoot_YieldsNoDocuments()
     {
         ContentService.SaveAndPublishBranch(Root(), true);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
         
         var result = ContentService.Unpublish(Root());
         Assert.That(result.Success, Is.True);
         Assert.That(Child().Published, Is.True);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
 
         var documents = IndexService.Dump();
         Assert.That(documents, Is.Empty);
     }
 
     [Test]
-    public async Task PublishedStructure_WithUnpublishedGrandchild_YieldsNothingBelowChild()
+    public void PublishedStructure_WithUnpublishedGrandchild_YieldsNothingBelowChild()
     {
         ContentService.SaveAndPublishBranch(Root(), true);
 
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
-        
         var result = ContentService.Unpublish(Grandchild());
         Assert.That(result.Success, Is.True);
         Assert.That(GreatGrandchild().Published, Is.True);
-
-        await HandleContentChangeAsync(new ContentChange(GrandchildKey, TreeChangeTypes.RefreshNode));
            
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(2));
@@ -80,17 +66,13 @@ public class InvariantStructureTests : InvariantTestBase
     }
 
     [Test]
-    public async Task PublishedStructure_WithGrandchildInRecycleBin_YieldsNothingBelowChild()
+    public void PublishedStructure_WithGrandchildInRecycleBin_YieldsNothingBelowChild()
     {
         ContentService.SaveAndPublishBranch(Root(), true);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
         
         var result = ContentService.MoveToRecycleBin(Grandchild());
         Assert.That(result.Success, Is.True);
         Assert.That(GreatGrandchild().Trashed, Is.True);
-
-        await HandleContentChangeAsync(new ContentChange(GrandchildKey, TreeChangeTypes.RefreshNode));
            
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(2));
@@ -103,11 +85,9 @@ public class InvariantStructureTests : InvariantTestBase
     }
 
     [Test]
-    public async Task PublishedStructure_WithGrandchildDeleted_YieldsNothingBelowChild()
+    public void PublishedStructure_WithGrandchildDeleted_YieldsNothingBelowChild()
     {
         ContentService.SaveAndPublishBranch(Root(), true);
-
-        await HandleContentChangeAsync(new ContentChange(RootKey, TreeChangeTypes.RefreshNode));
         
         var result = ContentService.Delete(Grandchild());
         Assert.Multiple(() =>
@@ -115,8 +95,6 @@ public class InvariantStructureTests : InvariantTestBase
             Assert.That(result.Success, Is.True);
             Assert.That(ContentService.GetById(GreatGrandchildKey), Is.Null);
         });
-
-        await HandleContentChangeAsync(new ContentChange(GrandchildKey, TreeChangeTypes.Remove));
            
         var documents = IndexService.Dump();
         Assert.That(documents, Has.Count.EqualTo(2));

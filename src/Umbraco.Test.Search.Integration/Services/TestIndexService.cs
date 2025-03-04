@@ -8,9 +8,9 @@ public class TestIndexService : IIndexService
 {
     private readonly Dictionary<Guid, TestIndexDocument> _documents = new();
         
-    public Task AddOrUpdateAsync(Guid key, string stamp, IEnumerable<Variation> variations, IEnumerable<IndexField> fields)
+    public Task AddOrUpdateAsync(Guid key, string stamp, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)
     {
-        _documents[key] = new (key, stamp, variations, fields);
+        _documents[key] = new (key, stamp, variations, fields, protection);
         return Task.CompletedTask;
     }
 
