@@ -9,6 +9,7 @@ using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.DeliveryApi;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.DeliveryApi;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Extensions;
@@ -19,18 +20,24 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
 {
     private readonly ISearchService _searchService;
     private readonly IDateTimeOffsetConverter _dateTimeOffsetConverter;
+    private readonly IRequestMemberAccessService _requestMemberAccessService;
+    private readonly IMemberService _memberService;
     private readonly ILogger<DeliveryApiContentQueryProvider> _logger;
     private readonly Dictionary<string, FieldType> _fieldTypes;
 
     public DeliveryApiContentQueryProvider(
         ISearchService searchService,
         ContentIndexHandlerCollection contentIndexHandlerCollection,
+        IRequestMemberAccessService requestMemberAccessService,
+        IMemberService memberService,
         IDateTimeOffsetConverter dateTimeOffsetConverter,
         ILogger<DeliveryApiContentQueryProvider> logger)
     {
         _searchService = searchService;
         _dateTimeOffsetConverter = dateTimeOffsetConverter;
         _logger = logger;
+        _memberService = memberService;
+        _requestMemberAccessService = requestMemberAccessService;
 
         // build a look-up dictionary of field types by field name
         _fieldTypes = contentIndexHandlerCollection
@@ -88,8 +95,11 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
             .WhereNotNull()
             .ToArray();
 
-        // TODO: support access context here
-        AccessContext? accessContext = null;
+        sorters = sorters.Length is 0
+            ? null
+            : sorters;
+
+        var accessContext = GetAccessContextAsync().GetAwaiter().GetResult();
         var result = _searchService
             .SearchAsync(null, filters, null, sorters, culture, null, accessContext, skip, take)
             .GetAwaiter()
@@ -244,4 +254,23 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
             "sortOrder" => IndexConstants.FieldNames.SortOrder,
             _ => fieldName
         };
+
+    private async Task<AccessContext?> GetAccessContextAsync()
+    {
+        var memberAccess = await _requestMemberAccessService.MemberAccessAsync();
+        if (memberAccess.MemberKey.HasValue is false)
+        {
+            return null;
+        }
+        
+        var memberGroupKeys = memberAccess.MemberRoles is { Length: > 0 }
+            ? _memberService
+                .GetAllRoles()
+                .Where(group => memberAccess.MemberRoles!.InvariantContains(group.Name ?? string.Empty))
+                .Select(group => group.Key)
+                .ToArray()
+            : null;
+
+        return new AccessContext(memberAccess.MemberKey.Value, memberGroupKeys);
+    }
 }

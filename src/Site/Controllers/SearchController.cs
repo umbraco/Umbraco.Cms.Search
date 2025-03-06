@@ -191,12 +191,13 @@ public class SearchController : RenderController
         }
         
         var memberRoles = _memberService.GetAllRoles(member.UserName).ToArray();
-        var memberGroupKeys =
-            _memberService
+        var memberGroupKeys = memberRoles.Length > 0
+            ? _memberService
                 .GetAllRoles()
                 .Where(group => memberRoles.InvariantContains(group.Name ?? string.Empty))
                 .Select(group => group.Key)
-                .ToArray();
+                .ToArray()
+            : null;
 
         return new AccessContext(member.Key, memberGroupKeys);
     }
