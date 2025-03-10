@@ -10,14 +10,24 @@ using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Provider.InMemory.Services;
 
-internal sealed class SearchService : ISearchService
+internal sealed class InMemorySearchService : ISearchService
 {
     private readonly DataStore _dataStore;
 
-    public SearchService(DataStore dataStore)
+    public InMemorySearchService(DataStore dataStore)
         => _dataStore = dataStore;
 
-    public Task<SearchResult> SearchAsync(string indexAlias, string? query, IEnumerable<Filter>? filters, IEnumerable<Facet>? facets, IEnumerable<Sorter>? sorters, string? culture, string? segment, AccessContext? accessContext, int skip, int take)
+    public Task<SearchResult> SearchAsync(
+        string indexAlias,
+        string? query,
+        IEnumerable<Filter>? filters,
+        IEnumerable<Facet>? facets,
+        IEnumerable<Sorter>? sorters,
+        string? culture,
+        string? segment,
+        AccessContext? accessContext,
+        int skip,
+        int take)
     {
         if (_dataStore.TryGetValue(indexAlias, out var index) is false)
         {

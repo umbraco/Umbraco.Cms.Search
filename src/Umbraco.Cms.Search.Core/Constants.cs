@@ -1,7 +1,16 @@
 ﻿namespace Umbraco.Cms.Search.Core;
 
-public static class IndexConstants
+public static class Constants
 {
+    public static class IndexAliases
+    {
+        private const string IndexPrefix = "Umb_"; 
+
+        public const string PublishedContent = $"{IndexPrefix}PublishedContent";
+
+        public const string DraftContent = $"{IndexPrefix}DraftContent";
+    }
+
     public static class FieldNames
     {
         private const string FieldPrefix = "Umb_"; 

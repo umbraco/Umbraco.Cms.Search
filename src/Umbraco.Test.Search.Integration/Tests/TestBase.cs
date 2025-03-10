@@ -1,12 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Core.Cache;
-using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Infrastructure.HostedServices;
 using Umbraco.Cms.Infrastructure.Sync;
 using Umbraco.Cms.Search.Core.Configuration;
+using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
@@ -34,17 +34,21 @@ public abstract class TestBase : UmbracoIntegrationTest
     {
         base.CustomTestSetup(builder);
 
-        builder.AddComposers();
-        builder.AddNotificationHandler<ContentTreeChangeNotification, ContentTreeChangeDistributedCacheNotificationHandler>();
-
+        builder.AddSearchCore();
+        
         builder.Services.AddUnique<IBackgroundTaskQueue, BackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
-        builder.Services.AddTransient<IIndexService>(_ => IndexService);
+
+        builder.Services.AddUnique<TestIndexService>(_ => IndexService);
+        builder.Services.AddUnique<IIndexService>(_ => IndexService);
 
         builder.Services.Configure<IndexOptions>(options =>
         {
-            options.RegisterIndex<TestIndexService, PublishedContentChangeStrategy>(IndexAliases.PublishedContent);
-            options.RegisterIndex<TestIndexService, DraftContentChangeStrategy>(IndexAliases.DraftContent);
+            // TODO: need to test both permutations of options - explicit and implicit
+            options.RegisterIndex<IIndexService, IPublishedContentChangeStrategy>(IndexAliases.PublishedContent);
+            options.RegisterIndex<IIndexService, IDraftContentChangeStrategy>(IndexAliases.DraftContent);
+            // options.RegisterIndex<TestIndexService, PublishedContentChangeStrategy>(IndexAliases.PublishedContent);
+            // options.RegisterIndex<TestIndexService, DraftContentChangeStrategy>(IndexAliases.DraftContent);
         });
     }
     

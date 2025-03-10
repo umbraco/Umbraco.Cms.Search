@@ -5,7 +5,7 @@ using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
-public class DraftContentChangeStrategy : IContentChangeStrategy
+public class DraftContentChangeStrategy : IDraftContentChangeStrategy
 {
     private readonly IContentIndexingDataCollectionService _contentIndexingDataCollectionService;
     private readonly IContentService _contentService;

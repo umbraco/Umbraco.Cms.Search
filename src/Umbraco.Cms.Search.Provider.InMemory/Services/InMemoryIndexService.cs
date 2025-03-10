@@ -5,11 +5,11 @@ using Umbraco.Cms.Search.Provider.InMemory.Models;
 
 namespace Umbraco.Cms.Search.Provider.InMemory.Services;
 
-internal sealed class IndexService : IIndexService
+internal sealed class InMemoryIndexService : IIndexService
 {
     private readonly DataStore _dataStore;
 
-    public IndexService(DataStore dataStore)
+    public InMemoryIndexService(DataStore dataStore)
         => _dataStore = dataStore;
 
     public Task AddOrUpdateAsync(string indexAlias, Guid key, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)
@@ -28,7 +28,7 @@ internal sealed class IndexService : IIndexService
         {
             Remove(indexAlias, key);
             var descendantKeys = GetIndex(indexAlias).Where(v =>
-                    v.Value.Fields.Any(f => f.FieldName == IndexConstants.FieldNames.PathIds && f.Value.Keywords?.Contains($"{key:D}") is true)
+                    v.Value.Fields.Any(f => f.FieldName == Constants.FieldNames.PathIds && f.Value.Keywords?.Contains($"{key:D}") is true)
                 )
                 .Select(pair => pair.Key);
             foreach (var descendantKey in descendantKeys)

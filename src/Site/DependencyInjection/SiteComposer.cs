@@ -5,6 +5,10 @@ using Site.NotificationHandlers;
 using Umbraco.Cms.Api.Delivery.Configuration;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Search.BackOffice.DependencyInjection;
+using Umbraco.Cms.Search.Core.DependencyInjection;
+using Umbraco.Cms.Search.DeliveryApi.DependencyInjection;
+using Umbraco.Cms.Search.Provider.InMemory.DependencyInjection;
 
 namespace Site.DependencyInjection;
 
@@ -19,6 +23,16 @@ public sealed class SiteComposer : IComposer
 
         builder.Services.ConfigureOptions<ConfigureCustomMemberLoginPath>();
         builder.Services.ConfigureOptions<ConfigureUmbracoMemberAuthenticationDeliveryApiSwaggerGenOptions>();
+
+        builder
+            // add core services for search abstractions
+            .AddSearchCore()
+            // add the in-memory search provider
+            .AddInMemorySearchProvider()
+            // use the search abstractions to perform backoffice search
+            .AddBackOfficeSearch()
+            // use the search abstractions to perform Delivery API queries
+            .AddDeliveryApiSearch();
     }
 
     private class ConfigureCustomMemberLoginPath : IConfigureNamedOptions<CookieAuthenticationOptions>
@@ -29,6 +43,7 @@ public sealed class SiteComposer : IComposer
             {
                 return;
             }
+
             Configure(options);
         }
 

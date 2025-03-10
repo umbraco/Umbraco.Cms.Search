@@ -1,5 +1,4 @@
-﻿using Umbraco.Cms.Core;
-using Umbraco.Cms.Core.Models;
+﻿using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Extensions;
 
@@ -9,7 +8,7 @@ public sealed class PlainStringPropertyValueHandler : IPropertyValueHandler
 {
     // TODO: include Umbraco.Plain.String in V15 
     public bool CanHandle(string propertyEditorAlias)
-        => propertyEditorAlias is Constants.PropertyEditors.Aliases.TextBox or Constants.PropertyEditors.Aliases.TextArea;
+        => propertyEditorAlias is Cms.Core.Constants.PropertyEditors.Aliases.TextBox or Cms.Core.Constants.PropertyEditors.Aliases.TextArea;
 
     public IndexValue? GetIndexValue(IContent content, IProperty property, string? culture, string? segment, bool published)
     {

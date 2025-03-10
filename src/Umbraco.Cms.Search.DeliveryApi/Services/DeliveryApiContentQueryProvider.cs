@@ -10,9 +10,9 @@ using Umbraco.Cms.Core.DeliveryApi;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.DeliveryApi;
 using Umbraco.Cms.Core.Services;
-using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Extensions;
+using Constants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Umbraco.Cms.Search.DeliveryApi.Services;
 
@@ -67,11 +67,6 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
         int skip,
         int take)
     {
-        if (preview)
-        {
-            throw new NotImplementedException("TODO: implement draft search");
-        }
-        
         var filters = new List<Filter>();
 
         if (selectorOption.Values.Length > 0 && TryCreateFilter(selectorOption.FieldName, FilterOperation.Is, selectorOption.Values, out var selectorOptionFilter))
@@ -100,8 +95,10 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
             : sorters;
 
         var accessContext = GetAccessContextAsync().GetAwaiter().GetResult();
+
+        var indexAlias = preview ? Constants.IndexAliases.DraftContent : Constants.IndexAliases.PublishedContent;
         var result = _searchService
-            .SearchAsync("TODO", null, filters, null, sorters, culture, null, accessContext, skip, take)
+            .SearchAsync(indexAlias, null, filters, null, sorters, culture, null, accessContext, skip, take)
             .GetAwaiter()
             .GetResult();
 
@@ -211,7 +208,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
 
         fieldName = MapSystemFieldName(fieldName);
 
-        if (fieldName is IndexConstants.FieldNames.Level or IndexConstants.FieldNames.SortOrder)
+        if (fieldName is Constants.FieldNames.Level or Constants.FieldNames.SortOrder)
         {
             sorter = new IntegerSorter(fieldName, direction);
             return true;
@@ -234,24 +231,24 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
         => fieldName switch
         {
             // AncestorsSelectorIndexer:
-            "itemId" => IndexConstants.FieldNames.Id,
+            "itemId" => Constants.FieldNames.Id,
             // ChildrenSelectorIndexer:
-            "parentId" => IndexConstants.FieldNames.ParentId,
+            "parentId" => Constants.FieldNames.ParentId,
             // DescendantsSelectorIndexer:
             // TODO: this is somewhat wrong... PathIds equals ancestors-or-self, but the Delivery API queries for ancestors only
-            "ancestorIds" => IndexConstants.FieldNames.PathIds,
+            "ancestorIds" => Constants.FieldNames.PathIds,
             // ContentTypeFilterIndexer:
-            "contentType" => IndexConstants.FieldNames.ContentType,
+            "contentType" => Constants.FieldNames.ContentType,
             // NameFilterIndexer or NameSortIndexer:
-            "name" or "sortName" => IndexConstants.FieldNames.Name,
+            "name" or "sortName" => Constants.FieldNames.Name,
             // CreateDateSortIndexer
-            "createDate" => IndexConstants.FieldNames.CreateDate,
+            "createDate" => Constants.FieldNames.CreateDate,
             // UpdateDateSortIndexer
-            "updateDate" => IndexConstants.FieldNames.UpdateDate,
+            "updateDate" => Constants.FieldNames.UpdateDate,
             // LevelSortIndexer
-            "level" => IndexConstants.FieldNames.Level,
+            "level" => Constants.FieldNames.Level,
             // SortOrderSortIndexer
-            "sortOrder" => IndexConstants.FieldNames.SortOrder,
+            "sortOrder" => Constants.FieldNames.SortOrder,
             _ => fieldName
         };
 

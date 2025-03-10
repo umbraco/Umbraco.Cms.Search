@@ -1,14 +1,11 @@
 ﻿using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Events;
-using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services.Changes;
-using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Cache.Content;
 
-// TODO: add TreeChangeNotification handling for draft content changes
 public class ContentPublishNotificationHandler: INotificationHandler<ContentPublishingNotification>,
         IDistributedCacheNotificationHandler<ContentPublishedNotification>,
         IDistributedCacheNotificationHandler<ContentUnpublishedNotification>,

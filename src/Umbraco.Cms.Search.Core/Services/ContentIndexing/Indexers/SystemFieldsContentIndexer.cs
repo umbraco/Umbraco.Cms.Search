@@ -44,14 +44,14 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
         
         var fields = new List<IndexField>
         {
-            new(IndexConstants.FieldNames.Id, new() { Keywords = [content.Key.ToString("D")] }, null, null),
-            new(IndexConstants.FieldNames.ParentId, new() { Keywords = [parentKey.Value.ToString("D")] }, null, null),
-            new(IndexConstants.FieldNames.PathIds, new() { Keywords = pathKeys.Select(key => key.ToString("D")).ToArray() }, null, null),
-            new(IndexConstants.FieldNames.ContentType, new() { Keywords = [content.ContentType.Alias] }, null, null),
-            new(IndexConstants.FieldNames.CreateDate, new() { DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(content.CreateDate)] }, null, null),
-            new(IndexConstants.FieldNames.UpdateDate, new() { DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(content.UpdateDate)] }, null, null),
-            new(IndexConstants.FieldNames.Level, new() { Integers = [content.Level] }, null, null),
-            new(IndexConstants.FieldNames.SortOrder, new() { Integers = [content.SortOrder] }, null, null),
+            new(Constants.FieldNames.Id, new() { Keywords = [content.Key.ToString("D")] }, null, null),
+            new(Constants.FieldNames.ParentId, new() { Keywords = [parentKey.Value.ToString("D")] }, null, null),
+            new(Constants.FieldNames.PathIds, new() { Keywords = pathKeys.Select(key => key.ToString("D")).ToArray() }, null, null),
+            new(Constants.FieldNames.ContentType, new() { Keywords = [content.ContentType.Alias] }, null, null),
+            new(Constants.FieldNames.CreateDate, new() { DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(content.CreateDate)] }, null, null),
+            new(Constants.FieldNames.UpdateDate, new() { DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(content.UpdateDate)] }, null, null),
+            new(Constants.FieldNames.Level, new() { Integers = [content.Level] }, null, null),
+            new(Constants.FieldNames.SortOrder, new() { Integers = [content.SortOrder] }, null, null),
         };
 
         fields.AddRange(GetCultureTagFields(content, cultures));
@@ -119,7 +119,7 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
                 continue;
             }
 
-            yield return new IndexField(IndexConstants.FieldNames.Tags, new() { Keywords = tags }, culture, null);
+            yield return new IndexField(Constants.FieldNames.Tags, new() { Keywords = tags }, culture, null);
         }
     }
 
@@ -138,7 +138,7 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
                 
             }
 
-            yield return new IndexField(IndexConstants.FieldNames.Name, new() { Texts = [name] }, culture, null);
+            yield return new IndexField(Constants.FieldNames.Name, new() { Texts = [name] }, culture, null);
         }
     }
 }

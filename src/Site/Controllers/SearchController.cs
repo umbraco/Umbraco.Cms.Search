@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
-using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Helpers;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
@@ -17,6 +16,7 @@ using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Web;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Web.Common.Controllers;
+using Constants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Site.Controllers;
 
@@ -66,9 +66,9 @@ public class SearchController : RenderController
         ).ToArray();
 
         var direction = sortDirection == "asc" ? Direction.Ascending : Direction.Descending;
-        Sorter[] sorters = sortBy.IsNullOrWhiteSpace() || sortBy == IndexConstants.FieldNames.Score
+        Sorter[] sorters = sortBy.IsNullOrWhiteSpace() || sortBy == Constants.FieldNames.Score
             ? [new ScoreSorter(direction)]
-            : sortBy.InvariantContains("integer") || sortBy == IndexConstants.FieldNames.Level
+            : sortBy.InvariantContains("integer") || sortBy == Constants.FieldNames.Level
                 ? [new IntegerSorter(sortBy, direction)]
                 : sortBy.InvariantContains("date")
                     ? [new DateTimeOffsetSorter(sortBy, direction)]
@@ -78,7 +78,7 @@ public class SearchController : RenderController
 
         var accessContext = await CurrentMemberAccessContext();
         
-        var result = await _searchService.SearchAsync("TODO", query, filterValues, facetValues, sorters, culture, segment, accessContext, 0, 100);
+        var result = await _searchService.SearchAsync(Constants.IndexAliases.PublishedContent, query, filterValues, facetValues, sorters, culture, segment, accessContext, 0, 100);
         
         return CurrentTemplate(
             new SearchViewModel

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
+using Umbraco.Cms.Search.Core.Cache;
 using Umbraco.Cms.Search.Core.Cache.Content;
 using Umbraco.Cms.Search.Core.Helpers;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
@@ -8,16 +8,17 @@ using Umbraco.Cms.Search.Core.PropertyValueHandlers;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing.Indexers;
-
+using Umbraco.Extensions;
 using PublicAccessCacheRefresherNotification = Umbraco.Cms.Search.Core.Cache.PublicAccess.PublicAccessCacheRefresherNotification;
 
 namespace Umbraco.Cms.Search.Core.DependencyInjection;
 
-public sealed class ContentIndexingComposer : IComposer
+public static class UmbracoBuilderExtensions
 {
-    public void Compose(IUmbracoBuilder builder)
+    public static IUmbracoBuilder AddSearchCore(this IUmbracoBuilder builder)
     {
-        builder.Services.AddTransient<IContentIndexingService, ContentIndexingService>();
+        builder.Services.AddSingleton<IContentIndexingService, ContentIndexingService>();
+
         builder.Services.AddTransient<IContentIndexingDataCollectionService, ContentIndexingDataCollectionService>();
 
         builder.Services.AddTransient<IContentIndexer, SystemFieldsContentIndexer>();
@@ -26,8 +27,11 @@ public sealed class ContentIndexingComposer : IComposer
         builder.Services.AddTransient<IDateTimeOffsetConverter, DateTimeOffsetConverter>();
         builder.Services.AddTransient<IContentProtectionProvider, ContentProtectionProvider>();
 
-        builder.Services.AddTransient<IContentChangeStrategy, PublishedContentChangeStrategy>();
-        builder.Services.AddTransient<IContentChangeStrategy, DraftContentChangeStrategy>();
+        builder.Services.AddTransient<PublishedContentChangeStrategy>();
+        builder.Services.AddTransient<DraftContentChangeStrategy>();
+
+        builder.Services.AddUnique<IPublishedContentChangeStrategy, PublishedContentChangeStrategy>();
+        builder.Services.AddUnique<IDraftContentChangeStrategy, DraftContentChangeStrategy>();
 
         builder
             .AddNotificationAsyncHandler<ContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
@@ -36,5 +40,9 @@ public sealed class ContentIndexingComposer : IComposer
         builder
             .WithCollectionBuilder<PropertyValueHandlerCollectionBuilder>()
             .Add(() => builder.TypeLoader.GetTypes<IPropertyValueHandler>());
+
+        builder.AddDistributedCacheForSearch();
+        
+        return builder;
     }
 }

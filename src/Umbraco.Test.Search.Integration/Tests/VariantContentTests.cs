@@ -141,24 +141,24 @@ public class VariantContentTests : VariantTestBase
 
         Assert.Multiple(() =>
         {
-            var contentTypeValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.ContentType)?.Value.Keywords?.SingleOrDefault();
+            var contentTypeValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.ContentType)?.Value.Keywords?.SingleOrDefault();
             Assert.That(contentTypeValue, Is.EqualTo(content.ContentType.Alias));
 
-            var nameFields = document.Fields.Where(f => f.FieldName == IndexConstants.FieldNames.Name).ToArray();
+            var nameFields = document.Fields.Where(f => f.FieldName == Constants.FieldNames.Name).ToArray();
             Assert.That(nameFields.Length, Is.EqualTo(2));
             Assert.That(nameFields.SingleOrDefault(f => f.Culture.InvariantEquals("en-US"))?.Value.Texts?.SingleOrDefault(), Is.EqualTo(content.GetCultureName("en-US")));
             Assert.That(nameFields.SingleOrDefault(f => f.Culture.InvariantEquals("da-DK"))?.Value.Texts?.SingleOrDefault(), Is.EqualTo(content.GetCultureName("da-DK")));
 
-            var createDateValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.CreateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
+            var createDateValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.CreateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
             Assert.That(createDateValue, Is.EqualTo(dateTimeOffsetConverter.ToDateTimeOffset(content.CreateDate)));
 
-            var updateDateValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.UpdateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
+            var updateDateValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.UpdateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
             Assert.That(updateDateValue, Is.EqualTo(dateTimeOffsetConverter.ToDateTimeOffset(content.UpdateDate)));
 
-            var levelValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.Level)?.Value.Integers?.SingleOrDefault();
+            var levelValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.Level)?.Value.Integers?.SingleOrDefault();
             Assert.That(levelValue, Is.EqualTo(content.Level));
 
-            var sortOrderValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.SortOrder)?.Value.Integers?.SingleOrDefault();
+            var sortOrderValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.SortOrder)?.Value.Integers?.SingleOrDefault();
             Assert.That(sortOrderValue, Is.EqualTo(content.SortOrder));
         });
     }

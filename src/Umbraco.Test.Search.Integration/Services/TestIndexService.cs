@@ -21,7 +21,7 @@ public class TestIndexService : IIndexService
         {
             GetIndex(indexAlias).Remove(key);
             var descendantDocuments = GetIndex(indexAlias).Values.Where(document =>
-                document.Fields.Any(f => f.FieldName == IndexConstants.FieldNames.PathIds && f.Value.Keywords?.Contains($"{key:D}") is true)
+                document.Fields.Any(f => f.FieldName == Constants.FieldNames.PathIds && f.Value.Keywords?.Contains($"{key:D}") is true)
             );
             foreach (var descendantDocument in descendantDocuments)
             {

@@ -9,12 +9,12 @@ using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.BackOffice.Trees;
 
-public class ContentSearchableTree : ISearchableTreeWithCulture
+public class DraftContentSearchableTree : ISearchableTreeWithCulture
 {
     private readonly IEntityService _entityService;
     private readonly ISearchService _searchService;
 
-    public ContentSearchableTree(IEntityService entityService, ISearchService searchService)
+    public DraftContentSearchableTree(IEntityService entityService, ISearchService searchService)
     {
         _entityService = entityService;
         _searchService = searchService;
@@ -28,7 +28,7 @@ public class ContentSearchableTree : ISearchableTreeWithCulture
     public async Task<EntitySearchResults> SearchAsync(string query, int pageSize, long pageIndex, string? searchFrom = null, string? culture = null)
     {
         var (skip, take) = ConvertPagingToSkipTake(pageSize, pageIndex);
-        var searchResult = await _searchService.SearchAsync("TODO", query, null, null, null, culture.NullOrWhiteSpaceAsNull(), null, null, skip, take);
+        var searchResult = await _searchService.SearchAsync(Core.Constants.IndexAliases.DraftContent, query, null, null, null, culture.NullOrWhiteSpaceAsNull(), null, null, skip, take);
 
         var searchResultKeysAsArray = searchResult.Keys as Guid[] ?? searchResult.Keys.ToArray();
         if (searchResultKeysAsArray.Length is 0)

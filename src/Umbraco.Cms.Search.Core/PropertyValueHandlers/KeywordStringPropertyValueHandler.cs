@@ -1,5 +1,4 @@
-﻿using Umbraco.Cms.Core;
-using Umbraco.Cms.Core.Models;
+﻿using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Extensions;
@@ -14,7 +13,7 @@ public sealed class KeywordStringPropertyValueHandler : IPropertyValueHandler
         => _jsonSerializer = jsonSerializer;
 
     public bool CanHandle(string propertyEditorAlias)
-        => propertyEditorAlias is Constants.PropertyEditors.Aliases.DropDownListFlexible or Constants.PropertyEditors.Aliases.RadioButtonList or Constants.PropertyEditors.Aliases.CheckBoxList;
+        => propertyEditorAlias is Cms.Core.Constants.PropertyEditors.Aliases.DropDownListFlexible or Cms.Core.Constants.PropertyEditors.Aliases.RadioButtonList or Cms.Core.Constants.PropertyEditors.Aliases.CheckBoxList;
 
     public IndexValue? GetIndexValue(IContent content, IProperty property, string? culture, string? segment, bool published)
     {

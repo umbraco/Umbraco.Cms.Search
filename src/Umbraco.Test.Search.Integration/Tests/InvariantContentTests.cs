@@ -36,13 +36,13 @@ public partial class InvariantContentTests : InvariantTestBase
     private void VerifyDocumentStructureValues(TestIndexDocument document, Guid key, Guid parentKey, params Guid[] pathKeys)
         => Assert.Multiple(() =>
         {
-            var idValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.Id)?.Value.Keywords?.SingleOrDefault();
+            var idValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.Id)?.Value.Keywords?.SingleOrDefault();
             Assert.That(idValue, Is.EqualTo(key.ToString("D")));
             
-            var parentIdValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.ParentId)?.Value.Keywords?.SingleOrDefault();
+            var parentIdValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.ParentId)?.Value.Keywords?.SingleOrDefault();
             Assert.That(parentIdValue, Is.EqualTo(parentKey.ToString("D")));
 
-            var pathIdsValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.PathIds)?.Value.Keywords?.ToArray();
+            var pathIdsValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.PathIds)?.Value.Keywords?.ToArray();
             Assert.That(pathIdsValue, Is.Not.Null);
             Assert.That(pathIdsValue.Length, Is.EqualTo(pathKeys.Length));
             Assert.That(pathIdsValue, Is.EquivalentTo(pathKeys.Select(ancestorId => ancestorId.ToString("D"))));
@@ -54,25 +54,25 @@ public partial class InvariantContentTests : InvariantTestBase
 
         Assert.Multiple(() =>
         {
-            var contentTypeValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.ContentType)?.Value.Keywords?.SingleOrDefault();
+            var contentTypeValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.ContentType)?.Value.Keywords?.SingleOrDefault();
             Assert.That(contentTypeValue, Is.EqualTo(content.ContentType.Alias));
 
-            var nameValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.Name)?.Value.Texts?.SingleOrDefault();
+            var nameValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.Name)?.Value.Texts?.SingleOrDefault();
             Assert.That(nameValue, Is.EqualTo(content.Name));
 
-            var createDateValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.CreateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
+            var createDateValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.CreateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
             Assert.That(createDateValue, Is.EqualTo(dateTimeOffsetConverter.ToDateTimeOffset(content.CreateDate)));
 
-            var updateDateValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.UpdateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
+            var updateDateValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.UpdateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
             Assert.That(updateDateValue, Is.EqualTo(dateTimeOffsetConverter.ToDateTimeOffset(content.UpdateDate)));
 
-            var levelValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.Level)?.Value.Integers?.SingleOrDefault();
+            var levelValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.Level)?.Value.Integers?.SingleOrDefault();
             Assert.That(levelValue, Is.EqualTo(content.Level));
 
-            var sortOrderValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.SortOrder)?.Value.Integers?.SingleOrDefault();
+            var sortOrderValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.SortOrder)?.Value.Integers?.SingleOrDefault();
             Assert.That(sortOrderValue, Is.EqualTo(content.SortOrder));
 
-            var tagsValue = document.Fields.FirstOrDefault(f => f.FieldName == IndexConstants.FieldNames.Tags)?.Value.Keywords;
+            var tagsValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.Tags)?.Value.Keywords;
             Assert.That(tagsValue ?? [], Is.EquivalentTo(tags));
 
             Assert.That(document.Protection, Is.Null);

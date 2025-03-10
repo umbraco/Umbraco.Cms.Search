@@ -11,10 +11,7 @@ public class IndexOptions
     public void RegisterIndex<TIndexService, TContentChangeStrategy>(string indexAlias)
         where TIndexService : class, IIndexService
         where TContentChangeStrategy : class, IContentChangeStrategy
-    {
-        // TODO: detect collisions and throw (or log?)
-        _register[indexAlias] = (typeof(TIndexService), typeof(TContentChangeStrategy));
-    }
+        => _register[indexAlias] = (typeof(TIndexService), typeof(TContentChangeStrategy));
 
     internal IndexRegistration[] GetIndexRegistrations()
         => _register

@@ -12,21 +12,18 @@ internal sealed class ContentIndexingService : IContentIndexingService
     private readonly IBackgroundTaskQueue _backgroundTaskQueue;
     private readonly ILogger<ContentIndexingService> _logger;
     private readonly IndexOptions _indexOptions;
-    private readonly Dictionary<Type, IContentChangeStrategy> _contentChangeStrategies;
-    private readonly Dictionary<Type, IIndexService> _indexServices;
+    private readonly IServiceProvider _serviceProvider;
 
     public ContentIndexingService(
         IBackgroundTaskQueue backgroundTaskQueue,
         ILogger<ContentIndexingService> logger,
         IOptions<IndexOptions> indexOptions,
-        IEnumerable<IContentChangeStrategy> contentChangeStrategies,
-        IEnumerable<IIndexService> indexServices)
+        IServiceProvider serviceProvider)
     {
         _backgroundTaskQueue = backgroundTaskQueue;
         _logger = logger;
         _indexOptions = indexOptions.Value;
-        _contentChangeStrategies = contentChangeStrategies.ToDictionary(c => c.GetType());
-        _indexServices = indexServices.ToDictionary(i => i.GetType());
+        _serviceProvider = serviceProvider;
     }
 
     public void Handle(IEnumerable<ContentChange> changes)
@@ -43,7 +40,7 @@ internal sealed class ContentIndexingService : IContentIndexingService
 
         foreach (var group in indexRegistrationsByStrategyType)
         {
-            if (_contentChangeStrategies.TryGetValue(group.Key, out var contentChangeStrategy) is false)
+            if (_serviceProvider.GetService(group.Key) is not IContentChangeStrategy contentChangeStrategy)
             {
                 _logger.LogError($"Could not resolve type {{type}} as {nameof(IContentChangeStrategy)}. Make sure the type is registered in the DI.", group.Key.FullName);
                 continue;
@@ -52,7 +49,7 @@ internal sealed class ContentIndexingService : IContentIndexingService
             var indexInfos = group
                 .Select(g =>
                 {
-                    if (_indexServices.TryGetValue(g.IndexService, out var indexService) is false)
+                    if (_serviceProvider.GetService(g.IndexService) is not IIndexService indexService)
                     {
                         _logger.LogError($"Could not resolve type {{type}} as {nameof(IIndexService)}. Make sure the type is registered in the DI.", g.IndexService.FullName);
                         return null;
