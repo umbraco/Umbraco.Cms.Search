@@ -1,4 +1,5 @@
-﻿using Umbraco.Cms.Search.Core.Models.Indexing;
+﻿using Umbraco.Cms.Core;
+using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
@@ -20,15 +21,16 @@ public class IndexBuildingNotificationHandler : INotificationHandler<UmbracoAppl
     public void Handle(UmbracoApplicationStartedNotification notification)
     {
         var rootContent = _contentService.GetRootContent();
+
         var changes = rootContent
             .Select(c => new ContentChange(c.Key, ContentChangeType.RefreshWithDescendants, true))
             .ToArray();
+        _contentIndexingService.Handle(changes);
 
-        if (changes.Length is 0)
-        {
-            return;
-        }
-
+        changes = _contentService
+            .GetPagedDescendants(Constants.System.Root, 0, 1000, out _, null, Ordering.By("Path"))
+            .Select(c => new ContentChange(c.Key, ContentChangeType.Refresh, false))
+            .ToArray();
         _contentIndexingService.Handle(changes);
     }
 }
