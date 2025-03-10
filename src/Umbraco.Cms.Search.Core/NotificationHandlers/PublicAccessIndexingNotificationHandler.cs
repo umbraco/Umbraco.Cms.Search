@@ -1,6 +1,6 @@
 ﻿using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Scoping;
-using Umbraco.Cms.Search.Core.Cache;
+using Umbraco.Cms.Search.Core.Cache.PublicAccess;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
@@ -18,7 +18,7 @@ internal sealed class PublicAccessIndexingNotificationHandler : IndexingNotifica
     {
         var payloads = GetNotificationPayloads<PublicAccessCacheRefresher.JsonPayload>(notification);
         var changes = payloads
-            .Select(payload => new ContentChange(payload.ProtectedContentKey, ContentChangeType.RefreshWithDescendants))
+            .Select(payload => new ContentChange(payload.ProtectedContentKey, ContentChangeType.RefreshWithDescendants, true))
             .ToArray();
 
         ExecuteDeferred(() => _contentIndexingService.Handle(changes));

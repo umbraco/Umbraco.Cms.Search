@@ -2,6 +2,6 @@
 
 namespace Umbraco.Test.Search.Integration.Services;
 
-public record TestIndexDocument(Guid Key, string Stamp, IEnumerable<Variation> Variations, IEnumerable<IndexField> Fields, ContentProtection? Protection)
+public record TestIndexDocument(Guid Key, IEnumerable<Variation> Variations, IEnumerable<IndexField> Fields, ContentProtection? Protection)
 {
 }

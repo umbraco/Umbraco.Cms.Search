@@ -21,7 +21,7 @@ public class IndexBuildingNotificationHandler : INotificationHandler<UmbracoAppl
     {
         var rootContent = _contentService.GetRootContent();
         var changes = rootContent
-            .Select(c => new ContentChange(c.Key, ContentChangeType.RefreshWithDescendants))
+            .Select(c => new ContentChange(c.Key, ContentChangeType.RefreshWithDescendants, true))
             .ToArray();
 
         if (changes.Length is 0)

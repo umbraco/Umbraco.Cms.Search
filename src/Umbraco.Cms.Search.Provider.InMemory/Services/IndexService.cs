@@ -7,61 +7,51 @@ namespace Umbraco.Cms.Search.Provider.InMemory.Services;
 
 internal sealed class IndexService : IIndexService
 {
-    private readonly DataStore _index;
+    private readonly DataStore _dataStore;
 
-    public IndexService(DataStore index)
-        => _index = index;
+    public IndexService(DataStore dataStore)
+        => _dataStore = dataStore;
 
-    public Task AddOrUpdateAsync(Guid key, string stamp, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)
+    public Task AddOrUpdateAsync(string indexAlias, Guid key, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)
     {
-        Remove(key);
-        _index[key] = new IndexDocument(
-            variations.ToArray(),
-            fields
-                .Union([new IndexField("Umb_DocumentStamp", new IndexValue { Keywords = [stamp] }, null, null)])
-                .ToArray(),
-            protection
-        );
+        Remove(indexAlias, key);
+        GetIndex(indexAlias)[key] = new IndexDocument(variations.ToArray(), fields.ToArray(), protection);
         return Task.CompletedTask;
     }
 
-    public Task DeleteAsync(IEnumerable<Guid> keys)
+    public Task DeleteAsync(string indexAlias, IEnumerable<Guid> keys)
     {
         var keysArray = keys as Guid[] ?? keys.ToArray();
 
         // index is responsible for deleting descendants!
         foreach (var key in keysArray)
         {
-            Remove(key);
-            var descendantKeys = _index.Where(v =>
+            Remove(indexAlias, key);
+            var descendantKeys = GetIndex(indexAlias).Where(v =>
                     v.Value.Fields.Any(f => f.FieldName == IndexConstants.FieldNames.PathIds && f.Value.Keywords?.Contains($"{key:D}") is true)
                 )
                 .Select(pair => pair.Key);
             foreach (var descendantKey in descendantKeys)
             {
-                Remove(descendantKey);
+                Remove(indexAlias, descendantKey);
             }
         }
 
         return Task.CompletedTask;
     }
 
-    private void Remove(Guid key)
+    private void Remove(string index, Guid key)
     {
-        _index.Remove(key);
+        GetIndex(index).Remove(key);
     }
-    
-    public Task<string?> GetStampAsync(Guid key)
+
+    private Dictionary<Guid, IndexDocument> GetIndex(string indexAlias)
     {
-        return Task.FromResult(
-            _index.TryGetValue(key, out var document)
-                ? document
-                    .Fields
-                    .Single(f => f.FieldName == "Umb_DocumentStamp")
-                    .Value
-                    .Keywords!
-                    .First()
-                : null
-        );
+        if (_dataStore.ContainsKey(indexAlias) is false)
+        {
+            _dataStore[indexAlias] = new();
+        }
+
+        return _dataStore[indexAlias];
     }
 }

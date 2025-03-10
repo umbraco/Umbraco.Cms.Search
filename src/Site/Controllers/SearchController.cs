@@ -78,7 +78,7 @@ public class SearchController : RenderController
 
         var accessContext = await CurrentMemberAccessContext();
         
-        var result = await _searchService.SearchAsync(query, filterValues, facetValues, sorters, culture, segment, accessContext, 0, 100);
+        var result = await _searchService.SearchAsync("TODO", query, filterValues, facetValues, sorters, culture, segment, accessContext, 0, 100);
         
         return CurrentTemplate(
             new SearchViewModel

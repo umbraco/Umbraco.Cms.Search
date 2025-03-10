@@ -4,9 +4,7 @@ namespace Umbraco.Cms.Search.Core.Services;
 
 public interface IIndexService
 {
-    Task AddOrUpdateAsync(Guid key, string stamp, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection);
+    Task AddOrUpdateAsync(string indexAlias, Guid key, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection);
 
-    Task DeleteAsync(IEnumerable<Guid> keys);
-
-    Task<string?> GetStampAsync(Guid key);
+    Task DeleteAsync(string indexAlias, IEnumerable<Guid> keys);
 }

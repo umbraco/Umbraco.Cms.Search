@@ -16,8 +16,7 @@ public sealed class ContentIndexingDataCollectionService : IContentIndexingDataC
         _logger = logger;
     }
 
-    public async Task<IEnumerable<IndexField>?> CollectAsync(IContent content, bool published,
-        CancellationToken cancellationToken)
+    public async Task<IEnumerable<IndexField>?> CollectAsync(IContent content, bool published, CancellationToken cancellationToken)
     {
         var systemFieldsIndexers = _contentIndexers.OfType<ISystemFieldsContentIndexer>().ToArray();
         if (systemFieldsIndexers.Length != 1)

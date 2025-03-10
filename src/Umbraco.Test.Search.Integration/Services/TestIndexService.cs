@@ -6,36 +6,43 @@ namespace Umbraco.Test.Search.Integration.Services;
 
 public class TestIndexService : IIndexService
 {
-    private readonly Dictionary<Guid, TestIndexDocument> _documents = new();
+    private readonly Dictionary<string, Dictionary<Guid, TestIndexDocument>> _indexes = new();
         
-    public Task AddOrUpdateAsync(Guid key, string stamp, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)
+    public Task AddOrUpdateAsync(string indexAlias, Guid key, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)
     {
-        _documents[key] = new (key, stamp, variations, fields, protection);
+        GetIndex(indexAlias)[key] = new (key, variations, fields, protection);
         return Task.CompletedTask;
     }
 
-    public Task DeleteAsync(IEnumerable<Guid> keys)
+    public Task DeleteAsync(string indexAlias, IEnumerable<Guid> keys)
     {
         // index is responsible for deleting descendants
         foreach (var key in keys)
         {
-            _documents.Remove(key);
-            var descendantDocuments = _documents.Values.Where(document =>
+            GetIndex(indexAlias).Remove(key);
+            var descendantDocuments = GetIndex(indexAlias).Values.Where(document =>
                 document.Fields.Any(f => f.FieldName == IndexConstants.FieldNames.PathIds && f.Value.Keywords?.Contains($"{key:D}") is true)
             );
             foreach (var descendantDocument in descendantDocuments)
             {
-                _documents.Remove(descendantDocument.Key);
+                GetIndex(indexAlias).Remove(descendantDocument.Key);
             }
         }
 
         return Task.CompletedTask;
     }
 
-    public Task<string?> GetStampAsync(Guid key)
-        => Task.FromResult(_documents.TryGetValue(key, out var document) ? document.Stamp : null);
+    public IReadOnlyList<TestIndexDocument> Dump(string indexAlias) => GetIndex(indexAlias).Values.ToList();
 
-    public IReadOnlyList<TestIndexDocument> Dump() => _documents.Values.ToList();
+    public void Reset() => _indexes.Clear();
+    
+    private Dictionary<Guid, TestIndexDocument> GetIndex(string index)
+    {
+        if (_indexes.ContainsKey(index) is false)
+        {
+            _indexes[index] = new();
+        }
 
-    public void Reset() => _documents.Clear();
+        return _indexes[index];
+    }
 }

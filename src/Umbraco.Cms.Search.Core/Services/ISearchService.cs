@@ -8,6 +8,7 @@ namespace Umbraco.Cms.Search.Core.Services;
 public interface ISearchService
 {
     Task<SearchResult> SearchAsync(
+        string indexAlias,
         string? query,
         IEnumerable<Filter>? filters,
         IEnumerable<Facet>? facets,

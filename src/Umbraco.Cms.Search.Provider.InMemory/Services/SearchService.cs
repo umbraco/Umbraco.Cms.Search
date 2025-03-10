@@ -12,14 +12,19 @@ namespace Umbraco.Cms.Search.Provider.InMemory.Services;
 
 internal sealed class SearchService : ISearchService
 {
-    private readonly DataStore _index;
+    private readonly DataStore _dataStore;
 
-    public SearchService(DataStore index)
-        => _index = index;
+    public SearchService(DataStore dataStore)
+        => _dataStore = dataStore;
 
-    public Task<SearchResult> SearchAsync(string? query, IEnumerable<Filter>? filters, IEnumerable<Facet>? facets, IEnumerable<Sorter>? sorters, string? culture, string? segment, AccessContext? accessContext, int skip, int take)
+    public Task<SearchResult> SearchAsync(string indexAlias, string? query, IEnumerable<Filter>? filters, IEnumerable<Facet>? facets, IEnumerable<Sorter>? sorters, string? culture, string? segment, AccessContext? accessContext, int skip, int take)
     {
-        var result = _index.Where(kvp => kvp
+        if (_dataStore.TryGetValue(indexAlias, out var index) is false)
+        {
+            throw new ArgumentException($"The index \"{indexAlias}\" was not defined.", nameof(indexAlias));
+        }
+        
+        var result = index.Where(kvp => kvp
             .Value
             .Variations
             .Any(variation =>

@@ -12,7 +12,7 @@ public class VariantContentTests : VariantTestBase
     {
         ContentService.SaveAndPublishBranch(Root(), true);
 
-        var documents = IndexService.Dump();
+        var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -44,7 +44,7 @@ public class VariantContentTests : VariantTestBase
         child.SetValue("message", "The updated child message in English (segment-2)", "en-US", "segment-2");
         ContentService.SaveAndPublish(child);
 
-        var documents = IndexService.Dump();
+        var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         VerifyDocumentPropertyValues(
@@ -65,7 +65,7 @@ public class VariantContentTests : VariantTestBase
         child.SetValue("title", "The updated child title in Danish", "da-DK");
         ContentService.SaveAndPublish(child);
 
-        var documents = IndexService.Dump();
+        var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         VerifyDocumentPropertyValues(documents[1], "The updated child title", "The child message", 34);
@@ -80,7 +80,7 @@ public class VariantContentTests : VariantTestBase
         child.SetValue("count", 123456);
         ContentService.SaveAndPublish(child);
 
-        var documents = IndexService.Dump();
+        var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         VerifyDocumentPropertyValues(documents[1], "The child title", "The child message", 123456);
@@ -91,7 +91,7 @@ public class VariantContentTests : VariantTestBase
     {
         ContentService.SaveAndPublishBranch(Root(), true);
 
-        var documents = IndexService.Dump();
+        var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -137,7 +137,7 @@ public class VariantContentTests : VariantTestBase
 
     private void VerifyDocumentSystemValues(TestIndexDocument document, IContent content)
     {
-        var dateTimeOffsetConverter = new DateTimeOffsetConverter();
+        var dateTimeOffsetConverter = GetRequiredService<IDateTimeOffsetConverter>();
 
         Assert.Multiple(() =>
         {

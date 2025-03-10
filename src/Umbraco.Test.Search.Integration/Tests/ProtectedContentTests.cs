@@ -55,7 +55,7 @@ public class ProtectedContentTests : InvariantTestBase
         
         ContentService.SaveAndPublishBranch(Root(), true);
 
-        var documents = IndexService.Dump();
+        var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -89,7 +89,7 @@ public class ProtectedContentTests : InvariantTestBase
         );
         Assert.That(entryResult.Success, Is.True);
 
-        var documents = IndexService.Dump();
+        var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -129,7 +129,7 @@ public class ProtectedContentTests : InvariantTestBase
         entryResult = PublicAccessService.Delete(entry);
         Assert.That(entryResult.Success, Is.True);
 
-        var documents = IndexService.Dump();
+        var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>

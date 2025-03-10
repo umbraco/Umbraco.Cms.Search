@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Core.DependencyInjection;
-using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Search.Core.Cache.Content;
 using Umbraco.Cms.Search.Core.Helpers;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers;
@@ -9,7 +9,7 @@ using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing.Indexers;
 
-using PublicAccessCacheRefresherNotification = Umbraco.Cms.Search.Core.Cache.PublicAccessCacheRefresherNotification;
+using PublicAccessCacheRefresherNotification = Umbraco.Cms.Search.Core.Cache.PublicAccess.PublicAccessCacheRefresherNotification;
 
 namespace Umbraco.Cms.Search.Core.DependencyInjection;
 
@@ -25,6 +25,9 @@ public sealed class ContentIndexingComposer : IComposer
 
         builder.Services.AddTransient<IDateTimeOffsetConverter, DateTimeOffsetConverter>();
         builder.Services.AddTransient<IContentProtectionProvider, ContentProtectionProvider>();
+
+        builder.Services.AddTransient<IContentChangeStrategy, PublishedContentChangeStrategy>();
+        builder.Services.AddTransient<IContentChangeStrategy, DraftContentChangeStrategy>();
 
         builder
             .AddNotificationAsyncHandler<ContentCacheRefresherNotification, ContentIndexingNotificationHandler>()

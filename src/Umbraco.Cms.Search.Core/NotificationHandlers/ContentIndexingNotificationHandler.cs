@@ -1,8 +1,7 @@
-﻿using Umbraco.Cms.Core.Cache;
-using Umbraco.Cms.Core.Events;
-using Umbraco.Cms.Core.Notifications;
+﻿using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Scoping;
 using Umbraco.Cms.Core.Services.Changes;
+using Umbraco.Cms.Search.Core.Cache.Content;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Extensions;
@@ -10,6 +9,7 @@ using Umbraco.Extensions;
 namespace Umbraco.Cms.Search.Core.NotificationHandlers;
 
 // TODO: add notification handler for content type changes
+// TODO: add notification handler for language changes (need to handle deletion)
 internal sealed class ContentIndexingNotificationHandler : IndexingNotificationHandlerBase, INotificationAsyncHandler<ContentCacheRefresherNotification>
 {
     private readonly IContentIndexingService _contentIndexingService;
@@ -18,25 +18,23 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
         : base(coreScopeProvider)
         => _contentIndexingService = contentIndexingService;
 
-    // TODO: add the ability to populate different indexes at the same time - e.g. update both published and draft document indexes in one go
     public Task HandleAsync(ContentCacheRefresherNotification notification, CancellationToken cancellationToken)
     {
         var payloads = GetNotificationPayloads<ContentCacheRefresher.JsonPayload>(notification);
-        if (payloads.Any(payload => payload.Key.HasValue is false))
-        {
-            throw new InvalidOperationException("Expected Key properties on all content cache refresher payloads.");
-        }
 
         var changes = payloads
-            .Select(payload =>
-                payload.ChangeTypes.HasType(TreeChangeTypes.Remove)
-                    ? new ContentChange(payload.Key!.Value, ContentChangeType.Remove)
-                    : payload.ChangeTypes.HasType(TreeChangeTypes.RefreshNode) || payload.ChangeTypes.HasType(TreeChangeTypes.RefreshBranch)
-                        ? new ContentChange(payload.Key!.Value, ContentChangeType.Refresh)
-                        : null
+            .Select(payload => payload.TreeChangeTypes switch
+                {
+                    TreeChangeTypes.None => null,
+                    TreeChangeTypes.RefreshAll => new ContentChange(payload.ContentKey, ContentChangeType.RefreshWithDescendants, payload.PublishStateAffected),
+                    TreeChangeTypes.RefreshNode => new ContentChange(payload.ContentKey, ContentChangeType.Refresh, payload.PublishStateAffected),
+                    TreeChangeTypes.RefreshBranch => new ContentChange(payload.ContentKey, ContentChangeType.RefreshWithDescendants, payload.PublishStateAffected),
+                    TreeChangeTypes.Remove => new ContentChange(payload.ContentKey, ContentChangeType.Remove, payload.PublishStateAffected),
+                    _ => throw new ArgumentOutOfRangeException()
+                }
             )
             .WhereNotNull()
-            .ToList();
+            .ToArray();
 
         ExecuteDeferred(() => _contentIndexingService.Handle(changes));
 

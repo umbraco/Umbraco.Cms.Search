@@ -3,7 +3,7 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
 
-namespace Umbraco.Cms.Search.Core.Cache;
+namespace Umbraco.Cms.Search.Core.Cache.PublicAccess;
 
 internal sealed class PublicAccessEntryDeletedNotificationHandler : DeletedDistributedCacheNotificationHandlerBase<PublicAccessEntry, PublicAccessEntryDeletedNotification>
 {

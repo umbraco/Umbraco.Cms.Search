@@ -101,7 +101,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
 
         var accessContext = GetAccessContextAsync().GetAwaiter().GetResult();
         var result = _searchService
-            .SearchAsync(null, filters, null, sorters, culture, null, accessContext, skip, take)
+            .SearchAsync("TODO", null, filters, null, sorters, culture, null, accessContext, skip, take)
             .GetAwaiter()
             .GetResult();
 

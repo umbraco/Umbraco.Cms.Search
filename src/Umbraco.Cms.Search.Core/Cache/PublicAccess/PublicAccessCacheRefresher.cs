@@ -2,7 +2,7 @@
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Serialization;
 
-namespace Umbraco.Cms.Search.Core.Cache;
+namespace Umbraco.Cms.Search.Core.Cache.PublicAccess;
 
 public sealed class PublicAccessCacheRefresher : PayloadCacheRefresherBase<PublicAccessCacheRefresherNotification, PublicAccessCacheRefresher.JsonPayload>
 {
@@ -12,7 +12,7 @@ public sealed class PublicAccessCacheRefresher : PayloadCacheRefresherBase<Publi
         : base(appCaches, serializer, eventAggregator, factory)
     {
     }
-    
+
     public override Guid RefresherUniqueId => UniqueId;
 
     public override string Name => "Public Access Cache Refresher (Search.Core)";

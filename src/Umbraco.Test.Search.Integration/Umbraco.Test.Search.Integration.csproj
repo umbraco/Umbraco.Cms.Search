@@ -33,4 +33,19 @@
       </Content>
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Update="Tests\InvariantStructureTests.Published.cs">
+        <DependentUpon>InvariantStructureTests.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Tests\InvariantStructureTests.Draft.cs">
+        <DependentUpon>InvariantStructureTests.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Tests\InvariantContentTests.Published.cs">
+        <DependentUpon>InvariantContentTests.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Tests\InvariantContentTests.Draft.cs">
+        <DependentUpon>InvariantContentTests.cs</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
 </Project>

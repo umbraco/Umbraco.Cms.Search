@@ -2,6 +2,6 @@
 
 namespace Umbraco.Cms.Search.Provider.InMemory.Services;
 
-internal class DataStore : Dictionary<Guid, IndexDocument>
+internal class DataStore : Dictionary<string, Dictionary<Guid, IndexDocument>>
 {
 }

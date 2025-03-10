@@ -28,7 +28,7 @@ public class PropertyValueHandlerTests : TestBase
 
         ContentService.SaveAndPublish(content);
 
-        var documents = IndexService.Dump();
+        var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         var document = documents.Single();

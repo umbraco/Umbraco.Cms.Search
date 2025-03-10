@@ -6,6 +6,8 @@ using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Infrastructure.HostedServices;
 using Umbraco.Cms.Infrastructure.Sync;
+using Umbraco.Cms.Search.Core.Configuration;
+using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
 using Umbraco.Test.Search.Integration.Services;
@@ -16,6 +18,12 @@ namespace Umbraco.Test.Search.Integration.Tests;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
 public abstract class TestBase : UmbracoIntegrationTest
 {
+    protected static class IndexAliases
+    {
+        public const string PublishedContent = "TestPublishedContentIndex";
+        public const string DraftContent = "TestDraftContentIndex";
+    }
+    
     protected TestIndexService IndexService { get; } = new ();
 
     protected IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>(); 
@@ -25,16 +33,19 @@ public abstract class TestBase : UmbracoIntegrationTest
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
         base.CustomTestSetup(builder);
+
         builder.AddComposers();
+        builder.AddNotificationHandler<ContentTreeChangeNotification, ContentTreeChangeDistributedCacheNotificationHandler>();
+
         builder.Services.AddUnique<IBackgroundTaskQueue, BackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
-        builder.AddNotificationHandler<ContentTreeChangeNotification, ContentTreeChangeDistributedCacheNotificationHandler>();
-    }
+        builder.Services.AddTransient<IIndexService>(_ => IndexService);
 
-    protected override void ConfigureTestServices(IServiceCollection services)
-    {
-        base.ConfigureTestServices(services);
-        services.AddTransient<IIndexService>(_ => IndexService);
+        builder.Services.Configure<IndexOptions>(options =>
+        {
+            options.RegisterIndex<TestIndexService, PublishedContentChangeStrategy>(IndexAliases.PublishedContent);
+            options.RegisterIndex<TestIndexService, DraftContentChangeStrategy>(IndexAliases.DraftContent);
+        });
     }
     
     private class BackgroundTaskQueue : IBackgroundTaskQueue
