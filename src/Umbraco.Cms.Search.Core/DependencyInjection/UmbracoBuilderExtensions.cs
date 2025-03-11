@@ -8,7 +8,6 @@ using Umbraco.Cms.Search.Core.PropertyValueHandlers;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing.Indexers;
-using Umbraco.Extensions;
 using PublicAccessCacheRefresherNotification = Umbraco.Cms.Search.Core.Cache.PublicAccess.PublicAccessCacheRefresherNotification;
 
 namespace Umbraco.Cms.Search.Core.DependencyInjection;
@@ -30,8 +29,8 @@ public static class UmbracoBuilderExtensions
         builder.Services.AddTransient<PublishedContentChangeStrategy>();
         builder.Services.AddTransient<DraftContentChangeStrategy>();
 
-        builder.Services.AddUnique<IPublishedContentChangeStrategy, PublishedContentChangeStrategy>();
-        builder.Services.AddUnique<IDraftContentChangeStrategy, DraftContentChangeStrategy>();
+        builder.Services.AddTransient<IPublishedContentChangeStrategy, PublishedContentChangeStrategy>();
+        builder.Services.AddTransient<IDraftContentChangeStrategy, DraftContentChangeStrategy>();
 
         builder
             .AddNotificationAsyncHandler<ContentCacheRefresherNotification, ContentIndexingNotificationHandler>()

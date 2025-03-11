@@ -33,7 +33,6 @@ internal sealed class ContentIndexingService : IContentIndexingService
     {
         var changesAsArray = changes as ContentChange[] ?? changes.ToArray();
 
-        // TODO: move all this to somewhere that is testable
         var indexRegistrationsByStrategyType = _indexOptions
             .GetIndexRegistrations()
             .GroupBy(r => r.ContentChangeHandler);
