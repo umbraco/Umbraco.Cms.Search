@@ -4,11 +4,11 @@ using Umbraco.Cms.Core.Serialization;
 
 namespace Umbraco.Cms.Search.Core.Cache.PublicAccess;
 
-public sealed class PublicAccessCacheRefresher : PayloadCacheRefresherBase<PublicAccessCacheRefresherNotification, PublicAccessCacheRefresher.JsonPayload>
+public sealed class PublicAccessDetailedCacheRefresher : PayloadCacheRefresherBase<PublicAccessDetailedCacheRefresherNotification, PublicAccessDetailedCacheRefresher.JsonPayload>
 {
     public static readonly Guid UniqueId = Guid.Parse("81CF9AC4-B257-4997-BDCA-2826A90FBA0D");
 
-    public PublicAccessCacheRefresher(AppCaches appCaches, IJsonSerializer serializer, IEventAggregator eventAggregator, ICacheRefresherNotificationFactory factory)
+    public PublicAccessDetailedCacheRefresher(AppCaches appCaches, IJsonSerializer serializer, IEventAggregator eventAggregator, ICacheRefresherNotificationFactory factory)
         : base(appCaches, serializer, eventAggregator, factory)
     {
     }

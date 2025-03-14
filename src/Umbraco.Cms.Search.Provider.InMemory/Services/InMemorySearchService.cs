@@ -61,7 +61,7 @@ internal sealed class InMemorySearchService : ISearchService
             );
         }
 
-        // filters needs splitting into two parts; regular filters and facet filters
+        // filters needs splitting into two parts; regular filters (not used for faceting) and facet filters
         // - regular filters must be applied before any facets are calculated (they narrow down the potential result set)
         // - facet filters must be applied after facets calculation has begun (additional considerations apply, see comments below)
         var facetFieldNames = facets?.Select(facet => facet.FieldName).ToArray();

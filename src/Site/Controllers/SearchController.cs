@@ -98,7 +98,7 @@ public class SearchController : RenderController
                 .ToDictionary(part => part[0], part => part[1].Split('|').Except(["*"]).ToArray())
             : null;
 
-    private Filter? ParseFilter(string fieldName, string[] values)
+    private Filter ParseFilter(string fieldName, string[] values)
     {
         // range filter?
         if (values.Length == 1)
@@ -173,7 +173,9 @@ public class SearchController : RenderController
             return new DateTimeOffsetExactFilter(fieldName, fieldValues, false);
         }
 
-        return new KeywordFilter(fieldName, values, false);
+        return fieldName.InvariantContains("title")
+            ? new TextFilter(fieldName, values, false)
+            : new KeywordFilter(fieldName, values, false);
     }
 
     private async Task<AccessContext?> CurrentMemberAccessContext()

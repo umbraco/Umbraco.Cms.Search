@@ -6,7 +6,7 @@ using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 namespace Umbraco.Cms.Search.Core.NotificationHandlers;
 
-internal sealed class PublicAccessIndexingNotificationHandler : IndexingNotificationHandlerBase, INotificationAsyncHandler<PublicAccessCacheRefresherNotification>
+internal sealed class PublicAccessIndexingNotificationHandler : IndexingNotificationHandlerBase, INotificationAsyncHandler<PublicAccessDetailedCacheRefresherNotification>
 {
     private readonly IContentIndexingService _contentIndexingService;
 
@@ -14,9 +14,9 @@ internal sealed class PublicAccessIndexingNotificationHandler : IndexingNotifica
         : base(coreScopeProvider)
         => _contentIndexingService = contentIndexingService;
 
-    public Task HandleAsync(PublicAccessCacheRefresherNotification notification, CancellationToken cancellationToken)
+    public Task HandleAsync(PublicAccessDetailedCacheRefresherNotification notification, CancellationToken cancellationToken)
     {
-        var payloads = GetNotificationPayloads<PublicAccessCacheRefresher.JsonPayload>(notification);
+        var payloads = GetNotificationPayloads<PublicAccessDetailedCacheRefresher.JsonPayload>(notification);
         var changes = payloads
             .Select(payload => new ContentChange(payload.ProtectedContentKey, ContentChangeType.RefreshWithDescendants, true))
             .ToArray();

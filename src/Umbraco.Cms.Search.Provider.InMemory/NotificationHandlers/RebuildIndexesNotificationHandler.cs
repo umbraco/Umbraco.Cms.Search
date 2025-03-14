@@ -1,25 +1,32 @@
-﻿using Umbraco.Cms.Core;
-using Umbraco.Cms.Search.Core.Models.Indexing;
-using Umbraco.Cms.Search.Core.Services.ContentIndexing;
+﻿using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Search.Core.Models.Indexing;
+using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
-namespace Site.NotificationHandlers;
+namespace Umbraco.Cms.Search.Provider.InMemory.NotificationHandlers;
 
-public class IndexBuildingNotificationHandler : INotificationHandler<UmbracoApplicationStartedNotification>
+public class RebuildIndexesNotificationHandler : INotificationHandler<UmbracoApplicationStartedNotification>
 {
     private readonly IContentService _contentService;
     private readonly IContentIndexingService _contentIndexingService;
+    private readonly ILogger<RebuildIndexesNotificationHandler> _logger;
 
-    public IndexBuildingNotificationHandler(IContentService contentService, IContentIndexingService contentIndexingService)
+    public RebuildIndexesNotificationHandler(IContentService contentService, IContentIndexingService contentIndexingService, ILogger<RebuildIndexesNotificationHandler> logger)
     {
         _contentService = contentService;
         _contentIndexingService = contentIndexingService;
+        _logger = logger;
     }
 
     public void Handle(UmbracoApplicationStartedNotification notification)
     {
+        _logger.LogInformation("Starting index rebuild...");
+
+        // TODO: replace all this when a proper index rebuilding mechanism has been created
+
         var rootContent = _contentService.GetRootContent();
 
         var changes = rootContent
@@ -32,5 +39,7 @@ public class IndexBuildingNotificationHandler : INotificationHandler<UmbracoAppl
             .Select(c => new ContentChange(c.Key, ContentChangeType.Refresh, false))
             .ToArray();
         _contentIndexingService.Handle(changes);
+
+        _logger.LogInformation("Index rebuild complete.");
     }
 }

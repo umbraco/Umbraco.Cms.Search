@@ -1,4 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Umbraco.Cms.Core.Cache;
+using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Infrastructure.HostedServices;
@@ -48,5 +50,7 @@ public abstract class TestBase : UmbracoIntegrationTest
             options.RegisterIndex<IIndexService, IPublishedContentChangeStrategy>(IndexAliases.PublishedContent);
             options.RegisterIndex<IIndexService, IDraftContentChangeStrategy>(IndexAliases.DraftContent);
         });
+
+        builder.AddNotificationHandler<ContentTreeChangeNotification, ContentTreeChangeDistributedCacheNotificationHandler>();
     }
 }

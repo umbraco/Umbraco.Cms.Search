@@ -137,6 +137,11 @@ internal class PublishedContentChangeStrategy : IPublishedContentChangeStrategy
 
     private async Task RemoveFromIndexAsync(IndexInfo[] indexInfos, IReadOnlyCollection<Guid> keys)
     {
+        if (keys.Count is 0)
+        {
+            return;
+        }
+
         foreach (var indexInfo in indexInfos)
         {
             await indexInfo.IndexService.DeleteAsync(indexInfo.IndexAlias, keys);

@@ -4,7 +4,7 @@ using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 namespace Umbraco.Cms.Search.Core.Configuration;
 
-public class IndexOptions
+public sealed class IndexOptions
 {
     private readonly Dictionary<string, (Type IndexService, Type ContentChangeStrategy)> _register = [];
 
@@ -13,7 +13,7 @@ public class IndexOptions
         where TContentChangeStrategy : class, IContentChangeStrategy
         => _register[indexAlias] = (typeof(TIndexService), typeof(TContentChangeStrategy));
 
-    internal IndexRegistration[] GetIndexRegistrations()
+    public IndexRegistration[] GetIndexRegistrations()
         => _register
             .Select(r => new IndexRegistration(r.Key, r.Value.IndexService, r.Value.ContentChangeStrategy))
             .ToArray();    

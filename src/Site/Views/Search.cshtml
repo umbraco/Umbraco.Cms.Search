@@ -36,18 +36,20 @@
 				event.preventDefault();
 
 				let query = `?query=${document.getElementById('query').value}`;
-	            query += getFilter('scopeFilter', 'Umb_PathIds');
-				query += getFilter('integerFilter', 'integer');
-				query += getFilter('dateFilter', 'date');
-				query += getFilter('dropdownFilter', 'dropdown');
-				query += getFilter('integerFilterVariant', 'integerVariant');
-				query += getFilter('dateFilterVariant', 'dateVariant');
-				query += getFilter('dropdownFilterVariant', 'dropdownVariant');
+	            query += getFilter('Umb_PathIds');
+				query += getFilter('integer');
+				query += getFilter('date');
+				query += getFilter('dropdown');
+	            query += getFilter('title');
+				query += getFilter('integerVariant');
+				query += getFilter('dateVariant');
+				query += getFilter('dropdownVariant');
+	            query += getFilter('titleVariant');
 
-				query += getFacet('integerAsFacet', 'integer');
-				query += getFacet('dropdownAsFacet', 'dropdown');
-	            query += getFacet('integerVariantAsFacet', 'integerVariant');
-	            query += getFacet('dropdownVariantAsFacet', 'dropdownVariant');
+				query += getFacet('integer');
+				query += getFacet('dropdown');
+	            query += getFacet('integerVariant');
+	            query += getFacet('dropdownVariant');
 
 				query += `&sortBy=${document.getElementById('sortBy').value}&sortDirection=${document.getElementById('sortDirection').value}`;
 
@@ -66,32 +68,43 @@
 			document.getElementById('query').value = searchParams.get('query');
 
 			const activeFilters = searchParams.getAll('filters');
-			initFilter(activeFilters, 'scopeFilter', 'Umb_PathIds');
-			initFilter(activeFilters, 'integerFilter', 'integer');
-			initFilter(activeFilters, 'dateFilter', 'date');
-			initFilter(activeFilters, 'dropdownFilter', 'dropdown');
-			initFilter(activeFilters, 'integerFilterVariant', 'integerVariant');
-			initFilter(activeFilters, 'dateFilterVariant', 'dateVariant');
-			initFilter(activeFilters, 'dropdownFilterVariant', 'dropdownVariant');
+			initFilter(activeFilters, 'Umb_PathIds');
+			initFilter(activeFilters, 'integer');
+			initFilter(activeFilters, 'date');
+			initFilter(activeFilters, 'dropdown');
+			initFilter(activeFilters, 'title');
+			initFilter(activeFilters, 'integerVariant');
+			initFilter(activeFilters, 'dateVariant');
+			initFilter(activeFilters, 'dropdownVariant');
+			initFilter(activeFilters, 'titleVariant');
 
 			const activeFacets = searchParams.getAll('facets');
-			initFacet(activeFacets, 'integerAsFacet', 'integer');
-			initFacet(activeFacets, 'dropdownAsFacet', 'dropdown');
-			initFacet(activeFacets, 'integerVariantAsFacet', 'integerVariant');
-			initFacet(activeFacets, 'dropdownVariantAsFacet', 'dropdownVariant');
-
+			initFacet(activeFacets, activeFilters, 'integer');
+			initFacet(activeFacets, activeFilters, 'dropdown');
+			initFacet(activeFacets, activeFilters, 'integerVariant');
+			initFacet(activeFacets, activeFilters, 'dropdownVariant');
+			
 			initSelector(searchParams, 'culture');
 			initSelector(searchParams, 'segment');
 			initSelector(searchParams, 'sortBy');
 			initSelector(searchParams, 'sortDirection');
 		}
 
-		function initFilter(activeFilters, elementId, qualifier) {
-			document.getElementById(elementId).value = activeFilters.find((f) => f.startsWith(`${qualifier}:`))?.split(':')[1] ?? '';
+		function initFilter(activeFilters, qualifier) {
+			document.getElementById(`${qualifier}Filter`).value = activeFilters.find((f) => f.startsWith(`${qualifier}:`))?.split(':')[1] ?? '';
 		}
 
-		function initFacet(activeFacets, elementId, qualifier) {
-			document.getElementById(elementId).checked = activeFacets.includes(qualifier);
+		function initFacet(activeFacets, activeFilters, qualifier) {
+			document.getElementById(`${qualifier}AsFacet`).checked = activeFacets.includes(qualifier);
+
+			if (!activeFacets.includes(qualifier)) {
+				return;
+			}
+			const activeFilterValues = (activeFilters.find((f) => f.startsWith(`${qualifier}:`))?.split(':')[1] ?? '').split('|');
+			const facetElements = document.getElementById(`${qualifier}FacetValues`).getElementsByTagName('input');
+			for (let element of facetElements) {
+				element.checked = activeFilterValues.includes(element.value);
+			}
 		}
 
 		function initSelector(searchParams, elementId) {
@@ -101,13 +114,27 @@
 			}
 		}
 		
-		function getFilter(elementId, qualifier) {
-			const filterValue = document.getElementById(elementId).value;
+		function getFilter(qualifier) {
+			let filterValue = '';
+			if (document.getElementById(`${qualifier}AsFacet`)?.checked) {
+				const facetElements = document.getElementById(`${qualifier}FacetValues`)?.getElementsByTagName('input') ?? [];
+				for (let element of facetElements) {
+					if (element.checked) {
+						filterValue += `${element.value}|`;
+					}
+				}
+				if (filterValue) {
+					filterValue = filterValue.slice(0, -1);
+				}
+			}
+			else {
+				filterValue = document.getElementById(`${qualifier}Filter`).value;
+			}
 			return filterValue ? `&filters=${qualifier}:${filterValue}` : '';
 		}
 
-		function getFacet(elementId, qualifier) {
-			return document.getElementById(elementId).checked ? `&facets=${qualifier}` : '';
+		function getFacet(qualifier) {
+			return document.getElementById(`${qualifier}AsFacet`).checked ? `&facets=${qualifier}` : '';
 		}
 	
 	</script>
@@ -120,8 +147,8 @@
 			<fieldset>
 				<legend>Scope</legend>
 				<p>
-					<label for="scopeFilter" style="display: block">Search across:</label>
-					<select id="scopeFilter">
+					<label for="Umb_PathIdsFilter" style="display: block">Search across:</label>
+					<select id="Umb_PathIdsFilter">
 						@foreach (var root in contentAtRoot)
 						{
 							<option value="@root.Key">Descendants of @root.Name("en-US")</option>
@@ -146,7 +173,7 @@
 			<fieldset>
 				<legend>Free text query</legend>
 				<p>
-					<input type="text" id="query"/>
+					<input type="text" id="query" autocomplete="off"/>
 				</p>
 			</fieldset>
 			<fieldset>
@@ -159,29 +186,37 @@
 					<div>
 						<p>
 							<label for="integerFilter" style="display: block">Integer:</label>
-							<input type="text" id="integerFilter"/>
+							<input type="text" id="integerFilter" autocomplete="off"/>
 						</p>
 						<p>
 							<label for="dateFilter" style="display: block">Date:</label>
-							<input type="text" id="dateFilter"/>
+							<input type="text" id="dateFilter" autocomplete="off"/>
 						</p>
 						<p>
 							<label for="dropdownFilter" style="display: block">Dropdown:</label>
-							<input type="text" id="dropdownFilter"/>
+							<input type="text" id="dropdownFilter" autocomplete="off"/>
+						</p>
+						<p>
+							<label for="titleFilter" style="display: block">Title:</label>
+							<input type="text" id="titleFilter" autocomplete="off"/>
 						</p>
 					</div>
 					<div>
 						<p>
-							<label for="integerFilterVariant" style="display: block">Integer (v):</label>
-							<input type="text" id="integerFilterVariant"/>
+							<label for="integerVariantFilter" style="display: block">Integer (v):</label>
+							<input type="text" id="integerVariantFilter" autocomplete="off"/>
 						</p>
 						<p>
-							<label for="dateFilterVariant" style="display: block">Date (v):</label>
-							<input type="text" id="dateFilterVariant"/>
+							<label for="dateVariantFilter" style="display: block">Date (v):</label>
+							<input type="text" id="dateVariantFilter" autocomplete="off"/>
 						</p>
 						<p>
-							<label for="dropdownFilterVariant" style="display: block">Dropdown (v):</label>
-							<input type="text" id="dropdownFilterVariant"/>
+							<label for="dropdownVariantFilter" style="display: block">Dropdown (v):</label>
+							<input type="text" id="dropdownVariantFilter" autocomplete="off"/>
+						</p>
+						<p>
+							<label for="titleVariantFilter" style="display: block">Title (v):</label>
+							<input type="text" id="titleVariantFilter" autocomplete="off"/>
 						</p>
 					</div>
 				</div>
@@ -194,14 +229,14 @@
 				</p>
 				<div style="display: flex">
 					@{
-						RenderExactFacetValues<int>("integer");
-						RenderExactFacetValues<string>("dropdown");
+						RenderExactFacetValues<int>("integer", "Integer");
+						RenderExactFacetValues<string>("dropdown", "Dropdown");
 					}
 				</div>
 				<div style="display: flex">
 					@{
-						RenderExactFacetValues<int>("integerVariant");
-						RenderExactFacetValues<string>("dropdownVariant");
+						RenderExactFacetValues<int>("integerVariant", "Integer (v)");
+						RenderExactFacetValues<string>("dropdownVariant", "Dropdown (v)");
 					}
 				</div>
 
@@ -218,9 +253,6 @@
 						<option value="date">Date</option>
 						<option value="dropdown">Dropdown</option>
 					</select>
-				</p>
-				<p>
-					<label for="sortDirection" style="display: block">Sort direction:</label>
 					<select id="sortDirection">
 						<option value="asc" selected>Ascending</option>
 						<option value="desc">Descending</option>
@@ -228,6 +260,7 @@
 				</p>
 			</fieldset>
 			<button type="submit" style="margin: 10px">Search 🔍</button>
+			<button type="button" style="margin: 10px" onclick="document.location.href = '.'">Clear ❌</button>
 		</form>
 	</div>
 	@if (Model.Documents is not null)
@@ -279,20 +312,23 @@
 </html>
 
 @{
-	void RenderExactFacetValues<T>(string fieldName)
+	void RenderExactFacetValues<T>(string fieldName, string label)
 	{
 		<div style="flex: 1">
 			<p>
-				<input type="checkbox" id="@(fieldName)AsFacet"/> <label for="@(fieldName)AsFacet">@fieldName.ToFirstUpperInvariant()</label>
+				<input type="checkbox" id="@(fieldName)AsFacet"/> <label for="@(fieldName)AsFacet">@label</label>
 			</p>
 			@{
 				var facetResult = Model.Facets?.FirstOrDefault(f => f.FieldName == fieldName);
 				if (facetResult is not null)
 				{
-					<ul>
+					<ul id="@(fieldName)FacetValues">
 						@foreach (var exactFacetValue in facetResult.Values.OfType<ExactFacetValue<T>>())
 						{
-							<li>@exactFacetValue.Key (@exactFacetValue.Count)</li>
+							<li>
+								<input type="checkbox" value="@exactFacetValue.Key" id="@(fieldName)Facet_@(exactFacetValue.Key)"/>
+								<label for="@(fieldName)Facet_@(exactFacetValue.Key)">@exactFacetValue.Key (@exactFacetValue.Count)</label>
+							</li>
 						}
 					</ul>
 				}

@@ -1,9 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Core.DependencyInjection;
+using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
+using Umbraco.Cms.Search.Provider.InMemory.NotificationHandlers;
 using Umbraco.Cms.Search.Provider.InMemory.Services;
 
 namespace Umbraco.Cms.Search.Provider.InMemory.DependencyInjection;
@@ -30,6 +32,9 @@ public static class UmbracoBuilderExtensions
             options.RegisterIndex<InMemoryIndexService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftContent);
             options.RegisterIndex<InMemoryIndexService, IPublishedContentChangeStrategy>(Constants.IndexAliases.PublishedContent);
         });
+
+        // rebuild in-memory indexes after start-up
+        builder.AddNotificationHandler<UmbracoApplicationStartedNotification, RebuildIndexesNotificationHandler>();
 
         return builder;
     }

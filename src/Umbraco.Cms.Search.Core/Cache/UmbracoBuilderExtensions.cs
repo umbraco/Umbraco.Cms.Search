@@ -35,14 +35,13 @@ public static class UmbracoBuilderExtensions
 {
     public static IUmbracoBuilder AddDistributedCacheForSearch(this IUmbracoBuilder builder)
     {
-        builder.AddNotificationHandler<PublicAccessEntrySavedNotification, PublicAccessEntrySavedNotificationHandler>();
-        builder.AddNotificationHandler<PublicAccessEntryDeletedNotification, PublicAccessEntryDeletedNotificationHandler>();
+        builder.AddNotificationHandler<ContentPublishingNotification, PublishNotificationHandler>();
+        builder.AddNotificationHandler<ContentPublishedNotification, PublishNotificationHandler>();
+        builder.AddNotificationHandler<ContentUnpublishedNotification, PublishNotificationHandler>();
+        builder.AddNotificationHandler<ContentMovedToRecycleBinNotification, PublishNotificationHandler>();
 
-        builder.AddNotificationHandler<ContentPublishingNotification, ContentPublishNotificationHandler>();
-        builder.AddNotificationHandler<ContentPublishedNotification, ContentPublishNotificationHandler>();
-        builder.AddNotificationHandler<ContentUnpublishedNotification, ContentPublishNotificationHandler>();
-        builder.AddNotificationHandler<ContentMovedToRecycleBinNotification, ContentPublishNotificationHandler>();
-        builder.AddNotificationHandler<ContentTreeChangeNotification, ContentPublishNotificationHandler>();
+        builder.AddNotificationHandler<PublicAccessEntrySavedNotification, PublicAccessNotificationHandler>();
+        builder.AddNotificationHandler<PublicAccessEntryDeletedNotification, PublicAccessNotificationHandler>();
 
         return builder;
     }

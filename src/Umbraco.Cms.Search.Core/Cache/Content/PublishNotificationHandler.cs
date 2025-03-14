@@ -6,16 +6,15 @@ using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Cache.Content;
 
-public class ContentPublishNotificationHandler: INotificationHandler<ContentPublishingNotification>,
+public class PublishNotificationHandler : INotificationHandler<ContentPublishingNotification>,
         IDistributedCacheNotificationHandler<ContentPublishedNotification>,
         IDistributedCacheNotificationHandler<ContentUnpublishedNotification>,
-        INotificationHandler<ContentMovedToRecycleBinNotification>,
-        INotificationHandler<ContentTreeChangeNotification>
+        INotificationHandler<ContentMovedToRecycleBinNotification>
 {
     private const string PublishNotificationStateKey = "Umbraco.Cms.Search.Core.PublishNotificationState";
     private readonly DistributedCache _distributedCache;
 
-    public ContentPublishNotificationHandler(DistributedCache distributedCache)
+    public PublishNotificationHandler(DistributedCache distributedCache)
         => _distributedCache = distributedCache;
 
     public void Handle(ContentPublishingNotification notification)
@@ -46,41 +45,31 @@ public class ContentPublishNotificationHandler: INotificationHandler<ContentPubl
                 }
 
                 var culturesChanged = culturesBefore.UnsortedSequenceEqual(entity.PublishedCultures) is false;
-                return new ContentCacheRefresher.JsonPayload(entity.Key, culturesChanged ? TreeChangeTypes.RefreshBranch : TreeChangeTypes.RefreshNode, true);
+                return new PublishedContentCacheRefresher.JsonPayload(entity.Key, culturesChanged ? TreeChangeTypes.RefreshBranch : TreeChangeTypes.RefreshNode);
             })
             .WhereNotNull()
             .ToArray();
 
-        _distributedCache.RefreshByPayload(ContentCacheRefresher.UniqueId, payloads);
+        _distributedCache.RefreshByPayload(PublishedContentCacheRefresher.UniqueId, payloads);
     }
 
     public void Handle(ContentUnpublishedNotification notification)
     {
         var payloads = notification
             .UnpublishedEntities
-            .Select(entity => new ContentCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.Remove, true))
+            .Select(entity => new PublishedContentCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.Remove))
             .ToArray();
 
-        _distributedCache.RefreshByPayload(ContentCacheRefresher.UniqueId, payloads);
+        _distributedCache.RefreshByPayload(PublishedContentCacheRefresher.UniqueId, payloads);
     }
 
     public void Handle(ContentMovedToRecycleBinNotification notification)
     {
         var payloads = notification
             .MoveInfoCollection
-            .Select(info => new ContentCacheRefresher.JsonPayload(info.Entity.Key, TreeChangeTypes.Remove, true))
+            .Select(info => new PublishedContentCacheRefresher.JsonPayload(info.Entity.Key, TreeChangeTypes.Remove))
             .ToArray();
 
-        _distributedCache.RefreshByPayload(ContentCacheRefresher.UniqueId, payloads);
-    }
-
-    public void Handle(ContentTreeChangeNotification notification)
-    {
-        var payloads = notification
-            .Changes
-            .Select(change => new ContentCacheRefresher.JsonPayload(change.Item.Key, change.ChangeTypes, false))
-            .ToArray();
-
-        _distributedCache.RefreshByPayload(ContentCacheRefresher.UniqueId, payloads);
+        _distributedCache.RefreshByPayload(PublishedContentCacheRefresher.UniqueId, payloads);
     }
 }

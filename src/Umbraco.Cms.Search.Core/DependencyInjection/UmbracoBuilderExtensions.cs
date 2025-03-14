@@ -1,14 +1,15 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Core.DependencyInjection;
+using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Search.Core.Cache;
 using Umbraco.Cms.Search.Core.Cache.Content;
+using Umbraco.Cms.Search.Core.Cache.PublicAccess;
 using Umbraco.Cms.Search.Core.Helpers;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing.Indexers;
-using PublicAccessCacheRefresherNotification = Umbraco.Cms.Search.Core.Cache.PublicAccess.PublicAccessCacheRefresherNotification;
 
 namespace Umbraco.Cms.Search.Core.DependencyInjection;
 
@@ -33,8 +34,9 @@ public static class UmbracoBuilderExtensions
         builder.Services.AddTransient<IDraftContentChangeStrategy, DraftContentChangeStrategy>();
 
         builder
-            .AddNotificationAsyncHandler<ContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
-            .AddNotificationAsyncHandler<PublicAccessCacheRefresherNotification, PublicAccessIndexingNotificationHandler>();
+            .AddNotificationHandler<ContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
+            .AddNotificationHandler<PublishedContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
+            .AddNotificationAsyncHandler<PublicAccessDetailedCacheRefresherNotification, PublicAccessIndexingNotificationHandler>();
 
         builder
             .WithCollectionBuilder<PropertyValueHandlerCollectionBuilder>()

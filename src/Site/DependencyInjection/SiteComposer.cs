@@ -18,8 +18,7 @@ public sealed class SiteComposer : IComposer
     {
         builder
             .AddNotificationHandler<ServerVariablesParsingNotification, EnableSegmentsNotificationHandler>()
-            .AddNotificationHandler<SendingContentNotification, CreateSegmentsNotificationHandler>()
-            .AddNotificationHandler<UmbracoApplicationStartedNotification, IndexBuildingNotificationHandler>();
+            .AddNotificationHandler<SendingContentNotification, CreateSegmentsNotificationHandler>();
 
         builder.Services.ConfigureOptions<ConfigureCustomMemberLoginPath>();
         builder.Services.ConfigureOptions<ConfigureUmbracoMemberAuthenticationDeliveryApiSwaggerGenOptions>();
