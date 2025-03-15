@@ -10,7 +10,7 @@ public sealed class PlainStringPropertyValueHandler : IPropertyValueHandler
     public bool CanHandle(string propertyEditorAlias)
         => propertyEditorAlias is Cms.Core.Constants.PropertyEditors.Aliases.TextBox or Cms.Core.Constants.PropertyEditors.Aliases.TextArea;
 
-    public IndexValue? GetIndexValue(IContent content, IProperty property, string? culture, string? segment, bool published)
+    public IndexValue? GetIndexValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
     {
         var value = content.GetValue<string>(property.Alias, culture, segment, published);
         return value.IsNullOrWhiteSpace()

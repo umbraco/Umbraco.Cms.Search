@@ -6,7 +6,7 @@ using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
-public abstract class VariantTestBase : TestBaseWithContent
+public abstract class VariantContentTestBase : ContentTestBase
 {
     [SetUp]
     public void SetupTest()

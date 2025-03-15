@@ -2,7 +2,7 @@ using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
-public class VariantStructureTests : VariantTestBase
+public class VariantContentStructureTests : VariantContentTestBase
 {
     [Test]
     public void PublishedStructureInAllCultures_YieldsAllPublishedDocumentsInAllCultures()

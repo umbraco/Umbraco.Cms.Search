@@ -5,7 +5,7 @@ using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
-public class VariantContentTests : VariantTestBase
+public class VariantContentTests : VariantContentTestBase
 {
     [Test]
     public void PublishedStructure_YieldsAllPublishedDocuments()

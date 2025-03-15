@@ -2,6 +2,7 @@
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Infrastructure.Persistence;
+using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Extensions;
 
@@ -34,11 +35,24 @@ internal class PublishedContentChangeStrategy : IPublishedContentChangeStrategy
 
     public async Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
     {
+        // make sure all indexes can handle documents
         var indexInfosAsArray = indexInfos as IndexInfo[] ?? indexInfos.ToArray();
-        var pendingRemovals = new List<Guid>();
-        foreach (var change in changes.Where(change => change.PublishStateAffected))
+        if (indexInfosAsArray.Any(indexInfo => indexInfo.ContainedObjectTypes.Contains(UmbracoObjectTypes.Document) is false))
         {
-            if (change.ChangeType is ContentChangeType.Remove)
+            _logger.LogWarning("One or more indexes for unsupported object types were detected and skipped. This strategy only supports Documents.");
+            indexInfosAsArray = indexInfosAsArray.Where(indexInfo => indexInfo.ContainedObjectTypes.Contains(UmbracoObjectTypes.Document)).ToArray();
+        }
+
+        // get the relevant changes for this change strategy
+        var changesAsArray = changes.Where(change =>
+            change.ContentState is ContentState.Published
+            && change.ObjectType is UmbracoObjectTypes.Document
+        ).ToArray();
+
+        var pendingRemovals = new List<Guid>();
+        foreach (var change in changesAsArray.Where(change => change.ContentState is ContentState.Published))
+        {
+            if (change.ChangeImpact is ChangeImpact.Remove)
             {
                 pendingRemovals.Add(change.Key);
             }
@@ -54,14 +68,14 @@ internal class PublishedContentChangeStrategy : IPublishedContentChangeStrategy
                 await RemoveFromIndexAsync(indexInfosAsArray, pendingRemovals);
                 pendingRemovals.Clear();
 
-                await ReindexAsync(indexInfosAsArray, content, change.ChangeType is ContentChangeType.RefreshWithDescendants, cancellationToken);
+                await ReindexAsync(indexInfosAsArray, content, change.ChangeImpact is ChangeImpact.RefreshWithDescendants, cancellationToken);
             }
         }
 
         await RemoveFromIndexAsync(indexInfosAsArray, pendingRemovals);
     }
-    
-    private async Task ReindexAsync(IndexInfo[] indexInfos, IContent content, bool forceReindexDescendants, CancellationToken cancellationToken)
+
+    private async Task ReindexAsync(IndexInfo[] indexInfos, IContentBase content, bool forceReindexDescendants, CancellationToken cancellationToken)
     {
         // index the content
         var indexedVariants = await UpdateIndexAsync(indexInfos, content, cancellationToken);
@@ -79,7 +93,7 @@ internal class PublishedContentChangeStrategy : IPublishedContentChangeStrategy
         }
     }
 
-    private async Task ReindexDescendantsAsync(IndexInfo[] indexInfos, IContent content, CancellationToken cancellationToken)
+    private async Task ReindexDescendantsAsync(IndexInfo[] indexInfos, IContentBase content, CancellationToken cancellationToken)
     {
         var removedDescendantIds = new List<int>();
         await EnumerateDescendantsByPath(content.Key, async descendants =>
@@ -104,7 +118,7 @@ internal class PublishedContentChangeStrategy : IPublishedContentChangeStrategy
         });
     }
 
-    private async Task<Variation[]> UpdateIndexAsync(IndexInfo[] indexInfos, IContent content, CancellationToken cancellationToken)
+    private async Task<Variation[]> UpdateIndexAsync(IndexInfo[] indexInfos, IContentBase content, CancellationToken cancellationToken)
     {
         var variations = RoutablePublishedVariations(content);
         if (variations.Length is 0)
@@ -176,23 +190,21 @@ internal class PublishedContentChangeStrategy : IPublishedContentChangeStrategy
 
     // NOTE: for the time being, segments are not individually publishable, but it will likely happen at some point,
     //       so this method deals with variations - not cultures.
-    private Variation[] RoutablePublishedVariations(IContent content)
+    private Variation[] RoutablePublishedVariations(IContentBase content)
     {
-        if (content.Published == false)
+        if (content.IsPublished() is false)
         {
             return [];
         }
 
-        var variesByCulture = content.ContentType.VariesByCulture();
+        var variesByCulture = content.VariesByCulture();
 
         // if the content varies by culture, the indexable cultures are the published
         // cultures - otherwise "null" represents "no culture"
-        var cultures = variesByCulture
-            ? content.PublishedCultures.ToArray()
-            : new string?[] { null };
+        var cultures = content.PublishedCultures();
 
         // now iterate all ancestors and make sure all cultures are published all the way up the tree
-        foreach (var ancestorId in content.GetAncestorIds() ?? [])
+        foreach (var ancestorId in content.GetAncestorIds())
         {
             IContent? ancestor = _contentService.GetById(ancestorId);
             if (ancestor is null || ancestor.Published is false)
@@ -200,7 +212,7 @@ internal class PublishedContentChangeStrategy : IPublishedContentChangeStrategy
                 // no published ancestor => don't index anything
                 cultures = [];
             }
-            else if (variesByCulture && ancestor.ContentType.VariesByCulture())
+            else if (variesByCulture && ancestor.VariesByCulture())
             {
                 // both the content and the ancestor are culture variant => only index the published cultures they have in common
                 cultures = cultures.Intersect(ancestor.PublishedCultures).ToArray();

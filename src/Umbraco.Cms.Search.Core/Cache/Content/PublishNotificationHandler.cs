@@ -1,10 +1,10 @@
 ﻿using Umbraco.Cms.Core.Cache;
-using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services.Changes;
 using Umbraco.Extensions;
 
-namespace Umbraco.Cms.Search.Core.Cache.Content;
+// NOTE: the namespace is defined as what it would be, if this was part of Umbraco core.
+namespace Umbraco.Cms.Core.Events;
 
 public class PublishNotificationHandler : INotificationHandler<ContentPublishingNotification>,
         IDistributedCacheNotificationHandler<ContentPublishedNotification>,

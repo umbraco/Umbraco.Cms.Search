@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Extensions;
 
@@ -16,7 +17,7 @@ public sealed class ContentIndexingDataCollectionService : IContentIndexingDataC
         _logger = logger;
     }
 
-    public async Task<IEnumerable<IndexField>?> CollectAsync(IContent content, bool published, CancellationToken cancellationToken)
+    public async Task<IEnumerable<IndexField>?> CollectAsync(IContentBase content, bool published, CancellationToken cancellationToken)
     {
         var systemFieldsIndexers = _contentIndexers.OfType<ISystemFieldsContentIndexer>().ToArray();
         if (systemFieldsIndexers.Length != 1)
@@ -24,7 +25,7 @@ public sealed class ContentIndexingDataCollectionService : IContentIndexingDataC
             throw new InvalidOperationException("One and only one system fields content indexer must be present.");
         }
 
-        var cultures = published ? PublishedCultures(content) : AvailableCultures(content);
+        var cultures = published ? content.PublishedCultures() : content.AvailableCultures();
         if (cultures.Length is 0)
         {
             return null;
@@ -56,14 +57,4 @@ public sealed class ContentIndexingDataCollectionService : IContentIndexingDataC
 
         return fieldsByIdentifier.Values;
     }
-    
-    private string?[] AvailableCultures(IContent content)
-        => content.ContentType.VariesByCulture()
-            ? content.AvailableCultures.ToArray()
-            : [null];
-
-    private string?[] PublishedCultures(IContent content)
-        => content.ContentType.VariesByCulture()
-            ? content.PublishedCultures.ToArray()
-            : [null];
 }

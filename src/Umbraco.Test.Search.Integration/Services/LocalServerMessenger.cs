@@ -2,7 +2,7 @@
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Infrastructure.Sync;
 
-namespace Umbraco.Test.Search.Integration.Tests;
+namespace Umbraco.Test.Search.Integration.Services;
 
 internal class LocalServerMessenger : ServerMessengerBase
 {

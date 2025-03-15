@@ -5,5 +5,5 @@ namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 public interface IContentIndexer
 {
-    Task<IEnumerable<IndexField>> GetIndexFieldsAsync(IContent content, string?[] cultures, bool published, CancellationToken cancellationToken);
+    Task<IEnumerable<IndexField>> GetIndexFieldsAsync(IContentBase content, string?[] cultures, bool published, CancellationToken cancellationToken);
 }

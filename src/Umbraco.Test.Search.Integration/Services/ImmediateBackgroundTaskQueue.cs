@@ -1,6 +1,6 @@
 ﻿using Umbraco.Cms.Infrastructure.HostedServices;
 
-namespace Umbraco.Test.Search.Integration.Tests;
+namespace Umbraco.Test.Search.Integration.Services;
 
 internal class ImmediateBackgroundTaskQueue : IBackgroundTaskQueue
 {

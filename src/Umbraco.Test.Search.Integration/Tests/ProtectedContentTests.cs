@@ -5,7 +5,7 @@ using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
-public class ProtectedContentTests : InvariantTestBase
+public class ProtectedContentTests : InvariantContentTestBase
 {
     private Guid _memberGroupOneKey;
     private Guid _memberGroupTwoKey;

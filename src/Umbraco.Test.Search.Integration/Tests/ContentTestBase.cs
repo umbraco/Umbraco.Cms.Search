@@ -1,9 +1,14 @@
 ﻿using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
-public abstract class TestBaseWithContent : TestBase
+public abstract class ContentTestBase : ContentBaseTestBase
 {
+    protected IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>(); 
+
+    protected IContentService ContentService => GetRequiredService<IContentService>();
+
     protected Guid RootKey { get; } = Guid.NewGuid();
 
     protected Guid ChildKey { get; } = Guid.NewGuid();

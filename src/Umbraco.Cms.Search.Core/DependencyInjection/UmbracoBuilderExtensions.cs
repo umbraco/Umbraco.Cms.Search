@@ -1,9 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Core.DependencyInjection;
+using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
-using Umbraco.Cms.Search.Core.Cache;
-using Umbraco.Cms.Search.Core.Cache.Content;
-using Umbraco.Cms.Search.Core.Cache.PublicAccess;
 using Umbraco.Cms.Search.Core.Helpers;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers;
@@ -35,6 +33,7 @@ public static class UmbracoBuilderExtensions
 
         builder
             .AddNotificationHandler<ContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
+            .AddNotificationHandler<MediaCacheRefresherNotification, ContentIndexingNotificationHandler>()
             .AddNotificationHandler<PublishedContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
             .AddNotificationAsyncHandler<PublicAccessDetailedCacheRefresherNotification, PublicAccessIndexingNotificationHandler>();
 
@@ -42,7 +41,7 @@ public static class UmbracoBuilderExtensions
             .WithCollectionBuilder<PropertyValueHandlerCollectionBuilder>()
             .Add(() => builder.TypeLoader.GetTypes<IPropertyValueHandler>());
 
-        builder.AddDistributedCacheForSearch();
+        builder.AddCustomCacheRefresherNotificationHandlers();
         
         return builder;
     }

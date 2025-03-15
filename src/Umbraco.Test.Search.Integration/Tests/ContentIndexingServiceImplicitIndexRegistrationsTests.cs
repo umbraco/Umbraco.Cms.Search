@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Cms.Search.Core.Models.Indexing;
@@ -20,8 +21,8 @@ public class ContentIndexingServiceImplicitIndexRegistrationsTests : ContentInde
 
         builder.Services.Configure<IndexOptions>(options =>
         {
-            options.RegisterIndex<IIndexService, IPublishedContentChangeStrategy>(Constants.IndexAliases.PublishedContent);
-            options.RegisterIndex<IIndexService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftContent);
+            options.RegisterIndex<IIndexService, IPublishedContentChangeStrategy>(Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IIndexService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
         });
     }
 
@@ -29,13 +30,16 @@ public class ContentIndexingServiceImplicitIndexRegistrationsTests : ContentInde
     public void IndexesAreRegistered()
     {
         var sut = GetRequiredService<IContentIndexingService>();
-        sut.Handle([new ContentChange(Guid.NewGuid(), ContentChangeType.Refresh, true)]);
+        sut.Handle([ContentChange.Document(Guid.NewGuid(), ChangeImpact.Refresh, ContentState.Published)]);
 
         // two different change strategies registered (although it's the implementation)
         Assert.That(Strategy.HandledIndexInfos, Has.Count.EqualTo(2));
-        // ...each invoked once
-        Assert.That(Strategy.HandledIndexInfos[0], Has.Count.EqualTo(1));
-        Assert.That(Strategy.HandledIndexInfos[1], Has.Count.EqualTo(1));
+        Assert.Multiple(() =>
+        {
+            // ...each invoked once
+            Assert.That(Strategy.HandledIndexInfos[0], Has.Count.EqualTo(1));
+            Assert.That(Strategy.HandledIndexInfos[1], Has.Count.EqualTo(1));
+        });
 
         Assert.Multiple(() =>
         {

@@ -1,6 +1,6 @@
 ﻿namespace Umbraco.Test.Search.Integration.Tests;
 
-public partial class InvariantStructureTests
+public partial class InvariantContentStructureTests
 {
     [Test]
     public void DraftStructure_YieldsAllDocuments()
@@ -44,10 +44,13 @@ public partial class InvariantStructureTests
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
         
         var result = ContentService.MoveToRecycleBin(Grandchild());
-        Assert.That(result.Success, Is.True);
-        Assert.That(Grandchild().Trashed, Is.True);
-        Assert.That(GreatGrandchild().Trashed, Is.True);
-           
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Success, Is.True);
+            Assert.That(Grandchild().Trashed, Is.True);
+            Assert.That(GreatGrandchild().Trashed, Is.True);
+        });
+
         var documents = IndexService.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
            

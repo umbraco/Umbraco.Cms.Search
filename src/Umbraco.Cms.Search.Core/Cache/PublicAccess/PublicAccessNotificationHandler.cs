@@ -4,7 +4,8 @@ using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Extensions;
 
-namespace Umbraco.Cms.Search.Core.Cache.PublicAccess;
+// NOTE: the namespace is defined as what it would be, if this was part of Umbraco core.
+namespace Umbraco.Cms.Core.Events;
 
 internal sealed class PublicAccessNotificationHandler :
     IDistributedCacheNotificationHandler<PublicAccessEntrySavedNotification>,

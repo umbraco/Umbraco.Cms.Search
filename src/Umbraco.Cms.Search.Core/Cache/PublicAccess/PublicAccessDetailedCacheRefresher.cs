@@ -1,8 +1,9 @@
-﻿using Umbraco.Cms.Core.Cache;
-using Umbraco.Cms.Core.Events;
+﻿using Umbraco.Cms.Core.Events;
+using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Serialization;
 
-namespace Umbraco.Cms.Search.Core.Cache.PublicAccess;
+// NOTE: the namespace is defined as what it would be, if this was part of Umbraco core.
+namespace Umbraco.Cms.Core.Cache;
 
 public sealed class PublicAccessDetailedCacheRefresher : PayloadCacheRefresherBase<PublicAccessDetailedCacheRefresherNotification, PublicAccessDetailedCacheRefresher.JsonPayload>
 {

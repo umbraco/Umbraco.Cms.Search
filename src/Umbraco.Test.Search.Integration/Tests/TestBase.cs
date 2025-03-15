@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Core.Cache;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
-using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Infrastructure.HostedServices;
 using Umbraco.Cms.Search.Core.Configuration;
@@ -24,13 +24,10 @@ public abstract class TestBase : UmbracoIntegrationTest
     {
         public const string PublishedContent = "TestPublishedContentIndex";
         public const string DraftContent = "TestDraftContentIndex";
+        public const string Media = "TestMediaIndex";
     }
 
     protected TestIndexService IndexService => _testIndexService;
-
-    protected IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>(); 
-
-    protected IContentService ContentService => GetRequiredService<IContentService>();
         
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
@@ -47,10 +44,12 @@ public abstract class TestBase : UmbracoIntegrationTest
 
         builder.Services.Configure<IndexOptions>(options =>
         {
-            options.RegisterIndex<IIndexService, IPublishedContentChangeStrategy>(IndexAliases.PublishedContent);
-            options.RegisterIndex<IIndexService, IDraftContentChangeStrategy>(IndexAliases.DraftContent);
+            options.RegisterIndex<IIndexService, IPublishedContentChangeStrategy>(IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IIndexService, IDraftContentChangeStrategy>(IndexAliases.DraftContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IIndexService, IDraftContentChangeStrategy>(IndexAliases.Media, UmbracoObjectTypes.Media);
         });
 
         builder.AddNotificationHandler<ContentTreeChangeNotification, ContentTreeChangeDistributedCacheNotificationHandler>();
+        builder.AddNotificationHandler<MediaTreeChangeNotification, MediaTreeChangeDistributedCacheNotificationHandler>();
     }
 }

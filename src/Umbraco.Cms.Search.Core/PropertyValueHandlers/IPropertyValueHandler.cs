@@ -8,5 +8,5 @@ public interface IPropertyValueHandler : IDiscoverable
 {
     bool CanHandle(string propertyEditorAlias);
 
-    IndexValue? GetIndexValue(IContent content, IProperty property, string? culture, string? segment, bool published);
+    IndexValue? GetIndexValue(IContentBase content, IProperty property, string? culture, string? segment, bool published);
 }

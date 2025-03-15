@@ -27,7 +27,6 @@ public partial class InvariantContentTests
             VerifyDocumentPropertyValues(documents[3], "The great grandchild title (draft)", 79);
         });
     }
-
     
     [Test]
     public void DraftStructure_YieldsStructuralFields()

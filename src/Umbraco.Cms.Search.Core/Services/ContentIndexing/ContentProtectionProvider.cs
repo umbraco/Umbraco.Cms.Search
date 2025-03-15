@@ -18,8 +18,13 @@ internal sealed class ContentProtectionProvider : IContentProtectionProvider
         _memberGroupService = memberGroupService;
     }
 
-    public Task<ContentProtection?> GetContentProtectionAsync(IContent content)
+    public Task<ContentProtection?> GetContentProtectionAsync(IContentBase content)
     {
+        if (content is not IContent)
+        {
+            return Task.FromResult<ContentProtection?>(null);
+        }
+        
         var publicAccessEntry = _publicAccessService.GetEntryForContent(content.Path);
         if (publicAccessEntry is null)
         {

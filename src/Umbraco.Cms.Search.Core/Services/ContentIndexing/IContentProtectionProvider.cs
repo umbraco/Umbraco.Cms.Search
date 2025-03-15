@@ -5,5 +5,5 @@ namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 public interface IContentProtectionProvider
 {
-    Task<ContentProtection?> GetContentProtectionAsync(IContent content);
+    Task<ContentProtection?> GetContentProtectionAsync(IContentBase content);
 }

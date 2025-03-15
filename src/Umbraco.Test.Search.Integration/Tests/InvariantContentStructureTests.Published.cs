@@ -1,6 +1,6 @@
 ﻿namespace Umbraco.Test.Search.Integration.Tests;
 
-public partial class InvariantStructureTests
+public partial class InvariantContentStructureTests
 {
     [Test]
     public void PublishedStructure_YieldsAllPublishedDocuments()

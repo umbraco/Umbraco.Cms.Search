@@ -1,5 +1,7 @@
-﻿using Umbraco.Cms.Core.Models;
+﻿using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Extensions;
 
@@ -9,40 +11,57 @@ public class DraftContentChangeStrategy : IDraftContentChangeStrategy
 {
     private readonly IContentIndexingDataCollectionService _contentIndexingDataCollectionService;
     private readonly IContentService _contentService;
+    private readonly IMediaService _mediaService;
+    private readonly IMemberService _memberService;
+    private readonly ILogger<DraftContentChangeStrategy> _logger;
 
-    public DraftContentChangeStrategy(IContentIndexingDataCollectionService contentIndexingDataCollectionService, IContentService contentService)
+    public DraftContentChangeStrategy(
+        IContentIndexingDataCollectionService contentIndexingDataCollectionService,
+        IContentService contentService,
+        IMediaService mediaService,
+        IMemberService memberService,
+        ILogger<DraftContentChangeStrategy> logger)
     {
         _contentIndexingDataCollectionService = contentIndexingDataCollectionService;
         _contentService = contentService;
+        _mediaService = mediaService;
+        _memberService = memberService;
+        _logger = logger;
     }
 
     public async Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
     {
         var indexInfosAsArray = indexInfos as IndexInfo[] ?? indexInfos.ToArray();
 
-        var pendingRemovals = new List<Guid>();
-        foreach (var change in changes.Where(change => change.PublishStateAffected is false))
+        // get the relevant changes for this change strategy
+        var changesAsArray = changes.Where(change =>
+            change.ContentState is ContentState.Draft
+            && change.ObjectType is UmbracoObjectTypes.Document or UmbracoObjectTypes.Media or UmbracoObjectTypes.Member
+        ).ToArray();
+
+        var pendingRemovals = new List<ContentChange>();
+        foreach (var change in changesAsArray.Where(change => change.ContentState is ContentState.Draft))
         {
-            if (change.ChangeType is ContentChangeType.Remove)
+            if (change.ChangeImpact is ChangeImpact.Remove)
             {
-                pendingRemovals.Add(change.Key);
+                pendingRemovals.Add(change);
             }
             else
             {
-                var content = _contentService.GetById(change.Key);
+                var content = GetContent(change);
                 if (content is null)
                 {
-                    pendingRemovals.Add(change.Key);
+                    pendingRemovals.Add(change);
                     continue;
                 }
 
                 await RemoveFromIndexAsync(indexInfosAsArray, pendingRemovals);
                 pendingRemovals.Clear();
 
-                var updated = await UpdateIndexAsync(indexInfosAsArray, content, cancellationToken);
+                var updated = await UpdateIndexAsync(indexInfosAsArray, change, content, cancellationToken);
                 if (updated is false)
                 {
-                    pendingRemovals.Add(content.Key);
+                    pendingRemovals.Add(change);
                 }
             }
         }
@@ -50,7 +69,7 @@ public class DraftContentChangeStrategy : IDraftContentChangeStrategy
         await RemoveFromIndexAsync(indexInfosAsArray, pendingRemovals);
     }
 
-    private async Task<bool> UpdateIndexAsync(IndexInfo[] indexInfos, IContent content, CancellationToken cancellationToken)
+    private async Task<bool> UpdateIndexAsync(IndexInfo[] indexInfos, ContentChange change, IContentBase content, CancellationToken cancellationToken)
     {
         var fields = (await _contentIndexingDataCollectionService.CollectAsync(content, false, cancellationToken))?.ToArray();
         if (fields is null)
@@ -58,9 +77,7 @@ public class DraftContentChangeStrategy : IDraftContentChangeStrategy
             return false;
         }
 
-        string?[] cultures = content.ContentType.VariesByCulture()
-            ? content.AvailableCultures.ToArray()
-            : [null];
+        string?[] cultures = content.AvailableCultures();
 
         var variations = content.ContentType.VariesBySegment()
             ? cultures
@@ -78,22 +95,40 @@ public class DraftContentChangeStrategy : IDraftContentChangeStrategy
         
         foreach (var indexInfo in indexInfos)
         {
+            if (indexInfo.ContainedObjectTypes.Contains(change.ObjectType) is false)
+            {
+                continue;
+            }
+
             await indexInfo.IndexService.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, variations, fields, null);
         }
 
         return true;
     }
 
-    private async Task RemoveFromIndexAsync(IndexInfo[] indexInfos, IReadOnlyCollection<Guid> keys)
+    private async Task RemoveFromIndexAsync(IndexInfo[] indexInfos, IReadOnlyCollection<ContentChange> contentChanges)
     {
-        if (keys.Count is 0)
+        if (contentChanges.Count is 0)
         {
             return;
         }
 
         foreach (var indexInfo in indexInfos)
         {
+            var keys = contentChanges
+                .Where(change => indexInfo.ContainedObjectTypes.Contains(change.ObjectType))
+                .Select(change => change.Key)
+                .ToArray();
             await indexInfo.IndexService.DeleteAsync(indexInfo.IndexAlias, keys);
         }
     }
+
+    private IContentBase? GetContent(ContentChange change)
+        => change.ObjectType switch
+        {
+            UmbracoObjectTypes.Document => _contentService.GetById(change.Key),
+            UmbracoObjectTypes.Media => _mediaService.GetById(change.Key),
+            UmbracoObjectTypes.Member => _memberService.GetByKey(change.Key),
+            _ => throw new ArgumentOutOfRangeException(nameof(change.ObjectType))
+        };
 }

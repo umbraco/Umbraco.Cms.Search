@@ -8,7 +8,11 @@ public static class Constants
 
         public const string PublishedContent = $"{IndexPrefix}PublishedContent";
 
+        // TODO: "Draft" should be removed here; it makes no sense for Media and Members, and we don't have "DraftContent" anywhere else - just "Content".
+        
         public const string DraftContent = $"{IndexPrefix}DraftContent";
+
+        public const string DraftMedia = $"{IndexPrefix}DraftMedia";
     }
 
     public static class FieldNames

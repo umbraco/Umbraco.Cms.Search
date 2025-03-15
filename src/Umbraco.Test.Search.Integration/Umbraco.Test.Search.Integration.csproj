@@ -34,10 +34,10 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Update="Tests\InvariantStructureTests.Published.cs">
+      <Compile Update="Tests\InvariantContentStructureTests.Published.cs">
         <DependentUpon>InvariantStructureTests.cs</DependentUpon>
       </Compile>
-      <Compile Update="Tests\InvariantStructureTests.Draft.cs">
+      <Compile Update="Tests\InvariantContentStructureTests.Draft.cs">
         <DependentUpon>InvariantStructureTests.cs</DependentUpon>
       </Compile>
       <Compile Update="Tests\InvariantContentTests.Published.cs">

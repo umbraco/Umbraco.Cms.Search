@@ -2,9 +2,9 @@
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Helpers;
 using Umbraco.Cms.Search.Core.Models.Indexing;
-using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing.Indexers;
 
@@ -27,10 +27,10 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
         _logger = logger;
     }
 
-    public Task<IEnumerable<IndexField>> GetIndexFieldsAsync(IContent content, string?[] cultures, bool published, CancellationToken cancellationToken)
+    public Task<IEnumerable<IndexField>> GetIndexFieldsAsync(IContentBase content, string?[] cultures, bool published, CancellationToken cancellationToken)
         => Task.FromResult(CollectSystemFields(content, cultures));
 
-    private IEnumerable<IndexField> CollectSystemFields(IContent content, string?[] cultures)
+    private IEnumerable<IndexField> CollectSystemFields(IContentBase content, string?[] cultures)
     {
         if (TryGetParentKey(content, out var parentKey) is false)
         {
@@ -60,7 +60,7 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
         return fields;
     }
 
-    private bool TryGetParentKey(IContent content, [NotNullWhen(true)] out Guid? parentKey)
+    private bool TryGetParentKey(IContentBase content, [NotNullWhen(true)] out Guid? parentKey)
     {
         if (content.ParentId <= 0)
         {
@@ -68,7 +68,7 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
             return true;
         }
 
-        var parentKeyAttempt = _idKeyMap.GetKeyForId(content.ParentId, UmbracoObjectTypes.Document);
+        var parentKeyAttempt = _idKeyMap.GetKeyForId(content.ParentId, content.GetObjectType());
         if (parentKeyAttempt.Success is false)
         {
             _logger.LogWarning(
@@ -83,13 +83,13 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
         return true;
     }
     
-    private bool TryGetPathKeys(IContent content, out IList<Guid> pathKeys)
+    private bool TryGetPathKeys(IContentBase content, out IList<Guid> pathKeys)
     {
-        var ancestorIds = content.GetAncestorIds() ?? [];
+        var ancestorIds = content.GetAncestorIds();
         pathKeys = new List<Guid>();
         foreach (var ancestorId in ancestorIds)
         {
-            var attempt = _idKeyMap.GetKeyForId(ancestorId, UmbracoObjectTypes.Document);
+            var attempt = _idKeyMap.GetKeyForId(ancestorId, content.GetObjectType());
             if (attempt.Success is false)
             {
                 _logger.LogWarning(
@@ -106,7 +106,7 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
         return true;
     }
 
-    private IEnumerable<IndexField> GetCultureTagFields(IContent content, string?[] cultures)
+    private IEnumerable<IndexField> GetCultureTagFields(IContentBase content, string?[] cultures)
     {
         foreach (var culture in cultures)
         {
@@ -123,7 +123,7 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
         }
     }
 
-    private IEnumerable<IndexField> GetCultureNameFields(IContent content, string?[] cultures)
+    private IEnumerable<IndexField> GetCultureNameFields(IContentBase content, string?[] cultures)
     {
         foreach (var culture in cultures)
         {

@@ -1,7 +1,7 @@
-﻿using Umbraco.Cms.Core.Notifications;
-using Umbraco.Cms.Core.Sync;
+﻿using Umbraco.Cms.Core.Sync;
 
-namespace Umbraco.Cms.Search.Core.Cache.Content;
+// NOTE: the namespace is defined as what it would be, if this was part of Umbraco core.
+namespace Umbraco.Cms.Core.Notifications;
 
 public class PublishedContentCacheRefresherNotification : CacheRefresherNotification
 {

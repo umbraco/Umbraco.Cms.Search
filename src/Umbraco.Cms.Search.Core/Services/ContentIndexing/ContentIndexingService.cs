@@ -54,7 +54,7 @@ internal sealed class ContentIndexingService : IContentIndexingService
                         return null;
                     }
 
-                    return new IndexInfo(g.IndexAlias, indexService);
+                    return new IndexInfo(g.IndexAlias, g.ContainedObjectTypes, indexService);
                 })
                 .WhereNotNull()
                 .ToArray();
@@ -65,7 +65,7 @@ internal sealed class ContentIndexingService : IContentIndexingService
                 continue;
             }
 
-            // TODO: add content type info to this, so strategies can choose to only handle content, media or members 
+            // TODO: add content type info to this, so strategies can choose to only handle content, media or members
             await contentChangeStrategy.HandleAsync(indexInfos, changesAsArray, cancellationToken);
         }
     }

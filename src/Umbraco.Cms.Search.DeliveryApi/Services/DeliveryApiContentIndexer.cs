@@ -24,8 +24,13 @@ internal sealed class DeliveryApiContentIndexer : IContentIndexer
         _logger = logger;
     }
 
-    public Task<IEnumerable<IndexField>> GetIndexFieldsAsync(IContent content, string?[] cultures, bool published, CancellationToken cancellationToken)
+    public Task<IEnumerable<IndexField>> GetIndexFieldsAsync(IContentBase content, string?[] cultures, bool published, CancellationToken cancellationToken)
     {
+        if (content is not IContent concreteContent)
+        {
+            return Task.FromResult(Enumerable.Empty<IndexField>());
+        }
+        
         var indexFieldsByIdentifier = new Dictionary<string, IndexField>();
 
         foreach (IContentIndexHandler handler in _contentIndexHandlerCollection)
@@ -39,11 +44,11 @@ internal sealed class DeliveryApiContentIndexer : IContentIndexer
             foreach (var culture in cultures)
             {
                 var fields = handler.GetFields().ToArray();
-                var fieldValues = handler.GetFieldValues(content, culture).ToArray();
+                var fieldValues = handler.GetFieldValues(concreteContent, culture).ToArray();
                 
                 foreach (IndexFieldValue fieldValue in fieldValues)
                 {
-                    var identifier = $"{fieldValue.FieldName}|{culture}";;
+                    var identifier = $"{fieldValue.FieldName}|{culture}";
                     if (indexFieldsByIdentifier.ContainsKey(identifier))
                     {
                         _logger.LogWarning(

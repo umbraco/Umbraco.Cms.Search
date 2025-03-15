@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Cms.Search.Core.Models.Indexing;
@@ -18,8 +19,8 @@ public class ContentIndexingServiceExplicitIndexRegistrationsTests : ContentInde
 
         builder.Services.Configure<IndexOptions>(options =>
         {
-            options.RegisterIndex<TestIndexService, TestContentChangeStrategy>(Constants.IndexAliases.PublishedContent);
-            options.RegisterIndex<TestIndexService, TestContentChangeStrategy>(Constants.IndexAliases.DraftContent);
+            options.RegisterIndex<TestIndexService, TestContentChangeStrategy>(Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<TestIndexService, TestContentChangeStrategy>(Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
         });
     }
 
@@ -27,7 +28,7 @@ public class ContentIndexingServiceExplicitIndexRegistrationsTests : ContentInde
     public void IndexesAreRegistered()
     {
         var sut = GetRequiredService<IContentIndexingService>();
-        sut.Handle([new ContentChange(Guid.NewGuid(), ContentChangeType.Refresh, true)]);
+        sut.Handle([ContentChange.Document(Guid.NewGuid(), ChangeImpact.Refresh, ContentState.Published)]);
 
         // one change strategy registered (same for both indexes)
         Assert.That(Strategy.HandledIndexInfos, Has.Count.EqualTo(1));

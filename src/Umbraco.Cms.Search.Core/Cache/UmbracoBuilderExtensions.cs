@@ -1,27 +1,28 @@
 ﻿using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Notifications;
-using Umbraco.Cms.Search.Core.Cache.Content;
-using Umbraco.Cms.Search.Core.Cache.PublicAccess;
 
-namespace Umbraco.Cms.Search.Core.Cache;
+// NOTE: the namespace is defined as what it would be, if this was part of Umbraco core.
+namespace Umbraco.Cms.Core.Events;
 
 /*
- * This wires up custom distributed cache refreshers for content and public access changes.
+ * This wires up notification handlers for custom distributed cache refreshers for content and public access changes.
  *
- * Eventually the core cache refreshers should be retrofitted with a more granularity. When that happens, everything
- * in this namespace can be removed.
+ * Eventually these cache refreshers should probably be added to core, or the core cache refreshers should be
+ * retrofitted with a higher level of granularity.
  *
- * ## Content cache refresher ##
+ * ## Published content cache refresher ##
  *
  * The core distributed caching for content changes cannot tell the difference between "something was published" and
  * "something was saved". We need that to perform only the indexing operations strictly necessary when maintaining
  * indexes for published and draft content, respectively.
  *
- * This custom cache refresher adds that level of granularity. It also adds the ability to distinguish between
- * "publish" and "republish" at culture level, because we only want to trigger a full reindex of all descendants
- * in a given culture (or invariant) when publishing - not when republishing the same culture.
+ * This custom cache refresher adds that level of granularity.
  *
- * ## Public access cache refresher ##
+ * It also adds the ability to distinguish between "publish" and "republish" at culture level, because we only want to
+ * trigger a full reindex of all descendants in a given culture (or invariant) when (un)publishing a new culture - not
+ * when republishing an already published culture.
+ *
+ * ## Detailed public access cache refresher ##
  *
  * The core distributed caching for public access changes is lacking detail; it ever only broadcasts that
  * "something has changed - please refresh everything". While that works for the core to invalidate any caching of
@@ -33,7 +34,7 @@ namespace Umbraco.Cms.Search.Core.Cache;
  */
 public static class UmbracoBuilderExtensions
 {
-    public static IUmbracoBuilder AddDistributedCacheForSearch(this IUmbracoBuilder builder)
+    public static IUmbracoBuilder AddCustomCacheRefresherNotificationHandlers(this IUmbracoBuilder builder)
     {
         builder.AddNotificationHandler<ContentPublishingNotification, PublishNotificationHandler>();
         builder.AddNotificationHandler<ContentPublishedNotification, PublishNotificationHandler>();

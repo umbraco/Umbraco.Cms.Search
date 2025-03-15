@@ -9,7 +9,7 @@ public sealed class IntegerPropertyValueHandler : IPropertyValueHandler
     public bool CanHandle(string propertyEditorAlias)
         => propertyEditorAlias is Cms.Core.Constants.PropertyEditors.Aliases.Integer;
 
-    public IndexValue? GetIndexValue(IContent content, IProperty property, string? culture, string? segment, bool published)
+    public IndexValue? GetIndexValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
     {
         var value = content.GetValue<int?>(property.Alias, culture, segment, published);
         return value.HasValue

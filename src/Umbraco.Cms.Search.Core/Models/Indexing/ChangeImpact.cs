@@ -1,6 +1,6 @@
 namespace Umbraco.Cms.Search.Core.Models.Indexing;
 
-public enum ContentChangeType
+public enum ChangeImpact
 {
     Refresh = 1,
     RefreshWithDescendants = 2,

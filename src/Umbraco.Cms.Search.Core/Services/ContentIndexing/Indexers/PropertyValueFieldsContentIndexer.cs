@@ -19,10 +19,10 @@ internal sealed class PropertyValueFieldsContentIndexer : IContentIndexer
         _logger = logger;
     }
 
-    public Task<IEnumerable<IndexField>> GetIndexFieldsAsync(IContent content, string?[] cultures, bool published, CancellationToken cancellationToken)
+    public Task<IEnumerable<IndexField>> GetIndexFieldsAsync(IContentBase content, string?[] cultures, bool published, CancellationToken cancellationToken)
         => Task.FromResult(CollectPropertyValueFields(content, cultures, published));
 
-    private IEnumerable<IndexField> CollectPropertyValueFields(IContent content, string?[] cultures, bool published)
+    private IEnumerable<IndexField> CollectPropertyValueFields(IContentBase content, string?[] cultures, bool published)
     {
         var fields = new List<IndexField>();
 

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Core.DependencyInjection;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Configuration;
@@ -29,8 +30,10 @@ public static class UmbracoBuilderExtensions
         builder.Services.Configure<IndexOptions>(options =>
         {
             // register in-memory indexes for draft and published content
-            options.RegisterIndex<InMemoryIndexService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftContent);
-            options.RegisterIndex<InMemoryIndexService, IPublishedContentChangeStrategy>(Constants.IndexAliases.PublishedContent);
+            options.RegisterIndex<InMemoryIndexService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<InMemoryIndexService, IPublishedContentChangeStrategy>(Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+            // register in-memory index for media
+            options.RegisterIndex<InMemoryIndexService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
         });
 
         // rebuild in-memory indexes after start-up
