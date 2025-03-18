@@ -34,6 +34,7 @@ public static class UmbracoBuilderExtensions
         builder
             .AddNotificationHandler<ContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
             .AddNotificationHandler<MediaCacheRefresherNotification, ContentIndexingNotificationHandler>()
+            .AddNotificationHandler<MemberCacheRefresherNotification, ContentIndexingNotificationHandler>()
             .AddNotificationHandler<PublishedContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
             .AddNotificationAsyncHandler<PublicAccessDetailedCacheRefresherNotification, PublicAccessIndexingNotificationHandler>();
 

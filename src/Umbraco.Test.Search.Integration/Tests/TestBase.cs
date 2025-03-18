@@ -25,6 +25,7 @@ public abstract class TestBase : UmbracoIntegrationTest
         public const string PublishedContent = "TestPublishedContentIndex";
         public const string DraftContent = "TestDraftContentIndex";
         public const string Media = "TestMediaIndex";
+        public const string Member = "TestMemberIndex";
     }
 
     protected TestIndexService IndexService => _testIndexService;
@@ -47,9 +48,12 @@ public abstract class TestBase : UmbracoIntegrationTest
             options.RegisterIndex<IIndexService, IPublishedContentChangeStrategy>(IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
             options.RegisterIndex<IIndexService, IDraftContentChangeStrategy>(IndexAliases.DraftContent, UmbracoObjectTypes.Document);
             options.RegisterIndex<IIndexService, IDraftContentChangeStrategy>(IndexAliases.Media, UmbracoObjectTypes.Media);
+            options.RegisterIndex<IIndexService, IDraftContentChangeStrategy>(IndexAliases.Member, UmbracoObjectTypes.Member);
         });
 
         builder.AddNotificationHandler<ContentTreeChangeNotification, ContentTreeChangeDistributedCacheNotificationHandler>();
         builder.AddNotificationHandler<MediaTreeChangeNotification, MediaTreeChangeDistributedCacheNotificationHandler>();
+        builder.AddNotificationHandler<MemberSavedNotification, MemberSavedDistributedCacheNotificationHandler>();
+        builder.AddNotificationHandler<MemberDeletedNotification, MemberDeletedDistributedCacheNotificationHandler>();
     }
 }

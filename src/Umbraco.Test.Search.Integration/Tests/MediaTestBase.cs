@@ -8,7 +8,7 @@ namespace Umbraco.Test.Search.Integration.Tests;
 
 public abstract class MediaTestBase : ContentBaseTestBase
 {
-    protected IMediaTypeService MediaTypeService => GetRequiredService<IMediaTypeService>(); 
+    private IMediaTypeService MediaTypeService => GetRequiredService<IMediaTypeService>(); 
 
     protected IMediaService MediaService => GetRequiredService<IMediaService>();
 

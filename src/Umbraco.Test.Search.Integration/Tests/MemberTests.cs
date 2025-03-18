@@ -1,0 +1,164 @@
+﻿using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Tests.Common.Builders;
+using Umbraco.Cms.Tests.Common.Builders.Extensions;
+using Umbraco.Test.Search.Integration.Services;
+
+namespace Umbraco.Test.Search.Integration.Tests;
+
+public class MemberTests : ContentBaseTestBase
+{
+    // TODO: test member content
+
+    [Test]
+    public void AllMembers_YieldsAllDocuments()
+    {
+        MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
+
+        var documents = IndexService.Dump(IndexAliases.Member);
+        Assert.That(documents, Has.Count.EqualTo(3));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(documents[0].Key, Is.EqualTo(MemberOneKey));
+            Assert.That(documents[1].Key, Is.EqualTo(MemberTwoKey));
+            Assert.That(documents[2].Key, Is.EqualTo(MemberThreeKey));
+        });
+    }
+
+    [Test]
+    public void AllMembers_YieldsCorrectStructureValues()
+    {
+        MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
+
+        var documents = IndexService.Dump(IndexAliases.Member);
+        Assert.That(documents, Has.Count.EqualTo(3));
+
+        Assert.Multiple(() =>
+        {
+            VerifyDocumentStructureValues(documents[0], MemberOneKey, Guid.Empty, MemberOneKey);
+            VerifyDocumentStructureValues(documents[1], MemberTwoKey, Guid.Empty, MemberTwoKey);
+            VerifyDocumentStructureValues(documents[2], MemberThreeKey, Guid.Empty, MemberThreeKey);
+        });
+    }
+
+    [Test]
+    public void AllMembers_YieldsCorrectSystemValues()
+    {
+        MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
+
+        var documents = IndexService.Dump(IndexAliases.Member);
+        Assert.That(documents, Has.Count.EqualTo(3));
+
+        Assert.Multiple(() =>
+        {
+            VerifyDocumentSystemValues(documents[0], MemberOne(), "tag1", "tag2");
+            VerifyDocumentSystemValues(documents[1], MemberTwo(), "tag3", "tag4");
+            VerifyDocumentSystemValues(documents[2], MemberThree(), "tag5", "tag6");
+        });
+    }
+
+    [Test]
+    public void AllMembers_YieldsCorrectPropertyValues()
+    {
+        MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
+
+        var documents = IndexService.Dump(IndexAliases.Member);
+        Assert.That(documents, Has.Count.EqualTo(3));
+
+        Assert.Multiple(() =>
+        {
+            VerifyDocumentPropertyValues(documents[0], "Organization One");
+            VerifyDocumentPropertyValues(documents[1], "Organization Two");
+            VerifyDocumentPropertyValues(documents[2], "Organization Three");
+        });
+    }
+
+    private IMemberService MemberService => GetRequiredService<IMemberService>();
+
+    private Guid MemberOneKey { get; } = Guid.NewGuid();
+
+    private Guid MemberTwoKey { get; } = Guid.NewGuid();
+    
+    private Guid MemberThreeKey { get; } = Guid.NewGuid();
+
+    private IMember MemberOne() => MemberService.GetByKey(MemberOneKey) ?? throw new InvalidOperationException("Member one was not found");
+
+    private IMember MemberTwo() => MemberService.GetByKey(MemberTwoKey) ?? throw new InvalidOperationException("Member two was not found");
+
+    private IMember MemberThree() => MemberService.GetByKey(MemberThreeKey) ?? throw new InvalidOperationException("Member three was not found");
+
+    [SetUp]
+    public virtual void SetupTest()
+    {
+        var memberType = new MemberTypeBuilder()
+            .WithAlias("myMemberType")
+            .AddPropertyGroup()
+            .WithName("Group")
+            .AddPropertyType()
+            .WithAlias("organization")
+            .WithDataTypeId(Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("tags")
+            .WithDataTypeId(Constants.DataTypes.Tags)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Tags)
+            .Done()
+            .Done()
+            .Build();
+        GetRequiredService<IMemberTypeService>().Save(memberType);
+
+        MemberService.Save(
+            new MemberBuilder()
+                .WithKey(MemberOneKey)
+                .WithMemberType(memberType)
+                .WithName("Member One")
+                .WithEmail("memberone@local")
+                .WithLogin("memberone@local", "Test123456")
+                .AddPropertyData()
+                .WithKeyValue("organization", "Organization One")
+                .WithKeyValue("tags", "[\"tag1\",\"tag2\"]")
+                .Done()
+                .Build()
+        );
+
+        MemberService.Save(
+            new MemberBuilder()
+                .WithKey(MemberTwoKey)
+                .WithMemberType(memberType)
+                .WithName("Member Two")
+                .WithEmail("membertwo@local")
+                .WithLogin("membertwo@local", "Test123456")
+                .AddPropertyData()
+                .WithKeyValue("organization", "Organization Two")
+                .WithKeyValue("tags", "[\"tag3\",\"tag4\"]")
+                .Done()
+                .Build()
+        );
+
+        MemberService.Save(
+            new MemberBuilder()
+                .WithKey(MemberThreeKey)
+                .WithMemberType(memberType)
+                .WithName("Member Three")
+                .WithEmail("memberthree@local")
+                .WithLogin("memberthree@local", "Test123456")
+                .AddPropertyData()
+                .WithKeyValue("organization", "Organization Three")
+                .WithKeyValue("tags", "[\"tag5\",\"tag6\"]")
+                .Done()
+                .Build()
+        );
+
+        IndexService.Reset();
+    }
+
+    private void VerifyDocumentPropertyValues(TestIndexDocument document, string? organization)
+    {
+        var organizationValue = document.Fields.FirstOrDefault(f => f.FieldName == "organization")?.Value.Texts
+            ?.SingleOrDefault();
+        Assert.That(organizationValue, Is.EqualTo(organization));
+    }
+}

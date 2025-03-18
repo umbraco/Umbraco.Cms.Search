@@ -13,6 +13,8 @@ public static class Constants
         public const string DraftContent = $"{IndexPrefix}DraftContent";
 
         public const string DraftMedia = $"{IndexPrefix}DraftMedia";
+
+        public const string DraftMembers = $"{IndexPrefix}DraftMembers";
     }
 
     public static class FieldNames

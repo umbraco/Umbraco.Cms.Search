@@ -32,8 +32,12 @@ public static class UmbracoBuilderExtensions
             // register in-memory indexes for draft and published content
             options.RegisterIndex<InMemoryIndexService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
             options.RegisterIndex<InMemoryIndexService, IPublishedContentChangeStrategy>(Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+
             // register in-memory index for media
             options.RegisterIndex<InMemoryIndexService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
+
+            // register in-memory index for members
+            options.RegisterIndex<InMemoryIndexService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
         });
 
         // rebuild in-memory indexes after start-up

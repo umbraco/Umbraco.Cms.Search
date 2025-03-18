@@ -18,6 +18,9 @@ public record ContentChange
     public static ContentChange Media(Guid key, ChangeImpact changeImpact, ContentState contentState)
         => new (key, UmbracoObjectTypes.Media, changeImpact, contentState);
 
+    public static ContentChange Member(Guid key, ChangeImpact changeImpact, ContentState contentState)
+        => new (key, UmbracoObjectTypes.Member, changeImpact, contentState);
+
     public Guid Key { get; }
 
     public UmbracoObjectTypes ObjectType { get; }
