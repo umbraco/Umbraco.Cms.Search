@@ -65,7 +65,6 @@ internal sealed class ContentIndexingService : IContentIndexingService
                 continue;
             }
 
-            // TODO: add content type info to this, so strategies can choose to only handle content, media or members
             await contentChangeStrategy.HandleAsync(indexInfos, changesAsArray, cancellationToken);
         }
     }

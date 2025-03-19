@@ -1,3 +1,4 @@
+using Umbraco.Cms.Core.Models;
 using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
@@ -18,6 +19,8 @@ public class VariantContentStructureTests : VariantContentTestBase
             Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
             Assert.That(documents[2].Key, Is.EqualTo(GrandchildKey));
             Assert.That(documents[3].Key, Is.EqualTo(GreatGrandchildKey));
+
+            Assert.That(documents.All(d => d.ObjectType is UmbracoObjectTypes.Document), Is.True);
         });
 
         Assert.Multiple(() =>

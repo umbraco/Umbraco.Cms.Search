@@ -1,4 +1,5 @@
-﻿using Umbraco.Cms.Search.Core;
+﻿using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Provider.InMemory.Models;
@@ -12,10 +13,10 @@ internal sealed class InMemoryIndexService : IIndexService
     public InMemoryIndexService(DataStore dataStore)
         => _dataStore = dataStore;
 
-    public Task AddOrUpdateAsync(string indexAlias, Guid key, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)
+    public Task AddOrUpdateAsync(string indexAlias, Guid key, UmbracoObjectTypes objectType, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)
     {
         Remove(indexAlias, key);
-        GetIndex(indexAlias)[key] = new IndexDocument(variations.ToArray(), fields.ToArray(), protection);
+        GetIndex(indexAlias)[key] = new IndexDocument(objectType, variations.ToArray(), fields.ToArray(), protection);
         return Task.CompletedTask;
     }
 

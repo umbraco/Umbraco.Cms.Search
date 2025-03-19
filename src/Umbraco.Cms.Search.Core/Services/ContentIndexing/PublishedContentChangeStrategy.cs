@@ -140,7 +140,7 @@ internal class PublishedContentChangeStrategy : IPublishedContentChangeStrategy
 
         foreach (var indexInfo in indexInfos)
         {
-            await indexInfo.IndexService.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, variations, fields, contentProtection);
+            await indexInfo.IndexService.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, UmbracoObjectTypes.Document, variations, fields, contentProtection);
         }
 
         return variations;
@@ -204,7 +204,7 @@ internal class PublishedContentChangeStrategy : IPublishedContentChangeStrategy
         var cultures = content.PublishedCultures();
 
         // now iterate all ancestors and make sure all cultures are published all the way up the tree
-        foreach (var ancestorId in content.GetAncestorIds())
+        foreach (var ancestorId in content.AncestorIds())
         {
             IContent? ancestor = _contentService.GetById(ancestorId);
             if (ancestor is null || ancestor.Published is false)

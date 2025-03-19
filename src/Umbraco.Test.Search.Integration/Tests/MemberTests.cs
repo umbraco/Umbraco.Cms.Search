@@ -9,8 +9,6 @@ namespace Umbraco.Test.Search.Integration.Tests;
 
 public class MemberTests : ContentBaseTestBase
 {
-    // TODO: test member content
-
     [Test]
     public void AllMembers_YieldsAllDocuments()
     {
@@ -24,6 +22,8 @@ public class MemberTests : ContentBaseTestBase
             Assert.That(documents[0].Key, Is.EqualTo(MemberOneKey));
             Assert.That(documents[1].Key, Is.EqualTo(MemberTwoKey));
             Assert.That(documents[2].Key, Is.EqualTo(MemberThreeKey));
+
+            Assert.That(documents.All(d => d.ObjectType is UmbracoObjectTypes.Member), Is.True);
         });
     }
 

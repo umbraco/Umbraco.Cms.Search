@@ -26,14 +26,14 @@ public class MediaSearchableTree : ISearchableTree
         var (skip, take) = ConvertPagingToSkipTake(pageSize, pageIndex);
         var searchResult = await _searchService.SearchAsync(Core.Constants.IndexAliases.DraftMedia, query, null, null, null, null, null, null, skip, take);
 
-        var searchResultKeysAsArray = searchResult.Keys as Guid[] ?? searchResult.Keys.ToArray();
-        if (searchResultKeysAsArray.Length is 0)
+        var searchResultKeys = searchResult.Documents.Select(document => document.Key).ToArray();
+        if (searchResultKeys.Length is 0)
         {
             return new EntitySearchResults([], searchResult.Total);
         }
         
         var entities = _entityService
-            .GetAll(UmbracoObjectTypes.Media, searchResultKeysAsArray)
+            .GetAll(UmbracoObjectTypes.Media, searchResultKeys)
             .OfType<IContentEntitySlim>();
 
         var searchResultEntities = entities.Select(entity => new SearchResultEntity

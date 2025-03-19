@@ -30,14 +30,14 @@ public class DraftContentSearchableTree : ISearchableTreeWithCulture
         var (skip, take) = ConvertPagingToSkipTake(pageSize, pageIndex);
         var searchResult = await _searchService.SearchAsync(Core.Constants.IndexAliases.DraftContent, query, null, null, null, culture.NullOrWhiteSpaceAsNull(), null, null, skip, take);
 
-        var searchResultKeysAsArray = searchResult.Keys as Guid[] ?? searchResult.Keys.ToArray();
-        if (searchResultKeysAsArray.Length is 0)
+        var searchResultKeys = searchResult.Documents.Select(document => document.Key).ToArray();
+        if (searchResultKeys.Length is 0)
         {
             return new EntitySearchResults([], searchResult.Total);
         }
         
         var entities = _entityService
-            .GetAll(UmbracoObjectTypes.Document, searchResultKeysAsArray)
+            .GetAll(UmbracoObjectTypes.Document, searchResultKeys)
             .OfType<IDocumentEntitySlim>();
 
         var searchResultEntities = entities.Select(entity => new SearchResultEntity

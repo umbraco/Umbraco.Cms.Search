@@ -1,4 +1,5 @@
-﻿using Umbraco.Cms.Search.Core;
+﻿using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Services;
 
@@ -8,9 +9,9 @@ public class TestIndexService : IIndexService
 {
     private readonly Dictionary<string, Dictionary<Guid, TestIndexDocument>> _indexes = new();
         
-    public Task AddOrUpdateAsync(string indexAlias, Guid key, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)
+    public Task AddOrUpdateAsync(string indexAlias, Guid key, UmbracoObjectTypes objectType, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)
     {
-        GetIndex(indexAlias)[key] = new (key, variations, fields, protection);
+        GetIndex(indexAlias)[key] = new (key, objectType, variations, fields, protection);
         return Task.CompletedTask;
     }
 

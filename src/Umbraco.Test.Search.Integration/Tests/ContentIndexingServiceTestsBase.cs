@@ -13,7 +13,7 @@ namespace Umbraco.Test.Search.Integration.Tests;
 [UmbracoTest(Database = UmbracoTestOptions.Database.None)]
 public abstract class ContentIndexingServiceTestsBase : UmbracoIntegrationTest
 {
-    private TestContentChangeStrategy _strategy = new();
+    private readonly TestContentChangeStrategy _strategy = new();
 
     protected TestContentChangeStrategy Strategy => _strategy;
 

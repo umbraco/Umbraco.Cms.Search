@@ -1,10 +1,11 @@
-﻿using Umbraco.Cms.Search.Core.Models.Indexing;
+﻿using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core.Models.Indexing;
 
 namespace Umbraco.Cms.Search.Core.Services;
 
 public interface IIndexService
 {
-    Task AddOrUpdateAsync(string indexAlias, Guid key, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection);
+    Task AddOrUpdateAsync(string indexAlias, Guid key, UmbracoObjectTypes objectType, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection);
 
     Task DeleteAsync(string indexAlias, IEnumerable<Guid> keys);
 }

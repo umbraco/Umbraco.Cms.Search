@@ -105,7 +105,7 @@ internal sealed class InMemorySearchService : ISearchService
         return Task.FromResult(
             new SearchResult(
                 resultAsArray.Length,
-                resultAsArray.Skip(skip).Take(take).Select(kpv => kpv.Key).ToArray(),
+                resultAsArray.Skip(skip).Take(take).Select(kpv => new Document(kpv.Key, kpv.Value.ObjectType)).ToArray(),
                 facetResults
             )
         );
@@ -234,5 +234,4 @@ internal sealed class InMemorySearchService : ISearchService
                    && (field.Segment is null || field.Segment.InvariantEquals(segment));
         }
     }
-    
 }

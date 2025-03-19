@@ -16,6 +16,7 @@ using Constants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Umbraco.Cms.Search.DeliveryApi.Services;
 
+// TODO: implement IApiMediaQueryProvider when that's a thing
 internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
 {
     private readonly ISearchService _searchService;
@@ -102,7 +103,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
             .GetAwaiter()
             .GetResult();
 
-        return new PagedModel<Guid>(result.Total, result.Keys);
+        return new PagedModel<Guid>(result.Total, result.Documents.Select(document => document.Key).ToArray());
     }
 
     public SelectorOption AllContentSelectorOption()

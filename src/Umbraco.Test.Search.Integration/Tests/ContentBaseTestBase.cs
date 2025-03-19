@@ -1,10 +1,14 @@
 ﻿using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core;
+using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Helpers;
+using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
+[TestFixture]
+[UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
 public abstract class ContentBaseTestBase : TestBase
 {
     protected void VerifyDocumentStructureValues(TestIndexDocument document, Guid key, Guid parentKey, params Guid[] pathKeys)
@@ -25,6 +29,7 @@ public abstract class ContentBaseTestBase : TestBase
     protected void VerifyDocumentSystemValues(TestIndexDocument document, IContentBase content, params string[] tags)
     {
         var dateTimeOffsetConverter = GetRequiredService<IDateTimeOffsetConverter>();
+        var expectedObjectTypeValue = content.ObjectType().ToString();
 
         Assert.Multiple(() =>
         {
@@ -45,6 +50,9 @@ public abstract class ContentBaseTestBase : TestBase
 
             var sortOrderValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.SortOrder)?.Value.Integers?.SingleOrDefault();
             Assert.That(sortOrderValue, Is.EqualTo(content.SortOrder));
+
+            var objectTypeValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.ObjectType)?.Value.Keywords?.SingleOrDefault();
+            Assert.That(objectTypeValue, Is.EqualTo(expectedObjectTypeValue));
 
             var tagsValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.Tags)?.Value.Keywords;
             Assert.That(tagsValue ?? [], Is.EquivalentTo(tags));

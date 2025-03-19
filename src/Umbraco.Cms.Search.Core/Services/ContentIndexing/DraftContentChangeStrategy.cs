@@ -100,7 +100,7 @@ public class DraftContentChangeStrategy : IDraftContentChangeStrategy
                 continue;
             }
 
-            await indexInfo.IndexService.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, variations, fields, null);
+            await indexInfo.IndexService.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, change.ObjectType, variations, fields, null);
         }
 
         return true;

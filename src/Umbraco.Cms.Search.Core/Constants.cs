@@ -41,6 +41,8 @@ public static class Constants
 
         public const string SortOrder = $"{FieldPrefix}SortOrder";
 
+        public const string ObjectType = $"{FieldPrefix}ObjectType";
+
         public const string Tags = $"{FieldPrefix}Tags";
     }
 }

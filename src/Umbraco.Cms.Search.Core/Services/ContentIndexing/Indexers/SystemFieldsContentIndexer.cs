@@ -32,12 +32,13 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
 
     private IEnumerable<IndexField> CollectSystemFields(IContentBase content, string?[] cultures)
     {
-        if (TryGetParentKey(content, out var parentKey) is false)
+        var objectType = content.ObjectType();
+        if (TryGetParentKey(content, objectType, out var parentKey) is false)
         {
             return [];
         }
 
-        if (TryGetPathKeys(content, out var pathKeys) is false)
+        if (TryGetPathKeys(content, objectType, out var pathKeys) is false)
         {
             return [];
         }
@@ -51,6 +52,7 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
             new(Constants.FieldNames.CreateDate, new() { DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(content.CreateDate)] }, null, null),
             new(Constants.FieldNames.UpdateDate, new() { DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(content.UpdateDate)] }, null, null),
             new(Constants.FieldNames.Level, new() { Integers = [content.Level] }, null, null),
+            new(Constants.FieldNames.ObjectType, new() { Keywords = [objectType.ToString()] }, null, null),
             new(Constants.FieldNames.SortOrder, new() { Integers = [content.SortOrder] }, null, null),
         };
 
@@ -60,7 +62,7 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
         return fields;
     }
 
-    private bool TryGetParentKey(IContentBase content, [NotNullWhen(true)] out Guid? parentKey)
+    private bool TryGetParentKey(IContentBase content, UmbracoObjectTypes objectType, [NotNullWhen(true)] out Guid? parentKey)
     {
         if (content.ParentId <= 0)
         {
@@ -68,7 +70,7 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
             return true;
         }
 
-        var parentKeyAttempt = _idKeyMap.GetKeyForId(content.ParentId, content.GetObjectType());
+        var parentKeyAttempt = _idKeyMap.GetKeyForId(content.ParentId, objectType);
         if (parentKeyAttempt.Success is false)
         {
             _logger.LogWarning(
@@ -83,13 +85,13 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
         return true;
     }
     
-    private bool TryGetPathKeys(IContentBase content, out IList<Guid> pathKeys)
+    private bool TryGetPathKeys(IContentBase content, UmbracoObjectTypes objectType, out IList<Guid> pathKeys)
     {
-        var ancestorIds = content.GetAncestorIds();
+        var ancestorIds = content.AncestorIds();
         pathKeys = new List<Guid>();
         foreach (var ancestorId in ancestorIds)
         {
-            var attempt = _idKeyMap.GetKeyForId(ancestorId, content.GetObjectType());
+            var attempt = _idKeyMap.GetKeyForId(ancestorId, objectType);
             if (attempt.Success is false)
             {
                 _logger.LogWarning(

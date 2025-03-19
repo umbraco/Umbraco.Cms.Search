@@ -1,4 +1,6 @@
-﻿namespace Umbraco.Test.Search.Integration.Tests;
+﻿using Umbraco.Cms.Core.Models;
+
+namespace Umbraco.Test.Search.Integration.Tests;
 
 public class MediaStructureTests : MediaTestBase
 {
@@ -17,6 +19,8 @@ public class MediaStructureTests : MediaTestBase
             Assert.That(documents[2].Key, Is.EqualTo(RootMediaKey));
             Assert.That(documents[3].Key, Is.EqualTo(ChildMediaKey));
             Assert.That(documents[4].Key, Is.EqualTo(GrandchildMediaKey));
+
+            Assert.That(documents.All(d => d.ObjectType is UmbracoObjectTypes.Media), Is.True);
         });
     }
 

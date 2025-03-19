@@ -22,6 +22,7 @@ internal sealed class PropertyValueFieldsContentIndexer : IContentIndexer
     public Task<IEnumerable<IndexField>> GetIndexFieldsAsync(IContentBase content, string?[] cultures, bool published, CancellationToken cancellationToken)
         => Task.FromResult(CollectPropertyValueFields(content, cultures, published));
 
+    // TODO: this must filter out sensitive properties
     private IEnumerable<IndexField> CollectPropertyValueFields(IContentBase content, string?[] cultures, bool published)
     {
         var fields = new List<IndexField>();
