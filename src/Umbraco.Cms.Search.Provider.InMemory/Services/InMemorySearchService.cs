@@ -55,7 +55,7 @@ internal sealed class InMemorySearchService : ISearchService
             result = result.Where(kvp => kvp
                 .Value
                 .Fields
-                .Any(field => FieldMatcher.IsMatch(field, null, culture, segment)
+                .Any(field => FieldMatcher.IsMatch(field, kvp.Value, null, culture, segment)
                               && (field.Value.Texts?.Any(text => text.InvariantContains(query)) ?? false)
                 )
             );
@@ -117,7 +117,7 @@ internal sealed class InMemorySearchService : ISearchService
         {
             documents = documents.Where(kvp =>
                 kvp.Value.Fields.Any(field =>
-                    FieldMatcher.IsMatch(field, filter.FieldName, culture, segment)
+                    FieldMatcher.IsMatch(field, kvp.Value, filter.FieldName, culture, segment)
                     && IsFilterMatch(filter, field.Value)
                 )
             );
@@ -149,7 +149,7 @@ internal sealed class InMemorySearchService : ISearchService
         {
             var facetFields = documents
                 .Select(candidate => candidate.Value.Fields.FirstOrDefault(field =>
-                    FieldMatcher.IsMatch(field, facet.FieldName, culture, segment)
+                    FieldMatcher.IsMatch(field, candidate.Value, facet.FieldName, culture, segment)
                 ))
                 .WhereNotNull();
 
@@ -198,8 +198,8 @@ internal sealed class InMemorySearchService : ISearchService
 
         public int Compare(IndexDocument? x, IndexDocument? y)
         {
-            var xField = x?.Fields.FirstOrDefault(field => FieldMatcher.IsMatch(field, _sorter.FieldName, _culture, _segment));
-            var yField = y?.Fields.FirstOrDefault(field => FieldMatcher.IsMatch(field, _sorter.FieldName, _culture, _segment));
+            var xField = x?.Fields.FirstOrDefault(field => FieldMatcher.IsMatch(field, x, _sorter.FieldName, _culture, _segment));
+            var yField = y?.Fields.FirstOrDefault(field => FieldMatcher.IsMatch(field, y, _sorter.FieldName, _culture, _segment));
 
             var xFieldValue = FieldValue(xField);
             var yFieldValue = FieldValue(yField);
@@ -227,11 +227,21 @@ internal sealed class InMemorySearchService : ISearchService
 
     private static class FieldMatcher
     {
-        public static bool IsMatch(IndexField field, string? fieldName, string? culture, string? segment)
+        public static bool IsMatch(IndexField field, IndexDocument document, string? fieldName, string? culture, string? segment)
         {
-            return (fieldName is null || field.FieldName.InvariantEquals(fieldName))
-                   && (field.Culture is null || field.Culture.InvariantEquals(culture))
-                   && (field.Segment is null || field.Segment.InvariantEquals(segment));
+            bool IsExactMatch(IndexField f)
+                => IsSegmentLessMatch(f) && f.Segment.InvariantEquals(segment);
+
+            bool IsSegmentLessMatch(IndexField f)
+                => (fieldName is null || f.FieldName.InvariantEquals(fieldName))
+                   && (f.Culture is null || f.Culture.InvariantEquals(culture));
+
+            if (IsExactMatch(field))
+            {
+                return true;
+            }
+            
+            return IsSegmentLessMatch(field) && document.Fields.Any(IsExactMatch) is false;
         }
     }
 }
