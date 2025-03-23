@@ -122,7 +122,7 @@ public class SearchController : RenderController
                         throw new InvalidOperationException("Could not parse valid integer range bounds.");
                     }
 
-                    return new IntegerRangeFilter(fieldName, minimum, maximum, false);
+                    return IntegerRangeFilter.Single(fieldName, minimum, maximum, false);
                 }
 
                 if (fieldName.InvariantContains("decimal"))
@@ -134,7 +134,7 @@ public class SearchController : RenderController
                         throw new InvalidOperationException("Could not parse valid decimal range bounds.");
                     }
 
-                    return new DecimalRangeFilter(fieldName, minimum, maximum, false);
+                    return DecimalRangeFilter.Single(fieldName, minimum, maximum, false);
                 }            
 
                 if (fieldName.InvariantContains("date"))
@@ -146,7 +146,7 @@ public class SearchController : RenderController
                         throw new InvalidOperationException("Could not parse valid date range bounds.");
                     }
 
-                    return new DateTimeOffsetRangeFilter(fieldName, minimum, maximum, false);
+                    return DateTimeOffsetRangeFilter.Single(fieldName, minimum, maximum, false);
                 }            
 
                 throw new InvalidOperationException("Unsupported range field type.");

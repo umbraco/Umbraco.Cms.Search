@@ -160,10 +160,10 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
                 filter = filterOperation switch
                 {
                     FilterOperation.Is or FilterOperation.IsNot => new DecimalExactFilter(fieldName, decimalValues, filterOperation is FilterOperation.IsNot),
-                    FilterOperation.LessThan => new DecimalRangeFilter(fieldName, null, decimalValues[0] - 0.001m, false),
-                    FilterOperation.LessThanOrEqual => new DecimalRangeFilter(fieldName, null, decimalValues[0], false),
-                    FilterOperation.GreaterThan => new DecimalRangeFilter(fieldName, decimalValues[0] + 0.001m, null, false),
-                    FilterOperation.GreaterThanOrEqual => new DecimalRangeFilter(fieldName, decimalValues[0], null, false),
+                    FilterOperation.LessThan => DecimalRangeFilter.Single(fieldName, null, decimalValues[0] - 0.001m, false),
+                    FilterOperation.LessThanOrEqual => DecimalRangeFilter.Single(fieldName, null, decimalValues[0], false),
+                    FilterOperation.GreaterThan => DecimalRangeFilter.Single(fieldName, decimalValues[0] + 0.001m, null, false),
+                    FilterOperation.GreaterThanOrEqual => DecimalRangeFilter.Single(fieldName, decimalValues[0], null, false),
                     _ => null
                 };
                 break;
@@ -182,10 +182,10 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
                 filter = filterOperation switch
                 {
                     FilterOperation.Is or FilterOperation.IsNot => new DateTimeOffsetExactFilter(fieldName, dateTimeOffsetValues, filterOperation is FilterOperation.IsNot),
-                    FilterOperation.LessThan => new DateTimeOffsetRangeFilter(fieldName, null, dateTimeOffsetValues[0].AddMilliseconds(-1), false),
-                    FilterOperation.LessThanOrEqual => new DateTimeOffsetRangeFilter(fieldName, null, dateTimeOffsetValues[0], false),
-                    FilterOperation.GreaterThan => new DateTimeOffsetRangeFilter(fieldName, dateTimeOffsetValues[0].AddMilliseconds(1), null, false),
-                    FilterOperation.GreaterThanOrEqual => new DateTimeOffsetRangeFilter(fieldName, dateTimeOffsetValues[0], null, false),
+                    FilterOperation.LessThan => DateTimeOffsetRangeFilter.Single(fieldName, null, dateTimeOffsetValues[0].AddMilliseconds(-1), false),
+                    FilterOperation.LessThanOrEqual => DateTimeOffsetRangeFilter.Single(fieldName, null, dateTimeOffsetValues[0], false),
+                    FilterOperation.GreaterThan => DateTimeOffsetRangeFilter.Single(fieldName, dateTimeOffsetValues[0].AddMilliseconds(1), null, false),
+                    FilterOperation.GreaterThanOrEqual => DateTimeOffsetRangeFilter.Single(fieldName, dateTimeOffsetValues[0], null, false),
                     _ => null
                 };
                 break;

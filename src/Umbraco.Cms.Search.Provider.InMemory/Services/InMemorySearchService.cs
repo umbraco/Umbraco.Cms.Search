@@ -132,11 +132,11 @@ internal sealed class InMemorySearchService : ISearchService
                 TextFilter textFilter => value.Texts?.Any(t => textFilter.Values.Any(t.InvariantContains)) ?? false,
                 KeywordFilter keywordFilter => value.Keywords?.ContainsAny(keywordFilter.Values) ?? false,
                 IntegerExactFilter integerExactFilter => value.Integers?.ContainsAny(integerExactFilter.Values) ?? false,
-                IntegerRangeFilter integerRangeFilter => value.Integers?.Any(i => i >= (integerRangeFilter.MinimumValue ?? int.MinValue) && i <= (integerRangeFilter.MaximumValue ?? int.MaxValue)) ?? false,
+                IntegerRangeFilter integerRangeFilter => value.Integers?.Any(i => integerRangeFilter.Ranges.Any(r => i >= (r.MinimumValue ?? int.MinValue) && i <= (r.MaximumValue ?? int.MaxValue))) ?? false,
                 DecimalExactFilter decimalExactFilter => value.Decimals?.ContainsAny(decimalExactFilter.Values) ?? false,
-                DecimalRangeFilter decimalRangeFilter => value.Decimals?.Any(i => i >= (decimalRangeFilter.MinimumValue ?? decimal.MinValue) && i <= (decimalRangeFilter.MaximumValue ?? decimal.MaxValue)) ?? false,
+                DecimalRangeFilter decimalRangeFilter => value.Decimals?.Any(i => decimalRangeFilter.Ranges.Any(r => i >= (r.MinimumValue ?? decimal.MinValue) && i <= (r.MaximumValue ?? decimal.MaxValue))) ?? false,
                 DateTimeOffsetExactFilter dateTimeOffsetExactFilter => value.DateTimeOffsets?.ContainsAny(dateTimeOffsetExactFilter.Values) ?? false,
-                DateTimeOffsetRangeFilter dateTimeOffsetRangeFilter => value.DateTimeOffsets?.Any(i => i >= (dateTimeOffsetRangeFilter.MinimumValue ?? DateTimeOffset.MinValue) && i <= (dateTimeOffsetRangeFilter.MaximumValue ?? DateTimeOffset.MaxValue)) ?? false,
+                DateTimeOffsetRangeFilter dateTimeOffsetRangeFilter => value.DateTimeOffsets?.Any(i => dateTimeOffsetRangeFilter.Ranges.Any(r => i >= (r.MinimumValue ?? DateTimeOffset.MinValue) && i <= (r.MaximumValue ?? DateTimeOffset.MaxValue))) ?? false,
                 _ => throw new ArgumentOutOfRangeException(nameof(filter), $"Encountered an unsupported filter type: {filter.GetType().Name}")
             };
 
