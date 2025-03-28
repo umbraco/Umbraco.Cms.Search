@@ -46,6 +46,12 @@
       <Compile Update="Tests\InvariantContentTests.Draft.cs">
         <DependentUpon>InvariantContentTests.cs</DependentUpon>
       </Compile>
+      <Compile Update="Tests\PublishedContentCacheRefresherTests.Variant.cs">
+        <DependentUpon>PublishedContentCacheRefresherTests.cs</DependentUpon>
+      </Compile>
+      <Compile Update="Tests\PublishedContentCacheRefresherTests.Invariant.cs">
+        <DependentUpon>PublishedContentCacheRefresherTests.cs</DependentUpon>
+      </Compile>
     </ItemGroup>
 
 </Project>

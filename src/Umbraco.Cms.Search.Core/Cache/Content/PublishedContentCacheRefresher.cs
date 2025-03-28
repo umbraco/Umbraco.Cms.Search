@@ -19,7 +19,7 @@ public class PublishedContentCacheRefresher : PayloadCacheRefresherBase<Publishe
 
     public override string Name => "Published Content Cache Refresher";
 
-    public record JsonPayload(Guid ContentKey, TreeChangeTypes ChangeTypes)
+    public record JsonPayload(Guid ContentKey, TreeChangeTypes ChangeTypes, string[] AffectedCultures)
     {
     }
 }

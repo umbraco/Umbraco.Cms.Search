@@ -36,7 +36,6 @@ public static class UmbracoBuilderExtensions
 {
     public static IUmbracoBuilder AddCustomCacheRefresherNotificationHandlers(this IUmbracoBuilder builder)
     {
-        builder.AddNotificationHandler<ContentPublishingNotification, PublishNotificationHandler>();
         builder.AddNotificationHandler<ContentPublishedNotification, PublishNotificationHandler>();
         builder.AddNotificationHandler<ContentUnpublishedNotification, PublishNotificationHandler>();
         builder.AddNotificationHandler<ContentMovedToRecycleBinNotification, PublishNotificationHandler>();
