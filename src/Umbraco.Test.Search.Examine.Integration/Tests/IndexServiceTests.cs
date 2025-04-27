@@ -1,5 +1,6 @@
 ﻿using Examine;
 using Examine.Lucene;
+using Examine.Lucene.Directories;
 using Examine.Lucene.Providers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -17,12 +18,11 @@ public class IndexServiceTests : UmbracoIntegrationTest
 {
     
     public IExamineManager ExamineManager => GetRequiredService<IExamineManager>();
-    protected override void CustomTestSetup(IUmbracoBuilder builder)
+    protected override void ConfigureTestServices(IServiceCollection services)
     {
-        base.CustomTestSetup(builder);
-        builder.Services.AddSingleton<LuceneRAMDirectoryFactory>();
-        builder.Services.AddExamine();
-        builder.Services.AddExamineLuceneIndex<MemoryIndex, LuceneRAMDirectoryFactory>(MemoryIndex.TestIndexName);
+        services.AddExamine();
+        services.AddSingleton<LuceneRAMDirectoryFactory>();
+        services.AddExamineLuceneIndex<MemoryIndex, LuceneRAMDirectoryFactory>(MemoryIndex.TestIndexName);
     }
     
     private class MemoryIndex : LuceneIndex
