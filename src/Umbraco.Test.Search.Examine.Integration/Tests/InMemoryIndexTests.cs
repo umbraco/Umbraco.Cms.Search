@@ -33,9 +33,13 @@ public class InMemoryIndexTests : UmbracoIntegrationTest
     }
 
     [Test]
-    public void CanIndexAnyData()
+    public async Task CanIndexAnyData()
     {
         var index = GetIndex();
+        index.IndexOperationComplete += (_, _) =>
+        {
+            indexingHandle.Set();
+        };
         index.IndexItem(new ValueSet(
             "test",
             "Person",
@@ -47,6 +51,8 @@ public class InMemoryIndexTests : UmbracoIntegrationTest
                 {"Age", 30}
             }));
 
+        await indexingHandle.WaitOneAsync(millisecondsTimeout: 3000);
+
         var results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results.TotalItemCount, Is.EqualTo(1));
         Assert.That(results.First().Id, Is.EqualTo("test"));
@@ -54,8 +60,8 @@ public class InMemoryIndexTests : UmbracoIntegrationTest
     
     [Test]
     [TestCase(3)]
-    [TestCase(5)]
-    [TestCase(10)]
+    [TestCase(50)]
+    [TestCase(100)]
     public async Task CanIndexData(int count)
     {
         var index = GetIndex();
