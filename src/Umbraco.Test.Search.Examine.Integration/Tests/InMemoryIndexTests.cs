@@ -1,12 +1,10 @@
 ﻿using Examine;
 using Examine.Lucene;
-using Examine.Lucene.Directories;
 using Examine.Lucene.Providers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NUnit.Framework;
-using Umbraco.Cms.Infrastructure.Examine;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
 
@@ -14,22 +12,22 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests;
 
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.None)]
-public class IndexServiceTests : UmbracoIntegrationTest
+public class InMemoryIndexTests : UmbracoIntegrationTest
 {
     
     public IExamineManager ExamineManager => GetRequiredService<IExamineManager>();
     protected override void ConfigureTestServices(IServiceCollection services)
     {
         services.AddExamine();
-        services.AddSingleton<LuceneRAMDirectoryFactory>();
-        services.AddExamineLuceneIndex<MemoryIndex, LuceneRAMDirectoryFactory>(MemoryIndex.TestIndexName);
+        services.AddSingleton<TestInMemoryDirectoryFactory>();
+        services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(TestIndex.TestIndexName);
     }
-    
-    private class MemoryIndex : LuceneIndex
+
+    private class TestIndex : LuceneIndex
     {
         public const string TestIndexName = "TestIndex";
 
-        public MemoryIndex(ILoggerFactory loggerFactory, string name, IOptionsMonitor<LuceneDirectoryIndexOptions> indexOptions) : base(loggerFactory, name, indexOptions)
+        public TestIndex(ILoggerFactory loggerFactory, string name, IOptionsMonitor<LuceneDirectoryIndexOptions> indexOptions) : base(loggerFactory, name, indexOptions)
         {
         }
     }
@@ -58,10 +56,15 @@ public class IndexServiceTests : UmbracoIntegrationTest
     [TestCase(3)]
     [TestCase(5)]
     [TestCase(10)]
-    public void CanIndexData(int count)
+    public async Task CanIndexData(int count)
     {
         var index = GetIndex();
+        index.IndexOperationComplete += (_, _) =>
+        {
+            indexingHandle.Set();
+        };
         IndexData(index, count);
+        await indexingHandle.WaitOneAsync(millisecondsTimeout: 3000);
         var results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results.TotalItemCount, Is.EqualTo(count));
     }
@@ -81,6 +84,8 @@ public class IndexServiceTests : UmbracoIntegrationTest
                 }));
         }
     }
+    
+    private AutoResetEvent indexingHandle = new(false);
 
     private IIndex GetIndex()
     {
