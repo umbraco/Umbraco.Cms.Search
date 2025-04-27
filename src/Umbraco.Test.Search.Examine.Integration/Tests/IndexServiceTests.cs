@@ -1,12 +1,21 @@
 ﻿using Examine;
+using Examine.Lucene;
+using Examine.Lucene.Directories;
+using Examine.Lucene.Providers;
+using Lucene.Net.Analysis.Standard;
+using Lucene.Net.Index;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NUnit.Framework;
+using Umbraco.Cms.Infrastructure.Examine;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests;
 
 [TestFixture]
-[UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerFixture)]
+[UmbracoTest(Database = UmbracoTestOptions.Database.NewEmptyPerTest)]
 public class IndexServiceTests : UmbracoIntegrationTest
 {
     
@@ -14,10 +23,20 @@ public class IndexServiceTests : UmbracoIntegrationTest
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
         base.CustomTestSetup(builder);
+        builder.Services.AddSingleton<LuceneRAMDirectoryFactory>();
         builder.Services.AddExamine();
-        builder.Services.AddExamineLuceneIndex("TestIndex");
+        builder.Services.AddExamineLuceneIndex<MemoryIndex, LuceneRAMDirectoryFactory>(MemoryIndex.TestIndexName);
     }
     
+    private class MemoryIndex : LuceneIndex
+    {
+        public const string TestIndexName = "TestIndex";
+
+        public MemoryIndex(ILoggerFactory loggerFactory, string name, IOptionsMonitor<LuceneDirectoryIndexOptions> indexOptions) : base(loggerFactory, name, indexOptions)
+        {
+        }
+    }
+
     [Test]
     public async Task CanIndexAnyData()
     {
@@ -36,22 +55,19 @@ public class IndexServiceTests : UmbracoIntegrationTest
         var results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results.TotalItemCount, Is.EqualTo(1));
         Assert.That(results.First().Id, Is.EqualTo("test"));
-        
     }
     
     [Test]
     public async Task CanIndexData()
     {
-        IndexData();
         var index = GetIndex();
+        IndexData(index);
         var results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results.TotalItemCount, Is.EqualTo(3));
-        
     }
 
-    public void IndexData(int count = 3)
+    public void IndexData(IIndex index, int count = 3)
     {
-        var index = GetIndex();
         for (int i = 0; i < count; i++)
         {
             index.IndexItem(new ValueSet(
