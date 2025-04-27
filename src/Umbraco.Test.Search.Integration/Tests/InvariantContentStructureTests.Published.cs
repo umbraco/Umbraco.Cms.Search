@@ -14,10 +14,10 @@ public partial class InvariantContentStructureTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
-            Assert.That(documents[2].Key, Is.EqualTo(GrandchildKey));
-            Assert.That(documents[3].Key, Is.EqualTo(GreatGrandchildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GrandchildKey));
+            Assert.That(documents[3].Id, Is.EqualTo(GreatGrandchildKey));
 
             Assert.That(documents.All(d => d.ObjectType is UmbracoObjectTypes.Document), Is.True);
         });
@@ -30,7 +30,7 @@ public partial class InvariantContentStructureTests
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
-        Assert.That(documents[0].Key, Is.EqualTo(RootKey));
+        Assert.That(documents[0].Id, Is.EqualTo(RootKey));
     }
 
     [Test]
@@ -60,8 +60,8 @@ public partial class InvariantContentStructureTests
            
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
         });
     }
 
@@ -79,8 +79,8 @@ public partial class InvariantContentStructureTests
            
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
         });
     }
 
@@ -101,8 +101,8 @@ public partial class InvariantContentStructureTests
            
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
         });
     }
 }

@@ -125,11 +125,11 @@ public class CustomIndexRegistrationTests : ContentBaseTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(ContentKey));
+            Assert.That(documents[0].Id, Is.EqualTo(ContentKey));
             Assert.That(documents[0].ObjectType, Is.EqualTo(UmbracoObjectTypes.Document));
-            Assert.That(documents[1].Key, Is.EqualTo(MediaKey));
+            Assert.That(documents[1].Id, Is.EqualTo(MediaKey));
             Assert.That(documents[1].ObjectType, Is.EqualTo(UmbracoObjectTypes.Media));
-            Assert.That(documents[2].Key, Is.EqualTo(MemberKey));
+            Assert.That(documents[2].Id, Is.EqualTo(MemberKey));
             Assert.That(documents[2].ObjectType, Is.EqualTo(UmbracoObjectTypes.Member));
         });
 

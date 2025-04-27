@@ -144,6 +144,6 @@ public class ProtectedContentTests : InvariantContentTestBase
     private void VerifyProtection(TestIndexDocument document, Guid[] expectedAccessKeys)
     {
         Assert.That(document.Protection, Is.Not.Null);
-        Assert.That(document.Protection.AccessKeys, Is.EquivalentTo(expectedAccessKeys));
+        Assert.That(document.Protection.AccessIds, Is.EquivalentTo(expectedAccessKeys));
     }
 }

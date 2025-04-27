@@ -4,24 +4,24 @@ namespace Umbraco.Cms.Search.Core.Models.Indexing;
 
 public record ContentChange
 {
-    private ContentChange(Guid key, UmbracoObjectTypes objectType, ChangeImpact changeImpact, ContentState contentState)
+    private ContentChange(Guid id, UmbracoObjectTypes objectType, ChangeImpact changeImpact, ContentState contentState)
     {
-        Key = key;
+        Id = id;
         ObjectType = objectType;
         ChangeImpact = changeImpact;
         ContentState = contentState;
     }
     
-    public static ContentChange Document(Guid key, ChangeImpact changeImpact, ContentState contentState)
-        => new (key, UmbracoObjectTypes.Document, changeImpact, contentState);
+    public static ContentChange Document(Guid id, ChangeImpact changeImpact, ContentState contentState)
+        => new (id, UmbracoObjectTypes.Document, changeImpact, contentState);
 
-    public static ContentChange Media(Guid key, ChangeImpact changeImpact, ContentState contentState)
-        => new (key, UmbracoObjectTypes.Media, changeImpact, contentState);
+    public static ContentChange Media(Guid id, ChangeImpact changeImpact, ContentState contentState)
+        => new (id, UmbracoObjectTypes.Media, changeImpact, contentState);
 
-    public static ContentChange Member(Guid key, ChangeImpact changeImpact, ContentState contentState)
-        => new (key, UmbracoObjectTypes.Member, changeImpact, contentState);
+    public static ContentChange Member(Guid id, ChangeImpact changeImpact, ContentState contentState)
+        => new (id, UmbracoObjectTypes.Member, changeImpact, contentState);
 
-    public Guid Key { get; }
+    public Guid Id { get; }
 
     public UmbracoObjectTypes ObjectType { get; }
 

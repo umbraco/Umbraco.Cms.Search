@@ -30,7 +30,7 @@ public class DraftContentSearchableTree : ISearchableTreeWithCulture
         var (skip, take) = ConvertPagingToSkipTake(pageSize, pageIndex);
         var searchResult = await _searchService.SearchAsync(Core.Constants.IndexAliases.DraftContent, query, null, null, null, culture.NullOrWhiteSpaceAsNull(), null, null, skip, take);
 
-        var searchResultKeys = searchResult.Documents.Select(document => document.Key).ToArray();
+        var searchResultKeys = searchResult.Documents.Select(document => document.Id).ToArray();
         if (searchResultKeys.Length is 0)
         {
             return new EntitySearchResults([], searchResult.Total);

@@ -26,7 +26,7 @@ public class MediaSearchableTree : ISearchableTree
         var (skip, take) = ConvertPagingToSkipTake(pageSize, pageIndex);
         var searchResult = await _searchService.SearchAsync(Core.Constants.IndexAliases.DraftMedia, query, null, null, null, null, null, null, skip, take);
 
-        var searchResultKeys = searchResult.Documents.Select(document => document.Key).ToArray();
+        var searchResultKeys = searchResult.Documents.Select(document => document.Id).ToArray();
         if (searchResultKeys.Length is 0)
         {
             return new EntitySearchResults([], searchResult.Total);

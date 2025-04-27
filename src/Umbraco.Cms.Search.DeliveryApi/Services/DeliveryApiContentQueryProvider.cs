@@ -103,7 +103,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
             .GetAwaiter()
             .GetResult();
 
-        return new PagedModel<Guid>(result.Total, result.Documents.Select(document => document.Key).ToArray());
+        return new PagedModel<Guid>(result.Total, result.Documents.Select(document => document.Id).ToArray());
     }
 
     public SelectorOption AllContentSelectorOption()

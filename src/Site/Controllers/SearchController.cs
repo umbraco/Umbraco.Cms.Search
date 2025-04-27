@@ -85,7 +85,7 @@ public class SearchController : RenderController
             {
                 Total = result.Total,
                 Facets = result.Facets.ToArray(),
-                Documents = result.Documents.Select(document => UmbracoContext.Content!.GetById(document.Key)!).ToArray()
+                Documents = result.Documents.Select(document => UmbracoContext.Content!.GetById(document.Id)!).ToArray()
             }
         );
     }

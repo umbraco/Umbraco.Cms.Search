@@ -9,16 +9,16 @@ public class TestIndexService : IIndexService
 {
     private readonly Dictionary<string, Dictionary<Guid, TestIndexDocument>> _indexes = new();
         
-    public Task AddOrUpdateAsync(string indexAlias, Guid key, UmbracoObjectTypes objectType, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)
+    public Task AddOrUpdateAsync(string indexAlias, Guid id, UmbracoObjectTypes objectType, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)
     {
-        GetIndex(indexAlias)[key] = new (key, objectType, variations, fields, protection);
+        GetIndex(indexAlias)[id] = new (id, objectType, variations, fields, protection);
         return Task.CompletedTask;
     }
 
-    public Task DeleteAsync(string indexAlias, IEnumerable<Guid> keys)
+    public Task DeleteAsync(string indexAlias, IEnumerable<Guid> ids)
     {
         // index is responsible for deleting descendants
-        foreach (var key in keys)
+        foreach (var key in ids)
         {
             GetIndex(indexAlias).Remove(key);
             var descendantDocuments = GetIndex(indexAlias).Values.Where(document =>
@@ -26,7 +26,7 @@ public class TestIndexService : IIndexService
             );
             foreach (var descendantDocument in descendantDocuments)
             {
-                GetIndex(indexAlias).Remove(descendantDocument.Key);
+                GetIndex(indexAlias).Remove(descendantDocument.Id);
             }
         }
 

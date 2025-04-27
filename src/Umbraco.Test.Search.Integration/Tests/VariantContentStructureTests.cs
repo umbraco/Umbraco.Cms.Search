@@ -15,10 +15,10 @@ public class VariantContentStructureTests : VariantContentTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
-            Assert.That(documents[2].Key, Is.EqualTo(GrandchildKey));
-            Assert.That(documents[3].Key, Is.EqualTo(GreatGrandchildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GrandchildKey));
+            Assert.That(documents[3].Id, Is.EqualTo(GreatGrandchildKey));
 
             Assert.That(documents.All(d => d.ObjectType is UmbracoObjectTypes.Document), Is.True);
         });
@@ -43,10 +43,10 @@ public class VariantContentStructureTests : VariantContentTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
-            Assert.That(documents[2].Key, Is.EqualTo(GrandchildKey));
-            Assert.That(documents[3].Key, Is.EqualTo(GreatGrandchildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GrandchildKey));
+            Assert.That(documents[3].Id, Is.EqualTo(GreatGrandchildKey));
         });
 
         Assert.Multiple(() =>
@@ -65,7 +65,7 @@ public class VariantContentStructureTests : VariantContentTestBase
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
-        Assert.That(documents[0].Key, Is.EqualTo(RootKey));
+        Assert.That(documents[0].Id, Is.EqualTo(RootKey));
         VerifyDocumentVariance(documents[0], "en-US", "da-DK");
     }
 
@@ -106,10 +106,10 @@ public class VariantContentStructureTests : VariantContentTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
-            Assert.That(documents[2].Key, Is.EqualTo(GrandchildKey));
-            Assert.That(documents[3].Key, Is.EqualTo(GreatGrandchildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GrandchildKey));
+            Assert.That(documents[3].Id, Is.EqualTo(GreatGrandchildKey));
         });
 
         Assert.Multiple(() =>
@@ -135,8 +135,8 @@ public class VariantContentStructureTests : VariantContentTestBase
            
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
         });
 
         Assert.Multiple(() =>
@@ -164,8 +164,8 @@ public class VariantContentStructureTests : VariantContentTestBase
            
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
         });
 
         Assert.Multiple(() =>
@@ -202,10 +202,10 @@ public class VariantContentStructureTests : VariantContentTestBase
  
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
-            Assert.That(documents[2].Key, Is.EqualTo(GrandchildKey));
-            Assert.That(documents[3].Key, Is.EqualTo(GreatGrandchildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GrandchildKey));
+            Assert.That(documents[3].Id, Is.EqualTo(GreatGrandchildKey));
         });
 
         Assert.Multiple(() =>

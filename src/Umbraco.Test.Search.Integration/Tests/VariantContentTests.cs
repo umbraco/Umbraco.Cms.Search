@@ -17,10 +17,10 @@ public class VariantContentTests : VariantContentTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
-            Assert.That(documents[2].Key, Is.EqualTo(GrandchildKey));
-            Assert.That(documents[3].Key, Is.EqualTo(GreatGrandchildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GrandchildKey));
+            Assert.That(documents[3].Id, Is.EqualTo(GreatGrandchildKey));
         });
 
         Assert.Multiple(() =>
@@ -96,10 +96,10 @@ public class VariantContentTests : VariantContentTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
-            Assert.That(documents[2].Key, Is.EqualTo(GrandchildKey));
-            Assert.That(documents[3].Key, Is.EqualTo(GreatGrandchildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GrandchildKey));
+            Assert.That(documents[3].Id, Is.EqualTo(GreatGrandchildKey));
         });
 
         Assert.Multiple(() =>

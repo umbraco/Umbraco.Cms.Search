@@ -43,10 +43,10 @@ internal sealed class InMemorySearchService : ISearchService
             )
         );
 
-        var accessKeys = accessContext?.PrincipalKey.Yield().Union(accessContext.GroupKeys ?? []).ToArray();
+        var accessKeys = accessContext?.PrincipalId.Yield().Union(accessContext.GroupIds ?? []).ToArray();
         result = result.Where(kvp =>
             kvp.Value.Protection is null
-            || (accessKeys is not null && kvp.Value.Protection.AccessKeys.ContainsAny(accessKeys)
+            || (accessKeys is not null && kvp.Value.Protection.AccessIds.ContainsAny(accessKeys)
             )
         );
         

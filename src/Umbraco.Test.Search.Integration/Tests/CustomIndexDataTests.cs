@@ -42,7 +42,7 @@ public class CustomIndexDataTests : TestBase
         Assert.Multiple(() =>
         {
             var document = documents[0];
-            Assert.That(document.Key, Is.EqualTo(key));
+            Assert.That(document.Id, Is.EqualTo(key));
             Assert.That(document.ObjectType, Is.EqualTo(UmbracoObjectTypes.Unknown));
 
             Assert.That(document.Variations.Single().Culture, Is.Null);

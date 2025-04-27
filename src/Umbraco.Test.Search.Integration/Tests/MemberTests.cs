@@ -19,9 +19,9 @@ public class MemberTests : ContentBaseTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(MemberOneKey));
-            Assert.That(documents[1].Key, Is.EqualTo(MemberTwoKey));
-            Assert.That(documents[2].Key, Is.EqualTo(MemberThreeKey));
+            Assert.That(documents[0].Id, Is.EqualTo(MemberOneKey));
+            Assert.That(documents[1].Id, Is.EqualTo(MemberTwoKey));
+            Assert.That(documents[2].Id, Is.EqualTo(MemberThreeKey));
 
             Assert.That(documents.All(d => d.ObjectType is UmbracoObjectTypes.Member), Is.True);
         });

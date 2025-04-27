@@ -12,10 +12,10 @@ public partial class InvariantContentTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
-            Assert.That(documents[2].Key, Is.EqualTo(GrandchildKey));
-            Assert.That(documents[3].Key, Is.EqualTo(GreatGrandchildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GrandchildKey));
+            Assert.That(documents[3].Id, Is.EqualTo(GreatGrandchildKey));
         });
 
         Assert.Multiple(() =>
@@ -42,10 +42,10 @@ public partial class InvariantContentTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
-            Assert.That(documents[2].Key, Is.EqualTo(GrandchildKey));
-            Assert.That(documents[3].Key, Is.EqualTo(GreatGrandchildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GrandchildKey));
+            Assert.That(documents[3].Id, Is.EqualTo(GreatGrandchildKey));
         });
 
         VerifyDocumentPropertyValues(documents[1], "The updated child title", 123456);
@@ -61,10 +61,10 @@ public partial class InvariantContentTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
-            Assert.That(documents[2].Key, Is.EqualTo(GrandchildKey));
-            Assert.That(documents[3].Key, Is.EqualTo(GreatGrandchildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GrandchildKey));
+            Assert.That(documents[3].Id, Is.EqualTo(GreatGrandchildKey));
         });
 
         Assert.Multiple(() =>
@@ -86,10 +86,10 @@ public partial class InvariantContentTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
-            Assert.That(documents[2].Key, Is.EqualTo(GrandchildKey));
-            Assert.That(documents[3].Key, Is.EqualTo(GreatGrandchildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GrandchildKey));
+            Assert.That(documents[3].Id, Is.EqualTo(GreatGrandchildKey));
         });
 
         Assert.Multiple(() =>
@@ -114,7 +114,7 @@ public partial class InvariantContentTests
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
-        Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
+        Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
         VerifyDocumentSystemValues(documents[1], Child(), "updated-tag1", "updated-tag2", "updated-tag3");
     }
 }
