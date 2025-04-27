@@ -1,9 +1,6 @@
 ﻿using Examine;
 using Examine.Lucene;
-using Examine.Lucene.Directories;
 using Examine.Lucene.Providers;
-using Lucene.Net.Analysis.Standard;
-using Lucene.Net.Index;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -15,7 +12,7 @@ using Umbraco.Cms.Tests.Integration.Testing;
 namespace Umbraco.Test.Search.Examine.Integration.Tests;
 
 [TestFixture]
-[UmbracoTest(Database = UmbracoTestOptions.Database.NewEmptyPerTest)]
+[UmbracoTest(Database = UmbracoTestOptions.Database.None)]
 public class IndexServiceTests : UmbracoIntegrationTest
 {
     
@@ -38,7 +35,7 @@ public class IndexServiceTests : UmbracoIntegrationTest
     }
 
     [Test]
-    public async Task CanIndexAnyData()
+    public void CanIndexAnyData()
     {
         var index = GetIndex();
         index.IndexItem(new ValueSet(
@@ -58,12 +55,15 @@ public class IndexServiceTests : UmbracoIntegrationTest
     }
     
     [Test]
-    public async Task CanIndexData()
+    [TestCase(3)]
+    [TestCase(5)]
+    [TestCase(10)]
+    public void CanIndexData(int count)
     {
         var index = GetIndex();
-        IndexData(index);
+        IndexData(index, count);
         var results = index.Searcher.CreateQuery().All().Execute();
-        Assert.That(results.TotalItemCount, Is.EqualTo(3));
+        Assert.That(results.TotalItemCount, Is.EqualTo(count));
     }
 
     public void IndexData(IIndex index, int count = 3)
