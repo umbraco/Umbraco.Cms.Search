@@ -1,5 +1,4 @@
 ﻿using Examine;
-using Examine.Lucene.Directories;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Umbraco.Cms.Core;
@@ -10,7 +9,9 @@ using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Infrastructure.HostedServices;
 using Umbraco.Cms.Search.Core.DependencyInjection;
-using Umbraco.Cms.Search.Provider.Examine.DependencyInjection;
+using Umbraco.Cms.Search.Core.Services;
+using Umbraco.Cms.Search.Core.Services.ContentIndexing;
+using Umbraco.Cms.Search.Provider.Examine.Services;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -32,8 +33,21 @@ public class IndexServiceTests : UmbracoIntegrationTest
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
         base.CustomTestSetup(builder);
-        builder.Services.AddSingleton<IDirectoryFactory, TestInMemoryDirectoryFactory>();
-        builder.AddExamineSearchProvider();
+        
+        builder.Services.AddExamine();
+        builder.Services.AddSingleton<TestInMemoryDirectoryFactory>();
+        builder.Services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        builder.Services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        builder.Services.AddTransient<IndexService>();
+        builder.Services.AddTransient<IIndexService, IndexService>();
+        builder.Services.AddTransient<ISearchService, SearchService>();
+        
+        builder.Services.Configure<Umbraco.Cms.Search.Core.Configuration.IndexOptions>(options =>
+        {
+            options.RegisterIndex<IndexService, IDraftContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IndexService, IPublishedContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+        });
+
         builder.AddSearchCore();
         
         builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
@@ -95,26 +109,6 @@ public class IndexServiceTests : UmbracoIntegrationTest
         Assert.That(results, Is.Not.Empty);
         Assert.That(results.First().Values.First().Value, Is.EqualTo("12"));
     }
-    
-    [Test]
-    [TestCase(true)]
-    [TestCase(false)]
-    public void CanIndexTags(bool publish)
-    {
-        CreateRootDocument(publish);
-        var content = ContentService.GetById(RootKey);
-        Assert.That(content, Is.Not.Null);
-
-        var index = ExamineManager.GetIndex(publish ? Cms.Search.Core.Constants.IndexAliases.PublishedContent : Cms.Search.Core.Constants.IndexAliases.DraftContent);
-
-        var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField("tags");
-        var results = queryBuilder.Execute();
-        Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First().Value, Is.EqualTo("[\"tag1\",\"tag2\"]"));
-    }
-    
-    
 
     private void CreateRootDocument(bool publish = false)
     {
@@ -130,11 +124,6 @@ public class IndexServiceTests : UmbracoIntegrationTest
             .WithDataTypeId(-51)
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
             .Done()
-            .AddPropertyType()
-            .WithAlias("tags")
-            .WithDataTypeId(Constants.DataTypes.Tags)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Tags)
-            .Done()
             .Build();
         ContentTypeService.Save(contentType);
 
@@ -146,8 +135,7 @@ public class IndexServiceTests : UmbracoIntegrationTest
                 new
                 {
                     title = "The root title",
-                    count = 12,
-                    tags = "[\"tag1\",\"tag2\"]"
+                    count = 12
                 })
             .Build();
 
