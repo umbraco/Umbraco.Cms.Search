@@ -10,9 +10,7 @@ public class InvariantIndexServiceTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexAnyDocument(bool publish)
     {
-        CreateInvariantRootDocument(publish);
-        var content = ContentService.GetById(RootKey);
-        Assert.That(content, Is.Not.Null);
+        CreateInvariantDocument(publish);
 
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
@@ -27,9 +25,7 @@ public class InvariantIndexServiceTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexTextProperty(bool publish)
     {
-        CreateInvariantRootDocument(publish);
-        var content = ContentService.GetById(RootKey);
-        Assert.That(content, Is.Not.Null);
+        CreateInvariantDocument(publish);
 
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
@@ -47,9 +43,7 @@ public class InvariantIndexServiceTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexIntegerValues(bool publish)
     {
-        CreateInvariantRootDocument(publish);
-        var content = ContentService.GetById(RootKey);
-        Assert.That(content, Is.Not.Null);
+        CreateInvariantDocument(publish);
 
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
@@ -67,9 +61,7 @@ public class InvariantIndexServiceTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexDecimalValues(bool publish)
     {
-        CreateInvariantRootDocument(publish);
-        var content = ContentService.GetById(RootKey);
-        Assert.That(content, Is.Not.Null);
+        CreateInvariantDocument(publish);
 
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
@@ -87,9 +79,7 @@ public class InvariantIndexServiceTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexDateTimeValues(bool publish)
     {
-        CreateInvariantRootDocument(publish);
-        var content = ContentService.GetById(RootKey);
-        Assert.That(content, Is.Not.Null);
+        CreateInvariantDocument(publish);
 
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent

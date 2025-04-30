@@ -30,6 +30,7 @@ public class IndexTestBase : UmbracoIntegrationTest
     protected IContentService ContentService => GetRequiredService<IContentService>();
     protected IExamineManager ExamineManager => GetRequiredService<IExamineManager>();
     protected IDataTypeService DataTypeService => GetRequiredService<IDataTypeService>();
+    protected ILocalizationService LocalizationService => GetRequiredService<ILocalizationService>();
     
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
@@ -59,8 +60,80 @@ public class IndexTestBase : UmbracoIntegrationTest
         builder.AddNotificationHandler<MemberSavedNotification, MemberSavedDistributedCacheNotificationHandler>();
         builder.AddNotificationHandler<MemberDeletedNotification, MemberDeletedDistributedCacheNotificationHandler>();
     }
+
+    protected void CreateVariantDocument(bool publish = false)
+    {
+        
+        var langDk = new LanguageBuilder()
+            .WithCultureInfo("da-DK")
+            .WithIsDefault(true)
+            .Build();
+        var langJp = new LanguageBuilder()
+            .WithCultureInfo("ja-JP")
+            .Build();
+
+        LocalizationService.Save(langDk);
+        LocalizationService.Save(langJp);
+
+        var contentType = new ContentTypeBuilder()
+            .WithAlias("variant")
+            .WithContentVariation(ContentVariation.Culture)
+            .AddPropertyType()
+            .WithAlias("title")
+            .WithVariations(ContentVariation.Culture)
+            .WithDataTypeId(Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .Done()         
+            .Build();
+        ContentTypeService.Save(contentType);
+        
+        var root = new ContentBuilder()
+            .WithKey(RootKey)
+            .WithContentType(contentType)
+            .WithName("Root")
+            .WithPropertyValues(
+                new
+                {
+                    title = "The root title",
+                    count = 12,
+                    datetime = CurrentDateTimeOffset.DateTime,
+                    decimalproperty = 12.43
+                },
+                "en-US")
+            .WithPropertyValues(
+                new
+                {
+                    title = "The root title",
+                    count = 12,
+                    datetime = CurrentDateTimeOffset.DateTime,
+                    decimalproperty = 12.43
+                },
+                "sv-SE")
+            .WithPropertyValues(
+                new
+                {
+                    title = "The root title",
+                    count = 12,
+                    datetime = CurrentDateTimeOffset.DateTime,
+                    decimalproperty = 12.43
+                },
+                "ja-JP")
+            .Build();
+
+        if (publish)
+        {
+            ContentService.SaveAndPublish(root);
+        }
+        else
+        {
+            ContentService.Save(root);
+        }
+        
+        
+
+    }
     
-    protected void CreateInvariantRootDocument(bool publish = false)
+    protected void CreateInvariantDocument(bool publish = false)
     {
         var dataType = new DataTypeBuilder()
             .WithId(0)
@@ -119,6 +192,9 @@ public class IndexTestBase : UmbracoIntegrationTest
         {
             ContentService.Save(root);
         }
+        
+        var content = ContentService.GetById(RootKey);
+        Assert.That(content, Is.Not.Null);
     }
     
 }
