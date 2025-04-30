@@ -60,6 +60,26 @@ public class IndexServiceTests : IndexTestBase
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
         Assert.That(results.First().Values.First().Value, Is.EqualTo("12"));
+    }
+    
+    [Test]
+    [TestCase(true)]
+    [TestCase(false)]
+    public void CanIndexDecimalValues(bool publish)
+    {
+        CreateInvariantRootDocument(publish);
+        var content = ContentService.GetById(RootKey);
+        Assert.That(content, Is.Not.Null);
+
+        var index = ExamineManager.GetIndex(publish
+            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
+            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+
+        var queryBuilder = index.Searcher.CreateQuery().All();
+        queryBuilder.SelectField("decimalproperty");
+        var results = queryBuilder.Execute();
+        Assert.That(results, Is.Not.Empty);
+        Assert.That(results.First().Values.First().Value, Is.EqualTo("12,43"));
     }    
     
     [Test]

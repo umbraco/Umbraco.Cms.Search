@@ -29,6 +29,7 @@ public class IndexTestBase : UmbracoIntegrationTest
 
     protected IContentService ContentService => GetRequiredService<IContentService>();
     protected IExamineManager ExamineManager => GetRequiredService<IExamineManager>();
+    protected IDataTypeService DataTypeService => GetRequiredService<IDataTypeService>();
     
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
@@ -61,6 +62,16 @@ public class IndexTestBase : UmbracoIntegrationTest
     
     protected void CreateInvariantRootDocument(bool publish = false)
     {
+        var dataType = new DataTypeBuilder()
+            .WithId(0)
+            .WithoutIdentity()
+            .WithDatabaseType(ValueStorageType.Decimal)
+            .AddEditor()
+            .WithAlias(Constants.PropertyEditors.Aliases.Decimal)
+            .Done()
+            .Build();
+        
+        DataTypeService.Save(dataType);
         var contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
             .AddPropertyType()
@@ -78,6 +89,11 @@ public class IndexTestBase : UmbracoIntegrationTest
             .WithDataTypeId(Constants.DataTypes.DateTime)
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.DateTime)
             .Done()
+            .AddPropertyType()
+            .WithAlias("decimalproperty")
+            .WithDataTypeId(dataType.Id)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Decimal)
+            .Done()
             .Build();
         ContentTypeService.Save(contentType);
 
@@ -91,6 +107,7 @@ public class IndexTestBase : UmbracoIntegrationTest
                     title = "The root title",
                     count = 12,
                     datetime = CurrentDateTimeOffset.DateTime,
+                    decimalproperty = 12.43
                 })
             .Build();
 
