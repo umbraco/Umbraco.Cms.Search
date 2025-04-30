@@ -3,7 +3,7 @@ using NUnit.Framework;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests;
 
-public class IndexServiceTests : IndexTestBase
+public class InvariantIndexServiceTests : IndexTestBase
 {
     [Test]
     [TestCase(true)]

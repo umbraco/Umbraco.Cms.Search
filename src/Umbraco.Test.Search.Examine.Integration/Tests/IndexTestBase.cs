@@ -39,14 +39,14 @@ public class IndexTestBase : UmbracoIntegrationTest
         builder.Services.AddSingleton<TestInMemoryDirectoryFactory>();
         builder.Services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(Cms.Search.Core.Constants.IndexAliases.DraftContent);
         builder.Services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
-        builder.Services.AddTransient<IndexService>();
-        builder.Services.AddTransient<IIndexService, IndexService>();
+        builder.Services.AddTransient<InvariantIndexService>();
+        builder.Services.AddTransient<IIndexService, InvariantIndexService>();
         builder.Services.AddTransient<ISearchService, SearchService>();
         
         builder.Services.Configure<Umbraco.Cms.Search.Core.Configuration.IndexOptions>(options =>
         {
-            options.RegisterIndex<IndexService, IDraftContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<IndexService, IPublishedContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<InvariantIndexService, IDraftContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<InvariantIndexService, IPublishedContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
         });
 
         builder.AddSearchCore();
