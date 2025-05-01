@@ -36,6 +36,19 @@ public class InvariantIndexServiceTests : IndexTestBase
         var results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results, Is.Empty);
     }
+    
+    [Test]
+    public void CanRemoveUnpublishedDocument()
+    {
+        CreateInvariantDocument(true);
+        var content = ContentService.GetById(RootKey);
+        ContentService.Unpublish(content);
+
+        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+
+        var results = index.Searcher.CreateQuery().All().Execute();
+        Assert.That(results, Is.Empty);
+    }
 
     [Test]
     [TestCase(true)]
@@ -52,7 +65,7 @@ public class InvariantIndexServiceTests : IndexTestBase
         queryBuilder.SelectField("title");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First().Value, Is.EqualTo("The root title"));
+        Assert.That(results.First().Values.First(x => x.Key == "title").Value, Is.EqualTo("The root title"));
     }
 
     [Test]
@@ -70,7 +83,7 @@ public class InvariantIndexServiceTests : IndexTestBase
         queryBuilder.SelectField("count");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First().Value, Is.EqualTo("12"));
+        Assert.That(results.First().Values.First(x => x.Key == "count").Value, Is.EqualTo("12"));
     }
     
     [Test]
@@ -88,7 +101,7 @@ public class InvariantIndexServiceTests : IndexTestBase
         queryBuilder.SelectField("decimalproperty");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First().Value, Is.EqualTo("12,43"));
+        Assert.That(results.First().Values.First(x => x.Key == "decimalproperty").Value, Is.EqualTo("12,43"));
     }    
     
     [Test]
@@ -106,7 +119,7 @@ public class InvariantIndexServiceTests : IndexTestBase
         queryBuilder.SelectField("datetime");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First().Value, Is.EqualTo(CurrentDateTimeOffset.ToString()));
+        Assert.That(results.First().Values.First(x => x.Key == "datetime").Value, Is.EqualTo(CurrentDateTimeOffset.ToString()));
     }
     
         
