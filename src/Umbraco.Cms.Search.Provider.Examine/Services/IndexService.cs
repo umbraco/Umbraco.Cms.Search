@@ -21,19 +21,35 @@ public class IndexService : IIndexService
         index.IndexItem(new ValueSet(
             key.ToString(),
             objectType.ToString(),
-            MapToDictionary(fields)));
+            MapToDictionary(fields, variations)));
 
         return Task.CompletedTask;
     }
 
-    private Dictionary<string, object> MapToDictionary(IEnumerable<IndexField> fields)
+    private Dictionary<string, object> MapToDictionary(IEnumerable<IndexField> fields, IEnumerable<Variation> variations)
     {
         var result = new Dictionary<string, object>();
 
-        foreach (var field in fields)
+        if (variations.Any() is false)
         {
-            result.Add(field.FieldName, MapIndexValue(field.Value));
+            foreach (var field in fields)
+            {
+                result.Add(field.FieldName, MapIndexValue(field.Value));
+            }
         }
+
+        else
+        {
+            foreach (var variation in variations)
+            {
+                foreach (var field in fields.Where(x => x.Culture == variation.Culture))
+                {
+                    result.Add($"{field.FieldName}_{field.Culture}", MapIndexValue(field.Value));
+                }
+            }
+        }
+
+
 
         return result;
     }

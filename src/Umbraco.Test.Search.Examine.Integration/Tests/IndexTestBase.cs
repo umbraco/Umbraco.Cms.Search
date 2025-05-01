@@ -96,19 +96,19 @@ public class IndexTestBase : UmbracoIntegrationTest
             .WithPropertyValues(
                 new
                 {
-                    title = "The root title",
+                    title = "Root",
                 },
                 "en-US")
             .WithPropertyValues(
                 new
                 {
-                    title = "The root title",
+                    title = "Root",
                 },
                 "da-DK")
             .WithPropertyValues(
                 new
                 {
-                    title = "The root title",
+                    title = "ル-ト",
                 },
                 "ja-JP")
             .Build();
