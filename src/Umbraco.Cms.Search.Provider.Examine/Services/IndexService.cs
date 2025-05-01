@@ -5,11 +5,11 @@ using Umbraco.Cms.Search.Core.Services;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
-public class InvariantIndexService : IIndexService
+public class IndexService : IIndexService
 {
     private readonly IExamineManager _examineManager;
 
-    public InvariantIndexService(IExamineManager examineManager)
+    public IndexService(IExamineManager examineManager)
     {
         _examineManager = examineManager;
     }

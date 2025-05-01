@@ -40,14 +40,14 @@ public class IndexTestBase : UmbracoIntegrationTest
         builder.Services.AddSingleton<TestInMemoryDirectoryFactory>();
         builder.Services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(Cms.Search.Core.Constants.IndexAliases.DraftContent);
         builder.Services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
-        builder.Services.AddTransient<InvariantIndexService>();
-        builder.Services.AddTransient<IIndexService, InvariantIndexService>();
+        builder.Services.AddTransient<IndexService>();
+        builder.Services.AddTransient<IIndexService, IndexService>();
         builder.Services.AddTransient<ISearchService, SearchService>();
         
         builder.Services.Configure<Umbraco.Cms.Search.Core.Configuration.IndexOptions>(options =>
         {
-            options.RegisterIndex<InvariantIndexService, IDraftContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<InvariantIndexService, IPublishedContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IndexService, IDraftContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IndexService, IPublishedContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
         });
 
         builder.AddSearchCore();
@@ -90,32 +90,25 @@ public class IndexTestBase : UmbracoIntegrationTest
         var root = new ContentBuilder()
             .WithKey(RootKey)
             .WithContentType(contentType)
-            .WithName("Root")
+            .WithCultureName("en-US", "English Name")
+            .WithCultureName("da-DK", "Danish Name")
+            .WithCultureName("ja-JP", "Japanese Name")
             .WithPropertyValues(
                 new
                 {
                     title = "The root title",
-                    count = 12,
-                    datetime = CurrentDateTimeOffset.DateTime,
-                    decimalproperty = 12.43
                 },
                 "en-US")
             .WithPropertyValues(
                 new
                 {
                     title = "The root title",
-                    count = 12,
-                    datetime = CurrentDateTimeOffset.DateTime,
-                    decimalproperty = 12.43
                 },
-                "sv-SE")
+                "da-DK")
             .WithPropertyValues(
                 new
                 {
                     title = "The root title",
-                    count = 12,
-                    datetime = CurrentDateTimeOffset.DateTime,
-                    decimalproperty = 12.43
                 },
                 "ja-JP")
             .Build();
@@ -129,7 +122,8 @@ public class IndexTestBase : UmbracoIntegrationTest
             ContentService.Save(root);
         }
         
-        
+        var content = ContentService.GetById(RootKey);
+        Assert.That(content, Is.Not.Null);
 
     }
     
