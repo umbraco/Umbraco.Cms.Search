@@ -25,6 +25,10 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
 {
     protected DateTimeOffset CurrentDateTimeOffset = DateTimeOffset.UtcNow;
     protected Guid RootKey { get; } = Guid.NewGuid();
+    
+    protected Guid ChildKey { get; } = Guid.NewGuid();
+
+    protected Guid GrandchildKey { get; } = Guid.NewGuid();
     protected IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>();
 
     protected IContentService ContentService => GetRequiredService<IContentService>();
@@ -177,17 +181,112 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
                 })
             .Build();
 
-        if (publish)
-        {
-            ContentService.SaveAndPublish(root);
-        }
-        else
-        {
-            ContentService.Save(root);
-        }
+        SaveOrPublish(root, publish);
         
         var content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);
+    }
+    
+    protected void CreateInvariantDocumentTree(bool publish = false)
+    {
+        var dataType = new DataTypeBuilder()
+            .WithId(0)
+            .WithoutIdentity()
+            .WithDatabaseType(ValueStorageType.Decimal)
+            .AddEditor()
+            .WithAlias(Constants.PropertyEditors.Aliases.Decimal)
+            .Done()
+            .Build();
+        
+        DataTypeService.Save(dataType);
+        var contentType = new ContentTypeBuilder()
+            .WithAlias("invariant")
+            .AddPropertyType()
+            .WithAlias("title")
+            .WithDataTypeId(Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("count")
+            .WithDataTypeId(-51)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("datetime")
+            .WithDataTypeId(Constants.DataTypes.DateTime)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.DateTime)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("decimalproperty")
+            .WithDataTypeId(dataType.Id)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Decimal)
+            .Done()
+            .Build();
+        ContentTypeService.Save(contentType);
+        contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Id, 0)];
+        ContentTypeService.Save(contentType);
+
+        var root = new ContentBuilder()
+            .WithKey(RootKey)
+            .WithContentType(contentType)
+            .WithName("Root")
+            .WithPropertyValues(
+                new
+                {
+                    title = "The root title",
+                    count = 12,
+                    datetime = CurrentDateTimeOffset.DateTime,
+                    decimalproperty = 12.43
+                })
+            .Build();
+
+        SaveOrPublish(root, publish);
+        
+        var child = new ContentBuilder()
+            .WithKey(ChildKey)
+            .WithContentType(contentType)
+            .WithName("Child")
+            .WithParent(root)
+            .WithPropertyValues(
+                new
+                {
+                    title = "The child title",
+                    count = 12,
+                    datetime = CurrentDateTimeOffset.DateTime,
+                    decimalproperty = 12.43
+                })
+            .Build();
+        
+        SaveOrPublish(child, publish);
+
+        var grandchild = new ContentBuilder()
+            .WithKey(GrandchildKey)
+            .WithContentType(contentType)
+            .WithName("Grandchild")
+            .WithParent(child)
+            .WithPropertyValues(
+                new
+                {
+                    title = "The grandchild title",
+                    count = 12,
+                    datetime = CurrentDateTimeOffset.DateTime,
+                    decimalproperty = 12.43
+                })
+            .Build();
+        
+        SaveOrPublish(grandchild, publish);
+    }
+
+    public void SaveOrPublish(IContent content, bool publish)
+    {
+        if (publish)
+        {
+            ContentService.SaveAndPublish(content);
+        }
+        else
+        {
+            ContentService.Save(content);
+        }
     }
     
 }

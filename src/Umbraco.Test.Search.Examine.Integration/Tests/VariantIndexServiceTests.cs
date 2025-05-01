@@ -76,23 +76,7 @@ public class VariantIndexServiceTests : IndexTestBase
         queryBuilder.SelectField($"{propertyName}_{culture}");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First().Value, Is.EqualTo(updatedValue.ToString()));
-    }
-    
-    private void UpdateProperty(string propertyName, object value, string culture, bool publish)
-    {
-        var content = ContentService.GetById(RootKey);
-        content.SetValue(propertyName, value, culture);
-
-        if (publish)
-        {
-            ContentService.SaveAndPublish(content);
-        }
-        else
-        {
-            ContentService.Save(content);
-
-        }
+        Assert.That(results.First().Values.First(x => x.Key == propertyName).Value, Is.EqualTo(updatedValue.ToString()));
     }
     
     [Test]
@@ -114,7 +98,7 @@ public class VariantIndexServiceTests : IndexTestBase
         queryBuilder.SelectField($"title_{culture}");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First().Value, Is.EqualTo(expectedValue));
+        Assert.That(results.First().Values.First(x => x.Key == $"title_{culture}").Value, Is.EqualTo(expectedValue));
     }
     
     [Test]
@@ -136,6 +120,22 @@ public class VariantIndexServiceTests : IndexTestBase
         queryBuilder.SelectField($"body_{culture}_{segment}");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First().Value, Is.EqualTo(expectedValue));
+        Assert.That(results.First().Values.First(x => x.Key == $"body_{culture}_{segment}").Value, Is.EqualTo(expectedValue));
+    }  
+    
+    private void UpdateProperty(string propertyName, object value, string culture, bool publish)
+    {
+        var content = ContentService.GetById(RootKey);
+        content.SetValue(propertyName, value, culture);
+
+        if (publish)
+        {
+            ContentService.SaveAndPublish(content);
+        }
+        else
+        {
+            ContentService.Save(content);
+
+        }
     }
 }
