@@ -91,4 +91,45 @@ public class InvariantIndexServiceTests : IndexTestBase
         Assert.That(results, Is.Not.Empty);
         Assert.That(results.First().Values.First().Value, Is.EqualTo(CurrentDateTimeOffset.ToString()));
     }
+    
+        
+    [Test]
+    [TestCase("title", "updated title", false)]
+    [TestCase("title", "updated title", true)]
+    [TestCase("count", 12, false)]
+    [TestCase("count", 12, true)]
+    [TestCase("decimalproperty", 1.45, false)]
+    [TestCase("decimalproperty", 1.45, true)]
+    public void CanIndexUpdatedProperties(string propertyName, object updatedValue, bool publish)
+    {
+        CreateInvariantDocument(publish);
+
+        UpdateProperty(propertyName, updatedValue, publish);
+
+        var index = ExamineManager.GetIndex(publish
+            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
+            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+
+        var queryBuilder = index.Searcher.CreateQuery().All();
+        queryBuilder.SelectField(propertyName);
+        var results = queryBuilder.Execute();
+        Assert.That(results, Is.Not.Empty);
+        Assert.That(results.First().Values.First().Value, Is.EqualTo(updatedValue.ToString()));
+    }
+    
+    private void UpdateProperty(string propertyName, object value, bool publish)
+    {
+        var content = ContentService.GetById(RootKey);
+        content.SetValue(propertyName, value);
+
+        if (publish)
+        {
+            ContentService.SaveAndPublish(content);
+        }
+        else
+        {
+            ContentService.Save(content);
+
+        }
+    }
 }
