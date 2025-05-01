@@ -21,7 +21,7 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests;
 
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
-public class IndexTestBase : UmbracoIntegrationTest
+public abstract class IndexTestBase : UmbracoIntegrationTest
 {
     protected DateTimeOffset CurrentDateTimeOffset = DateTimeOffset.UtcNow;
     protected Guid RootKey { get; } = Guid.NewGuid();
@@ -90,9 +90,9 @@ public class IndexTestBase : UmbracoIntegrationTest
         var root = new ContentBuilder()
             .WithKey(RootKey)
             .WithContentType(contentType)
-            .WithCultureName("en-US", "English Name")
-            .WithCultureName("da-DK", "Danish Name")
-            .WithCultureName("ja-JP", "Japanese Name")
+            .WithCultureName("en-US", "Name")
+            .WithCultureName("da-DK", "Navn")
+            .WithCultureName("ja-JP", "名前")
             .WithPropertyValues(
                 new
                 {
@@ -102,7 +102,7 @@ public class IndexTestBase : UmbracoIntegrationTest
             .WithPropertyValues(
                 new
                 {
-                    title = "Root",
+                    title = "Rod",
                 },
                 "da-DK")
             .WithPropertyValues(
@@ -112,6 +112,10 @@ public class IndexTestBase : UmbracoIntegrationTest
                 },
                 "ja-JP")
             .Build();
+        
+        root.SetValue("title", "Root", "en-US");
+        root.SetValue("title", "Rod", "da-DK");
+        root.SetValue("title", "ル-ト", "ja-JP");
 
         if (publish)
         {

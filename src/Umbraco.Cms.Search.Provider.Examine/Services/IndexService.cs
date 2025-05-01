@@ -30,26 +30,27 @@ public class IndexService : IIndexService
     {
         var result = new Dictionary<string, object>();
 
-        if (variations.Any() is false)
+        if (variations.Count() <= 1)
         {
-            foreach (var field in fields)
+            var variant = variations.First();
+            if (variant.Culture is null && variant.Segment is null)
             {
-                result.Add(field.FieldName, MapIndexValue(field.Value));
-            }
-        }
-
-        else
-        {
-            foreach (var variation in variations)
-            {
-                foreach (var field in fields.Where(x => x.Culture == variation.Culture))
+                foreach (var field in fields)
                 {
-                    result.Add($"{field.FieldName}_{field.Culture}", MapIndexValue(field.Value));
+                    result.Add(field.FieldName, MapIndexValue(field.Value));
                 }
+
+                return result;
             }
         }
 
-
+        foreach (var variation in variations)
+        {
+            foreach (var field in fields.Where(x => x.Culture == variation.Culture))
+            {
+                result.Add($"{field.FieldName}_{field.Culture}", MapIndexValue(field.Value));
+            }
+        }
 
         return result;
     }
