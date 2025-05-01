@@ -25,6 +25,20 @@ public class IndexService : IIndexService
 
         return Task.CompletedTask;
     }
+    
+    
+    public Task DeleteAsync(string indexAlias, IEnumerable<Guid> keys)
+    {
+        var index = GetIndex(indexAlias);
+
+        foreach (var key in keys)
+        {
+            index.DeleteFromIndex(key.ToString());
+        }
+        
+        return Task.CompletedTask;
+    }
+
 
     private Dictionary<string, object> MapToDictionary(IEnumerable<IndexField> fields)
     {
@@ -77,11 +91,6 @@ public class IndexService : IIndexService
         }
 
         return result;
-    }
-
-    public Task DeleteAsync(string indexAlias, IEnumerable<Guid> keys)
-    {
-        throw new NotImplementedException();
     }
 
     private IIndex GetIndex(string indexName)

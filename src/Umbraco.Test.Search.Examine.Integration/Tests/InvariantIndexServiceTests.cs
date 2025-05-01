@@ -19,6 +19,23 @@ public class InvariantIndexServiceTests : IndexTestBase
         var results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results, Is.Not.Empty);
     }
+    
+    [Test]
+    [TestCase(true)]
+    [TestCase(false)]
+    public void CanRemoveAnyDocument(bool publish)
+    {
+        CreateInvariantDocument(publish);
+        var content = ContentService.GetById(RootKey);
+        ContentService.Delete(content);
+
+        var index = ExamineManager.GetIndex(publish
+            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
+            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+
+        var results = index.Searcher.CreateQuery().All().Execute();
+        Assert.That(results, Is.Empty);
+    }
 
     [Test]
     [TestCase(true)]
