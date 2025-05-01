@@ -77,13 +77,19 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
 
         var contentType = new ContentTypeBuilder()
             .WithAlias("variant")
-            .WithContentVariation(ContentVariation.Culture)
+            .WithContentVariation(ContentVariation.CultureAndSegment)
             .AddPropertyType()
             .WithAlias("title")
             .WithVariations(ContentVariation.Culture)
             .WithDataTypeId(Constants.DataTypes.Textbox)
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
-            .Done()         
+            .Done()
+            .AddPropertyType()
+            .WithAlias("body")
+            .WithVariations(ContentVariation.CultureAndSegment)
+            .WithDataTypeId(Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .Done()
             .Build();
         ContentTypeService.Save(contentType);
         
@@ -93,29 +99,18 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
             .WithCultureName("en-US", "Name")
             .WithCultureName("da-DK", "Navn")
             .WithCultureName("ja-JP", "名前")
-            .WithPropertyValues(
-                new
-                {
-                    title = "Root",
-                },
-                "en-US")
-            .WithPropertyValues(
-                new
-                {
-                    title = "Rod",
-                },
-                "da-DK")
-            .WithPropertyValues(
-                new
-                {
-                    title = "ル-ト",
-                },
-                "ja-JP")
             .Build();
         
         root.SetValue("title", "Root", "en-US");
         root.SetValue("title", "Rod", "da-DK");
         root.SetValue("title", "ル-ト", "ja-JP");
+        
+        root.SetValue("body", "body-segment-1", "en-US", "segment-1");
+        root.SetValue("body", "body-segment-2", "en-US", "segment-2");
+        root.SetValue("body", "krop-segment-1", "da-DK", "segment-1");
+        root.SetValue("body", "krop-segment-2", "da-DK", "segment-2");
+        root.SetValue("body", "ボディ-segment-1", "ja-JP", "segment-1");
+        root.SetValue("body", "ボディ-segment-2", "ja-JP", "segment-2");
 
         if (publish)
         {

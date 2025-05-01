@@ -49,7 +49,7 @@ public class VariantIndexServiceTests : IndexTestBase
     [TestCase(false, "da-dk", "Rod")]
     [TestCase(true, "ja-jp", "ル-ト")]
     [TestCase(false, "ja-jp", "ル-ト")]
-    public void CanIndexVariantText(bool publish, string culture, string expectedValue)
+    public void CanIndexVariantTextByCulture(bool publish, string culture, string expectedValue)
     {
         CreateVariantDocument(publish);
 
@@ -59,6 +59,28 @@ public class VariantIndexServiceTests : IndexTestBase
         
         var queryBuilder = index.Searcher.CreateQuery().All();
         queryBuilder.SelectField($"title_{culture}");
+        var results = queryBuilder.Execute();
+        Assert.That(results, Is.Not.Empty);
+        Assert.That(results.First().Values.First().Value, Is.EqualTo(expectedValue));
+    }
+    
+    [Test]
+    [TestCase(true, "en-us", "segment-1", "body-segment-1")]
+    [TestCase(false, "en-us", "segment-2", "body-segment-2")]
+    [TestCase(true, "da-dk","segment-1", "krop-segment-1")]
+    [TestCase(false, "da-dk","segment-2", "krop-segment-2")]
+    [TestCase(true, "ja-jp", "segment-1", "ボディ-segment-1")]
+    [TestCase(false, "ja-jp", "segment-2", "ボディ-segment-2")]
+    public void CanIndexVariantTextBySegment(bool publish, string culture, string segment, string expectedValue)
+    {
+        CreateVariantDocument(publish);
+
+        var index = ExamineManager.GetIndex(publish
+            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
+            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        
+        var queryBuilder = index.Searcher.CreateQuery().All();
+        queryBuilder.SelectField($"body_{culture}_{segment}");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
         Assert.That(results.First().Values.First().Value, Is.EqualTo(expectedValue));
