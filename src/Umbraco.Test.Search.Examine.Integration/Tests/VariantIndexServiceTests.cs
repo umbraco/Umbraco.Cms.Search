@@ -21,6 +21,23 @@ public class VariantIndexServiceTests : IndexTestBase
     }
     
     [Test]
+    [TestCase(true)]
+    [TestCase(false)]
+    public void CanRemoveAnyDocument(bool publish)
+    {
+        CreateInvariantDocument(publish);
+        var content = ContentService.GetById(RootKey);
+        ContentService.Delete(content);
+
+        var index = ExamineManager.GetIndex(publish
+            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
+            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+
+        var results = index.Searcher.CreateQuery().All().Execute();
+        Assert.That(results, Is.Empty);
+    }
+    
+    [Test]
     [TestCase(true, "en-us", "Name")]
     [TestCase(false, "en-us", "Name")]
     [TestCase(true, "da-dk", "Navn")]
@@ -40,6 +57,42 @@ public class VariantIndexServiceTests : IndexTestBase
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
         Assert.That(results.First().Values.First().Value, Is.EqualTo(expectedValue));
+    }
+    
+    [Test]
+    [TestCase("title", "updatedTitle", "en-us", true)]
+    [TestCase("title", "updatedTitle", "da-dk", true)]
+    [TestCase("title", "updatedTitle", "ja-jp", true)]
+    public void CanIndexUpdatedProperties(string propertyName, object updatedValue, string culture, bool publish)
+    {
+        CreateVariantDocument(publish);
+        UpdateProperty(propertyName, updatedValue, culture, publish);
+
+        var index = ExamineManager.GetIndex(publish
+            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
+            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        
+        var queryBuilder = index.Searcher.CreateQuery().All();
+        queryBuilder.SelectField($"{propertyName}_{culture}");
+        var results = queryBuilder.Execute();
+        Assert.That(results, Is.Not.Empty);
+        Assert.That(results.First().Values.First().Value, Is.EqualTo(updatedValue.ToString()));
+    }
+    
+    private void UpdateProperty(string propertyName, object value, string culture, bool publish)
+    {
+        var content = ContentService.GetById(RootKey);
+        content.SetValue(propertyName, value, culture);
+
+        if (publish)
+        {
+            ContentService.SaveAndPublish(content);
+        }
+        else
+        {
+            ContentService.Save(content);
+
+        }
     }
     
     [Test]
