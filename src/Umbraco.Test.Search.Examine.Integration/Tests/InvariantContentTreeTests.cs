@@ -8,7 +8,7 @@ public class InvariantContentTreeTests : IndexTestBase
     private const string RootTitle = "The root title";
     private const string ChildTitle = "The child title";
     private const string GrandChildTitle = "The grandchild title";
-    [Test]
+    
     [TestCase(true)]
     [TestCase(false)]
     public void CanIndexDocumentTree(bool publish)

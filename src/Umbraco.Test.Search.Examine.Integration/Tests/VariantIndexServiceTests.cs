@@ -5,7 +5,6 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests;
 
 public class VariantIndexServiceTests : IndexTestBase
 {
-    [Test]
     [TestCase(true)]
     [TestCase(false)]
     public void CanIndexAnyDocument(bool publish)
@@ -20,7 +19,6 @@ public class VariantIndexServiceTests : IndexTestBase
         Assert.That(results, Is.Not.Empty);
     }
     
-    [Test]
     [TestCase(true)]
     [TestCase(false)]
     public void CanRemoveAnyDocument(bool publish)
@@ -37,7 +35,6 @@ public class VariantIndexServiceTests : IndexTestBase
         Assert.That(results, Is.Empty);
     }
     
-    [Test]
     [TestCase(true, "en-us", "Name")]
     [TestCase(false, "en-us", "Name")]
     [TestCase(true, "da-dk", "Navn")]
@@ -59,7 +56,6 @@ public class VariantIndexServiceTests : IndexTestBase
         Assert.That(results.First().Values.First().Value, Is.EqualTo(expectedValue));
     }
     
-    [Test]
     [TestCase("title", "updatedTitle", "en-us", true)]
     [TestCase("title", "updatedTitle", "da-dk", true)]
     [TestCase("title", "updatedTitle", "ja-jp", true)]
@@ -79,7 +75,6 @@ public class VariantIndexServiceTests : IndexTestBase
         Assert.That(results.First().Values.First(x => x.Key == $"{propertyName}_{culture}").Value, Is.EqualTo(updatedValue.ToString()));
     }
     
-    [Test]
     [TestCase(true, "en-us", "Root")]
     [TestCase(false, "en-us", "Root")]
     [TestCase(true, "da-dk", "Rod")]
@@ -101,7 +96,6 @@ public class VariantIndexServiceTests : IndexTestBase
         Assert.That(results.First().Values.First(x => x.Key == $"title_{culture}").Value, Is.EqualTo(expectedValue));
     }
     
-    [Test]
     [TestCase(true, "en-us", "segment-1", "body-segment-1")]
     [TestCase(false, "en-us", "segment-2", "body-segment-2")]
     [TestCase(true, "da-dk","segment-1", "krop-segment-1")]
