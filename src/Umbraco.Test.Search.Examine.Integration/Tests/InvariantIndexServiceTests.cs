@@ -101,7 +101,7 @@ public class InvariantIndexServiceTests : IndexTestBase
         queryBuilder.SelectField("decimalproperty");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == "decimalproperty").Value, Is.EqualTo("12,43"));
+        Assert.That(results.First().Values.First(x => x.Key == "decimalproperty").Value, Is.EqualTo("12.43"));
     }    
     
     [Test]

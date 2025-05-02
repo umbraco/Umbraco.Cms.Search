@@ -76,7 +76,7 @@ public class VariantIndexServiceTests : IndexTestBase
         queryBuilder.SelectField($"{propertyName}_{culture}");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == propertyName).Value, Is.EqualTo(updatedValue.ToString()));
+        Assert.That(results.First().Values.First(x => x.Key == $"{propertyName}_{culture}").Value, Is.EqualTo(updatedValue.ToString()));
     }
     
     [Test]
