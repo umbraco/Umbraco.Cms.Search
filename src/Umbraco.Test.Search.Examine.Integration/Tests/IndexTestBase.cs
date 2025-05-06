@@ -24,6 +24,8 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests;
 public abstract class IndexTestBase : UmbracoIntegrationTest
 {
     protected DateTimeOffset CurrentDateTimeOffset = DateTimeOffset.UtcNow;
+
+    protected double DecimalValue = 12.43;
     protected Guid RootKey { get; } = Guid.NewGuid();
     
     protected Guid ChildKey { get; } = Guid.NewGuid();
@@ -177,7 +179,7 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
                     title = "The root title",
                     count = 12,
                     datetime = CurrentDateTimeOffset.DateTime,
-                    decimalproperty = 12.43
+                    decimalproperty = DecimalValue
                 })
             .Build();
 
@@ -236,7 +238,7 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
                     title = "The root title",
                     count = 12,
                     datetime = CurrentDateTimeOffset.DateTime,
-                    decimalproperty = 12.43
+                    decimalproperty = DecimalValue
                 })
             .Build();
 
@@ -253,7 +255,7 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
                     title = "The child title",
                     count = 12,
                     datetime = CurrentDateTimeOffset.DateTime,
-                    decimalproperty = 12.43
+                    decimalproperty = DecimalValue
                 })
             .Build();
         
@@ -270,7 +272,7 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
                     title = "The grandchild title",
                     count = 12,
                     datetime = CurrentDateTimeOffset.DateTime,
-                    decimalproperty = 12.43
+                    decimalproperty = DecimalValue
                 })
             .Build();
         
