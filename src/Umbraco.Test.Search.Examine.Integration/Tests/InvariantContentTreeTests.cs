@@ -24,7 +24,7 @@ public class InvariantContentTreeTests : IndexTestBase
     }
     
     [Test]
-    public void UnpublishingRootWillRemoveAncestors_Root_Unpublished()
+    public void UnpublishingRootWillRemoveAncestors()
     {
         CreateInvariantDocumentTree(true);
 
@@ -46,7 +46,7 @@ public class InvariantContentTreeTests : IndexTestBase
     }
     
     [Test]
-    public void UnpublishingRootWillRemoveAncestors_Child_Unpublished()
+    public void UnpublishingChildWillRemoveAncestors()
     {
         CreateInvariantDocumentTree(true);
 
@@ -70,7 +70,7 @@ public class InvariantContentTreeTests : IndexTestBase
     
         
     [Test]
-    public void UnpublishingRootWillRemoveAncestors_GrandChild_Unpublished()
+    public void UnpublishingGrandChildWillRemoveAncestors()
     {
         CreateInvariantDocumentTree(true);
 

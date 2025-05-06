@@ -1,5 +1,6 @@
 ﻿using Examine;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Services;
 
@@ -19,7 +20,7 @@ public class IndexService : IIndexService
         var index = GetIndex(indexAlias);
         
         index.IndexItem(new ValueSet(
-            key.ToString(),
+            key.ToString().ToLowerInvariant(),
             objectType.ToString(),
             MapToDictionary(fields)));
 
@@ -29,11 +30,12 @@ public class IndexService : IIndexService
     
     public Task DeleteAsync(string indexAlias, IEnumerable<Guid> keys)
     {
-        var index = GetIndex(indexAlias);
+        var index = GetIndex(Constants.IndexAliases.DraftContent);
 
         foreach (var key in keys)
         {
-            index.DeleteFromIndex(key.ToString());
+            var results = index.Searcher.CreateQuery().Field("Umb_PathIds", key.ToString()).Execute();
+            index.DeleteFromIndex(results.Select(x => x.Id.ToLowerInvariant()));
         }
         
         return Task.CompletedTask;
