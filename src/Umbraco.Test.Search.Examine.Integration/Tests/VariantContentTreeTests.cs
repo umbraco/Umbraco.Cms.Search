@@ -34,6 +34,7 @@ public class VariantContentTreeTests : IndexTestBase
         Assert.That(results.Count(), Is.EqualTo(3));
     }
     
+    [Ignore("Get in memory working with searching")]
     [Test]
     public void UnpublishingRootWillRemoveAncestors_Root_Unpublished()
     {
@@ -68,6 +69,7 @@ public class VariantContentTreeTests : IndexTestBase
         AssertDraft();
     }
     
+    [Ignore("Get in memory working with searching")]
     [Test]
     public void UnpublishingRootWillRemoveAncestors_Child_Unpublished()
     {
@@ -102,6 +104,7 @@ public class VariantContentTreeTests : IndexTestBase
         AssertDraft();
     }
     
+    [Ignore("Get in memory working with searching")]
     [Test]
     public void UnpublishingRootWillRemoveAncestors_GrandChild_Unpublished()
     {

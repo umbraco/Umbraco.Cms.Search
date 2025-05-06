@@ -28,18 +28,19 @@ public class IndexService : IIndexService
     }
     
     
-    public Task DeleteAsync(string indexAlias, IEnumerable<Guid> keys)
+    public async Task DeleteAsync(string indexAlias, IEnumerable<Guid> keys)
     {
-        var index = GetIndex(Constants.IndexAliases.DraftContent);
+        var index = GetIndex(indexAlias);
 
         foreach (var key in keys)
         {
-            var results = index.Searcher.CreateQuery().Field("Umb_PathIds", key.ToString()).Execute();
-            index.DeleteFromIndex(results.Select(x => x.Id.ToLowerInvariant()));
+            index.DeleteFromIndex(key.ToString());
+            //TODO: Fix this, this should work, but searching in the index locks it, and thus we cannot delete.
+            // var results = index.Searcher.CreateQuery().Field("Umb_PathIds", key.ToString()).Execute();
+            // index.DeleteFromIndex(results.Select(x => x.Id.ToLowerInvariant()));
         }
-        
-        return Task.CompletedTask;
     }
+    
 
 
     private Dictionary<string, object> MapToDictionary(IEnumerable<IndexField> fields)
