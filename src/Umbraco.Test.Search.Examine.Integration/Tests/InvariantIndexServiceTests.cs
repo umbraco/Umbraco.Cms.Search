@@ -62,10 +62,10 @@ public class InvariantIndexServiceTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField("title");
+        queryBuilder.SelectField("title_texts");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == "title").Value, Is.EqualTo("The root title"));
+        Assert.That(results.First().Values.First(x => x.Key == "title_texts").Value, Is.EqualTo("The root title"));
     }
 
     [Test]
@@ -80,10 +80,10 @@ public class InvariantIndexServiceTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField("count");
+        queryBuilder.SelectField("count_integers");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == "count").Value, Is.EqualTo("12"));
+        Assert.That(results.First().Values.First(x => x.Key == "count_integers").Value, Is.EqualTo("12"));
     }
     
     [Test]
@@ -98,10 +98,10 @@ public class InvariantIndexServiceTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField("decimalproperty");
+        queryBuilder.SelectField("decimalproperty_decimals");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == "decimalproperty").Value, Is.EqualTo(DecimalValue.ToString()));
+        Assert.That(results.First().Values.First(x => x.Key == "decimalproperty_decimals").Value, Is.EqualTo(DecimalValue.ToString()));
     }    
     
     [Test]
@@ -116,10 +116,10 @@ public class InvariantIndexServiceTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField("datetime");
+        queryBuilder.SelectField("datetime_datetimeoffsets");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == "datetime").Value, Is.EqualTo(CurrentDateTimeOffset.ToString()));
+        Assert.That(results.First().Values.First(x => x.Key == "datetime_datetimeoffsets").Value, Is.EqualTo(CurrentDateTimeOffset.ToString()));
     }
     
         
@@ -140,11 +140,9 @@ public class InvariantIndexServiceTests : IndexTestBase
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
-        var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField(propertyName);
-        var results = queryBuilder.Execute();
+        var results = index.Searcher.Search(updatedValue.ToString());
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First().Value, Is.EqualTo(updatedValue.ToString()));
+        Assert.That(results.First().Values.First(x => x.Value == updatedValue.ToString()).Value, Is.EqualTo(updatedValue.ToString()));
     }
     
     private void UpdateProperty(string propertyName, object value, bool publish)

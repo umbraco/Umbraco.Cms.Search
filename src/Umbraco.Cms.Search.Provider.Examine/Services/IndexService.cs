@@ -44,10 +44,38 @@ public class IndexService : IIndexService
 
     private Dictionary<string, object> MapToDictionary(IEnumerable<IndexField> fields)
     {
-        return fields.ToDictionary<IndexField, string, object>(CalculateFieldName, field => MapIndexValue(field.Value));
+        var result = new Dictionary<string, object>();
+        foreach (var field in fields)
+        {
+            if (field.Value.Integers?.Any() ?? false)
+            {
+                result.Add(CalculateFieldName(field, "integers"), field.Value.Integers);
+            }
+            
+            if (field.Value.Keywords?.Any() ?? false)
+            {
+                result.Add(CalculateFieldName(field, "keywords"), field.Value.Keywords);
+            }
+            
+            if (field.Value.Decimals?.Any() ?? false)
+            {
+                result.Add(CalculateFieldName(field, "decimals"), field.Value.Decimals);
+            }
+            
+            if (field.Value.DateTimeOffsets?.Any() ?? false)
+            {
+                result.Add(CalculateFieldName(field, "datetimeoffsets"), field.Value.DateTimeOffsets);
+            }
+            if (field.Value.Texts?.Any() ?? false)
+            {
+                result.Add(CalculateFieldName(field, "texts"), field.Value.Texts);
+            }
+        }
+
+        return result;
     }
 
-    private string CalculateFieldName(IndexField field)
+    private string CalculateFieldName(IndexField field, string property)
     {
         var result = field.FieldName;
         if (field.Culture is not null)
@@ -60,39 +88,7 @@ public class IndexService : IIndexService
             result += $"_{field.Segment}";
         }
 
-        return result;
-    }
-
-    private string MapIndexValue(IndexValue indexValue)
-    {
-        string result = string.Empty;
-
-        if (indexValue.Texts is not null && indexValue.Texts.Any())
-        {
-            result += string.Join(",", indexValue.Texts);
-        }
-
-        if (indexValue.Keywords is not null && indexValue.Keywords.Any())
-        {
-            result += string.Join(",", indexValue.Keywords);
-        }
-
-        if (indexValue.Integers is not null && indexValue.Integers.Any())
-        {
-            result += string.Join(",", indexValue.Integers);
-        }
-
-        if (indexValue.Decimals is not null && indexValue.Decimals.Any())
-        {
-            result += string.Join(",", indexValue.Decimals);
-        }
-
-        if (indexValue.DateTimeOffsets is not null && indexValue.DateTimeOffsets.Any())
-        {
-            result += string.Join(",", indexValue.DateTimeOffsets);
-        }
-
-        return result;
+        return result + $"_{property}";
     }
 
     private IIndex GetIndex(string indexName)
