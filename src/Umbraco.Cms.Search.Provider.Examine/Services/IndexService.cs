@@ -36,8 +36,8 @@ public class IndexService : IIndexService
         {
             index.DeleteFromIndex(key.ToString());
             //TODO: Fix this, this should work, but searching in the index locks it, and thus we cannot delete.
-            // var results = index.Searcher.CreateQuery().Field("Umb_PathIds", key.ToString()).Execute();
-            // index.DeleteFromIndex(results.Select(x => x.Id.ToLowerInvariant()));
+            var results = index.Searcher.CreateQuery().Field("Umb_PathIds", key.ToString()).Execute();
+            index.DeleteFromIndex(results.Select(x => x.Id.ToLowerInvariant()));
         }
     }
     

@@ -213,7 +213,7 @@ public class VariantContentTreeTests : IndexTestBase
             .Build();
         
         ContentTypeService.Save(contentType);
-        contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Id, 0)];
+        contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
         ContentTypeService.Save(contentType);
 
         var root = new ContentBuilder()

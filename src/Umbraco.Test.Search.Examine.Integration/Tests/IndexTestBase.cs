@@ -3,11 +3,11 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Cache;
+using Umbraco.Cms.Core.HostedServices;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
-using Umbraco.Cms.Infrastructure.HostedServices;
 using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
@@ -120,7 +120,8 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
 
         if (publish)
         {
-            ContentService.SaveAndPublish(root);
+            ContentService.Save(root);
+            ContentService.Publish(root, new []{ "*"});
         }
         else
         {
@@ -225,7 +226,7 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
             .Done()
             .Build();
         ContentTypeService.Save(contentType);
-        contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Id, 0)];
+        contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
         ContentTypeService.Save(contentType);
 
         var root = new ContentBuilder()
@@ -283,11 +284,16 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
     {
         if (publish)
         {
-            ContentService.SaveAndPublish(content);
+            ContentService.Save(content);
+            ContentService.Publish(content, new []{ "*"});
         }
         else
         {
-            ContentService.Save(content);
+            var result = ContentService.Save(content);
+            if (result.Success)
+            {
+                
+            }
         }
     }
     

@@ -152,7 +152,8 @@ public class InvariantIndexServiceTests : IndexTestBase
 
         if (publish)
         {
-            ContentService.SaveAndPublish(content);
+            ContentService.Save(content);
+            ContentService.Publish(content, ["*"]);
         }
         else
         {
