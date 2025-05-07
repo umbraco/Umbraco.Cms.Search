@@ -83,14 +83,14 @@ public class MemberTests : ContentBaseTestBase
     
     private Guid MemberThreeKey { get; } = Guid.NewGuid();
 
-    private IMember MemberOne() => MemberService.GetByKey(MemberOneKey) ?? throw new InvalidOperationException("Member one was not found");
+    private IMember MemberOne() => MemberService.GetById(MemberOneKey) ?? throw new InvalidOperationException("Member one was not found");
 
-    private IMember MemberTwo() => MemberService.GetByKey(MemberTwoKey) ?? throw new InvalidOperationException("Member two was not found");
+    private IMember MemberTwo() => MemberService.GetById(MemberTwoKey) ?? throw new InvalidOperationException("Member two was not found");
 
-    private IMember MemberThree() => MemberService.GetByKey(MemberThreeKey) ?? throw new InvalidOperationException("Member three was not found");
+    private IMember MemberThree() => MemberService.GetById(MemberThreeKey) ?? throw new InvalidOperationException("Member three was not found");
 
     [SetUp]
-    public virtual void SetupTest()
+    public async Task SetupTest()
     {
         var memberType = new MemberTypeBuilder()
             .WithAlias("myMemberType")
@@ -108,7 +108,7 @@ public class MemberTests : ContentBaseTestBase
             .Done()
             .Done()
             .Build();
-        GetRequiredService<IMemberTypeService>().Save(memberType);
+        await GetRequiredService<IMemberTypeService>().CreateAsync(memberType, Constants.Security.SuperUserKey);
 
         MemberService.Save(
             new MemberBuilder()

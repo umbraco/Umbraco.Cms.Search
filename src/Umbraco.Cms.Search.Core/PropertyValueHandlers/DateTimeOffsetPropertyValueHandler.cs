@@ -11,9 +11,9 @@ public sealed class DateTimeOffsetPropertyValueHandler : IPropertyValueHandler
     public DateTimeOffsetPropertyValueHandler(IDateTimeOffsetConverter dateTimeOffsetConverter)
         => _dateTimeOffsetConverter = dateTimeOffsetConverter;
 
-    // TODO: include Umbraco.Plain.Date in V15
     public bool CanHandle(string propertyEditorAlias)
-        => propertyEditorAlias is Cms.Core.Constants.PropertyEditors.Aliases.DateTime;
+        => propertyEditorAlias is Cms.Core.Constants.PropertyEditors.Aliases.DateTime
+            or Cms.Core.Constants.PropertyEditors.Aliases.PlainDateTime;
 
     public IndexValue? GetIndexValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
     {

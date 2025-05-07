@@ -1,3 +1,4 @@
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.Changes;
@@ -10,16 +11,18 @@ public partial class PublishedContentCacheRefresherTests
 {
     [TestCase(true)]
     [TestCase(false)]
-    public void Variant_PublishRoot_MultipleCultures(bool publishDescendants)
+    public async Task Variant_PublishRoot_MultipleCultures(bool publishDescendants)
     {
-        var setup = SetupVariantContentTest();
+        var setup = await SetupVariantContentTest();
         if (publishDescendants)
         {
-            ContentService.SaveAndPublishBranch(Get(setup.RootKey), true);
+            ContentService.Save(Get(setup.RootKey));
+            ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         }
         else
         {
-            ContentService.SaveAndPublish(Get(setup.RootKey));
+            ContentService.Save(Get(setup.RootKey));
+            ContentService.Publish(Get(setup.RootKey), ["*"]);
         }
 
         // the result must be same no matter if descendants are included or not, because the root was unpublished to begin with
@@ -29,7 +32,7 @@ public partial class PublishedContentCacheRefresherTests
         {
             Assert.That(payloads[0].ChangeTypes, Is.EqualTo(TreeChangeTypes.RefreshBranch));
             Assert.That(payloads[0].ContentKey, Is.EqualTo(setup.RootKey));
-            Assert.That(payloads[0].AffectedCultures, Is.EquivalentTo(new[] { "en-us", "da-dk" }));
+            Assert.That(payloads[0].AffectedCultures, Is.EquivalentTo(new[] { "en-US", "da-DK" }));
         });
     }
 
@@ -37,10 +40,11 @@ public partial class PublishedContentCacheRefresherTests
     [TestCase("en-US", false)]
     [TestCase("da-DK", true)]
     [TestCase("da-DK", false)]
-    public void Variant_PublishRoot_SingleCulture(string cultureToPublish, bool publishDescendants)
+    public async Task Variant_PublishRoot_SingleCulture(string cultureToPublish, bool publishDescendants)
     {
-        var setup = SetupVariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), true, [cultureToPublish]);
+        var setup = await SetupVariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, [cultureToPublish]);
 
         // the result must be same no matter if descendants are included or not, because the root was unpublished to begin with
         var payloads = GetNotificationPayloads();
@@ -49,24 +53,28 @@ public partial class PublishedContentCacheRefresherTests
         {
             Assert.That(payloads[0].ChangeTypes, Is.EqualTo(TreeChangeTypes.RefreshBranch));
             Assert.That(payloads[0].ContentKey, Is.EqualTo(setup.RootKey));
-            Assert.That(payloads[0].AffectedCultures, Is.EquivalentTo(new [] {cultureToPublish.ToLowerInvariant()}));
+            Assert.That(payloads[0].AffectedCultures, Is.EquivalentTo(new [] {cultureToPublish}));
         });
     }
 
     [TestCase(true)]
     [TestCase(false)]
-    public void Variant_PublishRoot_CultureByCulture(bool publishDescendants)
+    public async Task Variant_PublishRoot_CultureByCulture(bool publishDescendants)
     {
-        var setup = SetupVariantContentTest();
+        var setup = await SetupVariantContentTest();
         if (publishDescendants)
         {
-            ContentService.SaveAndPublishBranch(Get(setup.RootKey), true, ["en-US"]);
-            ContentService.SaveAndPublishBranch(Get(setup.RootKey), true, ["da-DK"]);
+            ContentService.Save(Get(setup.RootKey));
+            ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["en-US"]);
+            ContentService.Save(Get(setup.RootKey));
+            ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["da-DK"]);
         }
         else
         {
-            ContentService.SaveAndPublish(Get(setup.RootKey), ["en-US"]);
-            ContentService.SaveAndPublish(Get(setup.RootKey), ["da-DK"]);
+            ContentService.Save(Get(setup.RootKey));
+            ContentService.Publish(Get(setup.RootKey), ["en-US"]);
+            ContentService.Save(Get(setup.RootKey));
+            ContentService.Publish(Get(setup.RootKey), ["da-DK"]);
         }
 
         // the result must be same no matter if descendants are included or not, because the root was unpublished to begin with
@@ -76,20 +84,21 @@ public partial class PublishedContentCacheRefresherTests
         {
             Assert.That(payloads[0].ChangeTypes, Is.EqualTo(TreeChangeTypes.RefreshBranch));
             Assert.That(payloads[0].ContentKey, Is.EqualTo(setup.RootKey));
-            Assert.That(payloads[0].AffectedCultures, Is.EquivalentTo(new[] { "en-us" }));
+            Assert.That(payloads[0].AffectedCultures, Is.EquivalentTo(new[] { "en-US" }));
             
             Assert.That(payloads[1].ChangeTypes, Is.EqualTo(TreeChangeTypes.RefreshBranch));
             Assert.That(payloads[1].ContentKey, Is.EqualTo(setup.RootKey));
-            Assert.That(payloads[1].AffectedCultures, Is.EquivalentTo(new[] { "da-dk" }));
+            Assert.That(payloads[1].AffectedCultures, Is.EquivalentTo(new[] { "da-DK" }));
         });
     }
 
     [TestCase(true)]
     [TestCase(false)]
-    public void Variant_RepublishChild_MultipleCultures(bool publishDescendants)
+    public async Task Variant_RepublishChild_MultipleCultures(bool publishDescendants)
     {
-        var setup = SetupVariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), true);
+        var setup = await SetupVariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
 
         if (publishDescendants)
@@ -100,11 +109,13 @@ public partial class PublishedContentCacheRefresherTests
             content.SetCultureName("Updated DA", "da-DK");
             ContentService.Save(content);
 
-            ContentService.SaveAndPublishBranch(Get(setup.ChildKey), true);
+            ContentService.Save(Get(setup.ChildKey));
+            ContentService.PublishBranch(Get(setup.ChildKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         }
         else
         {
-            ContentService.SaveAndPublish(Get(setup.ChildKey));
+            ContentService.Save(Get(setup.ChildKey));
+            ContentService.Publish(Get(setup.ChildKey), ["*"]);
         }
 
         // the result must be same no matter if descendants are included or not, because the child was already published
@@ -122,10 +133,11 @@ public partial class PublishedContentCacheRefresherTests
     [TestCase("en-US", false)]
     [TestCase("da-DK", true)]
     [TestCase("da-DK", false)]
-    public void Variant_RepublishChild_SingleCultures(string cultureToPublish, bool publishDescendants)
+    public async Task Variant_RepublishChild_SingleCultures(string cultureToPublish, bool publishDescendants)
     {
-        var setup = SetupVariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), true);
+        var setup = await  SetupVariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
 
         if (publishDescendants)
@@ -136,11 +148,13 @@ public partial class PublishedContentCacheRefresherTests
             content.SetCultureName("Updated DA", "da-DK");
             ContentService.Save(content);
 
-            ContentService.SaveAndPublishBranch(Get(setup.ChildKey), true);
+            ContentService.Save(Get(setup.ChildKey));
+            ContentService.PublishBranch(Get(setup.ChildKey), PublishBranchFilter.IncludeUnpublished, [cultureToPublish]);
         }
         else
         {
-            ContentService.SaveAndPublish(Get(setup.ChildKey));
+            ContentService.Save(Get(setup.ChildKey));
+            ContentService.Publish(Get(setup.ChildKey), ["*"]);
         }
 
         // the result must be same no matter if descendants are included or not, because the child was already published
@@ -156,10 +170,11 @@ public partial class PublishedContentCacheRefresherTests
 
     [TestCase(true)]
     [TestCase(false)]
-    public void Variant_UnpublishRoot_AllCultures(bool publishDescendants)
+    public async Task Variant_UnpublishRoot_AllCultures(bool publishDescendants)
     {
-        var setup = SetupVariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), publishDescendants);
+        var setup = await SetupVariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), publishDescendants ? PublishBranchFilter.IncludeUnpublished : PublishBranchFilter.Default, ["*"]);
         ResetNotificationPayloads();
 
         ContentService.Unpublish(Get(setup.RootKey));
@@ -176,10 +191,11 @@ public partial class PublishedContentCacheRefresherTests
     }
     
     [Test]
-    public void Variant_UnpublishChild_AllCultures()
+    public async Task Variant_UnpublishChild_AllCultures()
     {
-        var setup = SetupVariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), true);
+        var setup = await SetupVariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
 
         ContentService.Unpublish(Get(setup.ChildKey));
@@ -197,10 +213,11 @@ public partial class PublishedContentCacheRefresherTests
     
     [TestCase(true)]
     [TestCase(false)]
-    public void Variant_UnpublishRoot_CultureByCulture(bool publishDescendants)
+    public async Task Variant_UnpublishRoot_CultureByCulture(bool publishDescendants)
     {
-        var setup = SetupVariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), publishDescendants);
+        var setup = await SetupVariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), publishDescendants ? PublishBranchFilter.IncludeUnpublished : PublishBranchFilter.Default, ["*"]);
         ResetNotificationPayloads();
 
         ContentService.Unpublish(Get(setup.RootKey), "da-DK");
@@ -214,9 +231,9 @@ public partial class PublishedContentCacheRefresherTests
             // the first payload is "refresh branch" because the content is still published in one culture
             Assert.That(payloads[0].ChangeTypes, Is.EqualTo(TreeChangeTypes.RefreshBranch));
             Assert.That(payloads[0].ContentKey, Is.EqualTo(setup.RootKey));
-            Assert.That(payloads[0].AffectedCultures, Is.EquivalentTo(new[] { "da-dk" }));
+            Assert.That(payloads[0].AffectedCultures, Is.EquivalentTo(new[] { "da-DK" }));
             
-            // the second payload is "remove" because the content is completely unpublshed
+            // the second payload is "remove" because the content is completely unpublished
             Assert.That(payloads[1].ChangeTypes, Is.EqualTo(TreeChangeTypes.Remove));
             Assert.That(payloads[1].ContentKey, Is.EqualTo(setup.RootKey));
             Assert.That(payloads[1].AffectedCultures, Is.Empty);
@@ -224,10 +241,11 @@ public partial class PublishedContentCacheRefresherTests
     }
     
     [Test]
-    public void Variant_MoveRootToRecycleBin()
+    public async Task Variant_MoveRootToRecycleBin()
     {
-        var setup = SetupVariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), true);
+        var setup = await SetupVariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
 
         ContentService.MoveToRecycleBin(Get(setup.RootKey));
@@ -243,10 +261,11 @@ public partial class PublishedContentCacheRefresherTests
     }
 
     [Test]
-    public void Variant_MoveChildToRecycleBin()
+    public async Task Variant_MoveChildToRecycleBin()
     {
-        var setup = SetupVariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), true);
+        var setup = await SetupVariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
 
         ContentService.MoveToRecycleBin(Get(setup.ChildKey));
@@ -262,10 +281,11 @@ public partial class PublishedContentCacheRefresherTests
     }
     
     [Test]
-    public void Variant_DeletePublishedRoot()
+    public async Task Variant_DeletePublishedRoot()
     {
-        var setup = SetupVariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), true);
+        var setup = await SetupVariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
 
         ContentService.Delete(Get(setup.RootKey));
@@ -281,10 +301,11 @@ public partial class PublishedContentCacheRefresherTests
     }
 
     [Test]
-    public void Variant_DeletePublishedChild()
+    public async Task Variant_DeletePublishedChild()
     {
-        var setup = SetupVariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), true);
+        var setup = await SetupVariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
 
         ContentService.Delete(Get(setup.ChildKey));
@@ -300,10 +321,11 @@ public partial class PublishedContentCacheRefresherTests
     }
 
     [Test]
-    public void Variant_DeleteRootFromRecycleBin()
+    public async Task Variant_DeleteRootFromRecycleBin()
     {
-        var setup = SetupVariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), true);
+        var setup = await SetupVariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ContentService.MoveToRecycleBin(Get(setup.RootKey));
         ResetNotificationPayloads();
 
@@ -314,19 +336,20 @@ public partial class PublishedContentCacheRefresherTests
         Assert.That(payloads, Has.Count.EqualTo(0));
     }
 
-    private (Guid RootKey, Guid ChildKey, Guid GrandchildKey) SetupVariantContentTest()
+    private async Task<(Guid RootKey, Guid ChildKey, Guid GrandchildKey)> SetupVariantContentTest()
     {
-        GetRequiredService<ILocalizationService>().Save(
-            new LanguageBuilder().WithCultureInfo("da-DK").Build()
+        await GetRequiredService<ILanguageService>().CreateAsync(
+            new LanguageBuilder().WithCultureInfo("da-DK").Build(),
+            Constants.Security.SuperUserKey
         );
         
         var contentType = new ContentTypeBuilder()
             .WithAlias("variant")
             .WithContentVariation(ContentVariation.CultureAndSegment)
             .Build();
-        ContentTypeService.Save(contentType);
-        contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Id, 0)];
-        GetRequiredService<IContentTypeService>().Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
+        contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
+        await ContentTypeService.UpdateAsync(contentType, Constants.Security.SuperUserKey);
 
         var root = new ContentBuilder()
             .WithContentType(contentType)

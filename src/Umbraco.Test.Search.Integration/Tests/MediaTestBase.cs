@@ -33,7 +33,7 @@ public abstract class MediaTestBase : ContentBaseTestBase
     protected IMedia GrandchildMedia() => MediaService.GetById(GrandchildMediaKey) ?? throw new InvalidOperationException("Child media was not found");
     
     [SetUp]
-    public virtual void SetupTest()
+    public async Task SetupTest()
     {
         var mediaType = new MediaTypeBuilder()
             .WithAlias("myMediaType")
@@ -56,11 +56,11 @@ public abstract class MediaTestBase : ContentBaseTestBase
             .Done()
             .Done()
             .Build();
-        MediaTypeService.Save(mediaType);
+        await MediaTypeService.CreateAsync(mediaType, Constants.Security.SuperUserKey);
 
         var folderType = MediaTypeService.Get(Constants.Conventions.MediaTypes.Folder) ?? throw new InvalidOperationException("Media type \"Folder\" was not found");
-        folderType.AllowedContentTypes = [new ContentTypeSort(folderType.Id, 0), new ContentTypeSort(mediaType.Id, 1)];
-        MediaTypeService.Save(folderType);
+        folderType.AllowedContentTypes = [new ContentTypeSort(folderType.Key, 0, folderType.Alias), new ContentTypeSort(mediaType.Key, 1, mediaType.Alias)];
+        await MediaTypeService.UpdateAsync(folderType, Constants.Security.SuperUserKey);
 
         var rootFolder = new MediaBuilder()
             .WithKey(RootFolderKey)

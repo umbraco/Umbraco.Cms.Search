@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Kjac.NoCode.DeliveryApi" Version="1.0.4" />
-    <PackageReference Include="Umbraco.Cms" Version="13.5.3" />
+    <PackageReference Include="Umbraco.Cms" Version="16.0.0-rc" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,6 +20,10 @@
     <ProjectReference Include="..\Umbraco.Cms.Search.DeliveryApi\Umbraco.Cms.Search.DeliveryApi.csproj" />
     <ProjectReference Include="..\Umbraco.Cms.Search.Core\Umbraco.Cms.Search.Core.csproj" />
     <ProjectReference Include="..\Umbraco.Cms.Search.Provider.InMemory\Umbraco.Cms.Search.Provider.InMemory.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="NoCode\DeliveryApi\filters.json" />
   </ItemGroup>
 
   <PropertyGroup>

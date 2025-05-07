@@ -128,7 +128,7 @@ public class DraftContentChangeStrategy : IDraftContentChangeStrategy
         {
             UmbracoObjectTypes.Document => _contentService.GetById(change.Id),
             UmbracoObjectTypes.Media => _mediaService.GetById(change.Id),
-            UmbracoObjectTypes.Member => _memberService.GetByKey(change.Id),
+            UmbracoObjectTypes.Member => _memberService.GetById(change.Id),
             _ => throw new ArgumentOutOfRangeException(nameof(change.ObjectType))
         };
 }

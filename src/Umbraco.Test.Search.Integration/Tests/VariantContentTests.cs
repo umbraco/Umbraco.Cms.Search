@@ -10,7 +10,8 @@ public class VariantContentTests : VariantContentTestBase
     [Test]
     public void PublishedStructure_YieldsAllPublishedDocuments()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -35,14 +36,16 @@ public class VariantContentTests : VariantContentTestBase
     [Test]
     public void PublishedStructure_CanRefreshChild_InSingleCulture()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
         
         var child = Child();
         child.SetValue("title", "The updated child title in English", "en-US");
         child.SetValue("message", "The updated child message in English (default)", "en-US");
         child.SetValue("message", "The updated child message in English (segment-1)", "en-US", "segment-1");
         child.SetValue("message", "The updated child message in English (segment-2)", "en-US", "segment-2");
-        ContentService.SaveAndPublish(child);
+        ContentService.Save(child);
+        ContentService.Publish(Child(), ["*"]);
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -58,12 +61,14 @@ public class VariantContentTests : VariantContentTestBase
     [Test]
     public void PublishedStructure_CanRefreshChild_InMultipleCultures()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
         
         var child = Child();
         child.SetValue("title", "The updated child title in English", "en-US");
         child.SetValue("title", "The updated child title in Danish", "da-DK");
-        ContentService.SaveAndPublish(child);
+        ContentService.Save(child);
+        ContentService.Publish(Child(), ["*"]);
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -74,11 +79,13 @@ public class VariantContentTests : VariantContentTestBase
     [Test]
     public void PublishedStructure_CanRefreshChild_InvariantCulture()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
         
         var child = Child();
         child.SetValue("count", 123456);
-        ContentService.SaveAndPublish(child);
+        ContentService.Save(child);
+        ContentService.Publish(Child(), ["*"]);
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -89,7 +96,8 @@ public class VariantContentTests : VariantContentTestBase
     [Test]
     public void PublishedStructure_YieldsSystemFields()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));

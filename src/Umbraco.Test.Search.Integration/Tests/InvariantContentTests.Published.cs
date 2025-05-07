@@ -1,11 +1,14 @@
-﻿namespace Umbraco.Test.Search.Integration.Tests;
+﻿using Umbraco.Cms.Core.Models;
+
+namespace Umbraco.Test.Search.Integration.Tests;
 
 public partial class InvariantContentTests
 {
     [Test]
     public void PublishedStructure_YieldsAllPublishedDocuments()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -30,12 +33,14 @@ public partial class InvariantContentTests
     [Test]
     public void PublishedStructure_CanRefreshChild()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
         var child = Child();
         child.SetValue("title", "The updated child title");
         child.SetValue("count", 123456);
-        ContentService.SaveAndPublish(child);
+        ContentService.Save(child);
+        ContentService.Publish(child, ["*"]);
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -54,7 +59,8 @@ public partial class InvariantContentTests
     [Test]
     public void PublishedStructure_YieldsStructuralFields()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -79,7 +85,8 @@ public partial class InvariantContentTests
     [Test]
     public void PublishedStructure_YieldsSystemFields()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -104,12 +111,14 @@ public partial class InvariantContentTests
     [Test]
     public void PublishedStructure_CanUpdateEditableSystemFields()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
         
         var child = Child();
         child.Name = "The updated child name";
         child.SetValue("tags", "[\"updated-tag1\",\"updated-tag2\",\"updated-tag3\"]");
-        ContentService.SaveAndPublish(child);
+        ContentService.Save(child);
+        ContentService.Publish(child, ["*"]);
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));

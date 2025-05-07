@@ -1,5 +1,5 @@
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
-using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.Changes;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
@@ -10,16 +10,18 @@ public partial class PublishedContentCacheRefresherTests
 {
     [TestCase(true)]
     [TestCase(false)]
-    public void Invariant_PublishRoot(bool publishDescendants)
+    public async Task Invariant_PublishRoot(bool publishDescendants)
     {
-        var setup = SetupInvariantContentTest();
+        var setup = await SetupInvariantContentTest();
         if (publishDescendants)
         {
-            ContentService.SaveAndPublishBranch(Get(setup.RootKey), true);
+            ContentService.Save(Get(setup.RootKey));
+            ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         }
         else
         {
-            ContentService.SaveAndPublish(Get(setup.RootKey));
+            ContentService.Save(Get(setup.RootKey));
+            ContentService.Publish(Get(setup.RootKey), ["*"]);
         }
 
         // the result must be same no matter if descendants are included or not, because the root was unpublished to begin with
@@ -35,10 +37,11 @@ public partial class PublishedContentCacheRefresherTests
 
     [TestCase(true)]
     [TestCase(false)]
-    public void Invariant_RepublishChild(bool publishDescendants)
+    public async Task Invariant_RepublishChild(bool publishDescendants)
     {
-        var setup = SetupInvariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), true);
+        var setup = await SetupInvariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
 
         if (publishDescendants)
@@ -48,11 +51,13 @@ public partial class PublishedContentCacheRefresherTests
             content.Name = "Updated";
             ContentService.Save(content);
 
-            ContentService.SaveAndPublishBranch(Get(setup.ChildKey), true);
+            ContentService.Save(Get(setup.ChildKey));
+            ContentService.PublishBranch(Get(setup.ChildKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         }
         else
         {
-            ContentService.SaveAndPublish(Get(setup.ChildKey));
+            ContentService.Save(Get(setup.ChildKey));
+            ContentService.Publish(Get(setup.ChildKey), ["*"]);
         }
 
         // the result must be same no matter if descendants are included or not, because the child was already published
@@ -68,10 +73,11 @@ public partial class PublishedContentCacheRefresherTests
 
     [TestCase(true)]
     [TestCase(false)]
-    public void Invariant_UnpublishRoot(bool publishDescendants)
+    public async Task Invariant_UnpublishRoot(bool publishDescendants)
     {
-        var setup = SetupInvariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), publishDescendants);
+        var setup = await SetupInvariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
 
         ContentService.Unpublish(Get(setup.RootKey));
@@ -88,10 +94,11 @@ public partial class PublishedContentCacheRefresherTests
     }
 
     [Test]
-    public void Invariant_UnpublishChild()
+    public async Task Invariant_UnpublishChild()
     {
-        var setup = SetupInvariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), true);
+        var setup = await SetupInvariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
 
         ContentService.Unpublish(Get(setup.ChildKey));
@@ -108,10 +115,11 @@ public partial class PublishedContentCacheRefresherTests
     }
     
     [Test]
-    public void Invariant_MoveRootToRecycleBin()
+    public async Task Invariant_MoveRootToRecycleBin()
     {
-        var setup = SetupInvariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), true);
+        var setup = await SetupInvariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
 
         ContentService.MoveToRecycleBin(Get(setup.RootKey));
@@ -127,10 +135,11 @@ public partial class PublishedContentCacheRefresherTests
     }
 
     [Test]
-    public void Invariant_MoveChildToRecycleBin()
+    public async Task Invariant_MoveChildToRecycleBin()
     {
-        var setup = SetupInvariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), true);
+        var setup = await SetupInvariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
 
         ContentService.MoveToRecycleBin(Get(setup.ChildKey));
@@ -146,10 +155,11 @@ public partial class PublishedContentCacheRefresherTests
     }
     
     [Test]
-    public void Invariant_DeletePublishedRoot()
+    public async Task Invariant_DeletePublishedRoot()
     {
-        var setup = SetupInvariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), true);
+        var setup = await SetupInvariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
 
         ContentService.Delete(Get(setup.RootKey));
@@ -165,10 +175,11 @@ public partial class PublishedContentCacheRefresherTests
     }
     
     [Test]
-    public void Invariant_DeletePublishedChild()
+    public async Task Invariant_DeletePublishedChild()
     {
-        var setup = SetupInvariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), true);
+        var setup = await SetupInvariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
 
         ContentService.Delete(Get(setup.ChildKey));
@@ -184,10 +195,11 @@ public partial class PublishedContentCacheRefresherTests
     }
 
     [Test]
-    public void Invariant_DeleteRootFromRecycleBin()
+    public async Task Invariant_DeleteRootFromRecycleBin()
     {
-        var setup = SetupInvariantContentTest();
-        ContentService.SaveAndPublishBranch(Get(setup.RootKey), true);
+        var setup = await SetupInvariantContentTest();
+        ContentService.Save(Get(setup.RootKey));
+        ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ContentService.MoveToRecycleBin(Get(setup.RootKey));
         ResetNotificationPayloads();
 
@@ -198,15 +210,15 @@ public partial class PublishedContentCacheRefresherTests
         Assert.That(payloads, Has.Count.EqualTo(0));
     }
     
-    private (Guid RootKey, Guid ChildKey, Guid GrandchildKey) SetupInvariantContentTest()
+    private async Task<(Guid RootKey, Guid ChildKey, Guid GrandchildKey)> SetupInvariantContentTest()
     {
         var contentType = new ContentTypeBuilder()
             .WithAlias("variant")
             .WithContentVariation(ContentVariation.Nothing)
             .Build();
-        ContentTypeService.Save(contentType);
-        contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Id, 0)];
-        GetRequiredService<IContentTypeService>().Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
+        contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
+        await ContentTypeService.UpdateAsync(contentType, Constants.Security.SuperUserKey);
 
         var root = new ContentBuilder()
             .WithContentType(contentType)

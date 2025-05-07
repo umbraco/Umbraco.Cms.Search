@@ -1,4 +1,6 @@
-﻿namespace Umbraco.Test.Search.Integration.Tests;
+﻿using Umbraco.Cms.Core.Models;
+
+namespace Umbraco.Test.Search.Integration.Tests;
 
 public partial class InvariantContentTests
 {
@@ -84,7 +86,8 @@ public partial class InvariantContentTests
     [Test]
     public void PublishedDraftStructure_YieldsSystemFieldsWithTags()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
         SetupDraftContent();
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);

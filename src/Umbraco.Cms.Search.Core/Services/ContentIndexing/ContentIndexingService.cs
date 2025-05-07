@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Umbraco.Cms.Infrastructure.HostedServices;
+using Umbraco.Cms.Core.HostedServices;
 using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Extensions;

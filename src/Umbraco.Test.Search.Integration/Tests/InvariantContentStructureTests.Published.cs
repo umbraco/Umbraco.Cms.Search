@@ -1,4 +1,5 @@
-﻿using Umbraco.Cms.Core.Models;
+﻿using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
@@ -7,7 +8,8 @@ public partial class InvariantContentStructureTests
     [Test]
     public void PublishedStructure_YieldsAllPublishedDocuments()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -26,7 +28,8 @@ public partial class InvariantContentStructureTests
     [Test]
     public void PublishedRoot_YieldsOnlyRootDocument()
     {
-        ContentService.SaveAndPublish(Root());
+        ContentService.Save(Root());
+        ContentService.Publish(Root(), ["*"]);
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
@@ -36,7 +39,8 @@ public partial class InvariantContentStructureTests
     [Test]
     public void PublishedStructure_WithUnpublishedRoot_YieldsNoDocuments()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
         
         var result = ContentService.Unpublish(Root());
         Assert.That(result.Success, Is.True);
@@ -49,7 +53,8 @@ public partial class InvariantContentStructureTests
     [Test]
     public void PublishedStructure_WithUnpublishedGrandchild_YieldsNothingBelowChild()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
         var result = ContentService.Unpublish(Grandchild());
         Assert.That(result.Success, Is.True);
@@ -68,7 +73,8 @@ public partial class InvariantContentStructureTests
     [Test]
     public void PublishedStructure_WithGrandchildInRecycleBin_YieldsNothingBelowChild()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
         
         var result = ContentService.MoveToRecycleBin(Grandchild());
         Assert.That(result.Success, Is.True);
@@ -87,7 +93,8 @@ public partial class InvariantContentStructureTests
     [Test]
     public void PublishedStructure_WithGrandchildDeleted_YieldsNothingBelowChild()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
         
         var result = ContentService.Delete(Grandchild());
         Assert.Multiple(() =>

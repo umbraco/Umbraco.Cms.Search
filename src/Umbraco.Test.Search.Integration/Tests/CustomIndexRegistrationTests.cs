@@ -35,7 +35,7 @@ public class CustomIndexRegistrationTests : ContentBaseTestBase
     }
 
     [SetUp]
-    public virtual void SetupTest()
+    public async Task SetupTest()
     {
         var contentType = new ContentTypeBuilder()
             .WithAlias("theContentType")
@@ -45,7 +45,7 @@ public class CustomIndexRegistrationTests : ContentBaseTestBase
             .WithPropertyEditorAlias(CoreConstants.PropertyEditors.Aliases.TextBox)
             .Done()
             .Build();
-        GetRequiredService<IContentTypeService>().Save(contentType);
+        await GetRequiredService<IContentTypeService>().CreateAsync(contentType, CoreConstants.Security.SuperUserKey);
 
         ContentService.Save(
             new ContentBuilder()
@@ -70,7 +70,7 @@ public class CustomIndexRegistrationTests : ContentBaseTestBase
             .Done()
             .Done()
             .Build();
-        GetRequiredService<IMediaTypeService>().Save(mediaType);
+        await GetRequiredService<IMediaTypeService>().CreateAsync(mediaType, CoreConstants.Security.SuperUserKey);
 
         MediaService.Save(
             new MediaBuilder()
@@ -95,7 +95,7 @@ public class CustomIndexRegistrationTests : ContentBaseTestBase
             .Done()
             .Done()
             .Build();
-        GetRequiredService<IMemberTypeService>().Save(memberType);
+        await GetRequiredService<IMemberTypeService>().CreateAsync(memberType, CoreConstants.Security.SuperUserKey);
 
         MemberService.Save(
             new MemberBuilder()
@@ -145,5 +145,5 @@ public class CustomIndexRegistrationTests : ContentBaseTestBase
 
     private IMedia Media() => MediaService.GetById(MediaKey) ?? throw new InvalidOperationException("Media was not found");
 
-    private IMember Member() => MemberService.GetByKey(MemberKey) ?? throw new InvalidOperationException("Member was not found");
+    private IMember Member() => MemberService.GetById(MemberKey) ?? throw new InvalidOperationException("Member was not found");
 }
