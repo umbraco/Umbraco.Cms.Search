@@ -8,7 +8,7 @@ namespace Umbraco.Test.Search.Integration.Tests;
 public abstract class InvariantContentTestBase : ContentTestBase
 {
     [SetUp]
-    public virtual void SetupTest()
+    public virtual async Task SetupTest()
     {
         var contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
@@ -28,9 +28,9 @@ public abstract class InvariantContentTestBase : ContentTestBase
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Tags)
             .Done()
             .Build();
-        ContentTypeService.Save(contentType);
-        contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Id, 0)];
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
+        contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
+        await ContentTypeService.UpdateAsync(contentType, Constants.Security.SuperUserKey);
 
         var root = new ContentBuilder()
             .WithKey(RootKey)

@@ -117,7 +117,7 @@ public class DraftContentChangeStrategy : IDraftContentChangeStrategy
         {
             var keys = contentChanges
                 .Where(change => indexInfo.ContainedObjectTypes.Contains(change.ObjectType))
-                .Select(change => change.Key)
+                .Select(change => change.Id)
                 .ToArray();
             await indexInfo.IndexService.DeleteAsync(indexInfo.IndexAlias, keys);
         }
@@ -126,9 +126,9 @@ public class DraftContentChangeStrategy : IDraftContentChangeStrategy
     private IContentBase? GetContent(ContentChange change)
         => change.ObjectType switch
         {
-            UmbracoObjectTypes.Document => _contentService.GetById(change.Key),
-            UmbracoObjectTypes.Media => _mediaService.GetById(change.Key),
-            UmbracoObjectTypes.Member => _memberService.GetByKey(change.Key),
+            UmbracoObjectTypes.Document => _contentService.GetById(change.Id),
+            UmbracoObjectTypes.Media => _mediaService.GetById(change.Id),
+            UmbracoObjectTypes.Member => _memberService.GetById(change.Id),
             _ => throw new ArgumentOutOfRangeException(nameof(change.ObjectType))
         };
 }

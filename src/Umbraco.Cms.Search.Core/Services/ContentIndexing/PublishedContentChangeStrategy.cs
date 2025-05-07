@@ -54,14 +54,14 @@ internal class PublishedContentChangeStrategy : IPublishedContentChangeStrategy
         {
             if (change.ChangeImpact is ChangeImpact.Remove)
             {
-                pendingRemovals.Add(change.Key);
+                pendingRemovals.Add(change.Id);
             }
             else
             {
-                var content = _contentService.GetById(change.Key);
+                var content = _contentService.GetById(change.Id);
                 if (content is null || content.Trashed)
                 {
-                    pendingRemovals.Add(change.Key);
+                    pendingRemovals.Add(change.Id);
                     continue;
                 }
 
@@ -146,28 +146,28 @@ internal class PublishedContentChangeStrategy : IPublishedContentChangeStrategy
         return variations;
     }
 
-    private async Task RemoveFromIndexAsync(IndexInfo[] indexInfos, Guid key)
-        => await RemoveFromIndexAsync(indexInfos, [key]);
+    private async Task RemoveFromIndexAsync(IndexInfo[] indexInfos, Guid id)
+        => await RemoveFromIndexAsync(indexInfos, [id]);
 
-    private async Task RemoveFromIndexAsync(IndexInfo[] indexInfos, IReadOnlyCollection<Guid> keys)
+    private async Task RemoveFromIndexAsync(IndexInfo[] indexInfos, IReadOnlyCollection<Guid> ids)
     {
-        if (keys.Count is 0)
+        if (ids.Count is 0)
         {
             return;
         }
 
         foreach (var indexInfo in indexInfos)
         {
-            await indexInfo.IndexService.DeleteAsync(indexInfo.IndexAlias, keys);
+            await indexInfo.IndexService.DeleteAsync(indexInfo.IndexAlias, ids);
         }
     }
 
-    private async Task EnumerateDescendantsByPath(Guid rootKey, Func<IContent[], Task> actionToPerform)
+    private async Task EnumerateDescendantsByPath(Guid rootId, Func<IContent[], Task> actionToPerform)
     {
-        var rootIdAttempt = _idKeyMap.GetIdForKey(rootKey, UmbracoObjectTypes.Document);
+        var rootIdAttempt = _idKeyMap.GetIdForKey(rootId, UmbracoObjectTypes.Document);
         if (rootIdAttempt.Success is false)
         {
-            _logger.LogWarning("Could not resolve ID for content item {rootId} - aborting enumerations of descendants.", rootKey);
+            _logger.LogWarning("Could not resolve ID for content item {rootId} - aborting enumerations of descendants.", rootId);
             return;
         }
 

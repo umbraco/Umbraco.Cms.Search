@@ -5,9 +5,9 @@ namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
 public sealed class IntegerPropertyValueHandler : IPropertyValueHandler
 {
-    // TODO: include Umbraco.Plain.Integer in V15 
     public bool CanHandle(string propertyEditorAlias)
-        => propertyEditorAlias is Cms.Core.Constants.PropertyEditors.Aliases.Integer;
+        => propertyEditorAlias is Cms.Core.Constants.PropertyEditors.Aliases.Integer
+            or Cms.Core.Constants.PropertyEditors.Aliases.PlainInteger;
 
     public IndexValue? GetIndexValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
     {

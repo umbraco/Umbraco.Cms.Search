@@ -18,17 +18,17 @@ internal sealed class ContentProtectionProvider : IContentProtectionProvider
         _memberGroupService = memberGroupService;
     }
 
-    public Task<ContentProtection?> GetContentProtectionAsync(IContentBase content)
+    public async Task<ContentProtection?> GetContentProtectionAsync(IContentBase content)
     {
         if (content is not IContent)
         {
-            return Task.FromResult<ContentProtection?>(null);
+            return null;
         }
         
         var publicAccessEntry = _publicAccessService.GetEntryForContent(content.Path);
         if (publicAccessEntry is null)
         {
-            return Task.FromResult<ContentProtection?>(null);
+            return null;
         }
         
         var roles = RuleValues(publicAccessEntry, Umbraco.Cms.Core.Constants.Conventions.PublicAccess.MemberRoleRuleType);
@@ -38,9 +38,9 @@ internal sealed class ContentProtectionProvider : IContentProtectionProvider
 
         if (roles.Length > 0)
         {
+            var memberGroups = await _memberGroupService.GetAllAsync();
             accessKeys.AddRange(
-                _memberGroupService
-                    .GetAll()
+                memberGroups
                     .Where(role => role.Name.IsNullOrWhiteSpace() is false && roles.InvariantContains(role.Name))
                     .Select(role => role.Key)
             );
@@ -49,13 +49,13 @@ internal sealed class ContentProtectionProvider : IContentProtectionProvider
         if (usernames.Length > 0)
         {
             accessKeys.AddRange(
-                usernames.Select(username => _memberService.GetByUsername(username)?.Key ?? (Guid?)null)
+                usernames.Select(username => _memberService.GetByUsername(username)?.Key ?? null)
                     .Where(key => key.HasValue)
                     .Select(key => key!.Value)
             );
         }
 
-        return Task.FromResult(accessKeys.Count > 0 ? new ContentProtection(accessKeys) : null);
+        return accessKeys.Count > 0 ? new ContentProtection(accessKeys) : null;
 
         string[] RuleValues(PublicAccessEntry entry, string ruleType)
             => entry.Rules

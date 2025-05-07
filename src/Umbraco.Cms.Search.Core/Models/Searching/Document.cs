@@ -2,6 +2,6 @@
 
 namespace Umbraco.Cms.Search.Core.Models.Searching;
 
-public record Document(Guid Key, UmbracoObjectTypes ObjectType)
+public record Document(Guid Id, UmbracoObjectTypes ObjectType)
 {
 }

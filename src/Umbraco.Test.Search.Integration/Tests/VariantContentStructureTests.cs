@@ -8,17 +8,18 @@ public class VariantContentStructureTests : VariantContentTestBase
     [Test]
     public void PublishedStructureInAllCultures_YieldsAllPublishedDocumentsInAllCultures()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
-            Assert.That(documents[2].Key, Is.EqualTo(GrandchildKey));
-            Assert.That(documents[3].Key, Is.EqualTo(GreatGrandchildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GrandchildKey));
+            Assert.That(documents[3].Id, Is.EqualTo(GreatGrandchildKey));
 
             Assert.That(documents.All(d => d.ObjectType is UmbracoObjectTypes.Document), Is.True);
         });
@@ -36,17 +37,18 @@ public class VariantContentStructureTests : VariantContentTestBase
     [TestCase("da-DK")]
     public void PublishedStructureSingleCulture_YieldsAllPublishedDocumentsInOneCultures(string culture)
     {
-        ContentService.SaveAndPublishBranch(Root(), true, culture);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, [culture]);
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
-            Assert.That(documents[2].Key, Is.EqualTo(GrandchildKey));
-            Assert.That(documents[3].Key, Is.EqualTo(GreatGrandchildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GrandchildKey));
+            Assert.That(documents[3].Id, Is.EqualTo(GreatGrandchildKey));
         });
 
         Assert.Multiple(() =>
@@ -61,18 +63,20 @@ public class VariantContentStructureTests : VariantContentTestBase
     [Test]
     public void PublishedRootInAllCultures_YieldsOnlyRootDocumentInAllCultures()
     {
-        ContentService.SaveAndPublish(Root());
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.Default, ["*"]);
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
-        Assert.That(documents[0].Key, Is.EqualTo(RootKey));
+        Assert.That(documents[0].Id, Is.EqualTo(RootKey));
         VerifyDocumentVariance(documents[0], "en-US", "da-DK");
     }
 
     [Test]
     public void PublishedStructureInAllCultures_WithUnpublishedRoot_YieldsNoDocuments()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
         
         var result = ContentService.Unpublish(Root());
         Assert.That(result.Success, Is.True);
@@ -86,7 +90,8 @@ public class VariantContentStructureTests : VariantContentTestBase
     [TestCase("da-DK", "en-US")]
     public void PublishedStructureInAllCultures_WithUnpublishedRootInSingleCulture_YieldsAllDocumentInPublishedRootCulture(string cultureToUnpublish, string expectedCulture)
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
         
         var result = ContentService.Unpublish(Root(), cultureToUnpublish);
         Assert.That(result.Success, Is.True);
@@ -106,10 +111,10 @@ public class VariantContentStructureTests : VariantContentTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
-            Assert.That(documents[2].Key, Is.EqualTo(GrandchildKey));
-            Assert.That(documents[3].Key, Is.EqualTo(GreatGrandchildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GrandchildKey));
+            Assert.That(documents[3].Id, Is.EqualTo(GreatGrandchildKey));
         });
 
         Assert.Multiple(() =>
@@ -124,7 +129,8 @@ public class VariantContentStructureTests : VariantContentTestBase
     [Test]
     public void PublishedStructureInAllCultures_WithUnpublishedGrandchildInAllCultures_YieldsNothingBelowChild()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
         
         var result = ContentService.Unpublish(Grandchild());
         Assert.That(result.Success, Is.True);
@@ -135,8 +141,8 @@ public class VariantContentStructureTests : VariantContentTestBase
            
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
         });
 
         Assert.Multiple(() =>
@@ -149,7 +155,8 @@ public class VariantContentStructureTests : VariantContentTestBase
     [Test]
     public void PublishedStructureInAllCultures_UnpublishAllCulturesForGrandchildOneAtATime_YieldsNothingBelowChild()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
         
         var result = ContentService.Unpublish(Grandchild(), "en-US");
         Assert.That(result.Success, Is.True);
@@ -164,8 +171,8 @@ public class VariantContentStructureTests : VariantContentTestBase
            
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
         });
 
         Assert.Multiple(() =>
@@ -179,7 +186,8 @@ public class VariantContentStructureTests : VariantContentTestBase
     [TestCase("da-DK", "en-US")]
     public void PublishedStructureInAllCultures_WithUnpublishedGrandchildInSingleCulture_YieldsSingleCultureBelowChild(string cultureToUnpublish, string expectedCulture)
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
         
         var result = ContentService.Unpublish(Grandchild(), cultureToUnpublish);
         Assert.That(result.Success, Is.True);
@@ -202,10 +210,10 @@ public class VariantContentStructureTests : VariantContentTestBase
  
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildKey));
-            Assert.That(documents[2].Key, Is.EqualTo(GrandchildKey));
-            Assert.That(documents[3].Key, Is.EqualTo(GreatGrandchildKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GrandchildKey));
+            Assert.That(documents[3].Id, Is.EqualTo(GreatGrandchildKey));
         });
 
         Assert.Multiple(() =>

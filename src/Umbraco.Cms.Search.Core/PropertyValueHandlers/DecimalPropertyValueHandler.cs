@@ -5,9 +5,9 @@ namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
 public sealed class DecimalPropertyValueHandler : IPropertyValueHandler
 {
-    // TODO: include Umbraco.Plain.Decimal in V15
     public bool CanHandle(string propertyEditorAlias)
-        => propertyEditorAlias is Cms.Core.Constants.PropertyEditors.Aliases.Decimal;
+        => propertyEditorAlias is Cms.Core.Constants.PropertyEditors.Aliases.Decimal
+            or Cms.Core.Constants.PropertyEditors.Aliases.PlainDecimal;
 
     public IndexValue? GetIndexValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
     {

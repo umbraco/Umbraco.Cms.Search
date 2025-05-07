@@ -4,6 +4,7 @@ using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Services.Changes;
 
 // NOTE: the namespace is defined as what it would be, if this was part of Umbraco core.
+// NOTE: using "key" instead of "id" here, because that's what Umbraco code would do.
 namespace Umbraco.Cms.Core.Cache;
 
 public class PublishedContentCacheRefresher : PayloadCacheRefresherBase<PublishedContentCacheRefresherNotification, PublishedContentCacheRefresher.JsonPayload>

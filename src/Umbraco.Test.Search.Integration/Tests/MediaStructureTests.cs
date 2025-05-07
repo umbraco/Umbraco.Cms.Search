@@ -14,11 +14,11 @@ public class MediaStructureTests : MediaTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootFolderKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildFolderKey));
-            Assert.That(documents[2].Key, Is.EqualTo(RootMediaKey));
-            Assert.That(documents[3].Key, Is.EqualTo(ChildMediaKey));
-            Assert.That(documents[4].Key, Is.EqualTo(GrandchildMediaKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootFolderKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildFolderKey));
+            Assert.That(documents[2].Id, Is.EqualTo(RootMediaKey));
+            Assert.That(documents[3].Id, Is.EqualTo(ChildMediaKey));
+            Assert.That(documents[4].Id, Is.EqualTo(GrandchildMediaKey));
 
             Assert.That(documents.All(d => d.ObjectType is UmbracoObjectTypes.Media), Is.True);
         });
@@ -40,7 +40,7 @@ public class MediaStructureTests : MediaTestBase
 
         var documents = IndexService.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(1));
-        Assert.That(documents[0].Key, Is.EqualTo(RootFolderKey));
+        Assert.That(documents[0].Id, Is.EqualTo(RootFolderKey));
     }
 
     [Test]
@@ -61,11 +61,11 @@ public class MediaStructureTests : MediaTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootFolderKey));
-            Assert.That(documents[1].Key, Is.EqualTo(ChildFolderKey));
-            Assert.That(documents[2].Key, Is.EqualTo(RootMediaKey));
-            Assert.That(documents[3].Key, Is.EqualTo(ChildMediaKey));
-            Assert.That(documents[4].Key, Is.EqualTo(GrandchildMediaKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootFolderKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildFolderKey));
+            Assert.That(documents[2].Id, Is.EqualTo(RootMediaKey));
+            Assert.That(documents[3].Id, Is.EqualTo(ChildMediaKey));
+            Assert.That(documents[4].Id, Is.EqualTo(GrandchildMediaKey));
         });
     }
 
@@ -86,9 +86,9 @@ public class MediaStructureTests : MediaTestBase
            
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Key, Is.EqualTo(RootFolderKey));
-            Assert.That(documents[1].Key, Is.EqualTo(RootMediaKey));
-            Assert.That(documents[2].Key, Is.EqualTo(ChildMediaKey));
+            Assert.That(documents[0].Id, Is.EqualTo(RootFolderKey));
+            Assert.That(documents[1].Id, Is.EqualTo(RootMediaKey));
+            Assert.That(documents[2].Id, Is.EqualTo(ChildMediaKey));
         });
     }
 }

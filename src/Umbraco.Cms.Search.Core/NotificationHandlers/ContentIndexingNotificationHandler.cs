@@ -105,33 +105,33 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
         ExecuteDeferred(() => _contentIndexingService.Handle(changes));
     }
 
-    private ContentChange[] PublishedDocumentChanges(IEnumerable<(Guid ContentKey, TreeChangeTypes ChangeTypes)> payloads)
+    private ContentChange[] PublishedDocumentChanges(IEnumerable<(Guid ContentId, TreeChangeTypes ChangeTypes)> payloads)
         => GetContentChanges(
             payloads,
             (contentKey, changeImpact) => ContentChange.Document(contentKey, changeImpact, ContentState.Published)
         );
 
-    private ContentChange[] DraftDocumentChanges(IEnumerable<(Guid ContentKey, TreeChangeTypes ChangeTypes)> payloads)
+    private ContentChange[] DraftDocumentChanges(IEnumerable<(Guid ContentId, TreeChangeTypes ChangeTypes)> payloads)
         => GetContentChanges(
             payloads,
             (contentKey, changeImpact) => ContentChange.Document(contentKey, changeImpact, ContentState.Draft)
         );
 
-    private ContentChange[] MediaChanges(IEnumerable<(Guid ContentKey, TreeChangeTypes ChangeTypes)> payloads)
+    private ContentChange[] MediaChanges(IEnumerable<(Guid ContentId, TreeChangeTypes ChangeTypes)> payloads)
         => GetContentChanges(
             payloads,
             (contentKey, changeImpact) => ContentChange.Media(contentKey, changeImpact, ContentState.Draft)
         );
 
-    private ContentChange[] GetContentChanges(IEnumerable<(Guid ContentKey, TreeChangeTypes ChangeTypes)> payloads, Func<Guid, ChangeImpact, ContentChange> contentChangeFactory)
+    private ContentChange[] GetContentChanges(IEnumerable<(Guid ContentId, TreeChangeTypes ChangeTypes)> payloads, Func<Guid, ChangeImpact, ContentChange> contentChangeFactory)
         => payloads
             .Select(payload => payload.ChangeTypes switch
                 {
                     TreeChangeTypes.None => null,
-                    TreeChangeTypes.RefreshAll => contentChangeFactory(payload.ContentKey, ChangeImpact.RefreshWithDescendants),
-                    TreeChangeTypes.RefreshNode => contentChangeFactory(payload.ContentKey, ChangeImpact.Refresh),
-                    TreeChangeTypes.RefreshBranch => contentChangeFactory(payload.ContentKey, ChangeImpact.RefreshWithDescendants),
-                    TreeChangeTypes.Remove => contentChangeFactory(payload.ContentKey, ChangeImpact.Remove),
+                    TreeChangeTypes.RefreshAll => contentChangeFactory(payload.ContentId, ChangeImpact.RefreshWithDescendants),
+                    TreeChangeTypes.RefreshNode => contentChangeFactory(payload.ContentId, ChangeImpact.Refresh),
+                    TreeChangeTypes.RefreshBranch => contentChangeFactory(payload.ContentId, ChangeImpact.RefreshWithDescendants),
+                    TreeChangeTypes.Remove => contentChangeFactory(payload.ContentId, ChangeImpact.Remove),
                     _ => throw new ArgumentOutOfRangeException(nameof(payload), payload.ChangeTypes, "Unexpected tree change type.")
                 }
             )

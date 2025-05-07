@@ -33,12 +33,12 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
     private IEnumerable<IndexField> CollectSystemFields(IContentBase content, string?[] cultures)
     {
         var objectType = content.ObjectType();
-        if (TryGetParentKey(content, objectType, out var parentKey) is false)
+        if (TryGetParentId(content, objectType, out var parentKey) is false)
         {
             return [];
         }
 
-        if (TryGetPathKeys(content, objectType, out var pathKeys) is false)
+        if (TryGetPathIds(content, objectType, out var pathKeys) is false)
         {
             return [];
         }
@@ -62,11 +62,11 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
         return fields;
     }
 
-    private bool TryGetParentKey(IContentBase content, UmbracoObjectTypes objectType, [NotNullWhen(true)] out Guid? parentKey)
+    private bool TryGetParentId(IContentBase content, UmbracoObjectTypes objectType, [NotNullWhen(true)] out Guid? parentId)
     {
         if (content.ParentId <= 0)
         {
-            parentKey = Guid.Empty;
+            parentId = Guid.Empty;
             return true;
         }
 
@@ -77,18 +77,18 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
                 "Could not resolve parent key for parent ID {parentId} - aborting indexing of content item {contentKey}.",
                 content.ParentId,
                 content.Key);
-            parentKey = null;
+            parentId = null;
             return false;
         }
 
-        parentKey = parentKeyAttempt.Result;
+        parentId = parentKeyAttempt.Result;
         return true;
     }
     
-    private bool TryGetPathKeys(IContentBase content, UmbracoObjectTypes objectType, out IList<Guid> pathKeys)
+    private bool TryGetPathIds(IContentBase content, UmbracoObjectTypes objectType, out IList<Guid> pathIds)
     {
         var ancestorIds = content.AncestorIds();
-        pathKeys = new List<Guid>();
+        pathIds = new List<Guid>();
         foreach (var ancestorId in ancestorIds)
         {
             var attempt = _idKeyMap.GetKeyForId(ancestorId, objectType);
@@ -101,10 +101,10 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
                 return false;
             }
 
-            pathKeys.Add(attempt.Result);
+            pathIds.Add(attempt.Result);
         }
 
-        pathKeys.Add(content.Key);
+        pathIds.Add(content.Key);
         return true;
     }
 

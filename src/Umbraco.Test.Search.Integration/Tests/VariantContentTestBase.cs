@@ -9,10 +9,11 @@ namespace Umbraco.Test.Search.Integration.Tests;
 public abstract class VariantContentTestBase : ContentTestBase
 {
     [SetUp]
-    public void SetupTest()
+    public async Task SetupTest()
     {
-        GetRequiredService<ILocalizationService>().Save(
-            new LanguageBuilder().WithCultureInfo("da-DK").Build()
+        await GetRequiredService<ILanguageService>().CreateAsync(
+            new LanguageBuilder().WithCultureInfo("da-DK").Build(),
+            Constants.Security.SuperUserKey
         );
         
         var contentType = new ContentTypeBuilder()
@@ -37,9 +38,9 @@ public abstract class VariantContentTestBase : ContentTestBase
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
             .Done()
             .Build();
-        ContentTypeService.Save(contentType);
-        contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Id, 0)];
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
+        contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
+        await ContentTypeService.UpdateAsync(contentType, Constants.Security.SuperUserKey);
 
         var root = new ContentBuilder()
             .WithKey(RootKey)

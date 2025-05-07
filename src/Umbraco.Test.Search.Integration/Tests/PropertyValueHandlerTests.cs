@@ -26,7 +26,8 @@ public class PropertyValueHandlerTests : ContentTestBase
                 })
             .Build();
 
-        ContentService.SaveAndPublish(content);
+        ContentService.Save(content);
+        ContentService.Publish(content, ["*"]);
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
@@ -55,9 +56,9 @@ public class PropertyValueHandlerTests : ContentTestBase
     }
     
     [SetUp]
-    public void SetupTest()
+    public async Task SetupTest()
     {
-        var dateTypeService = GetRequiredService<IDataTypeService>();
+        var dataTypeService = GetRequiredService<IDataTypeService>();
 
         var decimalDataType = new DataTypeBuilder()
             .WithId(0)
@@ -67,7 +68,7 @@ public class PropertyValueHandlerTests : ContentTestBase
             .WithAlias(Constants.PropertyEditors.Aliases.Decimal)
             .Done()
             .Build();
-        dateTypeService.Save(decimalDataType);
+        await dataTypeService.CreateAsync(decimalDataType, Constants.Security.SuperUserKey);
         
         var contentType = new ContentTypeBuilder()
             .WithAlias("allEditors")
@@ -102,7 +103,7 @@ public class PropertyValueHandlerTests : ContentTestBase
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.DateTime)
             .Done()
             .Build();
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
     }
 
     private IContentType GetContentType() => ContentTypeService.Get("allEditors")

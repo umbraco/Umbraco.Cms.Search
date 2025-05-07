@@ -43,10 +43,10 @@ internal sealed class InMemorySearchService : ISearchService
             )
         );
 
-        var accessKeys = accessContext?.PrincipalKey.Yield().Union(accessContext.GroupKeys ?? []).ToArray();
+        var accessKeys = accessContext?.PrincipalId.Yield().Union(accessContext.GroupIds ?? []).ToArray();
         result = result.Where(kvp =>
             kvp.Value.Protection is null
-            || (accessKeys is not null && kvp.Value.Protection.AccessKeys.ContainsAny(accessKeys)
+            || (accessKeys is not null && kvp.Value.Protection.AccessIds.ContainsAny(accessKeys)
             )
         );
         
@@ -157,17 +157,59 @@ internal sealed class InMemorySearchService : ISearchService
 
             return new FacetResult(facet.FieldName, facetValues);
 
-            // TODO: implement range facets
-            // TODO: implement decimal and date facets
             IEnumerable<FacetValue> GetFacetValues(Facet facet, IEnumerable<IndexValue> values)
                 => facet switch
                 {
                     KeywordFacet => values.SelectMany(v => v.Keywords ?? []).GroupBy(v => v).Select(g => new KeywordFacetValue(g.Key, g.Count())),
                     IntegerExactFacet => values.SelectMany(v => v.Integers ?? []).GroupBy(v => v).Select(g => new IntegerExactFacetValue(g.Key, g.Count())),
+                    DecimalExactFacet => values.SelectMany(v => v.Decimals ?? []).GroupBy(v => v).Select(g => new DecimalExactFacetValue(g.Key, g.Count())),
+                    DateTimeOffsetExactFacet => values.SelectMany(v => v.DateTimeOffsets ?? []).GroupBy(v => v).Select(g => new DateTimeOffsetExactFacetValue(g.Key, g.Count())),
+                    IntegerRangeFacet integerRangeFacet => ExtractIntegerRangeFacetValues(integerRangeFacet, values), 
+                    DecimalRangeFacet decimalRangeFacet => ExtractDecimalRangeFacetValues(decimalRangeFacet, values),
+                    DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet => ExtractDateTimeOffsetRangeFacetValues(dateTimeOffsetRangeFacet, values),
                     _ => throw new ArgumentOutOfRangeException(nameof(facet), $"Encountered an unsupported facet type: {facet.GetType().Name}")
                 }; 
         }).ToArray();
-        
+
+    private IntegerRangeFacetValue[] ExtractIntegerRangeFacetValues(IntegerRangeFacet facet, IEnumerable<IndexValue> values)
+    {
+        var allValues = values.SelectMany(v => v.Integers ?? []).ToArray();
+        return facet
+            .Ranges
+            .Select(range => new IntegerRangeFacetValue(
+                range.Key,
+                range.Min,
+                range.Max,
+                allValues.Count(v => v > (range.Min ?? int.MinValue) && v <= (range.Max ?? int.MaxValue)))
+            ).ToArray();
+    }
+    
+    private DecimalRangeFacetValue[] ExtractDecimalRangeFacetValues(DecimalRangeFacet facet, IEnumerable<IndexValue> values)
+    {
+        var allValues = values.SelectMany(v => v.Decimals ?? []).ToArray();
+        return facet
+            .Ranges
+            .Select(range => new DecimalRangeFacetValue(
+                range.Key,
+                range.Min,
+                range.Max,
+                allValues.Count(v => v > (range.Min ?? decimal.MinValue) && v <= (range.Max ?? decimal.MaxValue)))
+            ).ToArray();
+    }
+
+    private DateTimeOffsetRangeFacetValue[] ExtractDateTimeOffsetRangeFacetValues(DateTimeOffsetRangeFacet facet, IEnumerable<IndexValue> values)
+    {
+        var allValues = values.SelectMany(v => v.DateTimeOffsets ?? []).ToArray();
+        return facet
+            .Ranges
+            .Select(range => new DateTimeOffsetRangeFacetValue(
+                range.Key,
+                range.Min,
+                range.Max,
+                allValues.Count(v => v > (range.Min ?? DateTimeOffset.MinValue) && v <= (range.Max ?? DateTimeOffset.MaxValue)))
+            ).ToArray();
+    }
+
     private IEnumerable<KeyValuePair<Guid, IndexDocument>> SortDocuments(IEnumerable<KeyValuePair<Guid, IndexDocument>> documents, Sorter[] sorters, string? culture, string? segment)
     {
         var sorter = sorters.FirstOrDefault() ?? throw new ArgumentException("Expected one or more sorters.", nameof(sorters));

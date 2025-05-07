@@ -13,16 +13,16 @@ internal sealed class InMemoryIndexService : IIndexService
     public InMemoryIndexService(DataStore dataStore)
         => _dataStore = dataStore;
 
-    public Task AddOrUpdateAsync(string indexAlias, Guid key, UmbracoObjectTypes objectType, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)
+    public Task AddOrUpdateAsync(string indexAlias, Guid id, UmbracoObjectTypes objectType, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)
     {
-        Remove(indexAlias, key);
-        GetIndex(indexAlias)[key] = new IndexDocument(objectType, variations.ToArray(), fields.ToArray(), protection);
+        Remove(indexAlias, id);
+        GetIndex(indexAlias)[id] = new IndexDocument(objectType, variations.ToArray(), fields.ToArray(), protection);
         return Task.CompletedTask;
     }
 
-    public Task DeleteAsync(string indexAlias, IEnumerable<Guid> keys)
+    public Task DeleteAsync(string indexAlias, IEnumerable<Guid> ids)
     {
-        var keysArray = keys as Guid[] ?? keys.ToArray();
+        var keysArray = ids as Guid[] ?? ids.ToArray();
 
         // index is responsible for deleting descendants!
         foreach (var key in keysArray)
@@ -41,9 +41,9 @@ internal sealed class InMemoryIndexService : IIndexService
         return Task.CompletedTask;
     }
 
-    private void Remove(string index, Guid key)
+    private void Remove(string index, Guid id)
     {
-        GetIndex(index).Remove(key);
+        GetIndex(index).Remove(id);
     }
 
     private Dictionary<Guid, IndexDocument> GetIndex(string indexAlias)

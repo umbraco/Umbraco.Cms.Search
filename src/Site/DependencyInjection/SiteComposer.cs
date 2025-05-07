@@ -1,10 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
-using Site.NotificationHandlers;
+using Site.Services;
 using Umbraco.Cms.Api.Delivery.Configuration;
 using Umbraco.Cms.Core.Composing;
-using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Core.Configuration.Models;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.BackOffice.DependencyInjection;
 using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.DeliveryApi.DependencyInjection;
@@ -16,9 +17,8 @@ public sealed class SiteComposer : IComposer
 {
     public void Compose(IUmbracoBuilder builder)
     {
-        builder
-            .AddNotificationHandler<ServerVariablesParsingNotification, EnableSegmentsNotificationHandler>()
-            .AddNotificationHandler<SendingContentNotification, CreateSegmentsNotificationHandler>();
+        builder.Services.AddUnique<ISegmentService, SiteSegmentService>();
+        builder.Services.Configure<SegmentSettings>(settings => settings.Enabled = true);
 
         builder.Services.ConfigureOptions<ConfigureCustomMemberLoginPath>();
         builder.Services.ConfigureOptions<ConfigureUmbracoMemberAuthenticationDeliveryApiSwaggerGenOptions>();

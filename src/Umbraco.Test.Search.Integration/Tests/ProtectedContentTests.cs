@@ -15,21 +15,21 @@ public class ProtectedContentTests : InvariantContentTestBase
     private IMemberGroupService MemberGroupService => GetRequiredService<IMemberGroupService>();
 
     [SetUp]
-    public override void SetupTest()
+    public override async Task SetupTest()
     {
-        base.SetupTest();
+        await base.SetupTest();
         var memberGroup = new MemberGroup
         {
             Name = "MemberGroupOne"
         };
-        MemberGroupService.Save(memberGroup);
+        await MemberGroupService.CreateAsync(memberGroup);
         _memberGroupOneKey = memberGroup.Key;
 
-        memberGroup = memberGroup = new MemberGroup
+        memberGroup = new MemberGroup
         {
             Name = "MemberGroupTwo"
         };
-        MemberGroupService.Save(memberGroup);
+        await MemberGroupService.CreateAsync(memberGroup);
         _memberGroupTwoKey = memberGroup.Key;
     }
 
@@ -53,7 +53,8 @@ public class ProtectedContentTests : InvariantContentTestBase
         );
         Assert.That(entryResult.Success, Is.True);
         
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
         var documents = IndexService.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -70,7 +71,8 @@ public class ProtectedContentTests : InvariantContentTestBase
     [Test]
     public void PublishedStructure_CanAddContentProtectionWithoutRepublishing()
     {
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
         var root = Root();
         var entryResult = PublicAccessService.Save(
@@ -121,7 +123,8 @@ public class ProtectedContentTests : InvariantContentTestBase
         );
         Assert.That(entryResult.Success, Is.True);
 
-        ContentService.SaveAndPublishBranch(Root(), true);
+        ContentService.Save(Root());
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
         var entry = PublicAccessService.GetEntryForContent(root);
         Assert.That(entry, Is.Not.Null);
@@ -144,6 +147,6 @@ public class ProtectedContentTests : InvariantContentTestBase
     private void VerifyProtection(TestIndexDocument document, Guid[] expectedAccessKeys)
     {
         Assert.That(document.Protection, Is.Not.Null);
-        Assert.That(document.Protection.AccessKeys, Is.EquivalentTo(expectedAccessKeys));
+        Assert.That(document.Protection.AccessIds, Is.EquivalentTo(expectedAccessKeys));
     }
 }
