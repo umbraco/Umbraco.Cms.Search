@@ -9,7 +9,10 @@ using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.DeliveryApi;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.DeliveryApi;
+using Umbraco.Cms.Core.Models.PublishedContent;
+using Umbraco.Cms.Core.PublishedCache;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Extensions;
 using Constants = Umbraco.Cms.Search.Core.Constants;
@@ -23,6 +26,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
     private readonly IDateTimeOffsetConverter _dateTimeOffsetConverter;
     private readonly IRequestMemberAccessService _requestMemberAccessService;
     private readonly IMemberService _memberService;
+    private readonly IPublishedContentTypeCache _publishedContentTypeCache;
     private readonly ILogger<DeliveryApiContentQueryProvider> _logger;
     private readonly Dictionary<string, FieldType> _fieldTypes;
 
@@ -31,6 +35,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
         ContentIndexHandlerCollection contentIndexHandlerCollection,
         IRequestMemberAccessService requestMemberAccessService,
         IMemberService memberService,
+        IPublishedContentTypeCache publishedContentTypeCache,
         IDateTimeOffsetConverter dateTimeOffsetConverter,
         ILogger<DeliveryApiContentQueryProvider> logger)
     {
@@ -38,6 +43,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
         _dateTimeOffsetConverter = dateTimeOffsetConverter;
         _logger = logger;
         _memberService = memberService;
+        _publishedContentTypeCache = publishedContentTypeCache;
         _requestMemberAccessService = requestMemberAccessService;
 
         // build a look-up dictionary of field types by field name
@@ -127,6 +133,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
         }
 
         fieldName = MapSystemFieldName(fieldName);
+        values = MapSystemFieldValues(fieldName, values);
         
         switch (fieldType)
         {
@@ -239,7 +246,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
             // TODO: this is somewhat wrong... PathIds equals ancestors-or-self, but the Delivery API queries for ancestors only
             "ancestorIds" => Constants.FieldNames.PathIds,
             // ContentTypeFilterIndexer:
-            "contentType" => Constants.FieldNames.ContentType,
+            "contentType" => Constants.FieldNames.ContentTypeId,
             // NameFilterIndexer or NameSortIndexer:
             "name" or "sortName" => Constants.FieldNames.Name,
             // CreateDateSortIndexer
@@ -270,5 +277,40 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
             : null;
 
         return new AccessContext(memberAccess.MemberKey.Value, memberGroupKeys);
+    }
+
+    private string[] MapSystemFieldValues(string fieldName, string[] values)
+    {
+        if (fieldName is not Constants.FieldNames.ContentTypeId)
+        {
+            return values;
+        }
+
+        if (values.Length is 0)
+        {
+            return values;
+        }
+
+        if (Guid.TryParse(values[0], out _))
+        {
+            // assume it's an array of keyword representations of content type keys
+            return values;
+        }
+
+        // assume it's an array of content type aliases
+        return values.Select(alias =>
+            {
+                // the published content type cache throws an exception if no content type is found by alias
+                try
+                {
+                    return _publishedContentTypeCache.Get(PublishedItemType.Content, alias).Key.AsKeyword();
+                }
+                catch
+                {
+                    return null;
+                }
+            })
+            .WhereNotNull()
+            .ToArray();
     }
 }

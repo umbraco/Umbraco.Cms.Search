@@ -31,7 +31,7 @@ public static class Constants
 
         public const string Name = $"{FieldPrefix}Name";
 
-        public const string ContentType = $"{FieldPrefix}ContentType";
+        public const string ContentTypeId = $"{FieldPrefix}ContentTypeId";
 
         public const string CreateDate = $"{FieldPrefix}CreateDate";
 

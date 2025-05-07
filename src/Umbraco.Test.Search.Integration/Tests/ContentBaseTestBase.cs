@@ -15,15 +15,15 @@ public abstract class ContentBaseTestBase : TestBase
         => Assert.Multiple(() =>
         {
             var idValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.Id)?.Value.Keywords?.SingleOrDefault();
-            Assert.That(idValue, Is.EqualTo(key.ToString("D")));
+            Assert.That(idValue, Is.EqualTo(key.AsKeyword()));
             
             var parentIdValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.ParentId)?.Value.Keywords?.SingleOrDefault();
-            Assert.That(parentIdValue, Is.EqualTo(parentKey.ToString("D")));
+            Assert.That(parentIdValue, Is.EqualTo(parentKey.AsKeyword()));
 
             var pathIdsValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.PathIds)?.Value.Keywords?.ToArray();
             Assert.That(pathIdsValue, Is.Not.Null);
             Assert.That(pathIdsValue!.Length, Is.EqualTo(pathKeys.Length));
-            Assert.That(pathIdsValue, Is.EquivalentTo(pathKeys.Select(ancestorId => ancestorId.ToString("D"))));
+            Assert.That(pathIdsValue, Is.EquivalentTo(pathKeys.Select(ancestorId => ancestorId.AsKeyword())));
         });
 
     protected void VerifyDocumentSystemValues(TestIndexDocument document, IContentBase content, params string[] tags)
@@ -33,8 +33,8 @@ public abstract class ContentBaseTestBase : TestBase
 
         Assert.Multiple(() =>
         {
-            var contentTypeValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.ContentType)?.Value.Keywords?.SingleOrDefault();
-            Assert.That(contentTypeValue, Is.EqualTo(content.ContentType.Alias));
+            var contentTypeIdValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.ContentTypeId)?.Value.Keywords?.SingleOrDefault();
+            Assert.That(contentTypeIdValue, Is.EqualTo(content.ContentType.Key.AsKeyword()));
 
             var nameValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.Name)?.Value.Texts?.SingleOrDefault();
             Assert.That(nameValue, Is.EqualTo(content.Name));

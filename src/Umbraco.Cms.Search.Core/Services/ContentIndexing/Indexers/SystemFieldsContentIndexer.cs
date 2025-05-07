@@ -45,10 +45,10 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
         
         var fields = new List<IndexField>
         {
-            new(Constants.FieldNames.Id, new() { Keywords = [content.Key.ToString("D")] }, null, null),
-            new(Constants.FieldNames.ParentId, new() { Keywords = [parentKey.Value.ToString("D")] }, null, null),
-            new(Constants.FieldNames.PathIds, new() { Keywords = pathKeys.Select(key => key.ToString("D")).ToArray() }, null, null),
-            new(Constants.FieldNames.ContentType, new() { Keywords = [content.ContentType.Alias] }, null, null),
+            new(Constants.FieldNames.Id, new() { Keywords = [content.Key.AsKeyword()] }, null, null),
+            new(Constants.FieldNames.ParentId, new() { Keywords = [parentKey.Value.AsKeyword()] }, null, null),
+            new(Constants.FieldNames.PathIds, new() { Keywords = pathKeys.Select(key => key.AsKeyword()).ToArray() }, null, null),
+            new(Constants.FieldNames.ContentTypeId, new() { Keywords = [content.ContentType.Key.AsKeyword()] }, null, null),
             new(Constants.FieldNames.CreateDate, new() { DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(content.CreateDate)] }, null, null),
             new(Constants.FieldNames.UpdateDate, new() { DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(content.UpdateDate)] }, null, null),
             new(Constants.FieldNames.Level, new() { Integers = [content.Level] }, null, null),
