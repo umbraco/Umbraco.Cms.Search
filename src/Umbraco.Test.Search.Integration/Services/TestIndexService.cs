@@ -1,11 +1,17 @@
-﻿using Umbraco.Cms.Core.Models;
-using Umbraco.Cms.Search.Core;
+﻿using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Indexing;
+using Umbraco.Cms.Search.Core.Models.Searching;
+using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
+using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
+using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
 using Umbraco.Cms.Search.Core.Services;
+using Umbraco.Test.Search.Integration.Tests;
+using Constants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Umbraco.Test.Search.Integration.Services;
 
-public class TestIndexService : IIndexService
+public class TestIndexService : IIndexService, ISearchService
 {
     private readonly Dictionary<string, Dictionary<Guid, TestIndexDocument>> _indexes = new();
         
@@ -45,5 +51,112 @@ public class TestIndexService : IIndexService
         }
 
         return _indexes[index];
+    }
+
+    // very simplistic implementation of ISearchService to satisfy the back-office search tests
+    public Task<SearchResult> SearchAsync(
+        string indexAlias,
+        string? query,
+        IEnumerable<Filter>? filters,
+        IEnumerable<Facet>? facets,
+        IEnumerable<Sorter>? sorters,
+        string? culture,
+        string? segment,
+        AccessContext? accessContext,
+        int skip,
+        int take)
+    {
+        indexAlias = indexAlias switch
+        {
+            Constants.IndexAliases.DraftContent => TestBase.IndexAliases.DraftContent,
+            Constants.IndexAliases.DraftMedia => TestBase.IndexAliases.Media,
+            _ => throw new ArgumentOutOfRangeException(nameof(indexAlias))
+        };
+
+        bool IsVarianceMatch(IndexField field)
+            => (field.Culture is null || field.Culture == culture)
+               && (field.Segment is null || field.Segment == culture); 
+        
+        var index = GetIndex(indexAlias);
+        var result = index.Values.ToArray();
+        if (query is not null)
+        {
+            result = result.Where(document =>
+                document.Fields.Any(field =>
+                    IsVarianceMatch(field)
+                    && field.Value.Texts?.Any(text => text.Contains(query)) is true
+                )
+            ).ToArray();
+        }
+
+        foreach (var filter in filters ?? [])
+        {
+            switch (filter)
+            {
+                case KeywordFilter keywordFilter:
+                    result = result.Where(document =>
+                        document.Fields.Any(field =>
+                            IsVarianceMatch(field)
+                            && field.FieldName == keywordFilter.FieldName
+                            && field.Value.Keywords?.ContainsAny(keywordFilter.Values) is true
+                        )
+                    ).ToArray();
+                    break;
+                case IntegerExactFilter integerExactFilter:
+                    result = result.Where(document =>
+                        document.Fields.Any(field =>
+                            IsVarianceMatch(field)
+                            && field.FieldName == integerExactFilter.FieldName
+                            && field.Value.Integers?.ContainsAny(integerExactFilter.Values) is true
+                        )
+                    ).ToArray();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(filter), "Unsupported filter type");
+            }
+        }
+
+        if (sorters is not null)
+        {
+            var sortersAsArray = sorters as Sorter[] ?? sorters.ToArray();
+            if (sortersAsArray.Length != 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(sorters), "Only one sorter is supported (or none at all)");
+            }
+
+            result = sortersAsArray.First() switch
+            {
+                StringSorter stringSorter => result.OrderBy(document =>
+                    document.Fields.FirstOrDefault(field =>
+                        IsVarianceMatch(field)
+                        && field.FieldName == stringSorter.FieldName
+                    )?.Value.Texts?.FirstOrDefault()
+                ).ToArray(),
+                DateTimeOffsetSorter dateTimeOffsetSorter => result.OrderBy(document =>
+                    document.Fields.FirstOrDefault(field =>
+                        IsVarianceMatch(field)
+                        && field.FieldName == dateTimeOffsetSorter.FieldName
+                    )?.Value.DateTimeOffsets?.FirstOrDefault()
+                ).ToArray(),
+                _ => result
+            };
+
+            if (sortersAsArray.First().Direction == Direction.Descending)
+            {
+                result = result.Reverse().ToArray();
+            }
+        }
+
+        return Task.FromResult(
+            new SearchResult(
+                result.Length,
+                result
+                    .Skip(skip)
+                    .Take(take)
+                    .Select(document => new Document(document.Id, document.ObjectType))
+                    .ToArray(),
+                []
+            )
+        );
     }
 }

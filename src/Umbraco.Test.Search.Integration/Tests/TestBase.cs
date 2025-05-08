@@ -17,7 +17,7 @@ public abstract class TestBase : UmbracoIntegrationTest
 {
     private readonly TestIndexService _testIndexService = new();
     
-    protected static class IndexAliases
+    internal static class IndexAliases
     {
         public const string PublishedContent = "TestPublishedContentIndex";
         public const string DraftContent = "TestDraftContentIndex";
@@ -31,14 +31,13 @@ public abstract class TestBase : UmbracoIntegrationTest
     {
         base.CustomTestSetup(builder);
 
-        _testIndexService.Reset();
-        
         builder.AddSearchCore();
         
         builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
 
         builder.Services.AddTransient<IIndexService>(_ => IndexService);
+        builder.Services.AddTransient<ISearchService>(_ => IndexService);
 
         builder.Services.Configure<IndexOptions>(options =>
         {
