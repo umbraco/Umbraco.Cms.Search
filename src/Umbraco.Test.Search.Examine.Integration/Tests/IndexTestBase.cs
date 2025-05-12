@@ -289,11 +289,7 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
         }
         else
         {
-            var result = ContentService.Save(content);
-            if (result.Success)
-            {
-                
-            }
+            ContentService.Save(content);
         }
     }
     
