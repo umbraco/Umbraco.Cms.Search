@@ -32,8 +32,8 @@ public static class UmbracoBuilderExtensions
         builder.Services.AddTransient<IDraftContentChangeStrategy, DraftContentChangeStrategy>();
 
         builder
-            .AddNotificationHandler<ContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
-            .AddNotificationHandler<MediaCacheRefresherNotification, ContentIndexingNotificationHandler>()
+            .AddNotificationHandler<DraftContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
+            .AddNotificationHandler<DraftMediaCacheRefresherNotification, ContentIndexingNotificationHandler>()
             .AddNotificationHandler<MemberCacheRefresherNotification, ContentIndexingNotificationHandler>()
             .AddNotificationHandler<PublishedContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
             .AddNotificationAsyncHandler<PublicAccessDetailedCacheRefresherNotification, PublicAccessIndexingNotificationHandler>();

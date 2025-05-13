@@ -134,9 +134,13 @@ public partial class IndexedEntitySearchServiceTests
         });
     }
 
-    [TestCase("rootContentType", 3)]
-    [TestCase("childContentType", 30)]
-    public async Task Content_CanFindAllByContentType(string contentTypeAlias, int expectedTotal)
+    [TestCase("rootContentType", null, 3)]
+    [TestCase("rootContentType", false, 2)]
+    [TestCase("rootContentType", true, 1)]
+    [TestCase("childContentType", null, 30)]
+    [TestCase("childContentType", false, 20)]
+    [TestCase("childContentType", true, 10)]
+    public async Task Content_CanFindAllByContentType(string contentTypeAlias, bool? trashed, int expectedTotal)
     {
         var contentTypeKey = ContentTypeService.Get(contentTypeAlias)?.Key
             ?? throw new InvalidOperationException($"Could not find {contentTypeAlias}.");
@@ -146,7 +150,7 @@ public partial class IndexedEntitySearchServiceTests
             query: string.Empty,
             parentId: null,
             contentTypeIds: [contentTypeKey],
-            trashed: null
+            trashed: trashed
         );
 
         Assert.Multiple(() =>
@@ -181,5 +185,46 @@ public partial class IndexedEntitySearchServiceTests
             Assert.That(items.All(item => item.ContentTypeAlias is "childContentType"), Is.True);
             Assert.That(items.All(item => item.ParentId == root.Id), Is.True);
         });
+    }
+
+    [TestCase(false, 22)]
+    [TestCase(true, 11)]
+    public async Task Content_CanFilterByTrashedState(bool trashed, int expectedTotal)
+    {
+        var result = await IndexedEntitySearchService.SearchAsync(
+            UmbracoObjectTypes.Document,
+            query: string.Empty,
+            parentId: null,
+            contentTypeIds: null,
+            trashed: trashed
+        );
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Total, Is.EqualTo(expectedTotal));
+            Assert.That(result.Items.Count(), Is.EqualTo(expectedTotal));
+            Assert.That(result.Items.All(item => item.Trashed == trashed), Is.True);
+        });
+    }
+
+    [TestCase("single0root", false, 1)]
+    [TestCase("single0root", true, 0)]
+    [TestCase("single2root", false, 0)]
+    [TestCase("single2root", true, 1)]
+    [TestCase("single1child", false, 2)]
+    [TestCase("single1child", true, 1)]
+    [TestCase("oddeven1child", false, 10)]
+    [TestCase("oddeven1child", true, 5)]
+    public async Task Content_CanCombineQueryAndTrashedFilteringContent(string query, bool trashed, int expectedTotal)
+    {
+        var result = await IndexedEntitySearchService.SearchAsync(
+            UmbracoObjectTypes.Document,
+            query: query,
+            parentId: null,
+            contentTypeIds: null,
+            trashed: trashed
+        );
+
+        Assert.That(expectedTotal, Is.EqualTo(result.Total));
     }
 }

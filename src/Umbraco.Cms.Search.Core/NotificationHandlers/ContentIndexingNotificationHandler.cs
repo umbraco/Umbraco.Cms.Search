@@ -16,8 +16,8 @@ namespace Umbraco.Cms.Search.Core.NotificationHandlers;
 // TODO: add notification handler for language changes (need to handle deletion)
 internal sealed class ContentIndexingNotificationHandler : IndexingNotificationHandlerBase,
     INotificationHandler<PublishedContentCacheRefresherNotification>,
-    INotificationHandler<ContentCacheRefresherNotification>,
-    INotificationHandler<MediaCacheRefresherNotification>,
+    INotificationHandler<DraftContentCacheRefresherNotification>,
+    INotificationHandler<DraftMediaCacheRefresherNotification>,
     INotificationHandler<MemberCacheRefresherNotification>
 {
     private readonly IContentIndexingService _contentIndexingService;
@@ -47,37 +47,23 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
         ExecuteDeferred(() => _contentIndexingService.Handle(changes));
     }
 
-    public void Handle(ContentCacheRefresherNotification notification)
+    public void Handle(DraftContentCacheRefresherNotification notification)
     {
-        var payloads = GetNotificationPayloads<ContentCacheRefresher.JsonPayload>(notification);
-
-        if (payloads.Any(payload => payload.Key.HasValue is false))
-        {
-            _logger.LogError("One or more content cache refresh notifications did not contain a content key. Search indexes might be out of sync.");
-        }
+        var payloads = GetNotificationPayloads<DraftContentCacheRefresher.JsonPayload>(notification);
 
         var changes = DraftDocumentChanges(
-            payloads
-                .Where(payload => payload.Key.HasValue)
-                .Select(payload => (payload.Key!.Value, payload.ChangeTypes))
+            payloads.Select(payload => (payload.ContentKey, payload.ChangeTypes))
         );
 
         ExecuteDeferred(() => _contentIndexingService.Handle(changes));
     }
 
-    public void Handle(MediaCacheRefresherNotification notification)
+    public void Handle(DraftMediaCacheRefresherNotification notification)
     {
-        var payloads = GetNotificationPayloads<MediaCacheRefresher.JsonPayload>(notification);
-
-        if (payloads.Any(payload => payload.Key.HasValue is false))
-        {
-            _logger.LogError("One or more media cache refresh notifications did not contain a content key. Search indexes might be out of sync.");
-        }
+        var payloads = GetNotificationPayloads<DraftMediaCacheRefresher.JsonPayload>(notification);
 
         var changes = MediaChanges(
-            payloads
-                .Where(payload => payload.Key.HasValue)
-                .Select(payload => (payload.Key!.Value, payload.ChangeTypes))
+            payloads.Select(payload => (payload.MediaKey, payload.ChangeTypes))
         );
 
         ExecuteDeferred(() => _contentIndexingService.Handle(changes));

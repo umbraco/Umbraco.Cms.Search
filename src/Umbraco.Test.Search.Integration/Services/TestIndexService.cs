@@ -98,7 +98,7 @@ public class TestIndexService : IIndexService, ISearchService
                         document.Fields.Any(field =>
                             IsVarianceMatch(field)
                             && field.FieldName == keywordFilter.FieldName
-                            && field.Value.Keywords?.ContainsAny(keywordFilter.Values) is true
+                            && field.Value.Keywords?.ContainsAny(keywordFilter.Values) != keywordFilter.Negate
                         )
                     ).ToArray();
                     break;
@@ -107,7 +107,7 @@ public class TestIndexService : IIndexService, ISearchService
                         document.Fields.Any(field =>
                             IsVarianceMatch(field)
                             && field.FieldName == integerExactFilter.FieldName
-                            && field.Value.Integers?.ContainsAny(integerExactFilter.Values) is true
+                            && field.Value.Integers?.ContainsAny(integerExactFilter.Values) != integerExactFilter.Negate
                         )
                     ).ToArray();
                     break;

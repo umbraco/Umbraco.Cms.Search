@@ -134,9 +134,13 @@ public partial class IndexedEntitySearchServiceTests
         });
     }
 
-    [TestCase("rootMediaType", 3)]
-    [TestCase("childMediaType", 30)]
-    public async Task Media_CanFindAllByContentType(string mediaTypeAlias, int expectedTotal)
+    [TestCase("rootMediaType", null, 3)]
+    [TestCase("rootMediaType", false, 2)]
+    [TestCase("rootMediaType", true, 1)]
+    [TestCase("childMediaType", null, 30)]
+    [TestCase("childMediaType", false, 20)]
+    [TestCase("childMediaType", true, 10)]
+    public async Task Media_CanFindAllByMediaType(string mediaTypeAlias, bool? trashed, int expectedTotal)
     {
         var mediaTypeKey = MediaTypeService.Get(mediaTypeAlias)?.Key
                              ?? throw new InvalidOperationException($"Could not find {mediaTypeAlias}.");
@@ -146,7 +150,7 @@ public partial class IndexedEntitySearchServiceTests
             query: string.Empty,
             parentId: null,
             contentTypeIds: [mediaTypeKey],
-            trashed: null
+            trashed: trashed
         );
 
         Assert.Multiple(() =>
@@ -159,7 +163,7 @@ public partial class IndexedEntitySearchServiceTests
     }
 
     [Test]
-    public async Task Media_CanCombineParentAndContentTypeFiltering()
+    public async Task Media_CanCombineParentAndMediaTypeFiltering()
     {
         var root = MediaService.GetRootMedia().Last();
         var mediaTypeKey = MediaTypeService.Get("childMediaType")?.Key
@@ -181,5 +185,46 @@ public partial class IndexedEntitySearchServiceTests
             Assert.That(items.All(item => item.ContentTypeAlias is "childMediaType"), Is.True);
             Assert.That(items.All(item => item.ParentId == root.Id), Is.True);
         });
+    }
+
+    [TestCase(false, 22)]
+    [TestCase(true, 11)]
+    public async Task Media_CanFilterByTrashedState(bool trashed, int expectedTotal)
+    {
+        var result = await IndexedEntitySearchService.SearchAsync(
+            UmbracoObjectTypes.Media,
+            query: string.Empty,
+            parentId: null,
+            contentTypeIds: null,
+            trashed: trashed
+        );
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Total, Is.EqualTo(expectedTotal));
+            Assert.That(result.Items.Count(), Is.EqualTo(expectedTotal));
+            Assert.That(result.Items.All(item => item.Trashed == trashed), Is.True);
+        });
+    }
+
+    [TestCase("single0root", false, 1)]
+    [TestCase("single0root", true, 0)]
+    [TestCase("single2root", false, 0)]
+    [TestCase("single2root", true, 1)]
+    [TestCase("single1child", false, 2)]
+    [TestCase("single1child", true, 1)]
+    [TestCase("oddeven1child", false, 10)]
+    [TestCase("oddeven1child", true, 5)]
+    public async Task Media_CanCombineQueryAndTrashedFilteringContent(string query, bool trashed, int expectedTotal)
+    {
+        var result = await IndexedEntitySearchService.SearchAsync(
+            UmbracoObjectTypes.Media,
+            query: query,
+            parentId: null,
+            contentTypeIds: null,
+            trashed: trashed
+        );
+
+        Assert.That(expectedTotal, Is.EqualTo(result.Total));
     }
 }

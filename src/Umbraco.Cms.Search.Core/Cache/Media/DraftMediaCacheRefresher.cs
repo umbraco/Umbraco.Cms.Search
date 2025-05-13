@@ -1,0 +1,26 @@
+using Umbraco.Cms.Core.Events;
+using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Core.Serialization;
+using Umbraco.Cms.Core.Services.Changes;
+
+// NOTE: the namespace is defined as what it would be, if this was part of Umbraco core.
+// NOTE: using "key" instead of "id" here, because that's what Umbraco code would do.
+namespace Umbraco.Cms.Core.Cache;
+
+public class DraftMediaCacheRefresher : PayloadCacheRefresherBase<DraftMediaCacheRefresherNotification, DraftMediaCacheRefresher.JsonPayload>
+{
+    public static readonly Guid UniqueId = Guid.Parse("7BDF73A8-37D4-4DD4-A530-0FFEA1C6DBA2");
+
+    public DraftMediaCacheRefresher(AppCaches appCaches, IJsonSerializer serializer, IEventAggregator eventAggregator, ICacheRefresherNotificationFactory factory)
+        : base(appCaches, serializer, eventAggregator, factory)
+    {
+    }
+
+    public override Guid RefresherUniqueId => UniqueId;
+
+    public override string Name => "Draft Media Cache Refresher";
+
+    public record JsonPayload(Guid MediaKey, TreeChangeTypes ChangeTypes)
+    {
+    }
+}

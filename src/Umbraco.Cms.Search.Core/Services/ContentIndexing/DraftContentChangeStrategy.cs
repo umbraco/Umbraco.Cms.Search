@@ -1,32 +1,36 @@
 ﻿using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
-public class DraftContentChangeStrategy : IDraftContentChangeStrategy
+internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftContentChangeStrategy
 {
     private readonly IContentIndexingDataCollectionService _contentIndexingDataCollectionService;
     private readonly IContentService _contentService;
     private readonly IMediaService _mediaService;
     private readonly IMemberService _memberService;
-    private readonly ILogger<DraftContentChangeStrategy> _logger;
+
+    protected override bool SupportsTrashedContent => true;
 
     public DraftContentChangeStrategy(
         IContentIndexingDataCollectionService contentIndexingDataCollectionService,
         IContentService contentService,
         IMediaService mediaService,
         IMemberService memberService,
+        IUmbracoDatabaseFactory umbracoDatabaseFactory,
+        IIdKeyMap idKeyMap,
         ILogger<DraftContentChangeStrategy> logger)
+        : base(umbracoDatabaseFactory, idKeyMap, logger)
     {
         _contentIndexingDataCollectionService = contentIndexingDataCollectionService;
         _contentService = contentService;
         _mediaService = mediaService;
         _memberService = memberService;
-        _logger = logger;
     }
 
     public async Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
@@ -71,6 +75,57 @@ public class DraftContentChangeStrategy : IDraftContentChangeStrategy
 
     private async Task<bool> UpdateIndexAsync(IndexInfo[] indexInfos, ContentChange change, IContentBase content, CancellationToken cancellationToken)
     {
+        var applicableIndexInfos = indexInfos.Where(info => info.ContainedObjectTypes.Contains(change.ObjectType)).ToArray();
+        if(applicableIndexInfos.Length is 0)
+        {
+            return true;
+        }
+
+        var result = await UpdateIndexAsync(applicableIndexInfos, content, change.ObjectType, cancellationToken);
+
+        if (change.ChangeImpact is ChangeImpact.RefreshWithDescendants)
+        {
+            switch (change.ObjectType)
+            {
+                case UmbracoObjectTypes.Document:
+                    await EnumerateDescendantsByPath<IContent>(
+                        change.ObjectType,
+                        content.Key,
+                        (id, pageIndex, pageSize, query, ordering) => _contentService
+                            .GetPagedDescendants(id, pageIndex, pageSize, out _, query, ordering)
+                            .ToArray(),
+                        async descendants =>
+                            await UpdateIndexDescendantsAsync(applicableIndexInfos, descendants, change.ObjectType, cancellationToken)
+                    );
+                    break;
+                case UmbracoObjectTypes.Media:
+                    await EnumerateDescendantsByPath<IMedia>(
+                        change.ObjectType,
+                        content.Key,
+                        (id, pageIndex, pageSize, query, ordering) => _mediaService
+                            .GetPagedDescendants(id, pageIndex, pageSize, out _, query, ordering)
+                            .ToArray(),
+                        async descendants =>
+                            await UpdateIndexDescendantsAsync(applicableIndexInfos, descendants, change.ObjectType, cancellationToken)
+                    );
+                    break;
+            }
+        }
+
+        return result;
+    }
+
+    private async Task UpdateIndexDescendantsAsync<T>(IndexInfo[] indexInfos, T[] descendants, UmbracoObjectTypes objectType, CancellationToken cancellationToken)
+        where T : IContentBase
+    {
+        foreach (var descendant in descendants)
+        {
+            await UpdateIndexAsync(indexInfos, descendant, objectType, cancellationToken);
+        }
+    }
+    
+    private async Task<bool> UpdateIndexAsync(IndexInfo[] indexInfos, IContentBase content, UmbracoObjectTypes objectType, CancellationToken cancellationToken)
+    {
         var fields = (await _contentIndexingDataCollectionService.CollectAsync(content, false, cancellationToken))?.ToArray();
         if (fields is null)
         {
@@ -92,15 +147,10 @@ public class DraftContentChangeStrategy : IDraftContentChangeStrategy
             : cultures
                 .Select(culture => new Variation(culture, null))
                 .ToArray();
-        
+
         foreach (var indexInfo in indexInfos)
         {
-            if (indexInfo.ContainedObjectTypes.Contains(change.ObjectType) is false)
-            {
-                continue;
-            }
-
-            await indexInfo.IndexService.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, change.ObjectType, variations, fields, null);
+            await indexInfo.IndexService.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, objectType, variations, fields, null);
         }
 
         return true;

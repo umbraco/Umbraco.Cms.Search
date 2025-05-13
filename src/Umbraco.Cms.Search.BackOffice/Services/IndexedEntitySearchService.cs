@@ -47,14 +47,34 @@ internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIn
         {
             filters.Add(
                 new KeywordFilter(
-                    Core.Constants.FieldNames.ContentTypeId,
-                    contentTypeIdsAsArray.Select(contentTypeId => contentTypeId.AsKeyword()).ToArray(),
-                    false
+                    FieldName: Constants.FieldNames.ContentTypeId,
+                    Values: contentTypeIdsAsArray.Select(contentTypeId => contentTypeId.AsKeyword()).ToArray(),
+                    Negate: false
                 )
             );
         }
-        
-        // TODO: add trashed state filtering
+
+        if (trashed.HasValue)
+        {
+            var recycleBinId = objectType switch
+            {
+                UmbracoObjectTypes.Document => Cms.Core.Constants.System.RecycleBinContentKey,
+                UmbracoObjectTypes.Media => Cms.Core.Constants.System.RecycleBinMediaKey,
+                _ => (Guid?)null
+            };
+
+            if (recycleBinId.HasValue)
+            {
+                filters.Add(
+                    new KeywordFilter(
+                        FieldName: Constants.FieldNames.PathIds,
+                        Values: [recycleBinId.Value.AsKeyword()],
+                        Negate: trashed.Value is false
+                    )
+                );
+            }
+        }
+
         // TODO: add user start nodes filtering
         
         var result = await _searchService.SearchAsync(

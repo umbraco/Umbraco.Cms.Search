@@ -83,7 +83,7 @@ public class MediaStructureTests : MediaTestBase
            
         var documents = IndexService.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(3));
-           
+
         Assert.Multiple(() =>
         {
             Assert.That(documents[0].Id, Is.EqualTo(RootFolderKey));

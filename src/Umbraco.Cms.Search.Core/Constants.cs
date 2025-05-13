@@ -8,7 +8,7 @@ public static class Constants
 
         public const string PublishedContent = $"{IndexPrefix}PublishedContent";
 
-        // TODO: "Draft" should be removed here; it makes no sense for Media and Members, and we don't have "DraftContent" anywhere else - just "Content".
+        // TODO: "Draft" should be removed from these index constants (values only; we do have functional "Draft" notation elsewhere in the code).
         
         public const string DraftContent = $"{IndexPrefix}DraftContent";
 

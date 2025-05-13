@@ -8,14 +8,14 @@ using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
-internal class PublishedContentChangeStrategy : IPublishedContentChangeStrategy
+internal class PublishedContentChangeStrategy : ContentChangeStrategyBase, IPublishedContentChangeStrategy
 {
     private readonly IContentIndexingDataCollectionService _contentIndexingDataCollectionService;
     private readonly IContentProtectionProvider _contentProtectionProvider;
     private readonly IContentService _contentService;
-    private readonly IUmbracoDatabaseFactory _umbracoDatabaseFactory;
-    private readonly IIdKeyMap _idKeyMap;
     private readonly ILogger<PublishedContentChangeStrategy> _logger;
+
+    protected override bool SupportsTrashedContent => false;
 
     public PublishedContentChangeStrategy(
         IContentIndexingDataCollectionService contentIndexingDataCollectionService,
@@ -24,12 +24,11 @@ internal class PublishedContentChangeStrategy : IPublishedContentChangeStrategy
         IUmbracoDatabaseFactory umbracoDatabaseFactory,
         IIdKeyMap idKeyMap,
         ILogger<PublishedContentChangeStrategy> logger)
+        : base(umbracoDatabaseFactory, idKeyMap, logger)
     {
         _contentIndexingDataCollectionService = contentIndexingDataCollectionService;
         _contentProtectionProvider = contentProtectionProvider;
         _contentService = contentService;
-        _umbracoDatabaseFactory = umbracoDatabaseFactory;
-        _idKeyMap = idKeyMap;
         _logger = logger;
     }
 
@@ -96,26 +95,32 @@ internal class PublishedContentChangeStrategy : IPublishedContentChangeStrategy
     private async Task ReindexDescendantsAsync(IndexInfo[] indexInfos, IContentBase content, CancellationToken cancellationToken)
     {
         var removedDescendantIds = new List<int>();
-        await EnumerateDescendantsByPath(content.Key, async descendants =>
-        {
-            // NOTE: this works because we're enumerating descendants by path
-            foreach (IContent descendant in descendants)
+        await EnumerateDescendantsByPath<IContent>(
+            UmbracoObjectTypes.Document,
+            content.Key,
+            (id, pageIndex, pageSize, query, ordering) => _contentService
+                .GetPagedDescendants(id, pageIndex, pageSize, out _, query, ordering)
+                .ToArray(),
+            async descendants =>
             {
-                if (removedDescendantIds.Contains(descendant.ParentId))
+                // NOTE: this works because we're enumerating descendants by path
+                foreach (IContent descendant in descendants)
                 {
-                    continue;
-                }
+                    if (removedDescendantIds.Contains(descendant.ParentId))
+                    {
+                        continue;
+                    }
 
-                var indexedVariants = await UpdateIndexAsync(indexInfos, descendant, cancellationToken);
-                if (indexedVariants.Any() is false)
-                {
-                    // no variants to index, make sure this is removed from the index and skip any descendants moving forward
-                    // (the index implementation is responsible for deleting descendants at index level)
-                    await RemoveFromIndexAsync(indexInfos, descendant.Key);
-                    removedDescendantIds.Add(descendant.Id);
+                    var indexedVariants = await UpdateIndexAsync(indexInfos, descendant, cancellationToken);
+                    if (indexedVariants.Any() is false)
+                    {
+                        // no variants to index, make sure this is removed from the index and skip any descendants moving forward
+                        // (the index implementation is responsible for deleting descendants at index level)
+                        await RemoveFromIndexAsync(indexInfos, descendant.Key);
+                        removedDescendantIds.Add(descendant.Id);
+                    }
                 }
-            }
-        });
+            });
     }
 
     private async Task<Variation[]> UpdateIndexAsync(IndexInfo[] indexInfos, IContentBase content, CancellationToken cancellationToken)
@@ -160,32 +165,6 @@ internal class PublishedContentChangeStrategy : IPublishedContentChangeStrategy
         {
             await indexInfo.IndexService.DeleteAsync(indexInfo.IndexAlias, ids);
         }
-    }
-
-    private async Task EnumerateDescendantsByPath(Guid rootId, Func<IContent[], Task> actionToPerform)
-    {
-        var rootIdAttempt = _idKeyMap.GetIdForKey(rootId, UmbracoObjectTypes.Document);
-        if (rootIdAttempt.Success is false)
-        {
-            _logger.LogWarning("Could not resolve ID for content item {rootId} - aborting enumerations of descendants.", rootId);
-            return;
-        }
-
-        const int pageSize = 10000;
-        var pageIndex = 0;
-
-        IContent[] descendants;
-        var query = _umbracoDatabaseFactory.SqlContext.Query<IContent>().Where(content => content.Trashed == false);
-        do
-        {
-            descendants = _contentService
-                .GetPagedDescendants(rootIdAttempt.Result, pageIndex, pageSize, out _, query, Ordering.By("Path"))
-                .ToArray();
-
-            await actionToPerform(descendants.ToArray());
-
-            pageIndex++;
-        } while (descendants.Length == pageSize);
     }
 
     // NOTE: for the time being, segments are not individually publishable, but it will likely happen at some point,

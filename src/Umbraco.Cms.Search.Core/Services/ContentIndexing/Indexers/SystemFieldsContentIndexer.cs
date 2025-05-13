@@ -66,7 +66,27 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
     {
         if (content.ParentId <= 0)
         {
-            parentId = Guid.Empty;
+            if (content.Trashed)
+            {
+                var recycleBinId = GetRecycleBinId(objectType);
+                if (recycleBinId.HasValue is false)
+                {
+                    _logger.LogWarning(
+                        "Could not resolve recycle bin key as parent key for object type {objectType} - aborting indexing of content item {contentKey}.",
+                        objectType,
+                        content.Key);
+                    parentId = null;
+                    return false;
+                }
+
+                parentId = recycleBinId;
+            }
+            else
+            {
+                // empty GUID means "root of tree, not trashed"
+                parentId = Guid.Empty;
+            }
+
             return true;
         }
 
@@ -87,8 +107,23 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
     
     private bool TryGetPathIds(IContentBase content, UmbracoObjectTypes objectType, out IList<Guid> pathIds)
     {
-        var ancestorIds = content.AncestorIds();
         pathIds = new List<Guid>();
+
+        if (content.Trashed)
+        {
+            var recycleBinId = GetRecycleBinId(objectType);
+            if (recycleBinId.HasValue is false)
+            {
+                _logger.LogWarning(
+                    "Could not resolve recycle bin key for object type {objectType} - aborting indexing of content item {contentKey}.",
+                    objectType,
+                    content.Key);
+                return false;
+            }
+            pathIds.Add(recycleBinId.Value);
+        }
+        
+        var ancestorIds = content.AncestorIds();
         foreach (var ancestorId in ancestorIds)
         {
             var attempt = _idKeyMap.GetKeyForId(ancestorId, objectType);
@@ -143,4 +178,11 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
             yield return new IndexField(Constants.FieldNames.Name, new() { Texts = [name] }, culture, null);
         }
     }
+
+    private Guid? GetRecycleBinId(UmbracoObjectTypes objectType)
+        => objectType is UmbracoObjectTypes.Document
+            ? Cms.Core.Constants.System.RecycleBinContentKey
+            : objectType is UmbracoObjectTypes.Media
+                ? Cms.Core.Constants.System.RecycleBinMediaKey
+                : null;
 }
