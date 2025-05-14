@@ -44,8 +44,26 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
         
         builder.Services.AddExamine();
         builder.Services.AddSingleton<TestInMemoryDirectoryFactory>();
-        builder.Services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(Cms.Search.Core.Constants.IndexAliases.DraftContent);
-        builder.Services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        builder.Services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(Cms.Search.Core.Constants.IndexAliases.DraftContent,
+            config =>
+            {
+                var fieldDefinitions = new FieldDefinitionCollection();
+                
+                fieldDefinitions.AddOrUpdate(
+                    new FieldDefinition("Umb_Tags_keywords", FieldDefinitionTypes.FacetFullText));
+                
+                config.FieldDefinitions = fieldDefinitions;
+            });
+        builder.Services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(Cms.Search.Core.Constants.IndexAliases.PublishedContent,
+            config =>
+            {
+                var fieldDefinitions = new FieldDefinitionCollection();
+                
+                fieldDefinitions.AddOrUpdate(
+                    new FieldDefinition("Umb_Tags_keywords", FieldDefinitionTypes.FacetFullText));
+                
+                config.FieldDefinitions = fieldDefinitions;
+            });
         builder.Services.AddTransient<IndexService>();
         builder.Services.AddTransient<IIndexService, IndexService>();
         builder.Services.AddTransient<ISearchService, SearchService>();

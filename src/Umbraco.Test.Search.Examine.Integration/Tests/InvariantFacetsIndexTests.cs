@@ -13,20 +13,26 @@ public class InvariantFacetsIndexTests : IndexTestBase
     [Test]
     [TestCase(true)]
     [TestCase(false)]
-    public void CanIndexAnyDocument(bool publish)
+    public async Task CanIndexAnyDocument(bool publish)
     {
-        CreateFacetableDocument(publish);
+        await CreateFacetableDocument(publish);
 
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
-        
-        // Umb_Tags_keywords
+
         var results = index.Searcher.CreateQuery()
             .All()
-            .WithFacets(facets => facets.FacetString("Umb_Tags_keywords"))
+            .WithFacets(facets => facets.FacetLongRange("count_integers", new Int64Range("0-9", 0, true, 9, true)))
             .Execute();
-        Assert.That(results.GetFacets(), Is.Not.Empty);
+
+        var facets = results.GetFacets();
+        var facet = facets.First().Facet("0-9");
+        Assert.Multiple(() =>
+        {
+            Assert.That(facets, Is.Not.Empty);
+            Assert.That(facet.Value, Is.EqualTo(2));
+        });
     }
     
     
@@ -35,14 +41,9 @@ public class InvariantFacetsIndexTests : IndexTestBase
         var contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
             .AddPropertyType()
-            .WithAlias("title")
-            .WithDataTypeId(Constants.DataTypes.Textbox)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("tags")
-            .WithDataTypeId(Constants.DataTypes.Tags)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Tags)
+            .WithAlias("count")
+            .WithDataTypeId(-51)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
             .Done()
             .Build();
         await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
@@ -54,12 +55,23 @@ public class InvariantFacetsIndexTests : IndexTestBase
             .WithPropertyValues(
                 new
                 {
-                    title = "The root title",
-                    tags = "[\"tag1\",\"tag2\"]"
+                    count = 1,
                 })
             .Build();
 
         SaveOrPublish(root, publish);
+        
+        var anotherRoot = new ContentBuilder()
+            .WithContentType(contentType)
+            .WithName("AnotherRoot")
+            .WithPropertyValues(
+                new
+                {
+                    count = 2,
+                })
+            .Build();
+
+        SaveOrPublish(anotherRoot, publish);
         
         var content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);
