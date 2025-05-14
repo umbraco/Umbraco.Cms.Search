@@ -29,7 +29,7 @@ public class PropertyValueHandlerTests : ContentTestBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        var documents = IndexService.Dump(IndexAliases.PublishedContent);
+        var documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         var document = documents.Single();

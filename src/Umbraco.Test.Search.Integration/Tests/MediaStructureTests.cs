@@ -9,7 +9,7 @@ public class MediaStructureTests : MediaTestBase
     {
         MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
 
-        var documents = IndexService.Dump(IndexAliases.Media);
+        var documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -29,7 +29,7 @@ public class MediaStructureTests : MediaTestBase
     {
         MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
 
-        var documents = IndexService.Dump(IndexAliases.DraftContent);
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(0));
     }
 
@@ -38,7 +38,7 @@ public class MediaStructureTests : MediaTestBase
     {
         MediaService.Save(RootFolder());
 
-        var documents = IndexService.Dump(IndexAliases.Media);
+        var documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(1));
         Assert.That(documents[0].Id, Is.EqualTo(RootFolderKey));
     }
@@ -56,7 +56,7 @@ public class MediaStructureTests : MediaTestBase
             Assert.That(GrandchildMedia().Trashed, Is.True);
         });
 
-        var documents = IndexService.Dump(IndexAliases.Media);
+        var documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -81,7 +81,7 @@ public class MediaStructureTests : MediaTestBase
             Assert.That(MediaService.GetById(GrandchildMediaKey), Is.Null);
         });
            
-        var documents = IndexService.Dump(IndexAliases.Media);
+        var documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>

@@ -18,31 +18,33 @@ public static class UmbracoBuilderExtensions
         // the in-memory datastore is a singleton
         builder.Services.AddSingleton<DataStore>();
 
-        // add the search and index services so they can be used as explicit dependencies
-        // when mixing and matching different providers
-        builder.Services.AddTransient<InMemoryIndexService>();
-        builder.Services.AddTransient<InMemorySearchService>();
+        // register the in-memory searcher and indexer so they can be used explicitly for index registrations
+        builder.Services.AddTransient<IInMemoryIndexer, InMemoryIndexer>();
+        builder.Services.AddTransient<IInMemorySearcher, InMemorySearcher>();
 
-        // register the search and index services as the default services
-        builder.Services.AddTransient<IIndexService, InMemoryIndexService>();
-        builder.Services.AddTransient<ISearchService, InMemorySearchService>();
+        // register the in-memory searcher and indexer as the defaults
+        builder.Services.AddTransient<IIndexer, InMemoryIndexer>();
+        builder.Services.AddTransient<ISearcher, InMemorySearcher>();
 
         builder.Services.Configure<IndexOptions>(options =>
         {
             // register in-memory indexes for draft and published content
-            options.RegisterIndex<InMemoryIndexService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<InMemoryIndexService, IPublishedContentChangeStrategy>(Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IInMemoryIndexer, IInMemorySearcher, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IInMemoryIndexer, IInMemorySearcher, IPublishedContentChangeStrategy>(Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
 
             // register in-memory index for media
-            options.RegisterIndex<InMemoryIndexService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
+            options.RegisterIndex<IInMemoryIndexer, IInMemorySearcher, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
 
             // register in-memory index for members
-            options.RegisterIndex<InMemoryIndexService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
+            options.RegisterIndex<IInMemoryIndexer, IInMemorySearcher, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
         });
 
-        // rebuild in-memory indexes after start-up
-        builder.AddNotificationHandler<UmbracoApplicationStartedNotification, RebuildIndexesNotificationHandler>();
+        return builder;
+    }
 
+    public static IUmbracoBuilder RebuildIndexesAfterStartup(this IUmbracoBuilder builder)
+    {
+        builder.AddNotificationHandler<UmbracoApplicationStartedNotification, RebuildIndexesNotificationHandler>();
         return builder;
     }
 }

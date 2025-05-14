@@ -10,12 +10,12 @@ namespace Umbraco.Cms.Search.BackOffice.Services;
 
 internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIndexedEntitySearchService
 {
-    private readonly ISearchService _searchService;
+    private readonly ISearcher _searcher;
     private readonly IEntityService _entityService;
 
-    public IndexedEntitySearchService(ISearchService searchService, IEntityService entityService)
+    public IndexedEntitySearchService(ISearcher searcher, IEntityService entityService)
     {
-        _searchService = searchService;
+        _searcher = searcher;
         _entityService = entityService;
     }
 
@@ -77,7 +77,7 @@ internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIn
 
         // TODO: add user start nodes filtering
         
-        var result = await _searchService.SearchAsync(
+        var result = await _searcher.SearchAsync(
             indexAlias,
             query: effectiveQuery,
             filters: filters,

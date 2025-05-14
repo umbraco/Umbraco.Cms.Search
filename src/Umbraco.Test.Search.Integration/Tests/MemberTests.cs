@@ -14,7 +14,7 @@ public class MemberTests : ContentBaseTestBase
     {
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        var documents = IndexService.Dump(IndexAliases.Member);
+        var documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -32,7 +32,7 @@ public class MemberTests : ContentBaseTestBase
     {
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        var documents = IndexService.Dump(IndexAliases.Member);
+        var documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -48,7 +48,7 @@ public class MemberTests : ContentBaseTestBase
     {
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        var documents = IndexService.Dump(IndexAliases.Member);
+        var documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -64,7 +64,7 @@ public class MemberTests : ContentBaseTestBase
     {
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        var documents = IndexService.Dump(IndexAliases.Member);
+        var documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -152,7 +152,7 @@ public class MemberTests : ContentBaseTestBase
                 .Build()
         );
 
-        IndexService.Reset();
+        Indexer.Reset();
     }
 
     private void VerifyDocumentPropertyValues(TestIndexDocument document, string? organization)

@@ -13,13 +13,13 @@ internal abstract class ContentSearchServiceBase<TContent> : IndexedSearchServic
     where TContent : class, IContentBase
 {
     private readonly IIdKeyMap _idKeyMap;
-    private readonly ISearchService _searchService;
+    private readonly ISearcher _searcher;
     private readonly ILogger<ContentSearchServiceBase<TContent>> _logger;
 
-    protected ContentSearchServiceBase(IIdKeyMap idKeyMap, ISearchService searchService, ILogger<ContentSearchServiceBase<TContent>> logger)
+    protected ContentSearchServiceBase(IIdKeyMap idKeyMap, ISearcher searcher, ILogger<ContentSearchServiceBase<TContent>> logger)
     {
         _idKeyMap = idKeyMap;
-        _searchService = searchService;
+        _searcher = searcher;
         _logger = logger;
     }
 
@@ -53,7 +53,7 @@ internal abstract class ContentSearchServiceBase<TContent> : IndexedSearchServic
 
         var sorter = GetSorter(ordering);
 
-        var result = await _searchService.SearchAsync(
+        var result = await _searcher.SearchAsync(
             IndexAlias,
             query: effectiveQuery,
             filters: filters,

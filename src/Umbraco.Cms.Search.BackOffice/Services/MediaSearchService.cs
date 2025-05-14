@@ -11,11 +11,11 @@ internal sealed class MediaSearchService : ContentSearchServiceBase<IMedia>, IMe
     private readonly IMediaService _mediaService;
 
     public MediaSearchService(
-        ISearchService searchService,
+        ISearcher searcher,
         IMediaService mediaService,
         IIdKeyMap idKeyMap,
         ILogger<MediaSearchService> logger)
-        : base(idKeyMap, searchService, logger)
+        : base(idKeyMap, searcher, logger)
         => _mediaService = mediaService;
 
     protected override UmbracoObjectTypes ObjectType => UmbracoObjectTypes.Media;

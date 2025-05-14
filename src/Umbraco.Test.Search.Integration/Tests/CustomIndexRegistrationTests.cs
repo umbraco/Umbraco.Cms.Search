@@ -30,7 +30,7 @@ public class CustomIndexRegistrationTests : ContentBaseTestBase
 
         builder.Services.Configure<IndexOptions>(options =>
         {
-            options.RegisterIndex<IIndexService, IDraftContentChangeStrategy>("My_Index", UmbracoObjectTypes.Document, UmbracoObjectTypes.Media, UmbracoObjectTypes.Member);
+            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>("My_Index", UmbracoObjectTypes.Document, UmbracoObjectTypes.Media, UmbracoObjectTypes.Member);
         });
     }
 
@@ -110,7 +110,7 @@ public class CustomIndexRegistrationTests : ContentBaseTestBase
                 .Build()
         );
 
-        IndexService.Reset();
+        Indexer.Reset();
     }
 
     [Test]
@@ -120,7 +120,7 @@ public class CustomIndexRegistrationTests : ContentBaseTestBase
         MediaService.Save(Media());
         MemberService.Save(Member());
 
-        var documents = IndexService.Dump("My_Index");
+        var documents = Indexer.Dump("My_Index");
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>

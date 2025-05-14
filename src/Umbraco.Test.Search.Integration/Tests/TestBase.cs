@@ -15,7 +15,7 @@ namespace Umbraco.Test.Search.Integration.Tests;
 
 public abstract class TestBase : UmbracoIntegrationTest
 {
-    private readonly TestIndexService _testIndexService = new();
+    private readonly TestIndexer _testIndexer = new();
     
     internal static class IndexAliases
     {
@@ -25,7 +25,7 @@ public abstract class TestBase : UmbracoIntegrationTest
         public const string Member = "TestMemberIndex";
     }
 
-    protected TestIndexService IndexService => _testIndexService;
+    protected TestIndexer Indexer => _testIndexer;
         
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
@@ -36,15 +36,15 @@ public abstract class TestBase : UmbracoIntegrationTest
         builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
 
-        builder.Services.AddTransient<IIndexService>(_ => IndexService);
-        builder.Services.AddTransient<ISearchService>(_ => IndexService);
+        builder.Services.AddTransient<IIndexer>(_ => Indexer);
+        builder.Services.AddTransient<ISearcher>(_ => Indexer);
 
         builder.Services.Configure<IndexOptions>(options =>
         {
-            options.RegisterIndex<IIndexService, IPublishedContentChangeStrategy>(IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<IIndexService, IDraftContentChangeStrategy>(IndexAliases.DraftContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<IIndexService, IDraftContentChangeStrategy>(IndexAliases.Media, UmbracoObjectTypes.Media);
-            options.RegisterIndex<IIndexService, IDraftContentChangeStrategy>(IndexAliases.Member, UmbracoObjectTypes.Member);
+            options.RegisterIndex<IIndexer, ISearcher, IPublishedContentChangeStrategy>(IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(IndexAliases.DraftContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(IndexAliases.Media, UmbracoObjectTypes.Media);
+            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(IndexAliases.Member, UmbracoObjectTypes.Member);
         });
 
         builder.AddNotificationHandler<ContentTreeChangeNotification, ContentTreeChangeDistributedCacheNotificationHandler>();

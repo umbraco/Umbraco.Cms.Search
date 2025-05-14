@@ -14,7 +14,7 @@ public partial class InvariantContentTests
         SetupDraftContent();
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
-        var documents = IndexService.Dump(IndexAliases.DraftContent);
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -40,7 +40,7 @@ public partial class InvariantContentTests
         SetupDraftContent();
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
-        var documents = IndexService.Dump(IndexAliases.DraftContent);
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -66,7 +66,7 @@ public partial class InvariantContentTests
         SetupDraftContent();
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
-        var documents = IndexService.Dump(IndexAliases.DraftContent);
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -96,7 +96,7 @@ public partial class InvariantContentTests
         SetupDraftContent();
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
-        var documents = IndexService.Dump(IndexAliases.DraftContent);
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -125,7 +125,7 @@ public partial class InvariantContentTests
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
         ContentService.MoveToRecycleBin(Root());
 
-        var documents = IndexService.Dump(IndexAliases.DraftContent);
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -153,7 +153,7 @@ public partial class InvariantContentTests
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
         ContentService.MoveToRecycleBin(Root());
 
-        var documents = IndexService.Dump(IndexAliases.DraftContent);
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -181,7 +181,7 @@ public partial class InvariantContentTests
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
         ContentService.MoveToRecycleBin(Child());
 
-        var documents = IndexService.Dump(IndexAliases.DraftContent);
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -221,7 +221,7 @@ public partial class InvariantContentTests
         var moveResult = ContentService.Move(Root(), secondRoot.Id);
         Assert.That(moveResult.Result, Is.EqualTo(OperationResultType.Success));
 
-        var documents = IndexService.Dump(IndexAliases.DraftContent);
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -262,7 +262,7 @@ public partial class InvariantContentTests
         var moveResult = ContentService.Move(Child(), secondRoot.Id);
         Assert.That(moveResult.Result, Is.EqualTo(OperationResultType.Success));
 
-        var documents = IndexService.Dump(IndexAliases.DraftContent);
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -301,7 +301,7 @@ public partial class InvariantContentTests
 
         ContentService.Delete(Root());
 
-        var documents = IndexService.Dump(IndexAliases.DraftContent);
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(0));
     }
 
@@ -319,7 +319,7 @@ public partial class InvariantContentTests
 
         ContentService.Delete(Child());
 
-        var documents = IndexService.Dump(IndexAliases.DraftContent);
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
         Assert.That(documents[0].Id, Is.EqualTo(RootKey));
         VerifyDocumentStructureValues(documents[0], RootKey, Guid.Empty, RootKey);

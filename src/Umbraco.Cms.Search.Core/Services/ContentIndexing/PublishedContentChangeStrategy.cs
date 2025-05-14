@@ -145,7 +145,7 @@ internal class PublishedContentChangeStrategy : ContentChangeStrategyBase, IPubl
 
         foreach (var indexInfo in indexInfos)
         {
-            await indexInfo.IndexService.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, UmbracoObjectTypes.Document, variations, fields, contentProtection);
+            await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, UmbracoObjectTypes.Document, variations, fields, contentProtection);
         }
 
         return variations;
@@ -163,7 +163,7 @@ internal class PublishedContentChangeStrategy : ContentChangeStrategyBase, IPubl
 
         foreach (var indexInfo in indexInfos)
         {
-            await indexInfo.IndexService.DeleteAsync(indexInfo.IndexAlias, ids);
+            await indexInfo.Indexer.DeleteAsync(indexInfo.IndexAlias, ids);
         }
     }
 

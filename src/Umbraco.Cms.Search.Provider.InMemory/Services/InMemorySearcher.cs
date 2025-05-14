@@ -10,11 +10,11 @@ using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Provider.InMemory.Services;
 
-internal sealed class InMemorySearchService : ISearchService
+internal sealed class InMemorySearcher : IInMemorySearcher
 {
     private readonly DataStore _dataStore;
 
-    public InMemorySearchService(DataStore dataStore)
+    public InMemorySearcher(DataStore dataStore)
         => _dataStore = dataStore;
 
     public Task<SearchResult> SearchAsync(

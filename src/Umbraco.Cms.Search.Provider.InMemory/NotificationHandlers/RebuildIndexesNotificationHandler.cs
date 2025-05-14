@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
+using Umbraco.Cms.Core.HostedServices;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Models.Indexing;
@@ -10,14 +11,22 @@ namespace Umbraco.Cms.Search.Provider.InMemory.NotificationHandlers;
 
 public class RebuildIndexesNotificationHandler : INotificationHandler<UmbracoApplicationStartedNotification>
 {
+    private readonly IBackgroundTaskQueue _backgroundTaskQueue;
     private readonly IContentService _contentService;
     private readonly IMediaService _mediaService;
     private readonly IMemberService _memberService;
     private readonly IContentIndexingService _contentIndexingService;
     private readonly ILogger<RebuildIndexesNotificationHandler> _logger;
 
-    public RebuildIndexesNotificationHandler(IContentService contentService, IMediaService mediaService, IMemberService memberService, IContentIndexingService contentIndexingService, ILogger<RebuildIndexesNotificationHandler> logger)
+    public RebuildIndexesNotificationHandler(
+        IBackgroundTaskQueue backgroundTaskQueue,
+        IContentService contentService,
+        IMediaService mediaService,
+        IMemberService memberService,
+        IContentIndexingService contentIndexingService,
+        ILogger<RebuildIndexesNotificationHandler> logger)
     {
+        _backgroundTaskQueue = backgroundTaskQueue;
         _contentService = contentService;
         _mediaService = mediaService;
         _memberService = memberService;
@@ -26,6 +35,9 @@ public class RebuildIndexesNotificationHandler : INotificationHandler<UmbracoApp
     }
 
     public void Handle(UmbracoApplicationStartedNotification notification)
+        => _backgroundTaskQueue.QueueBackgroundWorkItem(RebuildAllIndexes);
+
+    private Task RebuildAllIndexes(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Starting index rebuild...");
 
@@ -57,5 +69,7 @@ public class RebuildIndexesNotificationHandler : INotificationHandler<UmbracoApp
         _contentIndexingService.Handle(changes);
 
         _logger.LogInformation("Index rebuild complete.");
+    
+        return Task.CompletedTask;
     }
 }

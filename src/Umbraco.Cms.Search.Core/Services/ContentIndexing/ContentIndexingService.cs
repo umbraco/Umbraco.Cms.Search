@@ -48,13 +48,13 @@ internal sealed class ContentIndexingService : IContentIndexingService
             var indexInfos = group
                 .Select(g =>
                 {
-                    if (_serviceProvider.GetService(g.IndexService) is not IIndexService indexService)
+                    if (_serviceProvider.GetService(g.Indexer) is not IIndexer indexer)
                     {
-                        _logger.LogError($"Could not resolve type {{type}} as {nameof(IIndexService)}. Make sure the type is registered in the DI.", g.IndexService.FullName);
+                        _logger.LogError($"Could not resolve type {{type}} as {nameof(IIndexer)}. Make sure the type is registered in the DI.", g.Indexer.FullName);
                         return null;
                     }
 
-                    return new IndexInfo(g.IndexAlias, g.ContainedObjectTypes, indexService);
+                    return new IndexInfo(g.IndexAlias, g.ContainedObjectTypes, indexer);
                 })
                 .WhereNotNull()
                 .ToArray();

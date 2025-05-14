@@ -31,7 +31,9 @@ public sealed class SiteComposer : IComposer
             // use the search abstractions to perform backoffice search
             .AddBackOfficeSearch()
             // use the search abstractions to perform Delivery API queries
-            .AddDeliveryApiSearch();
+            .AddDeliveryApiSearch()
+            // force rebuild indexes after startup (awaiting a better solution from Core)
+            .RebuildIndexesAfterStartup();
     }
 
     private class ConfigureCustomMemberLoginPath : IConfigureNamedOptions<CookieAuthenticationOptions>

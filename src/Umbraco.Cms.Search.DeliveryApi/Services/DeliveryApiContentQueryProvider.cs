@@ -22,7 +22,7 @@ namespace Umbraco.Cms.Search.DeliveryApi.Services;
 // TODO: implement IApiMediaQueryProvider when that's a thing
 internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
 {
-    private readonly ISearchService _searchService;
+    private readonly ISearcher _searcher;
     private readonly IDateTimeOffsetConverter _dateTimeOffsetConverter;
     private readonly IRequestMemberAccessService _requestMemberAccessService;
     private readonly IMemberService _memberService;
@@ -31,7 +31,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
     private readonly Dictionary<string, FieldType> _fieldTypes;
 
     public DeliveryApiContentQueryProvider(
-        ISearchService searchService,
+        ISearcher searcher,
         ContentIndexHandlerCollection contentIndexHandlerCollection,
         IRequestMemberAccessService requestMemberAccessService,
         IMemberService memberService,
@@ -39,7 +39,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
         IDateTimeOffsetConverter dateTimeOffsetConverter,
         ILogger<DeliveryApiContentQueryProvider> logger)
     {
-        _searchService = searchService;
+        _searcher = searcher;
         _dateTimeOffsetConverter = dateTimeOffsetConverter;
         _logger = logger;
         _memberService = memberService;
@@ -104,7 +104,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
         var accessContext = GetAccessContextAsync().GetAwaiter().GetResult();
 
         var indexAlias = preview ? Constants.IndexAliases.DraftContent : Constants.IndexAliases.PublishedContent;
-        var result = _searchService
+        var result = _searcher
             .SearchAsync(indexAlias, null, filters, null, sorters, culture, null, accessContext, skip, take)
             .GetAwaiter()
             .GetResult();

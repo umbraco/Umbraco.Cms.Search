@@ -11,7 +11,7 @@ public partial class InvariantContentStructureTests
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        var documents = IndexService.Dump(IndexAliases.PublishedContent);
+        var documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -31,7 +31,7 @@ public partial class InvariantContentStructureTests
         ContentService.Save(Root());
         ContentService.Publish(Root(), ["*"]);
 
-        var documents = IndexService.Dump(IndexAliases.PublishedContent);
+        var documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
         Assert.That(documents[0].Id, Is.EqualTo(RootKey));
     }
@@ -46,7 +46,7 @@ public partial class InvariantContentStructureTests
         Assert.That(result.Success, Is.True);
         Assert.That(Child().Published, Is.True);
 
-        var documents = IndexService.Dump(IndexAliases.PublishedContent);
+        var documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Is.Empty);
     }
 
@@ -60,7 +60,7 @@ public partial class InvariantContentStructureTests
         Assert.That(result.Success, Is.True);
         Assert.That(GreatGrandchild().Published, Is.True);
            
-        var documents = IndexService.Dump(IndexAliases.PublishedContent);
+        var documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(2));
            
         Assert.Multiple(() =>
@@ -80,7 +80,7 @@ public partial class InvariantContentStructureTests
         Assert.That(result.Success, Is.True);
         Assert.That(GreatGrandchild().Trashed, Is.True);
            
-        var documents = IndexService.Dump(IndexAliases.PublishedContent);
+        var documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(2));
            
         Assert.Multiple(() =>
@@ -103,7 +103,7 @@ public partial class InvariantContentStructureTests
             Assert.That(ContentService.GetById(GreatGrandchildKey), Is.Null);
         });
            
-        var documents = IndexService.Dump(IndexAliases.PublishedContent);
+        var documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(2));
            
         Assert.Multiple(() =>

@@ -150,7 +150,7 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
 
         foreach (var indexInfo in indexInfos)
         {
-            await indexInfo.IndexService.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, objectType, variations, fields, null);
+            await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, objectType, variations, fields, null);
         }
 
         return true;
@@ -169,7 +169,7 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
                 .Where(change => indexInfo.ContainedObjectTypes.Contains(change.ObjectType))
                 .Select(change => change.Id)
                 .ToArray();
-            await indexInfo.IndexService.DeleteAsync(indexInfo.IndexAlias, keys);
+            await indexInfo.Indexer.DeleteAsync(indexInfo.IndexAlias, keys);
         }
     }
 

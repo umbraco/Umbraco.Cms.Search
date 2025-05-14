@@ -2,4 +2,4 @@
 
 namespace Umbraco.Cms.Search.Core.Models.Configuration;
 
-public record IndexRegistration(string IndexAlias, IEnumerable<UmbracoObjectTypes> ContainedObjectTypes, Type IndexService, Type ContentChangeHandler);
+public record IndexRegistration(string IndexAlias, IEnumerable<UmbracoObjectTypes> ContainedObjectTypes, Type Indexer, Type Searcher, Type ContentChangeHandler);

@@ -11,11 +11,11 @@ internal sealed class ContentSearchService : ContentSearchServiceBase<IContent>,
     private readonly IContentService _contentService;
 
     public ContentSearchService(
-        ISearchService searchService,
+        ISearcher searcher,
         IContentService contentService,
         IIdKeyMap idKeyMap,
         ILogger<ContentSearchService> logger)
-        : base(idKeyMap, searchService, logger)
+        : base(idKeyMap, searcher, logger)
         => _contentService = contentService;
 
     protected override UmbracoObjectTypes ObjectType => UmbracoObjectTypes.Document;

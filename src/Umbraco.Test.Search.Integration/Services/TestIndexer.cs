@@ -11,7 +11,7 @@ using Constants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Umbraco.Test.Search.Integration.Services;
 
-public class TestIndexService : IIndexService, ISearchService
+public class TestIndexer : IIndexer, ISearcher
 {
     private readonly Dictionary<string, Dictionary<Guid, TestIndexDocument>> _indexes = new();
         
@@ -53,7 +53,7 @@ public class TestIndexService : IIndexService, ISearchService
         return _indexes[index];
     }
 
-    // very simplistic implementation of ISearchService to satisfy the back-office search tests
+    // very simplistic implementation of ISearcher to satisfy the back-office search tests
     public Task<SearchResult> SearchAsync(
         string indexAlias,
         string? query,
