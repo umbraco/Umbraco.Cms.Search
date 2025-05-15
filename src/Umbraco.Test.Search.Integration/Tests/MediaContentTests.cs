@@ -36,11 +36,11 @@ public class MediaContentTests : MediaTestBase
 
         Assert.Multiple(() =>
         {
-            VerifyDocumentStructureValues(documents[0], RootFolderKey, Guid.Empty, RootFolderKey);
-            VerifyDocumentStructureValues(documents[1], ChildFolderKey, RootFolderKey, RootFolderKey, ChildFolderKey);
-            VerifyDocumentStructureValues(documents[2], RootMediaKey, Guid.Empty, RootMediaKey);
-            VerifyDocumentStructureValues(documents[3], ChildMediaKey, RootFolderKey, RootFolderKey, ChildMediaKey);
-            VerifyDocumentStructureValues(documents[4], GrandchildMediaKey, ChildFolderKey, RootFolderKey, ChildFolderKey, GrandchildMediaKey);
+            VerifyDocumentStructureValues(documents[0], RootFolderKey, Guid.Empty, [RootFolderKey]);
+            VerifyDocumentStructureValues(documents[1], ChildFolderKey, RootFolderKey, [RootFolderKey, ChildFolderKey]);
+            VerifyDocumentStructureValues(documents[2], RootMediaKey, Guid.Empty, [RootMediaKey]);
+            VerifyDocumentStructureValues(documents[3], ChildMediaKey, RootFolderKey, [RootFolderKey, ChildMediaKey]);
+            VerifyDocumentStructureValues(documents[4], GrandchildMediaKey, ChildFolderKey, [RootFolderKey, ChildFolderKey, GrandchildMediaKey]);
         });
     }
 
@@ -86,14 +86,14 @@ public class MediaContentTests : MediaTestBase
         Assert.Multiple(() =>
         {
             // first root folder and root media did not move (still at tree root level)
-            VerifyDocumentStructureValues(documents[0], RootFolderKey, Guid.Empty, RootFolderKey);
-            VerifyDocumentStructureValues(documents[2], RootMediaKey, Guid.Empty, RootMediaKey);
+            VerifyDocumentStructureValues(documents[0], RootFolderKey, Guid.Empty, [RootFolderKey]);
+            VerifyDocumentStructureValues(documents[2], RootMediaKey, Guid.Empty, [RootMediaKey]);
             // child folder, child media and grandchild media moved under second root folder, and all paths should be updated accordingly
-            VerifyDocumentStructureValues(documents[1], ChildFolderKey, secondRootFolderKey, secondRootFolderKey, ChildFolderKey);
-            VerifyDocumentStructureValues(documents[3], ChildMediaKey, secondRootFolderKey, secondRootFolderKey, ChildMediaKey);
-            VerifyDocumentStructureValues(documents[4], GrandchildMediaKey, ChildFolderKey, secondRootFolderKey, ChildFolderKey, GrandchildMediaKey);
+            VerifyDocumentStructureValues(documents[1], ChildFolderKey, secondRootFolderKey, [secondRootFolderKey, ChildFolderKey]);
+            VerifyDocumentStructureValues(documents[3], ChildMediaKey, secondRootFolderKey, [secondRootFolderKey, ChildMediaKey]);
+            VerifyDocumentStructureValues(documents[4], GrandchildMediaKey, ChildFolderKey, [secondRootFolderKey, ChildFolderKey, GrandchildMediaKey]);
             // second root is also at tree root level
-            VerifyDocumentStructureValues(documents[5], secondRootFolderKey, Guid.Empty, secondRootFolderKey);
+            VerifyDocumentStructureValues(documents[5], secondRootFolderKey, Guid.Empty, [secondRootFolderKey]);
         });
     }
     
@@ -121,13 +121,13 @@ public class MediaContentTests : MediaTestBase
         Assert.Multiple(() =>
         {
             // first root folder and root media are now located below second root, and all paths should be updated accordingly
-            VerifyDocumentStructureValues(documents[0], RootFolderKey, secondRootFolderKey, secondRootFolderKey, RootFolderKey);
-            VerifyDocumentStructureValues(documents[1], ChildFolderKey, RootFolderKey, secondRootFolderKey, RootFolderKey, ChildFolderKey);
-            VerifyDocumentStructureValues(documents[2], RootMediaKey, secondRootFolderKey, secondRootFolderKey, RootMediaKey);
-            VerifyDocumentStructureValues(documents[3], ChildMediaKey, RootFolderKey, secondRootFolderKey, RootFolderKey, ChildMediaKey);
-            VerifyDocumentStructureValues(documents[4], GrandchildMediaKey, ChildFolderKey, secondRootFolderKey, RootFolderKey, ChildFolderKey, GrandchildMediaKey);
+            VerifyDocumentStructureValues(documents[0], RootFolderKey, secondRootFolderKey, [secondRootFolderKey, RootFolderKey]);
+            VerifyDocumentStructureValues(documents[1], ChildFolderKey, RootFolderKey, [secondRootFolderKey, RootFolderKey, ChildFolderKey]);
+            VerifyDocumentStructureValues(documents[2], RootMediaKey, secondRootFolderKey, [secondRootFolderKey, RootMediaKey]);
+            VerifyDocumentStructureValues(documents[3], ChildMediaKey, RootFolderKey, [secondRootFolderKey, RootFolderKey, ChildMediaKey]);
+            VerifyDocumentStructureValues(documents[4], GrandchildMediaKey, ChildFolderKey, [secondRootFolderKey, RootFolderKey, ChildFolderKey, GrandchildMediaKey]);
             // second root is the only one at tree root level
-            VerifyDocumentStructureValues(documents[5], secondRootFolderKey, Guid.Empty, secondRootFolderKey);
+            VerifyDocumentStructureValues(documents[5], secondRootFolderKey, Guid.Empty, [secondRootFolderKey]);
         });
     }
 
@@ -164,11 +164,11 @@ public class MediaContentTests : MediaTestBase
         Assert.Multiple(() =>
         {
             // root folder and root media are trashed (and all descendants), media recycle bin is the new parent of all roots
-            VerifyDocumentStructureValues(documents[0], RootFolderKey, Constants.System.RecycleBinMediaKey, Constants.System.RecycleBinMediaKey, RootFolderKey);
-            VerifyDocumentStructureValues(documents[1], ChildFolderKey, RootFolderKey, Constants.System.RecycleBinMediaKey, RootFolderKey, ChildFolderKey);
-            VerifyDocumentStructureValues(documents[2], RootMediaKey, Constants.System.RecycleBinMediaKey, Constants.System.RecycleBinMediaKey, RootMediaKey);
-            VerifyDocumentStructureValues(documents[3], ChildMediaKey, RootFolderKey, Constants.System.RecycleBinMediaKey, RootFolderKey, ChildMediaKey);
-            VerifyDocumentStructureValues(documents[4], GrandchildMediaKey, ChildFolderKey, Constants.System.RecycleBinMediaKey, RootFolderKey, ChildFolderKey, GrandchildMediaKey);
+            VerifyDocumentStructureValues(documents[0], RootFolderKey, Constants.System.RecycleBinMediaKey, [Constants.System.RecycleBinMediaKey, RootFolderKey]);
+            VerifyDocumentStructureValues(documents[1], ChildFolderKey, RootFolderKey, [Constants.System.RecycleBinMediaKey, RootFolderKey, ChildFolderKey]);
+            VerifyDocumentStructureValues(documents[2], RootMediaKey, Constants.System.RecycleBinMediaKey, [Constants.System.RecycleBinMediaKey, RootMediaKey]);
+            VerifyDocumentStructureValues(documents[3], ChildMediaKey, RootFolderKey, [Constants.System.RecycleBinMediaKey, RootFolderKey, ChildMediaKey]);
+            VerifyDocumentStructureValues(documents[4], GrandchildMediaKey, ChildFolderKey, [Constants.System.RecycleBinMediaKey, RootFolderKey, ChildFolderKey, GrandchildMediaKey]);
         });
     }
 
@@ -185,13 +185,13 @@ public class MediaContentTests : MediaTestBase
         Assert.Multiple(() =>
         {
             // root folder and root media remain in place (media tree root)
-            VerifyDocumentStructureValues(documents[0], RootFolderKey, Guid.Empty, RootFolderKey);
-            VerifyDocumentStructureValues(documents[2], RootMediaKey, Guid.Empty, RootMediaKey);
+            VerifyDocumentStructureValues(documents[0], RootFolderKey, Guid.Empty, [RootFolderKey]);
+            VerifyDocumentStructureValues(documents[2], RootMediaKey, Guid.Empty, [RootMediaKey]);
            
             // child folder and child media (and by extension, grandchild media) are trashed, media recycle bin is the new parent of all children
-            VerifyDocumentStructureValues(documents[1], ChildFolderKey, Constants.System.RecycleBinMediaKey, Constants.System.RecycleBinMediaKey, ChildFolderKey);
-            VerifyDocumentStructureValues(documents[3], ChildMediaKey, Constants.System.RecycleBinMediaKey, Constants.System.RecycleBinMediaKey, ChildMediaKey);
-            VerifyDocumentStructureValues(documents[4], GrandchildMediaKey, ChildFolderKey, Constants.System.RecycleBinMediaKey, ChildFolderKey, GrandchildMediaKey);
+            VerifyDocumentStructureValues(documents[1], ChildFolderKey, Constants.System.RecycleBinMediaKey, [Constants.System.RecycleBinMediaKey, ChildFolderKey]);
+            VerifyDocumentStructureValues(documents[3], ChildMediaKey, Constants.System.RecycleBinMediaKey, [Constants.System.RecycleBinMediaKey, ChildMediaKey]);
+            VerifyDocumentStructureValues(documents[4], GrandchildMediaKey, ChildFolderKey, [Constants.System.RecycleBinMediaKey, ChildFolderKey, GrandchildMediaKey]);
         });
     }
 
@@ -214,7 +214,7 @@ public class MediaContentTests : MediaTestBase
         Assert.Multiple(() =>
         {
             // root media remain unaffected by the deletion
-            VerifyDocumentStructureValues(documents[0], RootMediaKey, Guid.Empty, RootMediaKey);
+            VerifyDocumentStructureValues(documents[0], RootMediaKey, Guid.Empty, [RootMediaKey]);
         });
     }
 
@@ -237,9 +237,9 @@ public class MediaContentTests : MediaTestBase
         Assert.Multiple(() =>
         {
             // root folder, root media and child media remain unaffected by the deletion
-            VerifyDocumentStructureValues(documents[0], RootFolderKey, Guid.Empty, RootFolderKey);
-            VerifyDocumentStructureValues(documents[1], RootMediaKey, Guid.Empty, RootMediaKey);
-            VerifyDocumentStructureValues(documents[2], ChildMediaKey, RootFolderKey, RootFolderKey, ChildMediaKey);
+            VerifyDocumentStructureValues(documents[0], RootFolderKey, Guid.Empty, [RootFolderKey]);
+            VerifyDocumentStructureValues(documents[1], RootMediaKey, Guid.Empty, [RootMediaKey]);
+            VerifyDocumentStructureValues(documents[2], ChildMediaKey, RootFolderKey, [RootFolderKey, ChildMediaKey]);
         });
     }
 

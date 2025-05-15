@@ -37,9 +37,9 @@ public class MemberTests : ContentBaseTestBase
 
         Assert.Multiple(() =>
         {
-            VerifyDocumentStructureValues(documents[0], MemberOneKey, Guid.Empty, MemberOneKey);
-            VerifyDocumentStructureValues(documents[1], MemberTwoKey, Guid.Empty, MemberTwoKey);
-            VerifyDocumentStructureValues(documents[2], MemberThreeKey, Guid.Empty, MemberThreeKey);
+            VerifyDocumentStructureValues(documents[0], MemberOneKey, Guid.Empty, [MemberOneKey]);
+            VerifyDocumentStructureValues(documents[1], MemberTwoKey, Guid.Empty, [MemberTwoKey]);
+            VerifyDocumentStructureValues(documents[2], MemberThreeKey, Guid.Empty, [MemberThreeKey]);
         });
     }
 
@@ -53,9 +53,9 @@ public class MemberTests : ContentBaseTestBase
 
         Assert.Multiple(() =>
         {
-            VerifyDocumentSystemValues(documents[0], MemberOne(), "tag1", "tag2");
-            VerifyDocumentSystemValues(documents[1], MemberTwo(), "tag3", "tag4");
-            VerifyDocumentSystemValues(documents[2], MemberThree(), "tag5", "tag6");
+            VerifyDocumentSystemValues(documents[0], MemberOne(), ["tag1", "tag2"]);
+            VerifyDocumentSystemValues(documents[1], MemberTwo(), ["tag3", "tag4"]);
+            VerifyDocumentSystemValues(documents[2], MemberThree(), ["tag5", "tag6"]);
         });
     }
 

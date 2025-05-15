@@ -11,7 +11,7 @@ namespace Umbraco.Test.Search.Integration.Tests;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
 public abstract class ContentBaseTestBase : TestBase
 {
-    protected void VerifyDocumentStructureValues(TestIndexDocument document, Guid key, Guid parentKey, params Guid[] pathKeys)
+    protected void VerifyDocumentStructureValues(TestIndexDocument document, Guid key, Guid parentKey, Guid[] pathKeys)
         => Assert.Multiple(() =>
         {
             var idValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.Id)?.Value.Keywords?.SingleOrDefault();
@@ -26,7 +26,7 @@ public abstract class ContentBaseTestBase : TestBase
             Assert.That(pathIdsValue, Is.EquivalentTo(pathKeys.Select(ancestorId => ancestorId.AsKeyword())));
         });
 
-    protected void VerifyDocumentSystemValues(TestIndexDocument document, IContentBase content, params string[] tags)
+    protected void VerifyDocumentSystemValues(TestIndexDocument document, IContentBase content, string[] tags)
     {
         var dateTimeOffsetConverter = GetRequiredService<IDateTimeOffsetConverter>();
         var expectedObjectTypeValue = content.ObjectType().ToString();

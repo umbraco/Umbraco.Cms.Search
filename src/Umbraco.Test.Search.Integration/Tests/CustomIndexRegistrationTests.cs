@@ -135,9 +135,9 @@ public class CustomIndexRegistrationTests : ContentBaseTestBase
 
         Assert.Multiple(() =>
         {
-            VerifyDocumentSystemValues(documents[0], Content());
-            VerifyDocumentSystemValues(documents[1], Media());
-            VerifyDocumentSystemValues(documents[2], Member());
+            VerifyDocumentSystemValues(documents[0], Content(), []);
+            VerifyDocumentSystemValues(documents[1], Media(), []);
+            VerifyDocumentSystemValues(documents[2], Member(), []);
         });
     }
     

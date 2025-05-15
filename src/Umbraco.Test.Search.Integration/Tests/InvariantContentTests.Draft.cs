@@ -53,10 +53,10 @@ public partial class InvariantContentTests
 
         Assert.Multiple(() =>
         {
-            VerifyDocumentStructureValues(documents[0], RootKey, Guid.Empty, RootKey);
-            VerifyDocumentStructureValues(documents[1], ChildKey, RootKey, RootKey, ChildKey);
-            VerifyDocumentStructureValues(documents[2], GrandchildKey, ChildKey, RootKey, ChildKey, GrandchildKey);
-            VerifyDocumentStructureValues(documents[3], GreatGrandchildKey, GrandchildKey, RootKey, ChildKey, GrandchildKey, GreatGrandchildKey);
+            VerifyDocumentStructureValues(documents[0], RootKey, Guid.Empty, [RootKey]);
+            VerifyDocumentStructureValues(documents[1], ChildKey, RootKey, [RootKey, ChildKey]);
+            VerifyDocumentStructureValues(documents[2], GrandchildKey, ChildKey, [RootKey, ChildKey, GrandchildKey]);
+            VerifyDocumentStructureValues(documents[3], GreatGrandchildKey, GrandchildKey, [RootKey, ChildKey, GrandchildKey, GreatGrandchildKey]);
         });
     }
 
@@ -111,10 +111,10 @@ public partial class InvariantContentTests
         {
             // NOTE: tags are collected from published content only, so the "draft" tag added
             //       by SetupDraftContent() will not be listed here
-            VerifyDocumentSystemValues(documents[0], Root(), "tag1", "tag2");
-            VerifyDocumentSystemValues(documents[1], Child(), "tag3", "tag4");
-            VerifyDocumentSystemValues(documents[2], Grandchild(), "tag5", "tag6");
-            VerifyDocumentSystemValues(documents[3], GreatGrandchild(), "tag7", "tag8");
+            VerifyDocumentSystemValues(documents[0], Root(), ["tag1", "tag2"]);
+            VerifyDocumentSystemValues(documents[1], Child(), ["tag3", "tag4"]);
+            VerifyDocumentSystemValues(documents[2], Grandchild(), ["tag5", "tag6"]);
+            VerifyDocumentSystemValues(documents[3], GreatGrandchild(), ["tag7", "tag8"]);
         });
     }
 
@@ -167,10 +167,10 @@ public partial class InvariantContentTests
         Assert.Multiple(() =>
         {
             // all content is trashed, content recycle bin is the new parent of root
-            VerifyDocumentStructureValues(documents[0], RootKey, Constants.System.RecycleBinContentKey, Constants.System.RecycleBinContentKey, RootKey);
-            VerifyDocumentStructureValues(documents[1], ChildKey, RootKey, Constants.System.RecycleBinContentKey, RootKey, ChildKey);
-            VerifyDocumentStructureValues(documents[2], GrandchildKey, ChildKey, Constants.System.RecycleBinContentKey, RootKey, ChildKey, GrandchildKey);
-            VerifyDocumentStructureValues(documents[3], GreatGrandchildKey, GrandchildKey, Constants.System.RecycleBinContentKey, RootKey, ChildKey, GrandchildKey, GreatGrandchildKey);
+            VerifyDocumentStructureValues(documents[0], RootKey, Constants.System.RecycleBinContentKey, [Constants.System.RecycleBinContentKey, RootKey]);
+            VerifyDocumentStructureValues(documents[1], ChildKey, RootKey, [Constants.System.RecycleBinContentKey, RootKey, ChildKey]);
+            VerifyDocumentStructureValues(documents[2], GrandchildKey, ChildKey, [Constants.System.RecycleBinContentKey, RootKey, ChildKey, GrandchildKey]);
+            VerifyDocumentStructureValues(documents[3], GreatGrandchildKey, GrandchildKey, [Constants.System.RecycleBinContentKey, RootKey, ChildKey, GrandchildKey, GreatGrandchildKey]);
         });
     }
 
@@ -195,12 +195,12 @@ public partial class InvariantContentTests
         Assert.Multiple(() =>
         {
             // root has not moved - it's still at the content tree root
-            VerifyDocumentStructureValues(documents[0], RootKey, Guid.Empty, RootKey);
+            VerifyDocumentStructureValues(documents[0], RootKey, Guid.Empty, [RootKey]);
 
             // child is trashed, content recycle bin is the new parent of child, and root is no longer part of the path for any children
-            VerifyDocumentStructureValues(documents[1], ChildKey, Constants.System.RecycleBinContentKey, Constants.System.RecycleBinContentKey, ChildKey);
-            VerifyDocumentStructureValues(documents[2], GrandchildKey, ChildKey, Constants.System.RecycleBinContentKey, ChildKey, GrandchildKey);
-            VerifyDocumentStructureValues(documents[3], GreatGrandchildKey, GrandchildKey, Constants.System.RecycleBinContentKey, ChildKey, GrandchildKey, GreatGrandchildKey);
+            VerifyDocumentStructureValues(documents[1], ChildKey, Constants.System.RecycleBinContentKey, [Constants.System.RecycleBinContentKey, ChildKey]);
+            VerifyDocumentStructureValues(documents[2], GrandchildKey, ChildKey, [Constants.System.RecycleBinContentKey, ChildKey, GrandchildKey]);
+            VerifyDocumentStructureValues(documents[3], GreatGrandchildKey, GrandchildKey, [Constants.System.RecycleBinContentKey, ChildKey, GrandchildKey, GreatGrandchildKey]);
         });
     }
 
@@ -236,12 +236,12 @@ public partial class InvariantContentTests
         Assert.Multiple(() =>
         {
             // all items were moved; previous root is now a child to second root, and all paths should be updated accordingly
-            VerifyDocumentStructureValues(documents[0], RootKey, secondRootKey, secondRootKey, RootKey);
-            VerifyDocumentStructureValues(documents[1], ChildKey, RootKey, secondRootKey, RootKey, ChildKey);
-            VerifyDocumentStructureValues(documents[2], GrandchildKey, ChildKey, secondRootKey, RootKey, ChildKey, GrandchildKey);
-            VerifyDocumentStructureValues(documents[3], GreatGrandchildKey, GrandchildKey, secondRootKey, RootKey, ChildKey, GrandchildKey, GreatGrandchildKey);
+            VerifyDocumentStructureValues(documents[0], RootKey, secondRootKey, [secondRootKey, RootKey]);
+            VerifyDocumentStructureValues(documents[1], ChildKey, RootKey, [secondRootKey, RootKey, ChildKey]);
+            VerifyDocumentStructureValues(documents[2], GrandchildKey, ChildKey, [secondRootKey, RootKey, ChildKey, GrandchildKey]);
+            VerifyDocumentStructureValues(documents[3], GreatGrandchildKey, GrandchildKey, [secondRootKey, RootKey, ChildKey, GrandchildKey, GreatGrandchildKey]);
             // second root is the only one at tree root level
-            VerifyDocumentStructureValues(documents[4], secondRootKey, Guid.Empty, secondRootKey);
+            VerifyDocumentStructureValues(documents[4], secondRootKey, Guid.Empty, [secondRootKey]);
         });
     }
 
@@ -277,13 +277,13 @@ public partial class InvariantContentTests
         Assert.Multiple(() =>
         {
             // first root did not move (still at tree root level)
-            VerifyDocumentStructureValues(documents[0], RootKey, Guid.Empty, RootKey);
+            VerifyDocumentStructureValues(documents[0], RootKey, Guid.Empty, [RootKey]);
             // child and all descendants moved under second root, and all paths should be updated accordingly
-            VerifyDocumentStructureValues(documents[1], ChildKey, secondRootKey, secondRootKey, ChildKey);
-            VerifyDocumentStructureValues(documents[2], GrandchildKey, ChildKey, secondRootKey, ChildKey, GrandchildKey);
-            VerifyDocumentStructureValues(documents[3], GreatGrandchildKey, GrandchildKey, secondRootKey, ChildKey, GrandchildKey, GreatGrandchildKey);
+            VerifyDocumentStructureValues(documents[1], ChildKey, secondRootKey, [secondRootKey, ChildKey]);
+            VerifyDocumentStructureValues(documents[2], GrandchildKey, ChildKey, [secondRootKey, ChildKey, GrandchildKey]);
+            VerifyDocumentStructureValues(documents[3], GreatGrandchildKey, GrandchildKey, [secondRootKey, ChildKey, GrandchildKey, GreatGrandchildKey]);
             // second root is also at tree root level
-            VerifyDocumentStructureValues(documents[4], secondRootKey, Guid.Empty, secondRootKey);
+            VerifyDocumentStructureValues(documents[4], secondRootKey, Guid.Empty, [secondRootKey]);
         });
     }
 
@@ -322,6 +322,6 @@ public partial class InvariantContentTests
         var documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
         Assert.That(documents[0].Id, Is.EqualTo(RootKey));
-        VerifyDocumentStructureValues(documents[0], RootKey, Guid.Empty, RootKey);
+        VerifyDocumentStructureValues(documents[0], RootKey, Guid.Empty, [RootKey]);
     }
 }
