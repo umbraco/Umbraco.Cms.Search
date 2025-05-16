@@ -1,6 +1,8 @@
 ﻿using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Search.Core.PropertyValueHandlers;
+using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
@@ -72,6 +74,14 @@ public class PropertyValueHandlerTests : ContentTestBase
             var contentPickerValue = document.Fields.FirstOrDefault(f => f.FieldName == "contentPickerValue")?.Value.Keywords?.SingleOrDefault();
             CollectionAssert.AreEqual(contentPickerValue, "55bf7f6d-acd2-4f1e-92bd-f0b5c41dbfed");
         });
+    }
+
+    [Test]
+    public void AllCorePropertyValueHandlers_HaveTheCorePropertyValueHandlerMarkerInterface()
+    {
+        var handlers = GetRequiredService<PropertyValueHandlerCollection>().ToArray();
+        CollectionAssert.IsNotEmpty(handlers);
+        Assert.That(handlers.All(handler => handler is ICorePropertyValueHandler), Is.True);
     }
     
     [SetUp]
