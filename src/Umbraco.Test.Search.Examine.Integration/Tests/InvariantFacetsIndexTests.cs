@@ -16,7 +16,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
     [Test]
     [TestCase(true)]
     [TestCase(false)]
-    public async Task CanGetOneFacet(bool publish)
+    public async Task CanGetOneIntFacet(bool publish)
     {
         await CreateCountDocuments([1, 2], publish);
 
@@ -41,7 +41,32 @@ public class InvariantFacetsIndexTests : IndexTestBase
     [Test]
     [TestCase(true)]
     [TestCase(false)]
-    public async Task CanGetMultipleFacets(bool publish)
+    public async Task CanGetOneDecimalFacet(bool publish)
+    {
+        await CreateDecimalDocuments([3.6, 600.4], publish);
+
+        var index = ExamineManager.GetIndex(publish
+            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
+            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+
+        var results = index.Searcher.CreateQuery()
+            .All()
+            .WithFacets(facets => facets.FacetDoubleRange("decimalproperty_decimals", new DoubleRange("values", 3.5, true, 654.9, true)))
+            .Execute();
+
+        var facets = results.GetFacets();
+        var facet = facets.First().Facet("values");
+        Assert.Multiple(() =>
+        {
+            Assert.That(facets, Is.Not.Empty);
+            Assert.That(facet.Value, Is.EqualTo(2));
+        });
+    }
+    
+    [Test]
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task CanGetMultipleIntFacets(bool publish)
     {
         await CreateCountDocuments([1, 2, 99, 101, 170], publish);
 
@@ -77,6 +102,49 @@ public class InvariantFacetsIndexTests : IndexTestBase
             .Build();
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
     }
+    
+    private async Task CreateDecimalDocType()
+    {
+        var dataType = new DataTypeBuilder()
+            .WithId(0)
+            .WithoutIdentity()
+            .WithDatabaseType(ValueStorageType.Decimal)
+            .AddEditor()
+            .WithAlias(Constants.PropertyEditors.Aliases.Decimal)
+            .Done()
+            .Build();
+        
+        DataTypeService.Save(dataType);
+        ContentType = new ContentTypeBuilder()
+            .WithAlias("invariant")
+            .AddPropertyType()
+            .WithAlias("decimalproperty")
+            .WithDataTypeId(dataType.Id)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Decimal)
+            .Done()
+            .Build();
+        await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
+    }
+    
+    private async Task CreateDecimalDocuments(double[] values, bool publish)
+    {
+        await CreateDecimalDocType();
+
+        foreach (var doubleValue in values)
+        {
+            var document = new ContentBuilder()
+                .WithContentType(ContentType)
+                .WithName($"document-{doubleValue.ToString()}")
+                .WithPropertyValues(
+                    new
+                    {
+                        decimalproperty = doubleValue
+                    })
+                .Build();
+            
+            SaveOrPublish(document, publish);
+        }
+    }
 
     private async Task CreateCountDocuments(int[] values, bool publish)
     {
@@ -96,7 +164,5 @@ public class InvariantFacetsIndexTests : IndexTestBase
             
             SaveOrPublish(document, publish);
         }
-
-
     }
 }

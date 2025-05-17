@@ -1,4 +1,5 @@
 ﻿using Examine;
+using Lucene.Net.Facet;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Umbraco.Cms.Core;
@@ -47,10 +48,22 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
         builder.Services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(Cms.Search.Core.Constants.IndexAliases.DraftContent,
             config =>
             {
+                var fieldDefinitions = new FieldDefinitionCollection();
+                
+                fieldDefinitions.AddOrUpdate(
+                    new FieldDefinition("decimalproperty_decimals", FieldDefinitionTypes.FacetDouble));
+                
+                config.FieldDefinitions = fieldDefinitions;
+                config.FacetsConfig = new FacetsConfig();
             });
         builder.Services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(Cms.Search.Core.Constants.IndexAliases.PublishedContent,
             config =>
             {
+                var fieldDefinitions = new FieldDefinitionCollection();
+                
+                fieldDefinitions.AddOrUpdate(new FieldDefinition("decimalproperty_decimals", FieldDefinitionTypes.FacetDouble));
+                
+                config.FieldDefinitions = fieldDefinitions;
             });
         builder.Services.AddTransient<IndexService>();
         builder.Services.AddTransient<IIndexService, IndexService>();
