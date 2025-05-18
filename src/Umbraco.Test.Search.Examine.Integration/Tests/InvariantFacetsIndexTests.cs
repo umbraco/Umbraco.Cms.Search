@@ -66,6 +66,31 @@ public class InvariantFacetsIndexTests : IndexTestBase
     [Test]
     [TestCase(true)]
     [TestCase(false)]
+    public async Task CanGetOneTextFacet(bool publish)
+    {
+        await CreateTitleDocuments(["Title", "Title"], publish);
+
+        var index = ExamineManager.GetIndex(publish
+            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
+            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+
+        var results = index.Searcher.CreateQuery()
+            .All()
+            .WithFacets(facets => facets.FacetString("title_texts"))
+            .Execute();
+
+        var facets = results.GetFacets();
+        var facet = facets.First().Facet("Title");
+        Assert.Multiple(() =>
+        {
+            Assert.That(facets, Is.Not.Empty);
+            Assert.That(facet.Value, Is.EqualTo(2));
+        });
+    }
+    
+    [Test]
+    [TestCase(true)]
+    [TestCase(false)]
     public async Task CanGetMultipleIntFacets(bool publish)
     {
         await CreateCountDocuments([1, 2, 99, 101, 170], publish);
@@ -101,6 +126,39 @@ public class InvariantFacetsIndexTests : IndexTestBase
             .Done()
             .Build();
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
+    }
+    
+    private async Task CreateTitleDocType()
+    {
+        ContentType = new ContentTypeBuilder()
+            .WithAlias("invariant")
+            .AddPropertyType()
+            .WithAlias("title")
+            .WithDataTypeId(Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .Done()
+            .Build();
+        await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
+    }
+    
+    private async Task CreateTitleDocuments(string[] values, bool publish)
+    {
+        await CreateTitleDocType();
+
+        foreach (var stringValue in values)
+        {
+            var document = new ContentBuilder()
+                .WithContentType(ContentType)
+                .WithName($"document-{stringValue}")
+                .WithPropertyValues(
+                    new
+                    {
+                        title = stringValue
+                    })
+                .Build();
+            
+            SaveOrPublish(document, publish);
+        }
     }
     
     private async Task CreateDecimalDocType()

@@ -50,8 +50,8 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
             {
                 var fieldDefinitions = new FieldDefinitionCollection();
                 
-                fieldDefinitions.AddOrUpdate(
-                    new FieldDefinition("decimalproperty_decimals", FieldDefinitionTypes.FacetDouble));
+                fieldDefinitions.AddOrUpdate(new FieldDefinition("decimalproperty_decimals", FieldDefinitionTypes.FacetDouble));
+                fieldDefinitions.AddOrUpdate(new FieldDefinition("title_texts", FieldDefinitionTypes.FacetFullText));
                 
                 config.FieldDefinitions = fieldDefinitions;
                 config.FacetsConfig = new FacetsConfig();
@@ -62,6 +62,7 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
                 var fieldDefinitions = new FieldDefinitionCollection();
                 
                 fieldDefinitions.AddOrUpdate(new FieldDefinition("decimalproperty_decimals", FieldDefinitionTypes.FacetDouble));
+                fieldDefinitions.AddOrUpdate(new FieldDefinition("title_texts", FieldDefinitionTypes.FacetFullText));
                 
                 config.FieldDefinitions = fieldDefinitions;
             });
