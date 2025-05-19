@@ -65,7 +65,7 @@ internal sealed class InMemorySearcher : IInMemorySearcher
         // - regular filters must be applied before any facets are calculated (they narrow down the potential result set)
         // - facet filters must be applied after facets calculation has begun (additional considerations apply, see comments below)
         var facetFieldNames = facets?.Select(facet => facet.FieldName).ToArray();
-        var facetFilters = filters?.Where(f => f is IExactFilter && facetFieldNames?.InvariantContains(f.FieldName) is true).ToArray();
+        var facetFilters = filters?.Where(f => facetFieldNames?.InvariantContains(f.FieldName) is true).ToArray();
         var regularFilters = filters?.Except(facetFilters ?? []).ToArray();
 
         if (regularFilters is not null)
