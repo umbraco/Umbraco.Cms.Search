@@ -5,6 +5,7 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
+using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Search.Provider.Examine.Services;
 using IndexOptions = Umbraco.Cms.Search.Core.Configuration.IndexOptions;
 
@@ -15,6 +16,8 @@ public static class UmbracoBuilderExtensions
     public static IUmbracoBuilder AddExamineSearchProvider(this IUmbracoBuilder builder)
     {
         builder.Services.AddExamine();
+        
+        builder.Services.ConfigureOptions<ConfigureIndexOptions>();
         
         builder.Services.AddExamineLuceneIndex(Constants.IndexAliases.DraftContent, configuration =>
         {
@@ -43,11 +46,6 @@ public static class UmbracoBuilderExtensions
             options.RegisterIndex<IndexService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
             options.RegisterIndex<IndexService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
         });
-        
-        
-        //
-        // // rebuild indexes after start-up
-        // builder.AddNotificationHandler<UmbracoApplicationStartedNotification, RebuildIndexesNotificationHandler>();
 
         return builder;
     }

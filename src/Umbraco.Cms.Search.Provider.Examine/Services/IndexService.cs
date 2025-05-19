@@ -1,8 +1,10 @@
 ﻿using Examine;
+using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Services;
+using Umbraco.Cms.Search.Provider.Examine.Configuration;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
