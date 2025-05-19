@@ -68,7 +68,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
     [TestCase(false)]
     public async Task CanGetOneTextFacet(bool publish)
     {
-        await CreateTitleDocuments(["Title", "Title"], publish);
+        await CreateTitleDocuments(["Title", "Title", "Another"], publish);
 
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
