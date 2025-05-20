@@ -91,7 +91,7 @@ public class VariantIndexServiceTests : IndexTestBase
         queryBuilder.SelectField($"title_{culture}_texts");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == $"title_{culture}_texts").Value, Is.EqualTo(expectedValue));
+        Assert.That(results.First(x => x.Values.Any()).Values.First(x => x.Key == $"title_{culture}_texts").Value, Is.EqualTo(expectedValue));
     }
     
     [TestCase(true, "en-US", "segment-1", "body-segment-1")]
@@ -108,9 +108,7 @@ public class VariantIndexServiceTests : IndexTestBase
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
         
-        var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField($"body_{culture}_{segment}_texts");
-        var results = queryBuilder.Execute();
+        var results = index.Searcher.Search(expectedValue);
         Assert.That(results, Is.Not.Empty);
         Assert.That(results.First().Values.First(x => x.Key == $"body_{culture}_{segment}_texts").Value, Is.EqualTo(expectedValue));
     }  

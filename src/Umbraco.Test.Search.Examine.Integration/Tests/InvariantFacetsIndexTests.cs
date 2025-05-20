@@ -12,8 +12,7 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests;
 public class InvariantFacetsIndexTests : IndexTestBase
 {
     private IContentType ContentType { get; set; }
-
-    [Test]
+    
     [TestCase(true)]
     [TestCase(false)]
     public async Task CanGetOneIntFacet(bool publish)
@@ -38,7 +37,6 @@ public class InvariantFacetsIndexTests : IndexTestBase
         });
     }
     
-    [Test]
     [TestCase(true)]
     [TestCase(false)]
     public async Task CanGetOneDecimalFacet(bool publish)
@@ -63,7 +61,6 @@ public class InvariantFacetsIndexTests : IndexTestBase
         });
     }
     
-    [Test]
     [TestCase(true)]
     [TestCase(false)]
     public async Task CanGetOneTextFacet(bool publish)
