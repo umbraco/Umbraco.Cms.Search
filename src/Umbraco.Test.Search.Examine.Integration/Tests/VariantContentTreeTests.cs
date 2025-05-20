@@ -31,10 +31,11 @@ public class VariantContentTreeTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         var results = index.Searcher.CreateQuery().All().Execute();
-        Assert.That(results.Count(), Is.EqualTo(3));
+        // 3 roots with 3 children with 3 grandchildren
+        Assert.That(results.Count(), Is.EqualTo(3 * 3 * 3));
     }
     
-    [Ignore("Get in memory working with searching")]
+    [Ignore("Get in memory working index to not lock while searching")]
     [Test]
     public void UnpublishingRootWillRemoveAncestors_Root_Unpublished()
     {
@@ -69,7 +70,7 @@ public class VariantContentTreeTests : IndexTestBase
         AssertDraft();
     }
     
-    [Ignore("Get in memory working with searching")]
+    [Ignore("Get in memory working index to not lock while searching")]
     [Test]
     public void UnpublishingRootWillRemoveAncestors_Child_Unpublished()
     {

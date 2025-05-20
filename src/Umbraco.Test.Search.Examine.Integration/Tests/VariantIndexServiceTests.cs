@@ -59,7 +59,7 @@ public class VariantIndexServiceTests : IndexTestBase
     [TestCase("title", "updatedTitle", "en-US", true)]
     [TestCase("title", "updatedTitle", "da-DK", true)]
     [TestCase("title", "updatedTitle", "ja-JP", true)]
-    public void CanIndexUpdatedProperties(string propertyName, object updatedValue, string culture, bool publish)
+    public void CanIndexUpdatedProperties(string propertyName, string updatedValue, string culture, bool publish)
     {
         CreateVariantDocument(publish);
         UpdateProperty(propertyName, updatedValue, culture, publish);
@@ -68,11 +68,9 @@ public class VariantIndexServiceTests : IndexTestBase
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
         
-        var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField($"{propertyName}_{culture}_texts");
-        var results = queryBuilder.Execute();
+        var results = index.Searcher.Search(updatedValue);
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == $"{propertyName}_{culture}_texts").Value, Is.EqualTo(updatedValue.ToString()));
+        Assert.That(results.First().Values.First(x => x.Key == $"{propertyName}_{culture}_texts").Value, Is.EqualTo(updatedValue));
     }
     
     [TestCase(true, "en-US", "Root")]

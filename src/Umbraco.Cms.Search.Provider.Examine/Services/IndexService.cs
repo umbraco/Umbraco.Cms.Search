@@ -20,13 +20,33 @@ public class IndexService : IIndexService
         IEnumerable<IndexField> fields, ContentProtection? protection)
     {
         var index = GetIndex(indexAlias);
-        
-        index.IndexItem(new ValueSet(
-            key.ToString().ToLowerInvariant(),
-            objectType.ToString(),
-            MapToDictionary(fields)));
+
+        foreach (var variation in variations)
+        {
+            var indexKey = CalculateIndexKey(key, variation);
+            index.IndexItem(new ValueSet(
+                indexKey,
+                objectType.ToString(),
+                MapToDictionary(fields.Where(x => x.FieldName.StartsWith("Umb_") || (x.Culture == variation.Culture && x.Segment == variation.Segment)))));
+        }
 
         return Task.CompletedTask;
+    }
+
+    private string CalculateIndexKey(Guid key, Variation variation)
+    {
+        string result = key.ToString().ToLowerInvariant();
+
+        if (variation.Culture is not null)
+        {
+            result += $"-{variation.Culture}";
+        }
+        if (variation.Segment is not null)
+        {
+            result += $"_{variation.Segment}";
+        }
+        
+        return result;
     }
     
     
