@@ -48,6 +48,7 @@ public class IndexService : IIndexService
     private Dictionary<string, object> MapToDictionary(IEnumerable<IndexField> fields)
     {
         var result = new Dictionary<string, object>();
+        List<string> aggregatedTexts = [];
         foreach (var field in fields)
         {
             if (field.Value.Integers?.Any() ?? false)
@@ -58,6 +59,7 @@ public class IndexService : IIndexService
             if (field.Value.Keywords?.Any() ?? false)
             {
                 result.Add(CalculateFieldName(field, "keywords"), field.Value.Keywords);
+                aggregatedTexts.AddRange(field.Value.Keywords);
             }
             
             if (field.Value.Decimals?.Any() ?? false)
@@ -72,7 +74,13 @@ public class IndexService : IIndexService
             if (field.Value.Texts?.Any() ?? false)
             {
                 result.Add(CalculateFieldName(field, "texts"), field.Value.Texts);
+                aggregatedTexts.AddRange(field.Value.Texts);
             }
+        }
+        
+        if (aggregatedTexts.Any())
+        {
+            result.Add("aggregated_texts", aggregatedTexts.ToArray());
         }
 
         return result;

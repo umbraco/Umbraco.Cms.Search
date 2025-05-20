@@ -145,6 +145,24 @@ public class InvariantIndexServiceTests : IndexTestBase
         Assert.That(results.First().Values.First(x => x.Value == updatedValue.ToString()).Value, Is.EqualTo(updatedValue.ToString()));
     }
     
+    [Test]
+    [TestCase(true)]
+    [TestCase(false)]
+    public void CanIndexAggregatedTexts(bool publish)
+    {
+        CreateInvariantDocument(publish);
+
+        var index = ExamineManager.GetIndex(publish
+            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
+            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+
+        var queryBuilder = index.Searcher.CreateQuery().All();
+        queryBuilder.SelectField("aggregated_texts");
+        var results = queryBuilder.Execute();
+        Assert.That(results, Is.Not.Empty);
+        Assert.That(results.First().AllValues.First(x => x.Key == "aggregated_texts").Value.Contains("The root title"), Is.True);
+    }
+    
     private void UpdateProperty(string propertyName, object value, bool publish)
     {
         var content = ContentService.GetById(RootKey);
