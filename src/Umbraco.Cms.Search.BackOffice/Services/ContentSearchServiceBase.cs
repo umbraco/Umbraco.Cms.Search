@@ -59,7 +59,7 @@ internal abstract class ContentSearchServiceBase<TContent> : IndexedSearchServic
             filters: filters,
             facets: null,
             sorters: sorter != null ? [sorter] : null,
-            culture: null,
+            culture: ordering?.Culture,
             segment: null,
             accessContext: null,
             skip,
