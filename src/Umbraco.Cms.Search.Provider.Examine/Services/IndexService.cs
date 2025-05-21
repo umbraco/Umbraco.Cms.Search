@@ -27,7 +27,7 @@ public class IndexService : IIndexService
             index.IndexItem(new ValueSet(
                 indexKey,
                 objectType.ToString(),
-                MapToDictionary(fields.Where(x => x.FieldName.StartsWith("Umb_") || (x.Culture == variation.Culture && x.Segment == variation.Segment)))));
+                MapToDictionary(fields.Where(x => (x.FieldName.StartsWith("Umb_") && x.Culture is null && x.Segment is null) || (x.Culture == variation.Culture && x.Segment == variation.Segment)))));
         }
 
         return Task.CompletedTask;
@@ -109,15 +109,15 @@ public class IndexService : IIndexService
     private string CalculateFieldName(IndexField field, string property)
     {
         var result = field.FieldName;
-        if (field.Culture is not null)
-        {
-            result += $"_{field.Culture}";
-        }
-
-        if (field.Segment is not null)
-        {
-            result += $"_{field.Segment}";
-        }
+        // if (field.Culture is not null)
+        // {
+        //     result += $"_{field.Culture}";
+        // }
+        //
+        // if (field.Segment is not null)
+        // {
+        //     result += $"_{field.Segment}";
+        // }
 
         return result + $"_{property}";
     }

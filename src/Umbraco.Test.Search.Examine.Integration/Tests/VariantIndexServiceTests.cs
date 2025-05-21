@@ -1,4 +1,5 @@
 ﻿using Examine;
+using Examine.Search;
 using NUnit.Framework;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests;
@@ -50,10 +51,13 @@ public class VariantIndexServiceTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
         
         var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField($"Umb_Name_{culture}_texts");
+        queryBuilder.SelectField("Umb_Name_texts");
         var results = queryBuilder.Execute();
+        var result = results
+            .SelectMany(x => x.Values.Values)
+            .First(x => x == expectedValue);
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Value == expectedValue).Value, Is.EqualTo(expectedValue));
+        Assert.That(result, Is.EqualTo(expectedValue));
     }
     
     [TestCase("title", "updatedTitle", "en-US", true)]
@@ -70,7 +74,7 @@ public class VariantIndexServiceTests : IndexTestBase
         
         var results = index.Searcher.Search(updatedValue);
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == $"{propertyName}_{culture}_texts").Value, Is.EqualTo(updatedValue));
+        Assert.That(results.First().Values.First(x => x.Key == $"{propertyName}_texts").Value, Is.EqualTo(updatedValue));
     }
     
     [TestCase(true, "en-US", "Root")]
@@ -88,10 +92,14 @@ public class VariantIndexServiceTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
         
         var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField($"title_{culture}_texts");
+        queryBuilder.SelectField("title_texts");
         var results = queryBuilder.Execute();
+        
+        var result = results
+            .SelectMany(x => x.Values.Values)
+            .First(x => x == expectedValue);
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First(x => x.Values.Any()).Values.First(x => x.Key == $"title_{culture}_texts").Value, Is.EqualTo(expectedValue));
+        Assert.That(result, Is.EqualTo(expectedValue));
     }
     
     [TestCase(true, "en-US", "segment-1", "body-segment-1")]
@@ -110,7 +118,7 @@ public class VariantIndexServiceTests : IndexTestBase
         
         var results = index.Searcher.Search(expectedValue);
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == $"body_{culture}_{segment}_texts").Value, Is.EqualTo(expectedValue));
+        Assert.That(results.First().Values.First(x => x.Key == "body_texts").Value, Is.EqualTo(expectedValue));
     }  
     
     private void UpdateProperty(string propertyName, object value, string culture, bool publish)

@@ -137,7 +137,6 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
         
         var content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);
-
     }
     
     protected void CreateInvariantDocument(bool publish = false)
