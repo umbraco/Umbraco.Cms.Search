@@ -4,7 +4,7 @@ using Umbraco.Cms.Search.Core.Models.Indexing;
 
 namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
-public sealed class DateTimeOffsetPropertyValueHandler : IPropertyValueHandler
+public sealed class DateTimeOffsetPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
 {
     private readonly IDateTimeOffsetConverter _dateTimeOffsetConverter;
 

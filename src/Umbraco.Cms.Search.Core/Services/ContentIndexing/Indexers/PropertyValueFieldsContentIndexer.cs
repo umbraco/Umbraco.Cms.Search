@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Indexing;
+using Umbraco.Cms.Search.Core.PropertyValueHandlers;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
 using Umbraco.Extensions;
 
@@ -29,7 +30,13 @@ internal sealed class PropertyValueFieldsContentIndexer : IContentIndexer
 
         foreach (var property in content.Properties)
         {
-            var handler = _propertyValueHandlerCollection.FirstOrDefault(handler => handler.CanHandle(property.PropertyType.PropertyEditorAlias));
+            var applicableHandlers = _propertyValueHandlerCollection
+                .Where(handler => handler.CanHandle(property.PropertyType.PropertyEditorAlias))
+                .ToArray();
+
+            // always prioritize custom value handlers over the built-in ones
+            var handler = applicableHandlers.FirstOrDefault(handler => handler is not ICorePropertyValueHandler)
+                ?? applicableHandlers.FirstOrDefault();
             if (handler is null)
             {
                 _logger.LogDebug(

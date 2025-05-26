@@ -6,11 +6,11 @@ using Umbraco.Cms.Search.Provider.InMemory.Models;
 
 namespace Umbraco.Cms.Search.Provider.InMemory.Services;
 
-internal sealed class InMemoryIndexService : IIndexService
+internal sealed class InMemoryIndexer : IInMemoryIndexer
 {
     private readonly DataStore _dataStore;
 
-    public InMemoryIndexService(DataStore dataStore)
+    public InMemoryIndexer(DataStore dataStore)
         => _dataStore = dataStore;
 
     public Task AddOrUpdateAsync(string indexAlias, Guid id, UmbracoObjectTypes objectType, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)

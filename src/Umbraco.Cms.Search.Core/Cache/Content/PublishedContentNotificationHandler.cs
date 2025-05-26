@@ -7,14 +7,15 @@ using Umbraco.Extensions;
 // NOTE: the namespace is defined as what it would be, if this was part of Umbraco core.
 namespace Umbraco.Cms.Core.Events;
 
-public class PublishNotificationHandler :
+internal sealed class PublishedContentNotificationHandler : ContentNotificationHandlerBase,
     IDistributedCacheNotificationHandler<ContentPublishedNotification>,
     IDistributedCacheNotificationHandler<ContentUnpublishedNotification>,
+    IDistributedCacheNotificationHandler<ContentMovedNotification>,
     INotificationHandler<ContentMovedToRecycleBinNotification>
 {
     private readonly DistributedCache _distributedCache;
 
-    public PublishNotificationHandler(DistributedCache distributedCache)
+    public PublishedContentNotificationHandler(DistributedCache distributedCache)
         => _distributedCache = distributedCache;
 
     public void Handle(ContentPublishedNotification notification)
@@ -57,20 +58,19 @@ public class PublishNotificationHandler :
         _distributedCache.RefreshByPayload(PublishedContentCacheRefresher.UniqueId, payloads);
     }
 
+    public void Handle(ContentMovedNotification notification)
+        => HandleMove(notification.MoveInfoCollection, TreeChangeTypes.RefreshBranch);
+
     public void Handle(ContentMovedToRecycleBinNotification notification)
+        => HandleMove(notification.MoveInfoCollection, TreeChangeTypes.Remove);
+
+    private void HandleMove(IEnumerable<MoveEventInfoBase<IContent>> moveEventInfo, TreeChangeTypes changeType)
     {
-        var topmostEntities = FindTopmostEntities(notification.MoveInfoCollection.Select(i => i.Entity));
+        var topmostEntities = FindTopmostEntities(moveEventInfo.Select(i => i.Entity));
         var payloads = topmostEntities
-            .Select(entity => new PublishedContentCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.Remove, []))
+            .Select(entity => new PublishedContentCacheRefresher.JsonPayload(entity.Key, changeType, []))
             .ToArray();
 
         _distributedCache.RefreshByPayload(PublishedContentCacheRefresher.UniqueId, payloads);
-    }
-
-    private IContent[] FindTopmostEntities(IEnumerable<IContent> candidates)
-    {
-        var candidatesAsArray = candidates as IContent[] ?? candidates.ToArray();
-        var ids = candidatesAsArray.Select(entity => entity.Id).ToArray();
-        return candidatesAsArray.Where(entity => ids.Contains(entity.ParentId) is false).ToArray();
     }
 }

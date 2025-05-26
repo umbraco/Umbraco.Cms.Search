@@ -9,8 +9,9 @@ public sealed class IndexOptions
 {
     private readonly Dictionary<string, IndexRegistration> _register = [];
 
-    public void RegisterIndex<TIndexService, TContentChangeStrategy>(string indexAlias, params UmbracoObjectTypes[] containedObjectTypes)
-        where TIndexService : class, IIndexService
+    public void RegisterIndex<TIndexer, TSearcher, TContentChangeStrategy>(string indexAlias, params UmbracoObjectTypes[] containedObjectTypes)
+        where TIndexer : class, IIndexer
+        where TSearcher : class, ISearcher
         where TContentChangeStrategy : class, IContentChangeStrategy
     {
         ArgumentException.ThrowIfNullOrEmpty("Index alias cannot be empty", nameof(indexAlias));
@@ -19,10 +20,12 @@ public sealed class IndexOptions
             throw new ArgumentException($"Index \"{indexAlias}\" must define at least one contained object type",  nameof(containedObjectTypes));
         }
 
-        _register[indexAlias] = new IndexRegistration(indexAlias, containedObjectTypes.Distinct(), typeof(TIndexService),
-            typeof(TContentChangeStrategy));
+        _register[indexAlias] = new IndexRegistration(indexAlias, containedObjectTypes.Distinct(), typeof(TIndexer), typeof(TSearcher), typeof(TContentChangeStrategy));
     }
 
     public IndexRegistration[] GetIndexRegistrations()
         => _register.Values.ToArray();    
+
+    public IndexRegistration? GetIndexRegistration(string indexAlias)
+        => _register.TryGetValue(indexAlias, out var indexRegistration) ? indexRegistration : null;    
 }

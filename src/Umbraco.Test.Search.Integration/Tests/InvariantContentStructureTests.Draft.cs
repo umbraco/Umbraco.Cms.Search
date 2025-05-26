@@ -9,7 +9,7 @@ public partial class InvariantContentStructureTests
     {
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
-        var documents = IndexService.Dump(IndexAliases.DraftContent);
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -28,7 +28,7 @@ public partial class InvariantContentStructureTests
     {
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
-        var documents = IndexService.Dump(IndexAliases.PublishedContent);
+        var documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(0));
     }
 
@@ -37,7 +37,7 @@ public partial class InvariantContentStructureTests
     {
         ContentService.Save(Root());
 
-        var documents = IndexService.Dump(IndexAliases.DraftContent);
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
         Assert.That(documents[0].Id, Is.EqualTo(RootKey));
     }
@@ -55,7 +55,7 @@ public partial class InvariantContentStructureTests
             Assert.That(GreatGrandchild().Trashed, Is.True);
         });
 
-        var documents = IndexService.Dump(IndexAliases.DraftContent);
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
            
         Assert.Multiple(() =>
@@ -79,7 +79,7 @@ public partial class InvariantContentStructureTests
             Assert.That(ContentService.GetById(GreatGrandchildKey), Is.Null);
         });
            
-        var documents = IndexService.Dump(IndexAliases.DraftContent);
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(2));
            
         Assert.Multiple(() =>

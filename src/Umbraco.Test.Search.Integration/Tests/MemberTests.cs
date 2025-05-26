@@ -14,7 +14,7 @@ public class MemberTests : ContentBaseTestBase
     {
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        var documents = IndexService.Dump(IndexAliases.Member);
+        var documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -32,14 +32,14 @@ public class MemberTests : ContentBaseTestBase
     {
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        var documents = IndexService.Dump(IndexAliases.Member);
+        var documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
         {
-            VerifyDocumentStructureValues(documents[0], MemberOneKey, Guid.Empty, MemberOneKey);
-            VerifyDocumentStructureValues(documents[1], MemberTwoKey, Guid.Empty, MemberTwoKey);
-            VerifyDocumentStructureValues(documents[2], MemberThreeKey, Guid.Empty, MemberThreeKey);
+            VerifyDocumentStructureValues(documents[0], MemberOneKey, Guid.Empty, [MemberOneKey]);
+            VerifyDocumentStructureValues(documents[1], MemberTwoKey, Guid.Empty, [MemberTwoKey]);
+            VerifyDocumentStructureValues(documents[2], MemberThreeKey, Guid.Empty, [MemberThreeKey]);
         });
     }
 
@@ -48,14 +48,14 @@ public class MemberTests : ContentBaseTestBase
     {
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        var documents = IndexService.Dump(IndexAliases.Member);
+        var documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
         {
-            VerifyDocumentSystemValues(documents[0], MemberOne(), "tag1", "tag2");
-            VerifyDocumentSystemValues(documents[1], MemberTwo(), "tag3", "tag4");
-            VerifyDocumentSystemValues(documents[2], MemberThree(), "tag5", "tag6");
+            VerifyDocumentSystemValues(documents[0], MemberOne(), ["tag1", "tag2"]);
+            VerifyDocumentSystemValues(documents[1], MemberTwo(), ["tag3", "tag4"]);
+            VerifyDocumentSystemValues(documents[2], MemberThree(), ["tag5", "tag6"]);
         });
     }
 
@@ -64,7 +64,7 @@ public class MemberTests : ContentBaseTestBase
     {
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        var documents = IndexService.Dump(IndexAliases.Member);
+        var documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -152,7 +152,7 @@ public class MemberTests : ContentBaseTestBase
                 .Build()
         );
 
-        IndexService.Reset();
+        Indexer.Reset();
     }
 
     private void VerifyDocumentPropertyValues(TestIndexDocument document, string? organization)

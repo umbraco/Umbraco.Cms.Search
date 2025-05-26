@@ -45,10 +45,10 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
         
         var fields = new List<IndexField>
         {
-            new(Constants.FieldNames.Id, new() { Keywords = [content.Key.ToString("D")] }, null, null),
-            new(Constants.FieldNames.ParentId, new() { Keywords = [parentKey.Value.ToString("D")] }, null, null),
-            new(Constants.FieldNames.PathIds, new() { Keywords = pathKeys.Select(key => key.ToString("D")).ToArray() }, null, null),
-            new(Constants.FieldNames.ContentType, new() { Keywords = [content.ContentType.Alias] }, null, null),
+            new(Constants.FieldNames.Id, new() { Keywords = [content.Key.AsKeyword()] }, null, null),
+            new(Constants.FieldNames.ParentId, new() { Keywords = [parentKey.Value.AsKeyword()] }, null, null),
+            new(Constants.FieldNames.PathIds, new() { Keywords = pathKeys.Select(key => key.AsKeyword()).ToArray() }, null, null),
+            new(Constants.FieldNames.ContentTypeId, new() { Keywords = [content.ContentType.Key.AsKeyword()] }, null, null),
             new(Constants.FieldNames.CreateDate, new() { DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(content.CreateDate)] }, null, null),
             new(Constants.FieldNames.UpdateDate, new() { DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(content.UpdateDate)] }, null, null),
             new(Constants.FieldNames.Level, new() { Integers = [content.Level] }, null, null),
@@ -66,7 +66,27 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
     {
         if (content.ParentId <= 0)
         {
-            parentId = Guid.Empty;
+            if (content.Trashed)
+            {
+                var recycleBinId = GetRecycleBinId(objectType);
+                if (recycleBinId.HasValue is false)
+                {
+                    _logger.LogWarning(
+                        "Could not resolve recycle bin key as parent key for object type {objectType} - aborting indexing of content item {contentKey}.",
+                        objectType,
+                        content.Key);
+                    parentId = null;
+                    return false;
+                }
+
+                parentId = recycleBinId;
+            }
+            else
+            {
+                // empty GUID means "root of tree, not trashed"
+                parentId = Guid.Empty;
+            }
+
             return true;
         }
 
@@ -87,8 +107,23 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
     
     private bool TryGetPathIds(IContentBase content, UmbracoObjectTypes objectType, out IList<Guid> pathIds)
     {
-        var ancestorIds = content.AncestorIds();
         pathIds = new List<Guid>();
+
+        if (content.Trashed)
+        {
+            var recycleBinId = GetRecycleBinId(objectType);
+            if (recycleBinId.HasValue is false)
+            {
+                _logger.LogWarning(
+                    "Could not resolve recycle bin key for object type {objectType} - aborting indexing of content item {contentKey}.",
+                    objectType,
+                    content.Key);
+                return false;
+            }
+            pathIds.Add(recycleBinId.Value);
+        }
+        
+        var ancestorIds = content.AncestorIds();
         foreach (var ancestorId in ancestorIds)
         {
             var attempt = _idKeyMap.GetKeyForId(ancestorId, objectType);
@@ -143,4 +178,11 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
             yield return new IndexField(Constants.FieldNames.Name, new() { Texts = [name] }, culture, null);
         }
     }
+
+    private Guid? GetRecycleBinId(UmbracoObjectTypes objectType)
+        => objectType is UmbracoObjectTypes.Document
+            ? Cms.Core.Constants.System.RecycleBinContentKey
+            : objectType is UmbracoObjectTypes.Media
+                ? Cms.Core.Constants.System.RecycleBinMediaKey
+                : null;
 }

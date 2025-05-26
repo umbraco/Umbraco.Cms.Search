@@ -36,12 +36,23 @@ public static class UmbracoBuilderExtensions
 {
     public static IUmbracoBuilder AddCustomCacheRefresherNotificationHandlers(this IUmbracoBuilder builder)
     {
-        builder.AddNotificationHandler<ContentPublishedNotification, PublishNotificationHandler>();
-        builder.AddNotificationHandler<ContentUnpublishedNotification, PublishNotificationHandler>();
-        builder.AddNotificationHandler<ContentMovedToRecycleBinNotification, PublishNotificationHandler>();
+        builder.AddNotificationHandler<ContentPublishedNotification, PublishedContentNotificationHandler>();
+        builder.AddNotificationHandler<ContentUnpublishedNotification, PublishedContentNotificationHandler>();
+        builder.AddNotificationHandler<ContentMovedNotification, PublishedContentNotificationHandler>();
+        builder.AddNotificationHandler<ContentMovedToRecycleBinNotification, PublishedContentNotificationHandler>();
 
         builder.AddNotificationHandler<PublicAccessEntrySavedNotification, PublicAccessNotificationHandler>();
         builder.AddNotificationHandler<PublicAccessEntryDeletedNotification, PublicAccessNotificationHandler>();
+
+        builder.AddNotificationHandler<ContentSavedNotification, DraftContentNotificationHandler>();
+        builder.AddNotificationHandler<ContentMovedNotification, DraftContentNotificationHandler>();
+        builder.AddNotificationHandler<ContentMovedToRecycleBinNotification, DraftContentNotificationHandler>();
+        builder.AddNotificationHandler<ContentDeletedNotification, DraftContentNotificationHandler>();
+
+        builder.AddNotificationHandler<MediaSavedNotification, DraftMediaNotificationHandler>();
+        builder.AddNotificationHandler<MediaMovedNotification, DraftMediaNotificationHandler>();
+        builder.AddNotificationHandler<MediaMovedToRecycleBinNotification, DraftMediaNotificationHandler>();
+        builder.AddNotificationHandler<MediaDeletedNotification, DraftMediaNotificationHandler>();
 
         return builder;
     }

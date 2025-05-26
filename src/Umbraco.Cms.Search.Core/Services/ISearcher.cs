@@ -5,9 +5,9 @@ using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
 
 namespace Umbraco.Cms.Search.Core.Services;
 
-public class NoopSearchService : ISearchService
+public interface ISearcher
 {
-    public Task<SearchResult> SearchAsync(
+    Task<SearchResult> SearchAsync(
         string indexAlias,
         string? query,
         IEnumerable<Filter>? filters,
@@ -17,6 +17,5 @@ public class NoopSearchService : ISearchService
         string? segment,
         AccessContext? accessContext,
         int skip,
-        int take)
-        => Task.FromResult(new SearchResult(0, [], []));
+        int take);
 }

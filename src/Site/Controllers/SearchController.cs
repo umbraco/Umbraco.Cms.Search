@@ -14,6 +14,7 @@ using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Web;
+using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Web.Common.Controllers;
 using Constants = Umbraco.Cms.Search.Core.Constants;
@@ -22,7 +23,7 @@ namespace Site.Controllers;
 
 public class SearchController : RenderController
 {
-    private readonly ISearchService _searchService;
+    private readonly ISearcherResolver _searcherResolver;
     private readonly IDateTimeOffsetConverter _dateTimeOffsetConverter;
     private readonly IMemberManager _memberManager;
     private readonly IMemberService _memberService;
@@ -31,13 +32,13 @@ public class SearchController : RenderController
         ILogger<RenderController> logger,
         ICompositeViewEngine compositeViewEngine,
         IUmbracoContextAccessor umbracoContextAccessor,
-        ISearchService searchService,
+        ISearcherResolver searcherResolver,
         IDateTimeOffsetConverter dateTimeOffsetConverter,
         IMemberManager memberManager,
         IMemberService memberService)
         : base(logger, compositeViewEngine, umbracoContextAccessor)
     {
-        _searchService = searchService;
+        _searcherResolver = searcherResolver;
         _dateTimeOffsetConverter = dateTimeOffsetConverter;
         _memberManager = memberManager;
         _memberService = memberService;
@@ -53,6 +54,8 @@ public class SearchController : RenderController
         {
             return CurrentTemplate(new SearchViewModel());
         }
+
+        var searcher = _searcherResolver.GetRequiredSearcher(Constants.IndexAliases.PublishedContent);
         
         var filterDictionary = SplitParameters(filters);
         var filterValues = filterDictionary?
@@ -78,7 +81,7 @@ public class SearchController : RenderController
 
         var accessContext = await CurrentMemberAccessContext();
         
-        var result = await _searchService.SearchAsync(Constants.IndexAliases.PublishedContent, query, filterValues, facetValues, sorters, culture, segment, accessContext, 0, 100);
+        var result = await searcher.SearchAsync(Constants.IndexAliases.PublishedContent, query, filterValues, facetValues, sorters, culture, segment, accessContext, 0, 100);
         
         return CurrentTemplate(
             new SearchViewModel

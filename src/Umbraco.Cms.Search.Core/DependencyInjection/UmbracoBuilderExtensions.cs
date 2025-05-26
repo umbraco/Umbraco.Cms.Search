@@ -6,6 +6,7 @@ using Umbraco.Cms.Search.Core.Helpers;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
+using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing.Indexers;
 
@@ -16,6 +17,7 @@ public static class UmbracoBuilderExtensions
     public static IUmbracoBuilder AddSearchCore(this IUmbracoBuilder builder)
     {
         builder.Services.AddSingleton<IContentIndexingService, ContentIndexingService>();
+        builder.Services.AddSingleton<ISearcherResolver, SearcherResolver>();
 
         builder.Services.AddTransient<IContentIndexingDataCollectionService, ContentIndexingDataCollectionService>();
 
@@ -32,8 +34,8 @@ public static class UmbracoBuilderExtensions
         builder.Services.AddTransient<IDraftContentChangeStrategy, DraftContentChangeStrategy>();
 
         builder
-            .AddNotificationHandler<ContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
-            .AddNotificationHandler<MediaCacheRefresherNotification, ContentIndexingNotificationHandler>()
+            .AddNotificationHandler<DraftContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
+            .AddNotificationHandler<DraftMediaCacheRefresherNotification, ContentIndexingNotificationHandler>()
             .AddNotificationHandler<MemberCacheRefresherNotification, ContentIndexingNotificationHandler>()
             .AddNotificationHandler<PublishedContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
             .AddNotificationAsyncHandler<PublicAccessDetailedCacheRefresherNotification, PublicAccessIndexingNotificationHandler>();

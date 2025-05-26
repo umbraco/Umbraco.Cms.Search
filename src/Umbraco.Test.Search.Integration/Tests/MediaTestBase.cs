@@ -8,7 +8,7 @@ namespace Umbraco.Test.Search.Integration.Tests;
 
 public abstract class MediaTestBase : ContentBaseTestBase
 {
-    private IMediaTypeService MediaTypeService => GetRequiredService<IMediaTypeService>(); 
+    protected IMediaTypeService MediaTypeService => GetRequiredService<IMediaTypeService>(); 
 
     protected IMediaService MediaService => GetRequiredService<IMediaService>();
 
@@ -121,6 +121,6 @@ public abstract class MediaTestBase : ContentBaseTestBase
             .Build();
         MediaService.Save(grandchildMedia);
 
-        IndexService.Reset();
+        Indexer.Reset();
     }
 }

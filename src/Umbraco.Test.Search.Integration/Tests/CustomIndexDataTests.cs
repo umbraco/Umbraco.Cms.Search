@@ -13,9 +13,9 @@ public class CustomIndexDataTests : TestBase
     [Test]
     public async Task CanIndexCustomData()
     {
-        var indexService = GetRequiredService<IIndexService>();
+        var indexer = GetRequiredService<IIndexer>();
         var key = Guid.NewGuid();
-        await indexService.AddOrUpdateAsync(
+        await indexer.AddOrUpdateAsync(
             "My_Data",
             key,
             UmbracoObjectTypes.Unknown,
@@ -36,7 +36,7 @@ public class CustomIndexDataTests : TestBase
             protection: null
         );
 
-        var documents = IndexService.Dump("My_Data");
+        var documents = Indexer.Dump("My_Data");
 
         Assert.That(documents.Count, Is.EqualTo(1));
         Assert.Multiple(() =>

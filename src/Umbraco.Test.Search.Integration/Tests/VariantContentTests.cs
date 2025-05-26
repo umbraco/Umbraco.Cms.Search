@@ -1,6 +1,7 @@
 ﻿using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Helpers;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
@@ -13,7 +14,7 @@ public class VariantContentTests : VariantContentTestBase
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        var documents = IndexService.Dump(IndexAliases.PublishedContent);
+        var documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -47,7 +48,7 @@ public class VariantContentTests : VariantContentTestBase
         ContentService.Save(child);
         ContentService.Publish(Child(), ["*"]);
 
-        var documents = IndexService.Dump(IndexAliases.PublishedContent);
+        var documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         VerifyDocumentPropertyValues(
@@ -70,7 +71,7 @@ public class VariantContentTests : VariantContentTestBase
         ContentService.Save(child);
         ContentService.Publish(Child(), ["*"]);
 
-        var documents = IndexService.Dump(IndexAliases.PublishedContent);
+        var documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         VerifyDocumentPropertyValues(documents[1], "The updated child title", "The child message", 34);
@@ -87,7 +88,7 @@ public class VariantContentTests : VariantContentTestBase
         ContentService.Save(child);
         ContentService.Publish(Child(), ["*"]);
 
-        var documents = IndexService.Dump(IndexAliases.PublishedContent);
+        var documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         VerifyDocumentPropertyValues(documents[1], "The child title", "The child message", 123456);
@@ -99,7 +100,7 @@ public class VariantContentTests : VariantContentTestBase
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        var documents = IndexService.Dump(IndexAliases.PublishedContent);
+        var documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -149,8 +150,8 @@ public class VariantContentTests : VariantContentTestBase
 
         Assert.Multiple(() =>
         {
-            var contentTypeValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.ContentType)?.Value.Keywords?.SingleOrDefault();
-            Assert.That(contentTypeValue, Is.EqualTo(content.ContentType.Alias));
+            var contentTypeValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.ContentTypeId)?.Value.Keywords?.SingleOrDefault();
+            Assert.That(contentTypeValue, Is.EqualTo(content.ContentType.Key.AsKeyword()));
 
             var nameFields = document.Fields.Where(f => f.FieldName == Constants.FieldNames.Name).ToArray();
             Assert.That(nameFields.Length, Is.EqualTo(2));
