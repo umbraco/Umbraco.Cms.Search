@@ -8,7 +8,7 @@ using Umbraco.Cms.Search.Provider.Examine.Configuration;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
-public class IndexService : IIndexService
+public class IndexService : IIndexer
 {
     private readonly IExamineManager _examineManager;
 
@@ -109,16 +109,6 @@ public class IndexService : IIndexService
     private string CalculateFieldName(IndexField field, string property)
     {
         var result = field.FieldName;
-        // if (field.Culture is not null)
-        // {
-        //     result += $"_{field.Culture}";
-        // }
-        //
-        // if (field.Segment is not null)
-        // {
-        //     result += $"_{field.Segment}";
-        // }
-
         return result + $"_{property}";
     }
 

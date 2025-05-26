@@ -17,6 +17,7 @@ using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
+using ISearcher = Umbraco.Cms.Search.Core.Services.ISearcher;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests;
 
@@ -54,13 +55,13 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
             Cms.Search.Core.Constants.IndexAliases.PublishedContent,
             config => { });
         builder.Services.AddTransient<IndexService>();
-        builder.Services.AddTransient<IIndexService, IndexService>();
-        builder.Services.AddTransient<ISearchService, SearchService>();
+        builder.Services.AddTransient<IIndexer, IndexService>();
+        builder.Services.AddTransient<ISearcher, SearchService>();
         
         builder.Services.Configure<Umbraco.Cms.Search.Core.Configuration.IndexOptions>(options =>
         {
-            options.RegisterIndex<IndexService, IDraftContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<IndexService, IPublishedContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IndexService, SearchService, IDraftContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IndexService, SearchService, IPublishedContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
         });
 
         builder.AddSearchCore();

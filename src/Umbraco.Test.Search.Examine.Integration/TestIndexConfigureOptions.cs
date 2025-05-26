@@ -8,21 +8,21 @@ public class TestIndexConfigureOptions : IConfigureOptions<IndexOptions>
 {
     public void Configure(IndexOptions options)
     {
-        options.Entries =
+        options.Fields =
         [
-            new IndexOptions.Entry
+            new IndexOptions.Field
             {
                 PropertyName = "title",
                 Values = ["texts"],
                 Type = FieldDefinitionTypes.FacetFullText,
             },
-            new IndexOptions.Entry
+            new IndexOptions.Field
             {
                 PropertyName = "decimalproperty",
                 Values = ["decimals"],
                 Type = FieldDefinitionTypes.FacetDouble,
             },            
-            new IndexOptions.Entry
+            new IndexOptions.Field
             {
                 PropertyName = "sortableTitle",
                 Values = ["texts"],

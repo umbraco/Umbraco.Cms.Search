@@ -36,7 +36,7 @@ public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirecto
 
     private void AddOptions(LuceneDirectoryIndexOptions options)
     {
-        foreach (var facetEntry in _facetOptions.Value.Entries)
+        foreach (var facetEntry in _facetOptions.Value.Fields)
         {
             foreach (var propertyIndexValue in facetEntry.Values)
             {

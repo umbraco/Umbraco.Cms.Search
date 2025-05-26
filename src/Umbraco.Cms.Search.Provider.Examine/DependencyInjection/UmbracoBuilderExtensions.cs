@@ -8,6 +8,7 @@ using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Search.Provider.Examine.Services;
 using IndexOptions = Umbraco.Cms.Search.Core.Configuration.IndexOptions;
+using ISearcher = Umbraco.Cms.Search.Core.Services.ISearcher;
 
 namespace Umbraco.Cms.Search.Provider.Examine.DependencyInjection;
 
@@ -36,15 +37,15 @@ public static class UmbracoBuilderExtensions
         });
         
         builder.Services.AddTransient<IndexService>();
-        builder.Services.AddTransient<IIndexService, IndexService>();
-        builder.Services.AddTransient<ISearchService, SearchService>();
+        builder.Services.AddTransient<IIndexer, IndexService>();
+        builder.Services.AddTransient<ISearcher, SearchService>();
         
         builder.Services.Configure<IndexOptions>(options =>
         {
-            options.RegisterIndex<IndexService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<IndexService, IPublishedContentChangeStrategy>(Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<IndexService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
-            options.RegisterIndex<IndexService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
+            options.RegisterIndex<IndexService, SearchService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IndexService, SearchService, IPublishedContentChangeStrategy>(Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IndexService, SearchService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
+            options.RegisterIndex<IndexService, SearchService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
         });
 
         return builder;
