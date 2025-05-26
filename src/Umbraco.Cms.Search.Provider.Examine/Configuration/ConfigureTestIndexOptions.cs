@@ -6,9 +6,9 @@ namespace Umbraco.Cms.Search.Provider.Examine.Configuration;
 
 public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirectoryIndexOptions>
 {
-    private readonly IOptions<FacetOptions> _facetOptions;
+    private readonly IOptions<IndexOptions> _facetOptions;
 
-    public ConfigureIndexOptions(IOptions<FacetOptions> facetOptions)
+    public ConfigureIndexOptions(IOptions<IndexOptions> facetOptions)
     {
         _facetOptions = facetOptions;
     }
@@ -17,16 +17,16 @@ public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirecto
         switch (name)
         {
             case Cms.Search.Core.Constants.IndexAliases.DraftContent:
-                AddFacets(options);
+                AddOptions(options);
                 break;
             case Cms.Search.Core.Constants.IndexAliases.PublishedContent:
-                AddFacets(options);
+                AddOptions(options);
                 break;
             case Cms.Search.Core.Constants.IndexAliases.DraftMembers:
-                AddFacets(options);
+                AddOptions(options);
                 break;
             case Cms.Search.Core.Constants.IndexAliases.DraftMedia:
-                AddFacets(options);
+                AddOptions(options);
                 break;
         }
     }
@@ -34,13 +34,13 @@ public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirecto
     public void Configure(LuceneDirectoryIndexOptions options) 
         => Configure(string.Empty, options);
 
-    private void AddFacets(LuceneDirectoryIndexOptions options)
+    private void AddOptions(LuceneDirectoryIndexOptions options)
     {
-        foreach (var facetEntry in _facetOptions.Value.Facets)
+        foreach (var facetEntry in _facetOptions.Value.Entries)
         {
             foreach (var propertyIndexValue in facetEntry.Values)
             {
-                options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{facetEntry.PropertyName}_{propertyIndexValue}", facetEntry.FacetType));
+                options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{facetEntry.PropertyName}_{propertyIndexValue}", facetEntry.Type));
             }
             
         }

@@ -45,7 +45,7 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
         
         builder.Services.AddExamine();
         builder.Services.AddSingleton<TestInMemoryDirectoryFactory>();
-        builder.Services.ConfigureOptions<TestFacetConfigureOptions>();
+        builder.Services.ConfigureOptions<TestIndexConfigureOptions>();
         builder.Services.ConfigureOptions<ConfigureIndexOptions>();
         builder.Services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(
             Cms.Search.Core.Constants.IndexAliases.DraftContent,

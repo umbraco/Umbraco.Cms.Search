@@ -1,15 +1,15 @@
 ﻿namespace Umbraco.Cms.Search.Provider.Examine.Configuration;
 
-public class FacetOptions
+public class IndexOptions
 {
-    public FacetEntry[] Facets { get; set; } = [];
+    public Entry[] Entries { get; set; } = [];
     
-    public class FacetEntry
+    public class Entry
     {
         public required string PropertyName { get; set; } = string.Empty;
         public required string[] Values { get; set; } = [];
         
-        public required string FacetType { get; set; } = string.Empty;
+        public required string Type { get; set; } = string.Empty;
     }
 }
 
