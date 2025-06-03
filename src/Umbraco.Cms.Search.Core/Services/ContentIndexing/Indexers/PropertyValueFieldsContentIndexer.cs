@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
@@ -10,26 +11,36 @@ namespace Umbraco.Cms.Search.Core.Services.ContentIndexing.Indexers;
 internal sealed class PropertyValueFieldsContentIndexer : IContentIndexer
 {
     private readonly PropertyValueHandlerCollection _propertyValueHandlerCollection;
+    private readonly IMemberTypeService _memberTypeService;
     private readonly ILogger<PropertyValueFieldsContentIndexer> _logger;
 
     public PropertyValueFieldsContentIndexer(
         PropertyValueHandlerCollection propertyValueHandlerCollection,
+        IMemberTypeService memberTypeService,
         ILogger<PropertyValueFieldsContentIndexer> logger)
     {
         _propertyValueHandlerCollection = propertyValueHandlerCollection;
         _logger = logger;
+        _memberTypeService = memberTypeService;
     }
 
-    public Task<IEnumerable<IndexField>> GetIndexFieldsAsync(IContentBase content, string?[] cultures, bool published, CancellationToken cancellationToken)
-        => Task.FromResult(CollectPropertyValueFields(content, cultures, published));
+    public async Task<IEnumerable<IndexField>> GetIndexFieldsAsync(IContentBase content, string?[] cultures, bool published, CancellationToken cancellationToken)
+        => await CollectPropertyValueFields(content, cultures, published);
 
-    // TODO: this must filter out sensitive properties
-    private IEnumerable<IndexField> CollectPropertyValueFields(IContentBase content, string?[] cultures, bool published)
+    private async Task<IEnumerable<IndexField>> CollectPropertyValueFields(IContentBase content, string?[] cultures, bool published)
     {
         var fields = new List<IndexField>();
 
+        var memberType = content is IMember ? await _memberTypeService.GetAsync(content.ContentType.Key) : null;
+        
         foreach (var property in content.Properties)
         {
+            if (memberType?.IsSensitiveProperty(property.Alias) is true)
+            {
+                // explicitly filter out sensitive properties
+                continue;
+            }
+            
             var applicableHandlers = _propertyValueHandlerCollection
                 .Where(handler => handler.CanHandle(property.PropertyType.PropertyEditorAlias))
                 .ToArray();
