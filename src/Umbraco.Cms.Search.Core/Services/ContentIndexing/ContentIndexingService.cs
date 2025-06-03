@@ -35,7 +35,7 @@ internal sealed class ContentIndexingService : IContentIndexingService
 
         var indexRegistrationsByStrategyType = _indexOptions
             .GetIndexRegistrations()
-            .GroupBy(r => r.ContentChangeHandler);
+            .GroupBy(r => r.ContentChangeStrategy);
 
         foreach (var group in indexRegistrationsByStrategyType)
         {
