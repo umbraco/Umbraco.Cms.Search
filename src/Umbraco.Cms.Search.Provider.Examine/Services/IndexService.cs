@@ -27,7 +27,7 @@ public class IndexService : IIndexer
             index.IndexItem(new ValueSet(
                 indexKey,
                 objectType.ToString(),
-                MapToDictionary(fields.Where(x => (x.FieldName.StartsWith("Umb_") && x.Culture is null && x.Segment is null) || (x.Culture == variation.Culture && x.Segment == variation.Segment)))));
+                MapToDictionary(fields.Where(x => (x.FieldName.StartsWith("Umb_") && x.Culture is null && x.Segment is null) || (x.Culture == variation.Culture && x.Segment == variation.Segment)), protection)));
         }
 
         return Task.CompletedTask;
@@ -65,7 +65,7 @@ public class IndexService : IIndexer
     
 
 
-    private Dictionary<string, object> MapToDictionary(IEnumerable<IndexField> fields)
+    private Dictionary<string, object> MapToDictionary(IEnumerable<IndexField> fields, ContentProtection? protection)
     {
         var result = new Dictionary<string, object>();
         List<string> aggregatedTexts = [];
@@ -101,6 +101,11 @@ public class IndexService : IIndexer
         if (aggregatedTexts.Any())
         {
             result.Add("aggregated_texts", aggregatedTexts.ToArray());
+        }
+
+        if (protection is not null)
+        {
+            result.Add("protection", protection.AccessIds);
         }
 
         return result;
