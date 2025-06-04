@@ -17,7 +17,7 @@ public class InvariantSortableIndexTests : IndexTestBase
     [TestCase(false)]
     public async Task CanGetSortedTitles(bool publish)
     {
-        await CreateTitleDocuments(["C Title", "A Title", "B Title"], publish);
+        await CreateTitleDocuments(["C Title", "A Title", "B Title"]);
 
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
@@ -40,7 +40,7 @@ public class InvariantSortableIndexTests : IndexTestBase
     [TestCase(false)]
     public async Task CanGetUnSortedTitles(bool publish)
     {
-        await CreateTitleDocuments(["C Title", "A Title", "B Title"], publish);
+        await CreateTitleDocuments(["C Title", "A Title", "B Title"]);
 
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
@@ -78,7 +78,7 @@ public class InvariantSortableIndexTests : IndexTestBase
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
     }
     
-    private async Task CreateTitleDocuments(string[] values, bool publish)
+    private async Task CreateTitleDocuments(string[] values)
     {
         await CreateTitleDocType();
 
@@ -95,7 +95,7 @@ public class InvariantSortableIndexTests : IndexTestBase
                     })
                 .Build();
             
-            SaveOrPublish(document, publish);
+            SaveAndPublish(document);
         }
     }
 }

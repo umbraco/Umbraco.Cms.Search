@@ -101,7 +101,7 @@ public class InvariantContentProtectionIndexTests : IndexTestBase
                 })
             .Build();
 
-        SaveOrPublish(root, true);
+        SaveAndPublish(root);
 
         var content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);

@@ -1,31 +1,30 @@
 ﻿using Examine;
 using NUnit.Framework;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Tests.Common.Builders;
+using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests;
 
-public class InvariantIndexServiceTests : IndexTestBase
+public class InvariantDocumentIndexServiceTests : IndexTestBase
 {
-    [Test]
     [TestCase(true)]
     [TestCase(false)]
     public void CanIndexAnyDocument(bool publish)
     {
-        CreateInvariantDocument(publish);
-
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         var results = index.Searcher.CreateQuery().All().Execute();
-        Assert.That(results, Is.Not.Empty);
+        Assert.That(results.TotalItemCount, Is.EqualTo(1));
     }
     
-    [Test]
     [TestCase(true)]
     [TestCase(false)]
     public void CanRemoveAnyDocument(bool publish)
     {
-        CreateInvariantDocument(publish);
         var content = ContentService.GetById(RootKey);
         ContentService.Delete(content);
 
@@ -33,6 +32,9 @@ public class InvariantIndexServiceTests : IndexTestBase
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
+        // TODO: We need to await that the index deleting has completed, for now this is our only option
+        Thread.Sleep(3000);
+        
         var results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results, Is.Empty);
     }
@@ -40,23 +42,21 @@ public class InvariantIndexServiceTests : IndexTestBase
     [Test]
     public void CanRemoveUnpublishedDocument()
     {
-        CreateInvariantDocument(true);
         var content = ContentService.GetById(RootKey);
         ContentService.Unpublish(content);
 
         var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
+        // TODO: We need to await that the index deleting has completed, for now this is our only option
+        Thread.Sleep(3000);
         var results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results, Is.Empty);
     }
-
-    [Test]
+    
     [TestCase(true)]
     [TestCase(false)]
     public void CanIndexTextProperty(bool publish)
     {
-        CreateInvariantDocument(publish);
-
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
@@ -67,14 +67,11 @@ public class InvariantIndexServiceTests : IndexTestBase
         Assert.That(results, Is.Not.Empty);
         Assert.That(results.First().Values.First(x => x.Key == "title_texts").Value, Is.EqualTo("The root title"));
     }
-
-    [Test]
+    
     [TestCase(true)]
     [TestCase(false)]
     public void CanIndexIntegerValues(bool publish)
     {
-        CreateInvariantDocument(publish);
-
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
@@ -86,13 +83,10 @@ public class InvariantIndexServiceTests : IndexTestBase
         Assert.That(results.First().Values.First(x => x.Key == "count_integers").Value, Is.EqualTo("12"));
     }
     
-    [Test]
     [TestCase(true)]
     [TestCase(false)]
     public void CanIndexDecimalValues(bool publish)
     {
-        CreateInvariantDocument(publish);
-
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
@@ -104,13 +98,10 @@ public class InvariantIndexServiceTests : IndexTestBase
         Assert.That(results.First().Values.First(x => x.Key == "decimalproperty_decimals").Value, Is.EqualTo(DecimalValue.ToString()));
     }    
     
-    [Test]
     [TestCase(true)]
     [TestCase(false)]
     public void CanIndexDateTimeValues(bool publish)
     {
-        CreateInvariantDocument(publish);
-
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
@@ -122,8 +113,7 @@ public class InvariantIndexServiceTests : IndexTestBase
         Assert.That(results.First().Values.First(x => x.Key == "datetime_datetimeoffsets").Value, Is.EqualTo(CurrentDateTimeOffset.ToString()));
     }
     
-        
-    [Test]
+    
     [TestCase("title", "updated title", false)]
     [TestCase("title", "updated title", true)]
     [TestCase("count", 12, false)]
@@ -132,8 +122,6 @@ public class InvariantIndexServiceTests : IndexTestBase
     [TestCase("decimalproperty", 1.45, true)]
     public void CanIndexUpdatedProperties(string propertyName, object updatedValue, bool publish)
     {
-        CreateInvariantDocument(publish);
-
         UpdateProperty(propertyName, updatedValue, publish);
 
         var index = ExamineManager.GetIndex(publish
@@ -145,13 +133,10 @@ public class InvariantIndexServiceTests : IndexTestBase
         Assert.That(results.First().Values.First(x => x.Value == updatedValue.ToString()).Value, Is.EqualTo(updatedValue.ToString()));
     }
     
-    [Test]
     [TestCase(true)]
     [TestCase(false)]
     public void CanIndexAggregatedTexts(bool publish)
     {
-        CreateInvariantDocument(publish);
-
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
@@ -161,6 +146,66 @@ public class InvariantIndexServiceTests : IndexTestBase
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
         Assert.That(results.First().AllValues.First(x => x.Key == "aggregated_texts").Value.Contains("The root title"), Is.True);
+    }
+    
+    
+    [SetUp]
+    public void CreateInvariantDocument()
+    {
+        var dataType = new DataTypeBuilder()
+            .WithId(0)
+            .WithoutIdentity()
+            .WithDatabaseType(ValueStorageType.Decimal)
+            .AddEditor()
+            .WithAlias(Constants.PropertyEditors.Aliases.Decimal)
+            .Done()
+            .Build();
+        
+        DataTypeService.Save(dataType);
+        var contentType = new ContentTypeBuilder()
+            .WithAlias("invariant")
+            .AddPropertyType()
+            .WithAlias("title")
+            .WithDataTypeId(Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("count")
+            .WithDataTypeId(-51)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("datetime")
+            .WithDataTypeId(Constants.DataTypes.DateTime)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.DateTime)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("decimalproperty")
+            .WithDataTypeId(dataType.Id)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Decimal)
+            .Done()
+            .Build();
+        ContentTypeService.Save(contentType);
+
+        var root = new ContentBuilder()
+            .WithKey(RootKey)
+            .WithContentType(contentType)
+            .WithName("Root")
+            .WithPropertyValues(
+                new
+                {
+                    title = "The root title",
+                    count = 12,
+                    datetime = CurrentDateTimeOffset.DateTime,
+                    decimalproperty = DecimalValue
+                })
+            .Build();
+
+        ContentService.Save(root);
+        ContentService.Publish(root, new []{ "*"});
+        
+        var content = ContentService.GetById(RootKey);
+        Assert.That(content, Is.Not.Null);
     }
     
     private void UpdateProperty(string propertyName, object value, bool publish)

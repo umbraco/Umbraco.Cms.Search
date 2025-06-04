@@ -17,7 +17,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
     [TestCase(false)]
     public async Task CanGetOneIntFacet(bool publish)
     {
-        await CreateCountDocuments([1, 2], publish);
+        await CreateCountDocuments([1, 2]);
 
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
@@ -41,7 +41,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
     [TestCase(false)]
     public async Task CanGetOneDecimalFacet(bool publish)
     {
-        await CreateDecimalDocuments([3.6, 600.4], publish);
+        await CreateDecimalDocuments([3.6, 600.4]);
 
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
@@ -65,7 +65,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
     [TestCase(false)]
     public async Task CanGetOneTextFacet(bool publish)
     {
-        await CreateTitleDocuments(["Title", "Title", "Another"], publish);
+        await CreateTitleDocuments(["Title", "Title", "Another"]);
 
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
@@ -90,7 +90,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
     [TestCase(false)]
     public async Task CanGetMultipleIntFacets(bool publish)
     {
-        await CreateCountDocuments([1, 2, 99, 101, 170], publish);
+        await CreateCountDocuments([1, 2, 99, 101, 170]);
 
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
@@ -138,7 +138,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
     }
     
-    private async Task CreateTitleDocuments(string[] values, bool publish)
+    private async Task CreateTitleDocuments(string[] values)
     {
         await CreateTitleDocType();
 
@@ -154,7 +154,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
                     })
                 .Build();
             
-            SaveOrPublish(document, publish);
+            SaveAndPublish(document);
         }
     }
     
@@ -181,7 +181,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
     }
     
-    private async Task CreateDecimalDocuments(double[] values, bool publish)
+    private async Task CreateDecimalDocuments(double[] values)
     {
         await CreateDecimalDocType();
 
@@ -197,11 +197,11 @@ public class InvariantFacetsIndexTests : IndexTestBase
                     })
                 .Build();
             
-            SaveOrPublish(document, publish);
+            SaveAndPublish(document);
         }
     }
 
-    private async Task CreateCountDocuments(int[] values, bool publish)
+    private async Task CreateCountDocuments(int[] values)
     {
         await CreateCountDocType();
 
@@ -217,7 +217,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
                     })
                 .Build();
             
-            SaveOrPublish(document, publish);
+            SaveAndPublish(document);
         }
     }
 }

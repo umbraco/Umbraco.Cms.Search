@@ -1,6 +1,10 @@
 ﻿using Examine;
 using Examine.Search;
 using NUnit.Framework;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Tests.Common.Builders;
+using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests;
 
@@ -10,8 +14,6 @@ public class VariantIndexServiceTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexAnyDocument(bool publish)
     {
-        CreateVariantDocument(publish);
-
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
@@ -24,7 +26,6 @@ public class VariantIndexServiceTests : IndexTestBase
     [TestCase(false)]
     public void CanRemoveAnyDocument(bool publish)
     {
-        CreateInvariantDocument(publish);
         var content = ContentService.GetById(RootKey);
         ContentService.Delete(content);
 
@@ -32,6 +33,8 @@ public class VariantIndexServiceTests : IndexTestBase
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
+        // TODO: We need to await that the index deleting has completed, for now this is our only option
+        Thread.Sleep(3000);
         var results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results, Is.Empty);
     }
@@ -44,8 +47,6 @@ public class VariantIndexServiceTests : IndexTestBase
     [TestCase(false, "ja-JP", "名前")]
     public void CanIndexVariantName(bool publish, string culture, string expectedValue)
     {
-        CreateVariantDocument(publish);
-
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
@@ -65,7 +66,6 @@ public class VariantIndexServiceTests : IndexTestBase
     [TestCase("title", "updatedTitle", "ja-JP", true)]
     public void CanIndexUpdatedProperties(string propertyName, string updatedValue, string culture, bool publish)
     {
-        CreateVariantDocument(publish);
         UpdateProperty(propertyName, updatedValue, culture, publish);
 
         var index = ExamineManager.GetIndex(publish
@@ -85,8 +85,6 @@ public class VariantIndexServiceTests : IndexTestBase
     [TestCase(false, "ja-JP", "ル-ト")]
     public void CanIndexVariantTextByCulture(bool publish, string culture, string expectedValue)
     {
-        CreateVariantDocument(publish);
-
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
@@ -110,8 +108,6 @@ public class VariantIndexServiceTests : IndexTestBase
     [TestCase(false, "ja-JP", "segment-2", "ボディ-segment-2")]
     public void CanIndexVariantTextBySegment(bool publish, string culture, string segment, string expectedValue)
     {
-        CreateVariantDocument(publish);
-
         var index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
@@ -119,7 +115,67 @@ public class VariantIndexServiceTests : IndexTestBase
         var results = index.Searcher.Search(expectedValue);
         Assert.That(results, Is.Not.Empty);
         Assert.That(results.First().Values.First(x => x.Key == "body_texts").Value, Is.EqualTo(expectedValue));
-    }  
+    }
+    
+    [SetUp]
+    public void CreateVariantDocument()
+    {
+        
+        var langDk = new LanguageBuilder()
+            .WithCultureInfo("da-DK")
+            .WithIsDefault(true)
+            .Build();
+        var langJp = new LanguageBuilder()
+            .WithCultureInfo("ja-JP")
+            .Build();
+
+        LocalizationService.Save(langDk);
+        LocalizationService.Save(langJp);
+
+        var contentType = new ContentTypeBuilder()
+            .WithAlias("variant")
+            .WithContentVariation(ContentVariation.CultureAndSegment)
+            .AddPropertyType()
+            .WithAlias("title")
+            .WithVariations(ContentVariation.Culture)
+            .WithDataTypeId(Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("body")
+            .WithVariations(ContentVariation.CultureAndSegment)
+            .WithDataTypeId(Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .Done()
+            .Build();
+        ContentTypeService.Save(contentType);
+        
+        var root = new ContentBuilder()
+            .WithKey(RootKey)
+            .WithContentType(contentType)
+            .WithCultureName("en-US", "Name")
+            .WithCultureName("da-DK", "Navn")
+            .WithCultureName("ja-JP", "名前")
+            .Build();
+        
+        root.SetValue("title", "Root", "en-US");
+        root.SetValue("title", "Rod", "da-DK");
+        root.SetValue("title", "ル-ト", "ja-JP");
+        
+        root.SetValue("body", "body-segment-1", "en-US", "segment-1");
+        root.SetValue("body", "body-segment-2", "en-US", "segment-2");
+        root.SetValue("body", "krop-segment-1", "da-DK", "segment-1");
+        root.SetValue("body", "krop-segment-2", "da-DK", "segment-2");
+        root.SetValue("body", "ボディ-segment-1", "ja-JP", "segment-1");
+        root.SetValue("body", "ボディ-segment-2", "ja-JP", "segment-2");
+
+        ContentService.Save(root);
+        ContentService.Publish(root, new []{ "*"});
+        
+        var content = ContentService.GetById(RootKey);
+        Assert.That(content, Is.Not.Null);
+    }
+    
     
     private void UpdateProperty(string propertyName, object value, string culture, bool publish)
     {

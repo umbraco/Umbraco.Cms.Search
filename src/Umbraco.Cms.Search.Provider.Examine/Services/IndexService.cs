@@ -1,10 +1,7 @@
 ﻿using Examine;
-using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Models;
-using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Services;
-using Umbraco.Cms.Search.Provider.Examine.Configuration;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
@@ -39,7 +36,7 @@ public class IndexService : IIndexer
 
         if (variation.Culture is not null)
         {
-            result += $"-{variation.Culture}";
+            result += $"_{variation.Culture}";
         }
         if (variation.Segment is not null)
         {
@@ -53,13 +50,22 @@ public class IndexService : IIndexer
     public async Task DeleteAsync(string indexAlias, IEnumerable<Guid> keys)
     {
         var index = GetIndex(indexAlias);
-
+        
         foreach (var key in keys)
         {
-            index.DeleteFromIndex(key.ToString());
+            var documents = index.Searcher.Search(key.ToString());
+            foreach (var document in documents)
+            {
+                index.DeleteFromIndex(document.Id);
+            }
+
             //TODO: Fix this, this should work, but searching in the index locks it, and thus we cannot delete.
-            var results = index.Searcher.CreateQuery().Field("Umb_PathIds", key.ToString()).Execute();
-            index.DeleteFromIndex(results.Select(x => x.Id.ToLowerInvariant()));
+            var descendants = index.Searcher.CreateQuery().Field("Umb_PathIds_keywords", key.ToString()).Execute();
+            
+            foreach (var descendant in descendants)
+            {
+                index.DeleteFromIndex(descendant.Id);
+            }
         }
     }
     
