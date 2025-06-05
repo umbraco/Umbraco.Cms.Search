@@ -17,8 +17,9 @@ public class InvariantDocumentIndexServiceTests : IndexTestBase
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
-        var results = index.Searcher.CreateQuery().All().Execute();
-        Assert.That(results.TotalItemCount, Is.EqualTo(1));
+        var results = index.Searcher.CreateQuery().All().Execute().ToArray();
+        Assert.That(results.Length, Is.EqualTo(1));
+        Assert.That(results[0].Id, Is.EqualTo(RootKey.ToString()));
     }
     
     [TestCase(true)]

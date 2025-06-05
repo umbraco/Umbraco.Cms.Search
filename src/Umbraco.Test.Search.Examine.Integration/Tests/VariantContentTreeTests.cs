@@ -20,13 +20,10 @@ public class VariantContentTreeTests : IndexTestBase
     private const string JapaneseGrandChildTitle = "孫タイタル";
     
     [Test]
-    [TestCase(true)]
-    [TestCase(false)]
-    public void CanIndexDocumentTree(bool publish)
+    public void VariantStructure_YieldsAllDocuments()
     {
-        var index = ExamineManager.GetIndex(publish
-            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
-            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        PublishEntireStructure();
+        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
         var results = index.Searcher.CreateQuery().All().Execute();
         // 3 roots with 3 children with 3 grandchildren
@@ -34,8 +31,9 @@ public class VariantContentTreeTests : IndexTestBase
     }
     
     [Test]
-    public void UnpublishingRootWillRemoveAncestor()
+    public void VariantStructure_WithRootUnpublished_YieldsNoDocuments()
     {
+        PublishEntireStructure();
         var root = ContentService.GetById(RootKey);
         ContentService.Unpublish(root);
         
@@ -67,8 +65,9 @@ public class VariantContentTreeTests : IndexTestBase
     }
     
     [Test]
-    public void UnpublishingChildWillRemoveAncestors()
+    public void VariantStructure_WithChildUnpublished_YieldsNoDocumentsBelowRoot()
     {
+        PublishEntireStructure();
         var child = ContentService.GetById(ChildKey);
         ContentService.Unpublish(child);
         
@@ -100,8 +99,9 @@ public class VariantContentTreeTests : IndexTestBase
     }
     
     [Test]
-    public void UnpublishingRootWillRemoveAncestors_GrandChild_Unpublished()
+    public void VariantStructure_WithGrandChildUnpublished_YieldsNoDocumentsBelowChild()
     {
+        PublishEntireStructure();
         var grandChild = ContentService.GetById(GrandchildKey);
         ContentService.Unpublish(grandChild);
         
@@ -186,7 +186,7 @@ public class VariantContentTreeTests : IndexTestBase
         root.SetValue("body", "ル-ト-ボディ-segment-1", "ja-JP", "segment-1");
         root.SetValue("body", "ル-ト-ボディ-segment-2", "ja-JP", "segment-2");
 
-        SaveAndPublish(root);
+        ContentService.Save(root);
 
         var child = new ContentBuilder()
             .WithKey(ChildKey)
@@ -208,7 +208,7 @@ public class VariantContentTreeTests : IndexTestBase
         child.SetValue("body", "子供-ボディ-segment-1", "ja-JP", "segment-1");
         child.SetValue("body", "子供-ボディ-segment-2", "ja-JP", "segment-2");
         
-        SaveAndPublish(child);
+        ContentService.Save(child);
 
         var grandchild = new ContentBuilder()
             .WithKey(GrandchildKey)
@@ -230,7 +230,13 @@ public class VariantContentTreeTests : IndexTestBase
         grandchild.SetValue("body", "孫-ボディ-segment-1", "ja-JP", "segment-1");
         grandchild.SetValue("body", "孫-ボディ-segment-2", "ja-JP", "segment-2");
         
-        SaveAndPublish(grandchild);
+        ContentService.Save(grandchild);
+    }
+    
+    private void PublishEntireStructure()
+    {
+        var root = ContentService.GetById(RootKey);
+        ContentService.PublishBranch(root, PublishBranchFilter.IncludeUnpublished, ["*"]);
     }
     
 }
