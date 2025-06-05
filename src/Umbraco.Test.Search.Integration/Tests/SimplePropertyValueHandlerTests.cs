@@ -8,7 +8,7 @@ using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
-public class PropertyValueHandlerTests : ContentTestBase
+public class SimplePropertyValueHandlerTests : ContentTestBase
 {
     [Test]
     public void AllSupportedEditors_CanBeIndexed()

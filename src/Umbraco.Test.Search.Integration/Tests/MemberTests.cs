@@ -75,6 +75,29 @@ public class MemberTests : ContentBaseTestBase
         });
     }
 
+    [Test]
+    public async Task AllMembers_DoesNotIndexSensitiveProperties()
+    {
+        var memberTypeService = GetRequiredService<IMemberTypeService>();
+        var memberType = memberTypeService.Get("myMemberType");
+        Assert.That(memberType, Is.Not.Null);
+
+        memberType.SetIsSensitiveProperty("organization", true);
+        await memberTypeService.UpdateAsync(memberType, Constants.Security.SuperUserKey);
+        
+        MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
+
+        var documents = Indexer.Dump(IndexAliases.Member);
+        Assert.That(documents, Has.Count.EqualTo(3));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(documents[0].Fields.Any(field => field.FieldName == "organization"), Is.False);
+            Assert.That(documents[1].Fields.Any(field => field.FieldName == "organization"), Is.False);
+            Assert.That(documents[2].Fields.Any(field => field.FieldName == "organization"), Is.False);
+        });
+    }
+
     private IMemberService MemberService => GetRequiredService<IMemberService>();
 
     private Guid MemberOneKey { get; } = Guid.NewGuid();
