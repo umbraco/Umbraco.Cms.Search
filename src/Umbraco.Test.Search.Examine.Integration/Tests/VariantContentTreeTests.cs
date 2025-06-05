@@ -132,6 +132,88 @@ public class VariantContentTreeTests : IndexTestBase
         });
     }
     
+    [TestCase("en-US")]
+    [TestCase("da-DK")]
+    [TestCase("ja-JP")]
+    public void PublishedStructureSingleCulture_YieldsAllPublishedDocumentsInOneCultures(string culture)
+    {
+        var root = ContentService.GetById(RootKey);
+        ContentService.PublishBranch(root, PublishBranchFilter.IncludeUnpublished, [culture]);
+        VerifyVariance([culture]);
+    }
+    
+    
+    [TestCase("en-US", "da-DK", "ja-JP")]
+    [TestCase("da-DK", "en-US", "ja-JP")]
+    [TestCase("ja-JP", "en-US", "da-DK")]
+    public void PublishedStructureInAllCultures_WithUnpublishedRootInSingleCulture_YieldsAllDocumentInPublishedRootCulture(string cultureToUnpublish, string expectedCulture, string otherExpectedCulture)
+    {
+        PublishEntireStructure();
+        var root = ContentService.GetById(RootKey);
+        
+        var result = ContentService.Unpublish(root, cultureToUnpublish);
+        Assert.That(result.Success, Is.True);
+        
+        // TODO: We need to await that the index deleting has completed, for now this is our only option
+        Thread.Sleep(5000);
+        
+        VerifyVariance([expectedCulture, otherExpectedCulture]);
+    }
+    
+    private void VerifyVariance(IEnumerable<string> expectedExistingCultures)
+    {
+        // Dictionary to map culture to expected root and child titles
+        var rootTitles = new Dictionary<string, string>
+        {
+            { "en-US", EnglishRootTitle },
+            { "da-DK", DanishRootTitle },
+            { "ja-JP", JapaneseRootTitle }
+        };
+
+        var childTitles = new Dictionary<string, string>
+        {
+            { "en-US", EnglishChildTitle },
+            { "da-DK", DanishChildTitle },
+            { "ja-JP", JapaneseChildTitle }
+        };
+
+        var grandChildTitles = new Dictionary<string, string>
+        {
+            { "en-US", EnglishGrandChildTitle },
+            { "da-DK", DanishGrandChildTitle },
+            { "ja-JP", JapaneseGrandChildTitle }
+        };
+
+        var allCultures = new[] { "en-US", "da-DK", "ja-JP" };
+        var expectedSet = new HashSet<string>(expectedExistingCultures);
+        
+        var publishedIndex = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        var all = publishedIndex.Searcher.CreateQuery().All().Execute();
+
+        Assert.Multiple(() =>
+        {
+            foreach (var currentCulture in allCultures)
+            {
+                var rootResults = publishedIndex.Searcher.Search(rootTitles[currentCulture]);
+                var childResults = publishedIndex.Searcher.Search(childTitles[currentCulture]);
+                var grandChildResults = publishedIndex.Searcher.Search(grandChildTitles[currentCulture]);
+
+                if (expectedSet.Contains(currentCulture))
+                {
+                    Assert.That(rootResults, Is.Not.Empty);
+                    Assert.That(childResults, Is.Not.Empty);
+                    Assert.That(grandChildResults, Is.Not.Empty);
+                }
+                else
+                {
+                    Assert.That(rootResults, Is.Empty, $"Expected no root results for culture '{currentCulture}'");
+                    Assert.That(childResults, Is.Empty, $"Expected no child results for culture '{currentCulture}'");
+                    Assert.That(grandChildResults, Is.Empty, $"Expected no grandchild results for culture '{currentCulture}'");
+                }
+            }
+        });
+    }
+    
     [SetUp]
     public void CreateVariantDocumentTree()
     {
