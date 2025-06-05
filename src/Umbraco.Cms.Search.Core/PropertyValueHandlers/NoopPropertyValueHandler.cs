@@ -8,7 +8,10 @@ public sealed class NoopPropertyValueHandler : IPropertyValueHandler, ICorePrope
     public bool CanHandle(string propertyEditorAlias)
         => propertyEditorAlias is Cms.Core.Constants.PropertyEditors.Aliases.EmailAddress
             or Cms.Core.Constants.PropertyEditors.Aliases.ColorPicker
-            or Cms.Core.Constants.PropertyEditors.Aliases.ColorPickerEyeDropper;
+            or Cms.Core.Constants.PropertyEditors.Aliases.ColorPickerEyeDropper
+            or Cms.Core.Constants.PropertyEditors.Aliases.MediaPicker3
+            or Cms.Core.Constants.PropertyEditors.Aliases.ImageCropper
+            or Cms.Core.Constants.PropertyEditors.Aliases.UploadField;
     public IndexValue? GetIndexValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
         => null;
 }
