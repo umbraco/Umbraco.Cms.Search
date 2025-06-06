@@ -13,21 +13,25 @@ public class IndexService : IIndexer
     {
         _examineManager = examineManager;
     }
-    public Task AddOrUpdateAsync(string indexAlias, Guid key, UmbracoObjectTypes objectType, IEnumerable<Variation> variations,
+    public async Task AddOrUpdateAsync(string indexAlias, Guid key, UmbracoObjectTypes objectType, IEnumerable<Variation> variations,
         IEnumerable<IndexField> fields, ContentProtection? protection)
     {
+        // await DeleteAsync(indexAlias, [key]);
+        
         var index = GetIndex(indexAlias);
+
+        var valuesToIndex = new List<ValueSet>();
 
         foreach (var variation in variations)
         {
             var indexKey = CalculateIndexKey(key, variation);
-            index.IndexItem(new ValueSet(
+            valuesToIndex.Add(new ValueSet(
                 indexKey,
                 objectType.ToString(),
                 MapToDictionary(fields.Where(x => (x.FieldName.StartsWith("Umb_") && x.Culture is null && x.Segment is null) || (x.Culture == variation.Culture && x.Segment == variation.Segment)), protection)));
         }
-
-        return Task.CompletedTask;
+        
+        index.IndexItems(valuesToIndex);
     }
 
     private string CalculateIndexKey(Guid key, Variation variation)
