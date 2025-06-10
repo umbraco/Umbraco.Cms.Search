@@ -1,5 +1,7 @@
 ﻿using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.PropertyEditors;
+using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
@@ -13,6 +15,8 @@ public class SimplePropertyValueHandlerTests : ContentTestBase
     [Test]
     public void AllSupportedEditors_CanBeIndexed()
     {
+        var jsonSerializer = GetRequiredService<IJsonSerializer>();
+        
         var content = new ContentBuilder()
             .WithContentType(GetContentType())
             .WithName("All Supported Editors")
@@ -34,6 +38,22 @@ public class SimplePropertyValueHandlerTests : ContentTestBase
                     booleanAsStringValue = "1",
                     sliderSingleValue = "123.45",
                     sliderRangeValue = "123.45,567.89",
+                    multiUrlPickerValue = jsonSerializer.Serialize(new []
+                    {
+                        new MultiUrlPickerValueEditor.LinkDto
+                        {
+                            Name = "Link One"
+                        },
+                        new MultiUrlPickerValueEditor.LinkDto
+                        {
+                            Name = "Link Two"
+                        },
+                        new MultiUrlPickerValueEditor.LinkDto
+                        {
+                            // should be ignored - but make sure we test it all the same
+                            Name = null
+                        }
+                    }),
                 })
             .Build();
 
@@ -93,6 +113,9 @@ public class SimplePropertyValueHandlerTests : ContentTestBase
 
             var sliderRangeValue = document.Fields.FirstOrDefault(f => f.FieldName == "sliderRangeValue")?.Value.Decimals?.ToArray();
             CollectionAssert.AreEqual(sliderRangeValue, new[] { 123.45m, 567.89m });
+
+            var multiUrlPickerValue = document.Fields.FirstOrDefault(f => f.FieldName == "multiUrlPickerValue")?.Value.Texts?.ToArray();
+            CollectionAssert.AreEqual(multiUrlPickerValue, new[] { "Link One", "Link Two" });
         });
     }
 
@@ -195,6 +218,16 @@ public class SimplePropertyValueHandlerTests : ContentTestBase
         };
         await dataTypeService.CreateAsync(sliderRangeDataType, Constants.Security.SuperUserKey);
 
+        var multiUrlPickerDataType = new DataTypeBuilder()
+            .WithId(0)
+            .WithDatabaseType(ValueStorageType.Nvarchar)
+            .WithName("Multi URL picker")
+            .AddEditor()
+            .WithAlias(Constants.PropertyEditors.Aliases.MultiUrlPicker)
+            .Done()
+            .Build();
+        await dataTypeService.CreateAsync(multiUrlPickerDataType, Constants.Security.SuperUserKey);
+
         var contentType = new ContentTypeBuilder()
             .WithAlias("allEditors")
             .AddPropertyType()
@@ -271,6 +304,11 @@ public class SimplePropertyValueHandlerTests : ContentTestBase
             .WithAlias("sliderRangeValue")
             .WithDataTypeId(sliderRangeDataType.Id)
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Slider)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("multiUrlPickerValue")
+            .WithDataTypeId(multiUrlPickerDataType.Id)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.MultiUrlPicker)
             .Done()
             .Build();
         await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
