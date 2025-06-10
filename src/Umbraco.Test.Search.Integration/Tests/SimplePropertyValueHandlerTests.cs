@@ -29,6 +29,9 @@ public class SimplePropertyValueHandlerTests : ContentTestBase
                     tagsAsCsvValue = "Four,Five,Six",
                     multipleTextstringsValue = "First\nSecond\nThird",
                     contentPickerValue = "udi://document/55bf7f6d-acd2-4f1e-92bd-f0b5c41dbfed",
+                    booleanAsBooleanValue = true,
+                    booleanAsIntegerValue = 1,
+                    booleanAsStringValue = "1"
                 })
             .Build();
 
@@ -73,6 +76,15 @@ public class SimplePropertyValueHandlerTests : ContentTestBase
 
             var contentPickerValue = document.Fields.FirstOrDefault(f => f.FieldName == "contentPickerValue")?.Value.Keywords?.SingleOrDefault();
             CollectionAssert.AreEqual(contentPickerValue, "55bf7f6d-acd2-4f1e-92bd-f0b5c41dbfed");
+
+            var booleanAsBooleanValue = document.Fields.FirstOrDefault(f => f.FieldName == "booleanAsBooleanValue")?.Value.Integers?.SingleOrDefault();
+            Assert.That(booleanAsBooleanValue, Is.EqualTo(1));
+
+            var booleanAsIntegerValue = document.Fields.FirstOrDefault(f => f.FieldName == "booleanAsIntegerValue")?.Value.Integers?.SingleOrDefault();
+            Assert.That(booleanAsIntegerValue, Is.EqualTo(1));
+
+            var booleanAsStringValue = document.Fields.FirstOrDefault(f => f.FieldName == "booleanAsStringValue")?.Value.Integers?.SingleOrDefault();
+            Assert.That(booleanAsStringValue, Is.EqualTo(1));
         });
     }
 
@@ -198,6 +210,21 @@ public class SimplePropertyValueHandlerTests : ContentTestBase
             .WithAlias("contentPickerValue")
             .WithDataTypeId(contentPickerDataType.Id)
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.ContentPicker)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("booleanAsBooleanValue")
+            .WithDataTypeId(Constants.DataTypes.Boolean)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("booleanAsIntegerValue")
+            .WithDataTypeId(Constants.DataTypes.Boolean)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("booleanAsStringValue")
+            .WithDataTypeId(Constants.DataTypes.Boolean)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
             .Done()
             .Build();
         await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
