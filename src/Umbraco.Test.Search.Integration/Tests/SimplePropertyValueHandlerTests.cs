@@ -31,7 +31,9 @@ public class SimplePropertyValueHandlerTests : ContentTestBase
                     contentPickerValue = "udi://document/55bf7f6d-acd2-4f1e-92bd-f0b5c41dbfed",
                     booleanAsBooleanValue = true,
                     booleanAsIntegerValue = 1,
-                    booleanAsStringValue = "1"
+                    booleanAsStringValue = "1",
+                    sliderSingleValue = "123.45",
+                    sliderRangeValue = "123.45,567.89",
                 })
             .Build();
 
@@ -85,6 +87,12 @@ public class SimplePropertyValueHandlerTests : ContentTestBase
 
             var booleanAsStringValue = document.Fields.FirstOrDefault(f => f.FieldName == "booleanAsStringValue")?.Value.Integers?.SingleOrDefault();
             Assert.That(booleanAsStringValue, Is.EqualTo(1));
+
+            var sliderSingleValue = document.Fields.FirstOrDefault(f => f.FieldName == "sliderSingleValue")?.Value.Decimals?.SingleOrDefault();
+            Assert.That(sliderSingleValue, Is.EqualTo(123.45m));
+
+            var sliderRangeValue = document.Fields.FirstOrDefault(f => f.FieldName == "sliderRangeValue")?.Value.Decimals?.ToArray();
+            CollectionAssert.AreEqual(sliderRangeValue, new[] { 123.45m, 567.89m });
         });
     }
 
@@ -159,6 +167,34 @@ public class SimplePropertyValueHandlerTests : ContentTestBase
             .Build();
         await dataTypeService.CreateAsync(contentPickerDataType, Constants.Security.SuperUserKey);
 
+        var sliderSingleDataType = new DataTypeBuilder()
+            .WithId(0)
+            .WithDatabaseType(ValueStorageType.Nvarchar)
+            .WithName("Slider single")
+            .AddEditor()
+            .WithAlias(Constants.PropertyEditors.Aliases.Slider)
+            .Done()
+            .Build();
+        sliderSingleDataType.ConfigurationData = new Dictionary<string, object>
+        {
+            { "enableRange", false }
+        };
+        await dataTypeService.CreateAsync(sliderSingleDataType, Constants.Security.SuperUserKey);
+
+        var sliderRangeDataType = new DataTypeBuilder()
+            .WithId(0)
+            .WithDatabaseType(ValueStorageType.Nvarchar)
+            .WithName("Slider range")
+            .AddEditor()
+            .WithAlias(Constants.PropertyEditors.Aliases.Slider)
+            .Done()
+            .Build();
+        sliderSingleDataType.ConfigurationData = new Dictionary<string, object>
+        {
+            { "enableRange", true }
+        };
+        await dataTypeService.CreateAsync(sliderRangeDataType, Constants.Security.SuperUserKey);
+
         var contentType = new ContentTypeBuilder()
             .WithAlias("allEditors")
             .AddPropertyType()
@@ -225,6 +261,16 @@ public class SimplePropertyValueHandlerTests : ContentTestBase
             .WithAlias("booleanAsStringValue")
             .WithDataTypeId(Constants.DataTypes.Boolean)
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("sliderSingleValue")
+            .WithDataTypeId(sliderSingleDataType.Id)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Slider)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("sliderRangeValue")
+            .WithDataTypeId(sliderRangeDataType.Id)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Slider)
             .Done()
             .Build();
         await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
