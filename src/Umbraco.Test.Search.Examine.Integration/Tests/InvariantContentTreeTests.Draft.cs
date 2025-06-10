@@ -42,6 +42,7 @@ public partial class InvariantContentTreeTests
         CreateInvariantDocumentTree(false);
         var root = ContentService.GetById(RootKey);
         var result = ContentService.MoveToRecycleBin(root);
+        Thread.Sleep(3000);
         var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
         var results = index.Searcher.CreateQuery().All().Execute().ToArray();
         
@@ -207,5 +208,6 @@ public partial class InvariantContentTreeTests
             ContentService.Save(grandchild);
         }
 
+        Thread.Sleep(3000);
     }
 }

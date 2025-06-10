@@ -204,6 +204,7 @@ public class InvariantDocumentIndexServiceTests : IndexTestBase
 
         ContentService.Save(root);
         ContentService.Publish(root, new []{ "*"});
+        Thread.Sleep(3000);
         
         var content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);
@@ -222,7 +223,8 @@ public class InvariantDocumentIndexServiceTests : IndexTestBase
         else
         {
             ContentService.Save(content);
-
         }
+        
+        Thread.Sleep(3000);
     }
 }

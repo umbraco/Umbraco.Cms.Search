@@ -27,6 +27,7 @@ public class InvariantContentProtectionIndexTests : IndexTestBase
                 ContentId = RootKey,
                 MemberGroupNames = ["testGroup"]
             });
+        Thread.Sleep(3000);
 
         var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
@@ -54,6 +55,7 @@ public class InvariantContentProtectionIndexTests : IndexTestBase
                 ContentId = RootKey,
                 MemberGroupNames = ["testGroup", "testGroup 2", "testGroup 3", "testGroup 4", "testGroup 5"]
             });
+        Thread.Sleep(3000);
 
         var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         

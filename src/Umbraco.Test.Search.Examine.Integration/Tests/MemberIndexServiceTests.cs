@@ -45,5 +45,7 @@ public class MemberIndexServiceTests : IndexTestBase
                 .Done()
                 .Build()
         );
+        
+        Thread.Sleep(3000);
     }
 }

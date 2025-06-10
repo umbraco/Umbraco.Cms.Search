@@ -87,6 +87,7 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
     {
         ContentService.Save(content);
         ContentService.Publish(content, new []{ "*"});
+        Thread.Sleep(3000);
     }
     
 }

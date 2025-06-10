@@ -45,5 +45,7 @@ public class MediaIndexServiceTests : IndexTestBase
                     })
                 .Build()
         );
+        
+        Thread.Sleep(3000);
     }
 }

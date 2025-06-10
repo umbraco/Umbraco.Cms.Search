@@ -61,16 +61,14 @@ public class VariantIndexServiceTests : IndexTestBase
         Assert.That(result, Is.EqualTo(expectedValue));
     }
     
-    [TestCase("title", "updatedTitle", "en-US", true)]
-    [TestCase("title", "updatedTitle", "da-DK", true)]
-    [TestCase("title", "updatedTitle", "ja-JP", true)]
-    public void CanIndexUpdatedProperties(string propertyName, string updatedValue, string culture, bool publish)
+    [TestCase("title", "updatedTitle", "en-US")]
+    [TestCase("title", "updatedTitle", "da-DK")]
+    [TestCase("title", "updatedTitle", "ja-JP")]
+    public void CanIndexUpdatedProperties(string propertyName, string updatedValue, string culture)
     {
-        UpdateProperty(propertyName, updatedValue, culture, publish);
+        UpdateProperty(propertyName, updatedValue, culture);
 
-        var index = ExamineManager.GetIndex(publish
-            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
-            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         
         var results = index.Searcher.Search(updatedValue);
         Assert.That(results, Is.Not.Empty);
@@ -171,25 +169,20 @@ public class VariantIndexServiceTests : IndexTestBase
 
         ContentService.Save(root);
         ContentService.Publish(root, new []{ "*"});
+        Thread.Sleep(3000);
         
         var content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);
     }
     
     
-    private void UpdateProperty(string propertyName, object value, string culture, bool publish)
+    private void UpdateProperty(string propertyName, object value, string culture)
     {
         var content = ContentService.GetById(RootKey);
         content.SetValue(propertyName, value, culture);
 
-        if (publish)
-        {
-            ContentService.Save(content);
-            ContentService.Publish(content, ["*"]);
-        }
-        else
-        {
-            ContentService.Save(content);
-        }
+        ContentService.Save(content);
+        ContentService.Publish(content, ["*"]);
+        Thread.Sleep(3000);
     }
 }

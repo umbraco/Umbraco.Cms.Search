@@ -139,6 +139,7 @@ public class VariantContentTreeTests : IndexTestBase
     {
         var root = ContentService.GetById(RootKey);
         ContentService.PublishBranch(root, PublishBranchFilter.IncludeUnpublished, [culture]);
+        Thread.Sleep(3000);
         VerifyVariance([culture]);
     }
     
@@ -155,7 +156,7 @@ public class VariantContentTreeTests : IndexTestBase
         Assert.That(result.Success, Is.True);
         
         // TODO: We need to await that the index deleting has completed, for now this is our only option
-        Thread.Sleep(5000);
+        Thread.Sleep(3000);
         
         VerifyVariance([expectedCulture, otherExpectedCulture]);
     }
@@ -188,7 +189,6 @@ public class VariantContentTreeTests : IndexTestBase
         var expectedSet = new HashSet<string>(expectedExistingCultures);
         
         var publishedIndex = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
-        var all = publishedIndex.Searcher.CreateQuery().All().Execute();
 
         Assert.Multiple(() =>
         {
@@ -319,6 +319,7 @@ public class VariantContentTreeTests : IndexTestBase
     {
         var root = ContentService.GetById(RootKey);
         ContentService.PublishBranch(root, PublishBranchFilter.IncludeUnpublished, ["*"]);
+        Thread.Sleep(3000);
     }
     
 }

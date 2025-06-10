@@ -13,12 +13,12 @@ public class IndexService : IIndexer
     {
         _examineManager = examineManager;
     }
-    public async Task AddOrUpdateAsync(string indexAlias, Guid key, UmbracoObjectTypes objectType, IEnumerable<Variation> variations,
+    public Task AddOrUpdateAsync(string indexAlias, Guid key, UmbracoObjectTypes objectType, IEnumerable<Variation> variations,
         IEnumerable<IndexField> fields, ContentProtection? protection)
     {
-        // await DeleteAsync(indexAlias, [key]);
-        
         var index = GetIndex(indexAlias);
+
+        DeleteSingleDoc(index, key);
 
         var valuesToIndex = new List<ValueSet>();
 
@@ -32,6 +32,7 @@ public class IndexService : IIndexer
         }
         
         index.IndexItems(valuesToIndex);
+        return Task.CompletedTask;
     }
 
     private string CalculateIndexKey(Guid key, Variation variation)
@@ -49,27 +50,46 @@ public class IndexService : IIndexer
         
         return result;
     }
+
+    private void DeleteSingleDoc(IIndex index, Guid key)
+    {
+        var documents = index.Searcher.CreateQuery().Field("Umb_Id_keywords", key.ToString()).Execute();
+        
+        var idsToDelete = new HashSet<string>();
+        
+        foreach (var document in documents)
+        {
+            idsToDelete.Add(document.Id);
+        }
+
+        if (idsToDelete.Any())
+        {
+            index.DeleteFromIndex(idsToDelete);
+        }
+    }
     
     
     public async Task DeleteAsync(string indexAlias, IEnumerable<Guid> keys)
     {
         var index = GetIndex(indexAlias);
+        var idsToDelete = new HashSet<string>();
         
         foreach (var key in keys)
         {
             var documents = index.Searcher.Search(key.ToString());
             foreach (var document in documents)
             {
-                index.DeleteFromIndex(document.Id);
+                idsToDelete.Add(document.Id);
             }
-
-            //TODO: Fix this, this should work, but searching in the index locks it, and thus we cannot delete.
+            
             var descendants = index.Searcher.CreateQuery().Field("Umb_PathIds_keywords", key.ToString()).Execute();
             
             foreach (var descendant in descendants)
             {
-                index.DeleteFromIndex(descendant.Id);
+                idsToDelete.Add(descendant.Id);
             }
+            
+            index.DeleteFromIndex(idsToDelete);
         }
     }
     
