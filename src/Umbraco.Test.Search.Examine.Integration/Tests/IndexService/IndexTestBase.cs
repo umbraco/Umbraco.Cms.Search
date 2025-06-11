@@ -22,20 +22,7 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.IndexService;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
 public abstract class IndexTestBase : TestBase
 {
-    protected DateTimeOffset CurrentDateTimeOffset = DateTimeOffset.UtcNow;
-
-    protected double DecimalValue = 12.43;
-    protected Guid RootKey { get; } = Guid.NewGuid();
-    
-    protected Guid ChildKey { get; } = Guid.NewGuid();
-
-    protected Guid GrandchildKey { get; } = Guid.NewGuid();
-    protected IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>();
-
-    protected IContentService ContentService => GetRequiredService<IContentService>();
     protected IExamineManager ExamineManager => GetRequiredService<IExamineManager>();
-    protected IDataTypeService DataTypeService => GetRequiredService<IDataTypeService>();
-    protected ILocalizationService LocalizationService => GetRequiredService<ILocalizationService>();
 
     protected void SaveAndPublish(IContent content)
     {

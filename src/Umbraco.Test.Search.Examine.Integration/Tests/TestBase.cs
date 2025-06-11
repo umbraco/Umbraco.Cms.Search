@@ -5,6 +5,7 @@ using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.HostedServices;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.Services;
@@ -22,6 +23,21 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
 public abstract class TestBase : UmbracoIntegrationTest
 {
+    protected Guid RootKey { get; } = Guid.NewGuid();
+    
+    protected Guid ChildKey { get; } = Guid.NewGuid();
+
+    protected Guid GrandchildKey { get; } = Guid.NewGuid();
+    
+    protected DateTimeOffset CurrentDateTimeOffset = DateTimeOffset.UtcNow;
+
+    protected double DecimalValue = 12.43;
+    protected IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>();
+
+    protected IContentService ContentService => GetRequiredService<IContentService>();
+    protected IDataTypeService DataTypeService => GetRequiredService<IDataTypeService>();
+    protected ILocalizationService LocalizationService => GetRequiredService<ILocalizationService>();
+    
         protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
         base.CustomTestSetup(builder);
