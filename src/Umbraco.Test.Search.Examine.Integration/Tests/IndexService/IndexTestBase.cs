@@ -20,7 +20,7 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.IndexService;
 
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
-public abstract class IndexTestBase : UmbracoIntegrationTest
+public abstract class IndexTestBase : TestBase
 {
     protected DateTimeOffset CurrentDateTimeOffset = DateTimeOffset.UtcNow;
 
@@ -36,49 +36,6 @@ public abstract class IndexTestBase : UmbracoIntegrationTest
     protected IExamineManager ExamineManager => GetRequiredService<IExamineManager>();
     protected IDataTypeService DataTypeService => GetRequiredService<IDataTypeService>();
     protected ILocalizationService LocalizationService => GetRequiredService<ILocalizationService>();
-    
-    protected override void CustomTestSetup(IUmbracoBuilder builder)
-    {
-        base.CustomTestSetup(builder);
-        
-        builder.Services.AddExamine();
-        builder.Services.AddSingleton<TestInMemoryDirectoryFactory>();
-        builder.Services.ConfigureOptions<TestIndexConfigureOptions>();
-        builder.Services.ConfigureOptions<ConfigureIndexOptions>();
-        builder.Services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(
-            Cms.Search.Core.Constants.IndexAliases.DraftContent,
-            config => { });
-        builder.Services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(
-            Cms.Search.Core.Constants.IndexAliases.PublishedContent,
-            config => { });        
-        builder.Services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(
-            Cms.Search.Core.Constants.IndexAliases.DraftMedia,
-            config => { });    
-        builder.Services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(
-            Cms.Search.Core.Constants.IndexAliases.DraftMembers,
-            config => { });
-        builder.Services.AddTransient<Indexer>();
-        builder.Services.AddTransient<IIndexer, Indexer>();
-        builder.Services.AddTransient<ISearcher, Searcher>();
-        
-        builder.Services.Configure<Umbraco.Cms.Search.Core.Configuration.IndexOptions>(options =>
-        {
-            options.RegisterIndex<Indexer, Searcher, IDraftContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<Indexer, Searcher, IPublishedContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<Indexer, Searcher, IDraftContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
-            options.RegisterIndex<Indexer, Searcher, IDraftContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
-        });
-
-        builder.AddSearchCore();
-        
-        builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
-        builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
-        
-        builder.AddNotificationHandler<ContentTreeChangeNotification, ContentTreeChangeDistributedCacheNotificationHandler>();
-        builder.AddNotificationHandler<MediaTreeChangeNotification, MediaTreeChangeDistributedCacheNotificationHandler>();
-        builder.AddNotificationHandler<MemberSavedNotification, MemberSavedDistributedCacheNotificationHandler>();
-        builder.AddNotificationHandler<MemberDeletedNotification, MemberDeletedDistributedCacheNotificationHandler>();
-    }
 
     protected void SaveAndPublish(IContent content)
     {
