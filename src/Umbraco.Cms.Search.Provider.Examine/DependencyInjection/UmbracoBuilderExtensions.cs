@@ -36,16 +36,16 @@ public static class UmbracoBuilderExtensions
         {
         });
         
-        builder.Services.AddTransient<IndexService>();
-        builder.Services.AddTransient<IIndexer, IndexService>();
-        builder.Services.AddTransient<ISearcher, SearchService>();
+        builder.Services.AddTransient<Indexer>();
+        builder.Services.AddTransient<IIndexer, Indexer>();
+        builder.Services.AddTransient<ISearcher, Searcher>();
         
         builder.Services.Configure<IndexOptions>(options =>
         {
-            options.RegisterIndex<IndexService, SearchService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<IndexService, SearchService, IPublishedContentChangeStrategy>(Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<IndexService, SearchService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
-            options.RegisterIndex<IndexService, SearchService, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
+            options.RegisterIndex<Indexer, Searcher, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<Indexer, Searcher, IPublishedContentChangeStrategy>(Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<Indexer, Searcher, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
+            options.RegisterIndex<Indexer, Searcher, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
         });
 
         return builder;

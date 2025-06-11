@@ -6,7 +6,7 @@ using Umbraco.Cms.Search.Core.Services;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
-public class SearchService : ISearcher
+public class Searcher : ISearcher
 {
     public Task<SearchResult> SearchAsync(string indexAlias, string? query, IEnumerable<Filter>? filters, IEnumerable<Facet>? facets, IEnumerable<Sorter>? sorters,
         string? culture, string? segment, AccessContext? accessContext, int skip, int take)

@@ -27,5 +27,9 @@
       <ProjectReference Include="..\Umbraco.Cms.Search.Provider.Examine\Umbraco.Cms.Search.Provider.Examine.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Tests\SearchService\" />
+    </ItemGroup>
+
 
 </Project>
