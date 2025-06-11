@@ -2,7 +2,7 @@
 using Examine.Lucene.Providers;
 using Directory = Lucene.Net.Store.Directory;
 
-namespace Umbraco.Test.Search.Examine.Integration.Tests;
+namespace Umbraco.Test.Search.Examine.Integration.Tests.IndexService;
 
 public class TestInMemoryDirectoryFactory : DirectoryFactoryBase
 {

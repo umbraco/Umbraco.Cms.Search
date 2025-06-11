@@ -8,7 +8,7 @@ using NUnit.Framework;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
 
-namespace Umbraco.Test.Search.Examine.Integration.Tests;
+namespace Umbraco.Test.Search.Examine.Integration.Tests.IndexService;
 
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.None)]

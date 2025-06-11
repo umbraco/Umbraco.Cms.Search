@@ -1,7 +1,8 @@
 ﻿using Examine;
 using NUnit.Framework;
+using Umbraco.Test.Search.Examine.Integration.Tests.IndexService;
 
-namespace Umbraco.Test.Search.Examine.Integration.Tests;
+namespace Umbraco.Test.Search.Examine.Integration.Tests.IndexService;
 
 public partial class InvariantContentTreeTests : IndexTestBase
 {
