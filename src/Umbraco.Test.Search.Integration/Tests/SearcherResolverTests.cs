@@ -103,6 +103,9 @@ public class SearcherResolverTests : UmbracoIntegrationTest
         public Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes,
             CancellationToken cancellationToken)
             => throw new NotImplementedException();
+
+        public Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
+            => throw new NotImplementedException();
     }
 
     private class TestIndexer : IIndexer
@@ -112,6 +115,9 @@ public class SearcherResolverTests : UmbracoIntegrationTest
             => throw new NotImplementedException();
 
         public Task DeleteAsync(string indexAlias, IEnumerable<Guid> ids)
+            => throw new NotImplementedException();
+
+        public Task ResetAsync(string indexAlias)
             => throw new NotImplementedException();
     }
 

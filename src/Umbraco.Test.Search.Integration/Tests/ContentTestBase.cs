@@ -1,5 +1,6 @@
 ﻿using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
@@ -8,6 +9,8 @@ public abstract class ContentTestBase : ContentBaseTestBase
     protected IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>(); 
 
     protected IContentService ContentService => GetRequiredService<IContentService>();
+
+    protected IContentIndexingService ContentIndexingService => GetRequiredService<IContentIndexingService>();
 
     protected Guid RootKey { get; } = Guid.NewGuid();
 

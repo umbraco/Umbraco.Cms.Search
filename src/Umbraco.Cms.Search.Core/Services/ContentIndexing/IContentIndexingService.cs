@@ -5,4 +5,6 @@ namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 public interface IContentIndexingService
 {
     void Handle(IEnumerable<ContentChange> changes);
+
+    void Rebuild(string indexAlias);
 }

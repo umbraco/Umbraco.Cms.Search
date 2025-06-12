@@ -49,7 +49,7 @@ internal class PublishedContentChangeStrategy : ContentChangeStrategyBase, IPubl
         ).ToArray();
 
         var pendingRemovals = new List<Guid>();
-        foreach (var change in changesAsArray.Where(change => change.ContentState is ContentState.Published))
+        foreach (var change in changesAsArray)
         {
             if (change.ChangeImpact is ChangeImpact.Remove)
             {
@@ -72,6 +72,23 @@ internal class PublishedContentChangeStrategy : ContentChangeStrategyBase, IPubl
         }
 
         await RemoveFromIndexAsync(indexInfosAsArray, pendingRemovals);
+    }
+
+    public async Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
+    {
+        await indexInfo.Indexer.ResetAsync(indexInfo.IndexAlias);
+
+        var indexInfos = new[] { indexInfo };
+        foreach (var content in _contentService.GetRootContent())
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                LogIndexRebuildCancellation(indexInfo);
+                return;
+            }
+
+            await ReindexAsync(indexInfos, content, true, cancellationToken);
+        }
     }
 
     private async Task ReindexAsync(IndexInfo[] indexInfos, IContentBase content, bool forceReindexDescendants, CancellationToken cancellationToken)

@@ -35,6 +35,9 @@ public abstract class ContentIndexingServiceTestsBase : UmbracoIntegrationTest
             return Task.CompletedTask;
         }
 
+        public Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
+            => throw new NotImplementedException();
+
         public List<List<IndexInfo>> HandledIndexInfos { get; } = new();
     }
 }

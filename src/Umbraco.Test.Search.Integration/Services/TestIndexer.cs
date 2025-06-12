@@ -39,6 +39,12 @@ public class TestIndexer : IIndexer, ISearcher
         return Task.CompletedTask;
     }
 
+    public Task ResetAsync(string indexAlias)
+    {
+        _indexes.Remove(indexAlias);
+        return Task.CompletedTask;
+    }
+
     public IReadOnlyList<TestIndexDocument> Dump(string indexAlias) => GetIndex(indexAlias).Values.ToList();
 
     public void Reset() => _indexes.Clear();

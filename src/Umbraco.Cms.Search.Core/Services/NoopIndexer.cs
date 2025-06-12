@@ -10,4 +10,7 @@ public sealed class NoopIndexer : IIndexer
 
     public Task DeleteAsync(string indexAlias, IEnumerable<Guid> ids)
         => Task.CompletedTask;
+
+    public Task ResetAsync(string indexAlias)
+        => Task.CompletedTask;
 }

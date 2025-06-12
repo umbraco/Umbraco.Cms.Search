@@ -41,6 +41,12 @@ internal sealed class InMemoryIndexer : IInMemoryIndexer
         return Task.CompletedTask;
     }
 
+    public Task ResetAsync(string indexAlias)
+    {
+        _dataStore.Remove(indexAlias);
+        return Task.CompletedTask;
+    }
+
     private void Remove(string index, Guid id)
     {
         GetIndex(index).Remove(id);
