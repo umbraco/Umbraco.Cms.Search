@@ -225,6 +225,6 @@ public partial class IndexedEntitySearchServiceTests
             trashed: trashed
         );
 
-        Assert.That(expectedTotal, Is.EqualTo(result.Total));
+        Assert.That(result.Total, Is.EqualTo(expectedTotal));
     }
 }
