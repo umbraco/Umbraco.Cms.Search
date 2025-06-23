@@ -1,10 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
+using Umbraco.Cms.Search.Core.Notifications;
 using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
@@ -15,7 +17,7 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
     private readonly IContentService _contentService;
     private readonly IMediaService _mediaService;
     private readonly IMemberService _memberService;
-    private readonly ILogger<DraftContentChangeStrategy> _logger;
+    private readonly IEventAggregator _eventAggregator;
 
     protected override bool SupportsTrashedContent => true;
 
@@ -24,6 +26,7 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
         IContentService contentService,
         IMediaService mediaService,
         IMemberService memberService,
+        IEventAggregator eventAggregator,
         IUmbracoDatabaseFactory umbracoDatabaseFactory,
         IIdKeyMap idKeyMap,
         ILogger<DraftContentChangeStrategy> logger)
@@ -33,7 +36,7 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
         _contentService = contentService;
         _mediaService = mediaService;
         _memberService = memberService;
-        _logger = logger;
+        _eventAggregator = eventAggregator;
     }
 
     public async Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
@@ -216,7 +219,14 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
 
         foreach (var indexInfo in indexInfos)
         {
-            await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, objectType, variations, fields, null);
+            var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, variations, fields);
+            if (await _eventAggregator.PublishCancelableAsync(notification))
+            {
+                // the indexing operation was cancelled for this index; continue with the rest of the indexes
+                continue;
+            }
+
+            await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, objectType, variations, notification.Fields, null);
         }
 
         return true;
