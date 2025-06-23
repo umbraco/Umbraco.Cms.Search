@@ -132,7 +132,23 @@ public class MemberTests : ContentBaseTestBase
         });
     }
 
+    [Test]
+    public async Task DeleteMemberType_RemovesDocuments()
+    {
+        MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
+
+        var documents = Indexer.Dump(IndexAliases.Member);
+        Assert.That(documents, Has.Count.EqualTo(3));
+
+        await MemberTypeService.DeleteAsync(MemberOne().ContentType.Key, Constants.Security.SuperUserKey);
+        
+        documents = Indexer.Dump(IndexAliases.Media);
+        Assert.That(documents, Has.Count.EqualTo(0));
+    }
+
     private IMemberService MemberService => GetRequiredService<IMemberService>();
+
+    private IMemberTypeService MemberTypeService => GetRequiredService<IMemberTypeService>();
 
     private Guid MemberOneKey { get; } = Guid.NewGuid();
 

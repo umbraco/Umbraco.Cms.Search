@@ -1,4 +1,5 @@
-﻿using Umbraco.Cms.Core.Models;
+﻿using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
@@ -89,6 +90,28 @@ public class MediaStructureTests : MediaTestBase
             Assert.That(documents[0].Id, Is.EqualTo(RootFolderKey));
             Assert.That(documents[1].Id, Is.EqualTo(RootMediaKey));
             Assert.That(documents[2].Id, Is.EqualTo(ChildMediaKey));
+        });
+    }
+
+    [Test]
+    public async Task DeleteMediaType_RemovesDocuments()
+    {
+        MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
+
+        var documents = Indexer.Dump(IndexAliases.Media);
+        Assert.That(documents, Has.Count.EqualTo(5));
+
+        await MediaTypeService.DeleteAsync(RootMedia().ContentType.Key, Constants.Security.SuperUserKey);
+        
+        documents = Indexer.Dump(IndexAliases.Media);
+        Assert.That(documents, Has.Count.EqualTo(2));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(documents[0].Id, Is.EqualTo(RootFolderKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildFolderKey));
+
+            Assert.That(documents.All(d => d.ObjectType is UmbracoObjectTypes.Media), Is.True);
         });
     }
 }
