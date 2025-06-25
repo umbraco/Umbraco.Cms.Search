@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Indexing;
+using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
@@ -9,21 +10,18 @@ public class SliderPropertyValueHandler : IPropertyValueHandler, ICorePropertyVa
     public bool CanHandle(string propertyEditorAlias)
         => propertyEditorAlias is Umbraco.Cms.Core.Constants.PropertyEditors.Aliases.Slider;
 
-    public IndexValue? GetIndexValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
+    public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
-        var values = ParsePropertyValue(content, property, culture, segment, published);
+        var values = ParsePropertyValue(property, culture, segment, published);
         return values is not null
-            ? new IndexValue
-            {
-                Decimals = values
-            }
-            : null;
+            ? [new IndexField(property.Alias, new IndexValue { Decimals = values }, culture, segment)]
+            : [];
     }
 
-    private static decimal[]? ParsePropertyValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
+    private static decimal[]? ParsePropertyValue(IProperty property, string? culture, string? segment, bool published)
     {
-        var value = content.GetValue<string>(property.Alias, culture, segment, published);
-        if (value is null)
+        var value = property.GetValue(culture, segment, published) as string;
+        if (value.IsNullOrWhiteSpace())
         {
             return null;
         }

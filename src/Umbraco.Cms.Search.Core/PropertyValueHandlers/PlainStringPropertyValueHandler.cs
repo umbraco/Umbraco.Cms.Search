@@ -11,14 +11,9 @@ public sealed class PlainStringPropertyValueHandler : IPropertyValueHandler, ICo
             or Cms.Core.Constants.PropertyEditors.Aliases.TextArea
             or Cms.Core.Constants.PropertyEditors.Aliases.PlainString;
 
-    public IndexValue? GetIndexValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
-    {
-        var value = content.GetValue<string>(property.Alias, culture, segment, published);
-        return value.IsNullOrWhiteSpace()
-            ? null
-            : new IndexValue
-            {
-                Texts = [value]
-            };
-    }
+    public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
+        => property.GetValue(culture, segment, published) is string stringValue
+           && string.IsNullOrWhiteSpace(stringValue) is false
+            ? [new IndexField(property.Alias, new IndexValue { Texts = [stringValue] }, culture, segment)]
+            : [];
 }

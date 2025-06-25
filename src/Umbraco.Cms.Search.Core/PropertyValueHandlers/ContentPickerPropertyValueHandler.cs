@@ -11,20 +11,17 @@ public sealed class ContentPickerPropertyValueHandler : IPropertyValueHandler, I
     public bool CanHandle(string propertyEditorAlias)
         => propertyEditorAlias is Umbraco.Cms.Core.Constants.PropertyEditors.Aliases.ContentPicker;
 
-    public IndexValue? GetIndexValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
+    public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
-        var key = ParsePropertyValue(content, property, culture, segment, published);
+        var key = ParsePropertyValue(property, culture, segment, published);
         return key.HasValue
-            ? new IndexValue
-            {
-                Keywords = [key.Value.AsKeyword()]
-            }
-            : null;
+            ? [new IndexField(property.Alias, new IndexValue { Keywords = [key.Value.AsKeyword()] }, culture, segment)]
+            : [];
     }
 
-    private static Guid? ParsePropertyValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
+    private static Guid? ParsePropertyValue(IProperty property, string? culture, string? segment, bool published)
     {
-        var value = content.GetValue<string>(property.Alias, culture, segment, published);
+        var value = property.GetValue(culture, segment, published) as string;
         if (value.IsNullOrWhiteSpace()
             || UdiParser.TryParse(value, out var udi) is false
             || udi is not GuidUdi guidUdi)

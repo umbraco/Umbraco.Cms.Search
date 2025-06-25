@@ -12,6 +12,7 @@ public sealed class NoopPropertyValueHandler : IPropertyValueHandler, ICorePrope
             or Cms.Core.Constants.PropertyEditors.Aliases.MediaPicker3
             or Cms.Core.Constants.PropertyEditors.Aliases.ImageCropper
             or Cms.Core.Constants.PropertyEditors.Aliases.UploadField;
-    public IndexValue? GetIndexValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
-        => null;
+
+    public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
+        => [];
 }

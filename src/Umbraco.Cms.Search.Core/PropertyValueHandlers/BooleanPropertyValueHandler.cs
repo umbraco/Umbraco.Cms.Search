@@ -8,20 +8,17 @@ public class BooleanPropertyValueHandler : IPropertyValueHandler, ICorePropertyV
     public bool CanHandle(string propertyEditorAlias)
         => propertyEditorAlias is Umbraco.Cms.Core.Constants.PropertyEditors.Aliases.Boolean;
 
-    public IndexValue? GetIndexValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
+    public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
-        var value = ParsePropertyValue(content, property, culture, segment, published);
+        var value = ParsePropertyValue(property, culture, segment, published);
         return value.HasValue
-            ? new IndexValue
-            {
-                Integers = [value.Value]
-            }
-            : null;
+            ? [new IndexField(property.Alias, new IndexValue { Integers = [value.Value] }, culture, segment)]
+            : [];
     }
 
-    private static int? ParsePropertyValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
+    private static int? ParsePropertyValue(IProperty property, string? culture, string? segment, bool published)
     {
-        var value = content.GetValue(property.Alias, culture, segment, published);
+        var value = property.GetValue(culture, segment, published);
         return value switch
         {
             bool booleanValue => booleanValue ? 1 : 0,

@@ -15,14 +15,8 @@ public sealed class DateTimeOffsetPropertyValueHandler : IPropertyValueHandler, 
         => propertyEditorAlias is Cms.Core.Constants.PropertyEditors.Aliases.DateTime
             or Cms.Core.Constants.PropertyEditors.Aliases.PlainDateTime;
 
-    public IndexValue? GetIndexValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
-    {
-        var value = content.GetValue<DateTime?>(property.Alias, culture, segment, published);
-        return value.HasValue
-            ? new IndexValue
-            {
-                DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(value.Value)]
-            }
-            : null;
-    }
+    public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
+        => property.GetValue(culture, segment, published) is DateTime dateTime
+            ? [new IndexField(property.Alias, new IndexValue { DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(dateTime)] }, culture, segment)]
+            : [];
 }

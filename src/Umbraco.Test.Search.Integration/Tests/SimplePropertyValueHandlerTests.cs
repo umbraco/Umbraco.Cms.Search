@@ -10,7 +10,7 @@ using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
-public class SimplePropertyValueHandlerTests : ContentTestBase
+public class SimplePropertyValueHandlerTests : PropertyValueHandlerTestsBase
 {
     [Test]
     public void AllSupportedEditors_CanBeIndexed()
@@ -18,7 +18,7 @@ public class SimplePropertyValueHandlerTests : ContentTestBase
         var jsonSerializer = GetRequiredService<IJsonSerializer>();
         
         var content = new ContentBuilder()
-            .WithContentType(GetContentType())
+            .WithContentType(GetAllSimpleEditorsContentType())
             .WithName("All Supported Editors")
             .WithPropertyValues(
                 new
@@ -129,191 +129,5 @@ public class SimplePropertyValueHandlerTests : ContentTestBase
     
     [SetUp]
     public async Task SetupTest()
-    {
-        var dataTypeService = GetRequiredService<IDataTypeService>();
-
-        var decimalDataType = new DataTypeBuilder()
-            .WithId(0)
-            .WithDatabaseType(ValueStorageType.Decimal)
-            .WithName("Decimal")
-            .AddEditor()
-            .WithAlias(Constants.PropertyEditors.Aliases.Decimal)
-            .Done()
-            .Build();
-        await dataTypeService.CreateAsync(decimalDataType, Constants.Security.SuperUserKey);
-
-        var tagsAsCsvDataType = new DataTypeBuilder()
-            .WithId(0)
-            .WithDatabaseType(ValueStorageType.Nvarchar)
-            .WithName("Tags as CSV")
-            .AddEditor()
-            .WithAlias(Constants.PropertyEditors.Aliases.Tags)
-            .Done()
-            .Build();
-        tagsAsCsvDataType.ConfigurationData = new Dictionary<string, object>
-        {
-            {"storageType", TagsStorageType.Csv}
-        }; 
-        await dataTypeService.CreateAsync(tagsAsCsvDataType, Constants.Security.SuperUserKey);
-
-        var tagsAsJsonDataType = new DataTypeBuilder()
-            .WithId(0)
-            .WithDatabaseType(ValueStorageType.Nvarchar)
-            .WithName("Tags as JSON")
-            .AddEditor()
-            .WithAlias(Constants.PropertyEditors.Aliases.Tags)
-            .Done()
-            .Build();
-        tagsAsJsonDataType.ConfigurationData = new Dictionary<string, object>
-        {
-            {"storageType", TagsStorageType.Json}
-        }; 
-        await dataTypeService.CreateAsync(tagsAsCsvDataType, Constants.Security.SuperUserKey);
-
-        var multipleTextstringsDataType = new DataTypeBuilder()
-            .WithId(0)
-            .WithDatabaseType(ValueStorageType.Nvarchar)
-            .WithName("Multiple textstrings")
-            .AddEditor()
-            .WithAlias(Constants.PropertyEditors.Aliases.MultipleTextstring)
-            .Done()
-            .Build();
-        await dataTypeService.CreateAsync(multipleTextstringsDataType, Constants.Security.SuperUserKey);
-
-        var contentPickerDataType = new DataTypeBuilder()
-            .WithId(0)
-            .WithDatabaseType(ValueStorageType.Nvarchar)
-            .WithName("Content picker")
-            .AddEditor()
-            .WithAlias(Constants.PropertyEditors.Aliases.ContentPicker)
-            .Done()
-            .Build();
-        await dataTypeService.CreateAsync(contentPickerDataType, Constants.Security.SuperUserKey);
-
-        var sliderSingleDataType = new DataTypeBuilder()
-            .WithId(0)
-            .WithDatabaseType(ValueStorageType.Nvarchar)
-            .WithName("Slider single")
-            .AddEditor()
-            .WithAlias(Constants.PropertyEditors.Aliases.Slider)
-            .Done()
-            .Build();
-        sliderSingleDataType.ConfigurationData = new Dictionary<string, object>
-        {
-            { "enableRange", false }
-        };
-        await dataTypeService.CreateAsync(sliderSingleDataType, Constants.Security.SuperUserKey);
-
-        var sliderRangeDataType = new DataTypeBuilder()
-            .WithId(0)
-            .WithDatabaseType(ValueStorageType.Nvarchar)
-            .WithName("Slider range")
-            .AddEditor()
-            .WithAlias(Constants.PropertyEditors.Aliases.Slider)
-            .Done()
-            .Build();
-        sliderSingleDataType.ConfigurationData = new Dictionary<string, object>
-        {
-            { "enableRange", true }
-        };
-        await dataTypeService.CreateAsync(sliderRangeDataType, Constants.Security.SuperUserKey);
-
-        var multiUrlPickerDataType = new DataTypeBuilder()
-            .WithId(0)
-            .WithDatabaseType(ValueStorageType.Nvarchar)
-            .WithName("Multi URL picker")
-            .AddEditor()
-            .WithAlias(Constants.PropertyEditors.Aliases.MultiUrlPicker)
-            .Done()
-            .Build();
-        await dataTypeService.CreateAsync(multiUrlPickerDataType, Constants.Security.SuperUserKey);
-
-        var contentType = new ContentTypeBuilder()
-            .WithAlias("allEditors")
-            .AddPropertyType()
-            .WithAlias("textBoxValue")
-            .WithDataTypeId(Constants.DataTypes.Textbox)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("textAreaValue")
-            .WithDataTypeId(Constants.DataTypes.Textarea)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextArea)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("integerValue")
-            .WithDataTypeId(-51)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("decimalValue")
-            .WithDataTypeId(decimalDataType.Id)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Decimal)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("dateValue")
-            .WithDataTypeId(-41)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.DateTime)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("dateAndTimeValue")
-            .WithDataTypeId(Constants.DataTypes.DateTime)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.DateTime)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("tagsAsJsonValue")
-            .WithDataTypeId(tagsAsJsonDataType.Id)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Tags)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("tagsAsCsvValue")
-            .WithDataTypeId(tagsAsCsvDataType.Id)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Tags)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("multipleTextstringsValue")
-            .WithDataTypeId(multipleTextstringsDataType.Id)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.MultipleTextstring)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("contentPickerValue")
-            .WithDataTypeId(contentPickerDataType.Id)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.ContentPicker)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("booleanAsBooleanValue")
-            .WithDataTypeId(Constants.DataTypes.Boolean)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("booleanAsIntegerValue")
-            .WithDataTypeId(Constants.DataTypes.Boolean)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("booleanAsStringValue")
-            .WithDataTypeId(Constants.DataTypes.Boolean)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("sliderSingleValue")
-            .WithDataTypeId(sliderSingleDataType.Id)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Slider)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("sliderRangeValue")
-            .WithDataTypeId(sliderRangeDataType.Id)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Slider)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("multiUrlPickerValue")
-            .WithDataTypeId(multiUrlPickerDataType.Id)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.MultiUrlPicker)
-            .Done()
-            .Build();
-        await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
-    }
-
-    private IContentType GetContentType() => ContentTypeService.Get("allEditors")
-                                             ?? throw new InvalidOperationException("Could not find the content type");
+        => await CreateAllSimpleEditorsContentType();
 }

@@ -15,20 +15,17 @@ public sealed class KeywordStringPropertyValueHandler : IPropertyValueHandler, I
     public bool CanHandle(string propertyEditorAlias)
         => propertyEditorAlias is Cms.Core.Constants.PropertyEditors.Aliases.DropDownListFlexible or Cms.Core.Constants.PropertyEditors.Aliases.RadioButtonList or Cms.Core.Constants.PropertyEditors.Aliases.CheckBoxList;
 
-    public IndexValue? GetIndexValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
+    public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
-        var value = content.GetValue<string>(property.Alias, culture, segment, published);
+        var value = property.GetValue(culture, segment, published) as string;
         if (value.IsNullOrWhiteSpace())
         {
-            return null;
+            return [];
         }
 
         var keywords = _jsonSerializer.Deserialize<string[]>(value);
         return keywords?.Length > 0
-            ? new IndexValue
-            {
-                Keywords = keywords
-            }
-            : null;
+            ? [new IndexField(property.Alias, new IndexValue { Keywords = keywords }, culture, segment)]
+            : [];
     }
 }

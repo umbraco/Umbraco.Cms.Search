@@ -1,6 +1,7 @@
 ﻿using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Serialization;
+using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Extensions;
 using IndexValue = Umbraco.Cms.Search.Core.Models.Indexing.IndexValue;
 
@@ -16,20 +17,17 @@ public class MultiUrlPickerPropertyValueHandler : IPropertyValueHandler, ICorePr
     public bool CanHandle(string propertyEditorAlias)
         => propertyEditorAlias is Umbraco.Cms.Core.Constants.PropertyEditors.Aliases.MultiUrlPicker;
 
-    public IndexValue? GetIndexValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
+    public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
-        var texts = ParsePropertyValue(content, property, culture, segment, published);
+        var texts = ParsePropertyValue(property, culture, segment, published);
         return texts is not null
-            ? new IndexValue
-            {
-                Texts = texts
-            }
-            : null;
+            ? [new IndexField(property.Alias, new IndexValue { Texts = texts }, culture, segment)]
+            : [];
     }
 
-    private string[]? ParsePropertyValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
+    private string[]? ParsePropertyValue(IProperty property, string? culture, string? segment, bool published)
     {
-        var value = content.GetValue<string>(property.Alias, culture, segment, published);
+        var value = property.GetValue(culture, segment, published) as string;
         if (value.IsNullOrWhiteSpace())
         {
             return null;
