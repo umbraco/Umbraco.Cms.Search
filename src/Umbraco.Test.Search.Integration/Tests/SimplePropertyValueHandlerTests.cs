@@ -1,8 +1,5 @@
-﻿using Umbraco.Cms.Core;
-using Umbraco.Cms.Core.Models;
-using Umbraco.Cms.Core.PropertyEditors;
+﻿using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Serialization;
-using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
 using Umbraco.Cms.Tests.Common.Builders;

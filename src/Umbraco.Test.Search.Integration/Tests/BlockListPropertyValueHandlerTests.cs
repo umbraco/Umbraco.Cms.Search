@@ -45,24 +45,14 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         var (contentType, elementType) = await SetupSimpleEditorsTest();
 
         var contentElementKey = Guid.NewGuid();
-        var blockListValue = new BlockListValue
+        var blockListValue = new BlockListValue([
+            new () { ContentKey = contentElementKey }
+        ])
         {
-            Layout = new Dictionary<string, IEnumerable<IBlockLayoutItem>>
-            {
-                {
-                    Constants.PropertyEditors.Aliases.BlockList,
-                    [
-                        new BlockListLayoutItem { ContentKey = contentElementKey }
-                    ]
-                }
-            },
             ContentData =
             [
-                new()
+                new (contentElementKey, elementType.Key, elementType.Alias)
                 {
-                    Key = contentElementKey,
-                    ContentTypeAlias = elementType.Alias,
-                    ContentTypeKey = elementType.Key,
                     Values =
                     [
                         new ()
@@ -217,49 +207,29 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         var rootElement2Key = Guid.NewGuid();
         var nestedElement1Key = Guid.NewGuid();
         var nestedElement2Key = Guid.NewGuid();
-        var blockListValue = new BlockListValue
+        var blockListValue = new BlockListValue([
+            new () { ContentKey = rootElement1Key },
+            new () { ContentKey = rootElement2Key }
+        ])
         {
-            Layout = new Dictionary<string, IEnumerable<IBlockLayoutItem>>
-            {
-                {
-                    Constants.PropertyEditors.Aliases.BlockList,
-                    [
-                        new BlockListLayoutItem { ContentKey = rootElement1Key },
-                        new BlockListLayoutItem { ContentKey = rootElement2Key }
-                    ]
-                }
-            },
             ContentData =
             [
-                new()
+                new (rootElement1Key, rootElementType.Key, rootElementType.Alias)
                 {
-                    Key = rootElement1Key,
-                    ContentTypeAlias = rootElementType.Alias,
-                    ContentTypeKey = rootElementType.Key,
                     Values =
                     [
                         new ()
                         {
                             Alias = "nestedBlocks",
                             Value = JsonSerializer.Serialize(
-                                new BlockListValue
+                                new BlockListValue([
+                                    new () { ContentKey = nestedElement1Key }
+                                ])
                                 {
-                                    Layout = 
-                                    {
-                                        {
-                                            Constants.PropertyEditors.Aliases.BlockList,
-                                            [
-                                                new BlockListLayoutItem { ContentKey = nestedElement1Key }
-                                            ]
-                                        }
-                                    },
                                     ContentData =
                                     [
-                                        new ()
+                                        new (nestedElement1Key, nestedElementType.Key, nestedElementType.Alias)
                                         {
-                                            Key = nestedElement1Key,
-                                            ContentTypeAlias = nestedElementType.Alias,
-                                            ContentTypeKey = nestedElementType.Key,
                                             Values = 
                                             [
                                                 new ()
@@ -289,35 +259,22 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
                         }
                     ]
                 },
-                new()
+                new (rootElement2Key, rootElementType.Key, rootElementType.Alias)
                 {
-                    Key = rootElement2Key,
-                    ContentTypeAlias = rootElementType.Alias,
-                    ContentTypeKey = rootElementType.Key,
                     Values =
                     [
                         new ()
                         {
                             Alias = "nestedBlocks",
                             Value = JsonSerializer.Serialize(
-                                new BlockListValue
+                                new BlockListValue([
+                                    new () { ContentKey = nestedElement2Key }
+                                ])
                                 {
-                                    Layout = 
-                                    {
-                                        {
-                                            Constants.PropertyEditors.Aliases.BlockList,
-                                            [
-                                                new BlockListLayoutItem { ContentKey = nestedElement2Key }
-                                            ]
-                                        }
-                                    },
                                     ContentData =
                                     [
-                                        new ()
+                                        new (nestedElement2Key, nestedElementType.Key, nestedElementType.Alias)
                                         {
-                                            Key = nestedElement2Key,
-                                            ContentTypeAlias = nestedElementType.Alias,
-                                            ContentTypeKey = nestedElementType.Key,
                                             Values = 
                                             [
                                                 new ()
@@ -500,46 +457,30 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         var contentElement2Key = Guid.NewGuid();
         var contentElement3Key = Guid.NewGuid();
 
-        var blockListValue = new BlockListValue
+        var blockListValue = new BlockListValue([
+            new () { ContentKey = contentElement1Key },
+            new () { ContentKey = contentElement2Key },
+            new () { ContentKey = contentElement3Key }
+        ])
         {
-            Layout = new Dictionary<string, IEnumerable<IBlockLayoutItem>>
-            {
-                {
-                    Constants.PropertyEditors.Aliases.BlockList,
-                    [
-                        new BlockListLayoutItem { ContentKey = contentElement1Key },
-                        new BlockListLayoutItem { ContentKey = contentElement2Key },
-                        new BlockListLayoutItem { ContentKey = contentElement3Key }
-                    ]
-                }
-            },
             ContentData =
             [
-                new()
+                new (contentElement1Key, elementType.Key, elementType.Alias)
                 {
-                    Key = contentElement1Key,
-                    ContentTypeAlias = elementType.Alias,
-                    ContentTypeKey = elementType.Key,
                     Values = [
                         new () { Alias = "textBoxValue", Value = "TextBox EN #1", Culture = "en-US" },
                         new () { Alias = "textBoxValue", Value = "TextBox DA #1", Culture = "da-DK" }
                     ]
                 },
-                new()
+                new (contentElement2Key, elementType.Key, elementType.Alias)
                 {
-                    Key = contentElement2Key,
-                    ContentTypeAlias = elementType.Alias,
-                    ContentTypeKey = elementType.Key,
                     Values = [
                         new () { Alias = "textBoxValue", Value = "TextBox EN #2", Culture = "en-US" },
                         new () { Alias = "textBoxValue", Value = "TextBox DA #2", Culture = "da-DK" }
                     ]
                 },
-                new()
+                new (contentElement3Key, elementType.Key, elementType.Alias)
                 {
-                    Key = contentElement3Key,
-                    ContentTypeAlias = elementType.Alias,
-                    ContentTypeKey = elementType.Key,
                     Values = [
                         new () { Alias = "textBoxValue", Value = "TextBox EN #3", Culture = "en-US" },
                         new () { Alias = "textBoxValue", Value = "TextBox DA #3", Culture = "da-DK" }
@@ -736,49 +677,29 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         var rootElement1Key = Guid.NewGuid();
         var rootElement2Key = Guid.NewGuid();
         var nestedElement1Key = Guid.NewGuid();
-        var blockListValue = new BlockListValue
+        var blockListValue = new BlockListValue([
+            new () { ContentKey = rootElement1Key },
+            new () { ContentKey = rootElement2Key }
+        ])
         {
-            Layout = new Dictionary<string, IEnumerable<IBlockLayoutItem>>
-            {
-                {
-                    Constants.PropertyEditors.Aliases.BlockList,
-                    [
-                        new BlockListLayoutItem { ContentKey = rootElement1Key },
-                        new BlockListLayoutItem { ContentKey = rootElement2Key }
-                    ]
-                }
-            },
             ContentData =
             [
-                new()
+                new (rootElement1Key, rootElementType.Key, rootElementType.Alias)
                 {
-                    Key = rootElement1Key,
-                    ContentTypeAlias = rootElementType.Alias,
-                    ContentTypeKey = rootElementType.Key,
                     Values =
                     [
                         new ()
                         {
                             Alias = "nestedBlocks",
                             Value = JsonSerializer.Serialize(
-                                new BlockListValue
+                                new BlockListValue([
+                                    new () { ContentKey = nestedElement1Key }
+                                ])
                                 {
-                                    Layout = 
-                                    {
-                                        {
-                                            Constants.PropertyEditors.Aliases.BlockList,
-                                            [
-                                                new BlockListLayoutItem { ContentKey = nestedElement1Key }
-                                            ]
-                                        }
-                                    },
                                     ContentData =
                                     [
-                                        new ()
+                                        new (nestedElement1Key, nestedElementType.Key, nestedElementType.Alias)
                                         {
-                                            Key = nestedElement1Key,
-                                            ContentTypeAlias = nestedElementType.Alias,
-                                            ContentTypeKey = nestedElementType.Key,
                                             Values = 
                                             [
                                                 new ()
@@ -836,11 +757,8 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
                         }
                     ]
                 },
-                new()
+                new (rootElement2Key, nestedElementType.Key, nestedElementType.Alias)
                 {
-                    Key = rootElement2Key,
-                    ContentTypeAlias = nestedElementType.Alias,
-                    ContentTypeKey = nestedElementType.Key,
                     Values = 
                     [
                         new ()

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Services;
@@ -6,9 +6,9 @@ using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
 
 namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
-public class BlockListPropertyValueHandler : BlockEditorPropertyValueHandler, ICorePropertyValueHandler
+public class BlockGridPropertyValueHandler : BlockEditorPropertyValueHandler, ICorePropertyValueHandler
 {
-    public BlockListPropertyValueHandler(
+    public BlockGridPropertyValueHandler(
         IJsonSerializer jsonSerializer,
         IContentTypeService contentTypeService,
         PropertyEditorCollection propertyEditorCollection,
@@ -19,5 +19,5 @@ public class BlockListPropertyValueHandler : BlockEditorPropertyValueHandler, IC
     }
 
     public override bool CanHandle(string propertyEditorAlias)
-        => propertyEditorAlias is Umbraco.Cms.Core.Constants.PropertyEditors.Aliases.BlockList;
+        => propertyEditorAlias is Umbraco.Cms.Core.Constants.PropertyEditors.Aliases.BlockGrid;
 }
