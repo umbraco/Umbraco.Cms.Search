@@ -23,7 +23,9 @@ public sealed class KeywordStringPropertyValueHandler : IPropertyValueHandler, I
             return [];
         }
 
-        var keywords = _jsonSerializer.Deserialize<string[]>(value);
+        var keywords = value.DetectIsJson()
+            ? _jsonSerializer.Deserialize<string[]>(value)
+            : [value];
         return keywords?.Length > 0
             ? [new IndexField(property.Alias, new IndexValue { Keywords = keywords }, culture, segment)]
             : [];

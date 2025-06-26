@@ -51,6 +51,10 @@ public class SimplePropertyValueHandlerTests : PropertyValueHandlerTestsBase
                             Name = null
                         }
                     }),
+                    dropdownSingleValue = "[\"One\"]",
+                    dropdownMultipleValue = "[\"One\", \"Two\", \"Three\"]",
+                    radioButtonListValue = "One",
+                    checkBoxListValue = "Two"
                 })
             .Build();
 
@@ -113,6 +117,18 @@ public class SimplePropertyValueHandlerTests : PropertyValueHandlerTestsBase
 
             var multiUrlPickerValue = document.Fields.FirstOrDefault(f => f.FieldName == "multiUrlPickerValue")?.Value.Texts?.ToArray();
             CollectionAssert.AreEqual(multiUrlPickerValue, new[] { "Link One", "Link Two" });
+
+            var dropdownSingleValue = document.Fields.FirstOrDefault(f => f.FieldName == "dropdownSingleValue")?.Value.Keywords?.ToArray();
+            CollectionAssert.AreEqual(dropdownSingleValue, new[] { "One" });
+
+            var dropdownMultipleValue = document.Fields.FirstOrDefault(f => f.FieldName == "dropdownMultipleValue")?.Value.Keywords?.ToArray();
+            CollectionAssert.AreEqual(dropdownMultipleValue, new[] { "One", "Two", "Three" });
+
+            var radioButtonListValue = document.Fields.FirstOrDefault(f => f.FieldName == "radioButtonListValue")?.Value.Keywords?.ToArray();
+            CollectionAssert.AreEqual(radioButtonListValue, new[] { "One" });
+
+            var checkBoxListValue = document.Fields.FirstOrDefault(f => f.FieldName == "checkBoxListValue")?.Value.Keywords?.ToArray();
+            CollectionAssert.AreEqual(checkBoxListValue, new[] { "Two" });
         });
     }
 

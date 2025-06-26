@@ -106,6 +106,65 @@ public abstract class PropertyValueHandlerTestsBase : ContentTestBase
             .WithAlias(Constants.PropertyEditors.Aliases.MultiUrlPicker)
             .Done()
             .Build();
+        await dataTypeService.CreateAsync(multiUrlPickerDataType, Constants.Security.SuperUserKey);
+
+        var dropdownSingleDataType = new DataTypeBuilder()
+            .WithId(0)
+            .WithDatabaseType(ValueStorageType.Nvarchar)
+            .WithName("Drop-down (single)")
+            .AddEditor()
+            .WithAlias(Constants.PropertyEditors.Aliases.DropDownListFlexible)
+            .Done()
+            .Build();
+        dropdownSingleDataType.ConfigurationData = new Dictionary<string, object>
+        {
+            { "multiple", false },
+            { "items", new [] { "One", "Two", "Three" } }
+        };
+        await dataTypeService.CreateAsync(dropdownSingleDataType, Constants.Security.SuperUserKey);
+
+        var dropdownMultipleDataType = new DataTypeBuilder()
+            .WithId(0)
+            .WithDatabaseType(ValueStorageType.Nvarchar)
+            .WithName("Drop-down (multiple)")
+            .AddEditor()
+            .WithAlias(Constants.PropertyEditors.Aliases.DropDownListFlexible)
+            .Done()
+            .Build();
+        dropdownMultipleDataType.ConfigurationData = new Dictionary<string, object>
+        {
+            { "multiple", true },
+            { "items", new [] { "One", "Two", "Three" } }
+        };
+        await dataTypeService.CreateAsync(dropdownMultipleDataType, Constants.Security.SuperUserKey);
+
+        var radioButtonListDataType = new DataTypeBuilder()
+            .WithId(0)
+            .WithDatabaseType(ValueStorageType.Nvarchar)
+            .WithName("Radio button list")
+            .AddEditor()
+            .WithAlias(Constants.PropertyEditors.Aliases.RadioButtonList)
+            .Done()
+            .Build();
+        radioButtonListDataType.ConfigurationData = new Dictionary<string, object>
+        {
+            { "items", new [] { "One", "Two", "Three" } }
+        };
+        await dataTypeService.CreateAsync(radioButtonListDataType, Constants.Security.SuperUserKey);
+
+        var checkBoxListDataType = new DataTypeBuilder()
+            .WithId(0)
+            .WithDatabaseType(ValueStorageType.Nvarchar)
+            .WithName("CheckBox list")
+            .AddEditor()
+            .WithAlias(Constants.PropertyEditors.Aliases.CheckBoxList)
+            .Done()
+            .Build();
+        checkBoxListDataType.ConfigurationData = new Dictionary<string, object>
+        {
+            { "items", new [] { "One", "Two", "Three" } }
+        };
+        await dataTypeService.CreateAsync(checkBoxListDataType, Constants.Security.SuperUserKey);
 
         var contentType = new ContentTypeBuilder()
             .WithAlias("allSimpleEditors")
@@ -188,6 +247,26 @@ public abstract class PropertyValueHandlerTestsBase : ContentTestBase
             .WithAlias("multiUrlPickerValue")
             .WithDataTypeId(multiUrlPickerDataType.Id)
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.MultiUrlPicker)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("dropdownSingleValue")
+            .WithDataTypeId(dropdownSingleDataType.Id)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.DropDownListFlexible)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("dropdownMultipleValue")
+            .WithDataTypeId(dropdownMultipleDataType.Id)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.DropDownListFlexible)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("radioButtonListValue")
+            .WithDataTypeId(radioButtonListDataType.Id)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.RadioButtonList)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("checkBoxListValue")
+            .WithDataTypeId(checkBoxListDataType.Id)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.CheckBoxList)
             .Done()
             .Build();
 
