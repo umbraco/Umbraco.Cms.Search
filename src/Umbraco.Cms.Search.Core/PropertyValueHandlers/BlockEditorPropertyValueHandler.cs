@@ -174,11 +174,14 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
                             blockIndexValue = new CumulativeIndexValue();
                             cumulativeIndexValuesByVariation.Add((blockPropertyIndexField.Culture, blockPropertyIndexField.Segment), blockIndexValue);
                         }
-                        blockIndexValue.Texts.AddRange(blockPropertyIndexField.Value.Texts ?? []);
-                        blockIndexValue.Keywords.AddRange(blockPropertyIndexField.Value.Keywords ?? []);
-                        blockIndexValue.Integers.AddRange(blockPropertyIndexField.Value.Integers ?? []);
-                        blockIndexValue.Decimals.AddRange(blockPropertyIndexField.Value.Decimals ?? []);
-                        blockIndexValue.DateTimeOffsets.AddRange(blockPropertyIndexField.Value.DateTimeOffsets ?? []);
+                        blockIndexValue.TextsR1.AddRange(blockPropertyIndexField.Value.TextsR1.EmptyNull());
+                        blockIndexValue.TextsR2.AddRange(blockPropertyIndexField.Value.TextsR2.EmptyNull());
+                        blockIndexValue.TextsR3.AddRange(blockPropertyIndexField.Value.TextsR3.EmptyNull());
+                        blockIndexValue.Texts.AddRange(blockPropertyIndexField.Value.Texts.EmptyNull());
+                        blockIndexValue.Keywords.AddRange(blockPropertyIndexField.Value.Keywords.EmptyNull());
+                        blockIndexValue.Integers.AddRange(blockPropertyIndexField.Value.Integers.EmptyNull());
+                        blockIndexValue.Decimals.AddRange(blockPropertyIndexField.Value.Decimals.EmptyNull());
+                        blockIndexValue.DateTimeOffsets.AddRange(blockPropertyIndexField.Value.DateTimeOffsets.EmptyNull());
                     }
                 }
             }

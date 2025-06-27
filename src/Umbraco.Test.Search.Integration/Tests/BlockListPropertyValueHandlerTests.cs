@@ -537,6 +537,84 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
             CollectionAssert.AreEqual(expectedTextBoxValuesDa, indexValueDa.Texts);
         }
     }
+
+    [Test]
+    public async Task BlockLevelVariation_SupportsMultipleTextRelevance()
+    {
+        var (contentType, elementType) = await SetupMultipleTextRelevanceTest();
+        var contentElement1Key = Guid.NewGuid();
+        var contentElement2Key = Guid.NewGuid();
+
+        var blockListValue = new BlockListValue([
+            new () { ContentKey = contentElement1Key },
+            new () { ContentKey = contentElement2Key }
+        ])
+        {
+            ContentData =
+            [
+                new (contentElement1Key, elementType.Key, elementType.Alias)
+                {
+                    Values = [
+                        new ()
+                        {
+                            Alias = "markdownValue",
+                            Value = """
+                                    # H1 Heading #1
+                                    
+                                    ## H2 Heading #1
+                                    
+                                    ### H3 Heading #1
+                                    
+                                    Paragraph #1
+                                    """
+                        }
+                    ]
+                },
+                new (contentElement2Key, elementType.Key, elementType.Alias)
+                {
+                    Values = [
+                        new ()
+                        {
+                            Alias = "markdownValue",
+                            Value = """
+                                    # H1 Heading #2
+
+                                    ## H2 Heading #2
+
+                                    ### H3 Heading #2
+
+                                    Paragraph #2
+                                    """
+                        }
+                    ]
+                }
+            ],
+            Expose =
+            [
+                new BlockItemVariation(contentElement1Key, null, null),
+                new BlockItemVariation(contentElement2Key, null, null)
+            ]
+        };
+        var blocksPropertyValue = JsonSerializer.Serialize(blockListValue);
+
+        var content = new ContentBuilder()
+            .WithContentType(contentType)
+            .WithName("My Blocks")
+            .WithPropertyValues(new { blocks = blocksPropertyValue })
+            .Build();
+        ContentService.Save(content);
+
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        Assert.That(documents, Has.Count.EqualTo(1));
+
+        var blocksValue = documents[0].Fields.FirstOrDefault(f => f.FieldName is "blocks")?.Value;
+        Assert.That(blocksValue, Is.Not.Null);
+
+        CollectionAssert.AreEqual(new [] { "H1 Heading #1", "H1 Heading #2"}, blocksValue.TextsR1);
+        CollectionAssert.AreEqual(new [] { "H2 Heading #1", "H2 Heading #2"}, blocksValue.TextsR2);
+        CollectionAssert.AreEqual(new [] { "H3 Heading #1", "H3 Heading #2"}, blocksValue.TextsR3);
+        CollectionAssert.AreEqual(new [] { "Paragraph #1", "Paragraph #2"}, blocksValue.Texts);
+    }
     
     private async Task<IContentType> CreateAllSimpleEditorsElementType(bool forBlockLevelVariance = false)
     {
@@ -668,6 +746,67 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         await ContentTypeService.UpdateAsync(contentType, Constants.Security.SuperUserKey);
 
         return (contentType, rootElementType, nestedElementType);
+    }
+
+    private async Task<(IContentType ContentType, IContentType ElementType)> SetupMultipleTextRelevanceTest()
+    {
+        var dataTypeService = GetRequiredService<IDataTypeService>();
+
+        var markdownDataType = new DataTypeBuilder()
+            .WithId(0)
+            .WithDatabaseType(ValueStorageType.Nvarchar)
+            .WithName("Markdown")
+            .AddEditor()
+            .WithAlias(Constants.PropertyEditors.Aliases.MarkdownEditor)
+            .Done()
+            .Build();
+
+        await dataTypeService.CreateAsync(markdownDataType, Constants.Security.SuperUserKey);
+
+        var elementType = new ContentTypeBuilder()
+            .WithAlias("blockEditorElement")
+            .WithName("Block Editor Element")
+            .WithIsElement(true)
+            .AddPropertyType()
+            .WithAlias("markdownValue")
+            .WithName("Markdown")
+            .WithDataTypeId(markdownDataType.Id)
+            .Done()
+            .Build();
+        await ContentTypeService.CreateAsync(elementType, Constants.Security.SuperUserKey);
+        
+        var blockListDataType = new DataType(PropertyEditorCollection[Constants.PropertyEditors.Aliases.BlockList], ConfigurationEditorJsonSerializer)
+        {
+            ConfigurationData = new Dictionary<string, object>
+            {
+                {
+                    "blocks",
+                    new BlockListConfiguration.BlockConfiguration[]
+                    {
+                        new() { ContentElementTypeKey = elementType.Key },
+                        new() { ContentElementTypeKey = elementType.Key }
+                    }
+                }
+            },
+            Name = "My Block List",
+            DatabaseType = ValueStorageType.Ntext,
+            ParentId = Constants.System.Root,
+            CreateDate = DateTime.UtcNow
+        };
+        await dataTypeService.CreateAsync(blockListDataType, Constants.Security.SuperUserKey);
+
+        var contentType = new ContentTypeBuilder()
+            .WithAlias("blockEditor")
+            .WithName("Block Editor")
+            .AddPropertyType()
+            .WithAlias("blocks")
+            .WithName("Blocks")
+            .WithDataTypeId(blockListDataType.Id)
+            .Done()
+            .Build();
+        await ContentTypeService.UpdateAsync(contentType, Constants.Security.SuperUserKey);
+
+        return (contentType, elementType);
     }
 
     private async Task SetupBlockLevelVarianceTest(bool publishAllCultures)
