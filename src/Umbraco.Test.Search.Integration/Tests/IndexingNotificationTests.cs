@@ -1,5 +1,6 @@
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Notifications;
 using Umbraco.Test.Search.Integration.Services;
@@ -121,46 +122,6 @@ public class IndexingNotificationTests : InvariantContentTestBase
         });
     }
 
-    private class AddOrUpdateIndexingNotificationHandler : INotificationHandler<IndexingNotification>
-    {
-        public static bool ManipulateFields { get; set; }
-
-        public static Guid[] CancelIndexingFor { get; set; } = [];
-        
-        public void Handle(IndexingNotification notification)
-        {
-            if (ManipulateFields)
-            {
-                var titleField = notification.Fields.SingleOrDefault(field => field.FieldName == "title");
-                var countField = notification.Fields.SingleOrDefault(field => field.FieldName == "count");
-                Assert.Multiple(() =>
-                {
-                    Assert.That(titleField, Is.Not.Null);
-                    Assert.That(countField, Is.Not.Null);
-                });
-
-                var newTitleField = titleField with
-                {
-                    Value = new IndexValue
-                    {
-                        Texts = [$"{titleField.Value.Texts!.First()} - changed by notification handler"],
-                        Keywords = ["NotificationHandlerKeyword", notification.Id.ToString("D")]
-                    }
-                };
-                notification.Fields = notification
-                    .Fields
-                    .Except([titleField!, countField!])
-                    .Union([newTitleField])
-                    .ToArray();
-            }
-
-            if (CancelIndexingFor.Contains(notification.Id))
-            {
-                notification.Cancel = true;
-            }
-        }
-    }
-
     private void VerifyDocumentPropertyValues(TestIndexDocument document, string title, bool manipulatedByNotificationHandler)
     {
         Assert.That(document.Fields.Any(f => f.FieldName == "count"), manipulatedByNotificationHandler ? Is.False : Is.True);
@@ -173,6 +134,65 @@ public class IndexingNotificationTests : InvariantContentTestBase
         if (manipulatedByNotificationHandler)
         {
             CollectionAssert.AreEqual(titleField.Value.Keywords, new[] { "NotificationHandlerKeyword", document.Id.ToString("D") });
+
+            var nameField = document.Fields.SingleOrDefault(field => field.FieldName == Constants.FieldNames.Name);
+            Assert.That(nameField, Is.Not.Null);
+            Assert.Multiple(() =>
+            {
+                Assert.That(nameField.Value.TextsR1, Is.Null);
+                Assert.That(nameField.Value.TextsR2, Is.Not.Empty);
+            });
+        }
+    }
+
+    private class AddOrUpdateIndexingNotificationHandler : INotificationHandler<IndexingNotification>
+    {
+        public static bool ManipulateFields { get; set; }
+
+        public static Guid[] CancelIndexingFor { get; set; } = [];
+        
+        public void Handle(IndexingNotification notification)
+        {
+            if (ManipulateFields)
+            {
+                var titleField = notification.Fields.SingleOrDefault(field => field.FieldName == "title");
+                var countField = notification.Fields.SingleOrDefault(field => field.FieldName == "count");
+                var nameField = notification.Fields.SingleOrDefault(field => field.FieldName == Constants.FieldNames.Name);
+                Assert.Multiple(() =>
+                {
+                    Assert.That(titleField, Is.Not.Null);
+                    Assert.That(countField, Is.Not.Null);
+                    Assert.That(nameField, Is.Not.Null);
+                });
+
+                var newTitleField = titleField with
+                {
+                    Value = new IndexValue
+                    {
+                        Texts = [$"{titleField.Value.Texts!.First()} - changed by notification handler"],
+                        Keywords = ["NotificationHandlerKeyword", notification.Id.ToString("D")]
+                    }
+                };
+
+                var newNameField = nameField with
+                {
+                    Value = new IndexValue
+                    {
+                        TextsR2 = nameField.Value.TextsR1
+                    }
+                };
+
+                notification.Fields = notification
+                    .Fields
+                    .Except([titleField, nameField, countField!])
+                    .Union([newTitleField, newNameField])
+                    .ToArray();
+            }
+
+            if (CancelIndexingFor.Contains(notification.Id))
+            {
+                notification.Cancel = true;
+            }
         }
     }
 }

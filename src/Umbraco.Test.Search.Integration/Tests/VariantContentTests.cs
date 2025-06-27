@@ -155,8 +155,8 @@ public class VariantContentTests : VariantContentTestBase
 
             var nameFields = document.Fields.Where(f => f.FieldName == Constants.FieldNames.Name).ToArray();
             Assert.That(nameFields.Length, Is.EqualTo(2));
-            Assert.That(nameFields.SingleOrDefault(f => f.Culture.InvariantEquals("en-US"))?.Value.Texts?.SingleOrDefault(), Is.EqualTo(content.GetCultureName("en-US")));
-            Assert.That(nameFields.SingleOrDefault(f => f.Culture.InvariantEquals("da-DK"))?.Value.Texts?.SingleOrDefault(), Is.EqualTo(content.GetCultureName("da-DK")));
+            Assert.That(nameFields.SingleOrDefault(f => f.Culture.InvariantEquals("en-US"))?.Value.TextsR1?.SingleOrDefault(), Is.EqualTo(content.GetCultureName("en-US")));
+            Assert.That(nameFields.SingleOrDefault(f => f.Culture.InvariantEquals("da-DK"))?.Value.TextsR1?.SingleOrDefault(), Is.EqualTo(content.GetCultureName("da-DK")));
 
             var createDateValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.CreateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
             Assert.That(createDateValue, Is.EqualTo(dateTimeOffsetConverter.ToDateTimeOffset(content.CreateDate)));

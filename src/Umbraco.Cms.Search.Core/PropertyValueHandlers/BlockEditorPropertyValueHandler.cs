@@ -46,7 +46,10 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
 
         var blockIndexValues = GetCumulativeIndexValues(blockValue, property, culture, segment, published, contentContext);
         return blockIndexValues.Select(kvp =>
-                kvp.Value.Texts.Count > 0
+                kvp.Value.TextsR1.Count > 0
+                || kvp.Value.TextsR2.Count > 0
+                || kvp.Value.TextsR3.Count > 0
+                || kvp.Value.Texts.Count > 0
                 || kvp.Value.Keywords.Count > 0
                 || kvp.Value.Integers.Count > 0
                 || kvp.Value.Decimals.Count > 0
@@ -55,11 +58,14 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
                         property.Alias,
                         new IndexValue
                         {
-                            Texts = kvp.Value.Texts.Count > 0 ? kvp.Value.Texts : null,
-                            Keywords = kvp.Value.Keywords.Count > 0 ? kvp.Value.Keywords : null,
-                            Integers = kvp.Value.Integers.Count > 0 ? kvp.Value.Integers : null,
-                            Decimals = kvp.Value.Decimals.Count > 0 ? kvp.Value.Decimals : null,
-                            DateTimeOffsets = kvp.Value.DateTimeOffsets.Count > 0 ? kvp.Value.DateTimeOffsets : null,
+                            TextsR1 = kvp.Value.TextsR1.NullIfEmpty(),
+                            TextsR2 = kvp.Value.TextsR2.NullIfEmpty(),
+                            TextsR3 = kvp.Value.TextsR3.NullIfEmpty(),
+                            Texts = kvp.Value.Texts.NullIfEmpty(),
+                            Keywords = kvp.Value.Keywords.NullIfEmpty(),
+                            Integers = kvp.Value.Integers.NullIfEmpty(),
+                            Decimals = kvp.Value.Decimals.NullIfEmpty(),
+                            DateTimeOffsets = kvp.Value.DateTimeOffsets.NullIfEmpty(),
                         },
                         kvp.Key.Culture,
                         kvp.Key.Segment
@@ -238,6 +244,12 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
 
     protected record CumulativeIndexValue
     {
+        public List<string> TextsR1 { get; } = [];
+
+        public List<string> TextsR2 { get; } = [];
+
+        public List<string> TextsR3 { get; } = [];
+
         public List<string> Texts { get; } = [];
 
         public List<string> Keywords { get; } = [];

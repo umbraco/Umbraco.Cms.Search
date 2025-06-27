@@ -175,7 +175,7 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
                 
             }
 
-            yield return new IndexField(Constants.FieldNames.Name, new() { Texts = [name] }, culture, null);
+            yield return new IndexField(Constants.FieldNames.Name, new() { TextsR1 = [name] }, culture, null);
         }
     }
 
