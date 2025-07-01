@@ -9,6 +9,7 @@ using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.BackOffice.DependencyInjection;
 using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.DeliveryApi.DependencyInjection;
+using Umbraco.Cms.Search.Provider.Examine.DependencyInjection;
 using Umbraco.Cms.Search.Provider.InMemory.DependencyInjection;
 
 namespace Site.DependencyInjection;
@@ -26,8 +27,8 @@ public sealed class SiteComposer : IComposer
         builder
             // add core services for search abstractions
             .AddSearchCore()
-            // add the in-memory search provider
-            .AddInMemorySearchProvider()
+            // add the examine search provider
+            .AddExamineSearchProvider()
             // use the search abstractions to perform backoffice search
             .AddBackOfficeSearch()
             // use the search abstractions to perform Delivery API queries

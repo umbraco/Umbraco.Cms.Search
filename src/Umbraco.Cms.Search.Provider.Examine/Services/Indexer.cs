@@ -95,7 +95,10 @@ public class Indexer : IIndexer
 
     public Task ResetAsync(string indexAlias)
     {
-        _examineManager.TryGetIndex(indexAlias, out var index);
+        if (_examineManager.TryGetIndex(indexAlias, out var index) is false)
+        {
+            return Task.CompletedTask;
+        }
         index?.CreateIndex();
         return Task.CompletedTask;
     }
