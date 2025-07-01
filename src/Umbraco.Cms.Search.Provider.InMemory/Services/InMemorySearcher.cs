@@ -4,7 +4,6 @@ using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
-using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Provider.InMemory.Models;
 using Umbraco.Extensions;
 
@@ -56,8 +55,7 @@ internal sealed class InMemorySearcher : IInMemorySearcher
                 .Value
                 .Fields
                 .Any(field => FieldMatcher.IsMatch(field, kvp.Value, null, culture, segment)
-                              && (field.Value.Texts?.Any(text => text.InvariantContains(query)) ?? false)
-                )
+                              && AllTexts(field.Value).Any(text => text.InvariantContains(query)))
             );
         }
 
@@ -129,7 +127,7 @@ internal sealed class InMemorySearcher : IInMemorySearcher
         {
             var isMatch = filter switch
             {
-                TextFilter textFilter => value.Texts?.Any(t => textFilter.Values.Any(t.InvariantContains)) ?? false,
+                TextFilter textFilter => AllTexts(value).Any(t => textFilter.Values.Any(t.InvariantContains)),
                 KeywordFilter keywordFilter => value.Keywords?.ContainsAny(keywordFilter.Values) ?? false,
                 IntegerExactFilter integerExactFilter => value.Integers?.ContainsAny(integerExactFilter.Values) ?? false,
                 IntegerRangeFilter integerRangeFilter => value.Integers?.Any(i => integerRangeFilter.Ranges.Any(r => i >= (r.MinimumValue ?? int.MinValue) && i <= (r.MaximumValue ?? int.MaxValue))) ?? false,
@@ -225,6 +223,12 @@ internal sealed class InMemorySearcher : IInMemorySearcher
             : documents.OrderByDescending(d => d.Value, comparer);
     }
 
+    private static IEnumerable<string> AllTexts(IndexValue indexValue)
+        => indexValue.TextsR1.EmptyNull()
+            .Union(indexValue.TextsR2.EmptyNull())
+            .Union(indexValue.TextsR3.EmptyNull())
+            .Union(indexValue.Texts.EmptyNull());
+
     private class SorterComparer : IComparer<IndexDocument>
     {
         private readonly Sorter _sorter;
@@ -262,7 +266,7 @@ internal sealed class InMemorySearcher : IInMemorySearcher
                     DecimalSorter => field.Value.Decimals?.FirstOrDefault(),
                     IntegerSorter => field.Value.Integers?.FirstOrDefault(),
                     KeywordSorter => field.Value.Keywords?.FirstOrDefault(),
-                    StringSorter => field.Value.Texts?.FirstOrDefault(),
+                    StringSorter => AllTexts(field.Value).FirstOrDefault(),
                     _ => throw new ArgumentOutOfRangeException($"Unsupported sorter type: {_sorter.GetType().FullName}")
                 };
     }

@@ -1,7 +1,9 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.HostedServices;
 using Umbraco.Cms.Search.Core.Configuration;
+using Umbraco.Cms.Search.Core.Models.Configuration;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Extensions;
 
@@ -29,6 +31,18 @@ internal sealed class ContentIndexingService : IContentIndexingService
     public void Handle(IEnumerable<ContentChange> changes)
         => _backgroundTaskQueue.QueueBackgroundWorkItem(async cancellationToken => await HandleAsync(changes, cancellationToken));
 
+    public void Rebuild(string indexAlias)
+    {
+        var indexRegistration = _indexOptions.GetIndexRegistration(indexAlias);
+        if (indexRegistration is null)
+        {
+            _logger.LogError("Cannot rebuild index - no index registration found for alias: {indexAlias}", indexAlias);
+            return;
+        }
+ 
+        _backgroundTaskQueue.QueueBackgroundWorkItem(async cancellationToken => await RebuildAsync(indexRegistration, cancellationToken));
+    }
+    
     private async Task HandleAsync(IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
     {
         var changesAsArray = changes as ContentChange[] ?? changes.ToArray();
@@ -39,23 +53,16 @@ internal sealed class ContentIndexingService : IContentIndexingService
 
         foreach (var group in indexRegistrationsByStrategyType)
         {
-            if (_serviceProvider.GetService(group.Key) is not IContentChangeStrategy contentChangeStrategy)
+            if (TryGetContentChangeStrategy(group.Key, out var contentChangeStrategy) is false)
             {
-                _logger.LogError($"Could not resolve type {{type}} as {nameof(IContentChangeStrategy)}. Make sure the type is registered in the DI.", group.Key.FullName);
                 continue;
             }
 
             var indexInfos = group
                 .Select(g =>
-                {
-                    if (_serviceProvider.GetService(g.Indexer) is not IIndexer indexer)
-                    {
-                        _logger.LogError($"Could not resolve type {{type}} as {nameof(IIndexer)}. Make sure the type is registered in the DI.", g.Indexer.FullName);
-                        return null;
-                    }
-
-                    return new IndexInfo(g.IndexAlias, g.ContainedObjectTypes, indexer);
-                })
+                    TryGetIndexer(g.Indexer, out var indexer)
+                        ? new IndexInfo(g.IndexAlias, g.ContainedObjectTypes, indexer)
+                        : null)
                 .WhereNotNull()
                 .ToArray();
 
@@ -67,5 +74,42 @@ internal sealed class ContentIndexingService : IContentIndexingService
 
             await contentChangeStrategy.HandleAsync(indexInfos, changesAsArray, cancellationToken);
         }
+    }
+
+    private async Task RebuildAsync(IndexRegistration indexRegistration, CancellationToken cancellationToken)
+    {
+        if (TryGetContentChangeStrategy(indexRegistration.ContentChangeStrategy, out var contentChangeStrategy) is false
+            || TryGetIndexer(indexRegistration.Indexer, out var indexer) is false)
+        {
+            return;
+        }
+
+        await contentChangeStrategy.RebuildAsync(new IndexInfo(indexRegistration.IndexAlias, indexRegistration.ContainedObjectTypes, indexer), cancellationToken);
+    }
+
+    private bool TryGetContentChangeStrategy(Type type, [NotNullWhen(true)] out IContentChangeStrategy? contentChangeStrategy)
+    {
+        if (_serviceProvider.GetService(type) is IContentChangeStrategy resolvedContentChangeStrategy)
+        {
+            contentChangeStrategy = resolvedContentChangeStrategy;
+            return true;
+        }
+
+        _logger.LogError($"Could not resolve type {{type}} as {nameof(IContentChangeStrategy)}. Make sure the type is registered in the DI.", type.FullName);
+        contentChangeStrategy = null;
+        return false;
+    }
+
+    private bool TryGetIndexer(Type type, [NotNullWhen(true)] out IIndexer? indexer)
+    {
+        if (_serviceProvider.GetService(type) is IIndexer resolvedIndexer)
+        {
+            indexer = resolvedIndexer;
+            return true;
+        }
+
+        _logger.LogError($"Could not resolve type {{type}} as {nameof(IIndexer)}. Make sure the type is registered in the DI.", type.FullName);
+        indexer = null;
+        return false;
     }
 }

@@ -2,6 +2,7 @@
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Serialization;
+using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Extensions;
 using IndexValue = Umbraco.Cms.Search.Core.Models.Indexing.IndexValue;
 
@@ -21,20 +22,17 @@ public sealed class TagsPropertyValueHandler : IPropertyValueHandler, ICorePrope
     public bool CanHandle(string propertyEditorAlias)
         => propertyEditorAlias is Umbraco.Cms.Core.Constants.PropertyEditors.Aliases.Tags;
 
-    public IndexValue? GetIndexValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
+    public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
-        var values = ParsePropertyValue(content, property, culture, segment, published);
-        return values?.Any() is true
-            ? new IndexValue
-            {
-                Keywords = values
-            }
-            : null;
+        var values = ParsePropertyValue(property, culture, segment, published);
+        return values?.Length > 0
+            ? [new IndexField(property.Alias, new IndexValue { Keywords = values }, culture, segment)]
+            : [];
     }
 
-    private string[]? ParsePropertyValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
+    private string[]? ParsePropertyValue(IProperty property, string? culture, string? segment, bool published)
     {
-        var value = content.GetValue<string>(property.Alias, culture, segment, published);
+        var value = property.GetValue(culture, segment, published) as string;
         if (value.IsNullOrWhiteSpace())
         {
             return null;

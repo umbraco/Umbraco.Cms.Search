@@ -1,4 +1,5 @@
-﻿using Umbraco.Cms.Core.Models;
+﻿using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
@@ -256,6 +257,52 @@ public partial class InvariantContentTests
         Assert.That(documents, Has.Count.EqualTo(1));
         Assert.That(documents[0].Id, Is.EqualTo(RootKey));
 
+        VerifyDocumentStructureValues(documents[0], RootKey, Guid.Empty, [RootKey]);
+    }
+
+    [Test]
+    public void PublishedStructure_RebuildIndexYieldsAllDocuments()
+    {
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
+        ContentIndexingService.Rebuild(IndexAliases.PublishedContent);
+
+        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        Assert.That(documents, Has.Count.EqualTo(4));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GrandchildKey));
+            Assert.That(documents[3].Id, Is.EqualTo(GreatGrandchildKey));
+        });
+
+        Assert.Multiple(() =>
+        {
+            VerifyDocumentPropertyValues(documents[0], "The root title", 12);
+            VerifyDocumentPropertyValues(documents[1], "The child title", 34);
+            VerifyDocumentPropertyValues(documents[2], "The grandchild title", 56);
+            VerifyDocumentPropertyValues(documents[3], "The great grandchild title", 78);
+        });
+    }
+
+    [Test]
+    public void PublishedStructure_RebuildOmitsTrashedContent()
+    {
+        ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
+        ContentService.MoveToRecycleBin(Grandchild());
+        ContentService.MoveToRecycleBin(Child());
+
+        // at this point we have:
+        // - Root in the content tree root (the only item not in the recycle bin)
+        // - Child and Grandchild in the recycle bin root
+        // - GreatGrandchild in the recycle bin below Grandchild 
+
+        ContentIndexingService.Rebuild(IndexAliases.PublishedContent);
+
+        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        Assert.That(documents, Has.Count.EqualTo(1));
+        Assert.That(documents[0].Id, Is.EqualTo(RootKey));
         VerifyDocumentStructureValues(documents[0], RootKey, Guid.Empty, [RootKey]);
     }
 }

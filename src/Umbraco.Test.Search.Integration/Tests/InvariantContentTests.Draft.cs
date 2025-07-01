@@ -324,4 +324,70 @@ public partial class InvariantContentTests
         Assert.That(documents[0].Id, Is.EqualTo(RootKey));
         VerifyDocumentStructureValues(documents[0], RootKey, Guid.Empty, [RootKey]);
     }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public void DraftStructure_RebuildIndexYieldsAllDocuments(bool populateIndexBeforeRebuild)
+    {
+        SetupDraftContent();
+        if (populateIndexBeforeRebuild)
+        {
+            ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
+        }
+
+        ContentIndexingService.Rebuild(IndexAliases.DraftContent);
+
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        Assert.That(documents, Has.Count.EqualTo(4));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GrandchildKey));
+            Assert.That(documents[3].Id, Is.EqualTo(GreatGrandchildKey));
+        });
+
+        Assert.Multiple(() =>
+        {
+            VerifyDocumentPropertyValues(documents[0], "The root title (draft)", 13);
+            VerifyDocumentPropertyValues(documents[1], "The child title (draft)", 35);
+            VerifyDocumentPropertyValues(documents[2], "The grandchild title (draft)", 57);
+            VerifyDocumentPropertyValues(documents[3], "The great grandchild title (draft)", 79);
+        });
+    }
+
+    [Test]
+    public void DraftStructure_RebuildIncludesTrashedContent()
+    {
+        SetupDraftContent();
+        ContentService.MoveToRecycleBin(Grandchild());
+        ContentService.MoveToRecycleBin(Child());
+
+        // at this point we have:
+        // - Root in the content tree root (the only item not in the recycle bin)
+        // - Child and Grandchild in the recycle bin root
+        // - GreatGrandchild in the recycle bin below Grandchild 
+
+        ContentIndexingService.Rebuild(IndexAliases.DraftContent);
+
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        Assert.That(documents, Has.Count.EqualTo(4));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(documents[0].Id, Is.EqualTo(RootKey));
+            Assert.That(documents[1].Id, Is.EqualTo(GrandchildKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GreatGrandchildKey));
+            Assert.That(documents[3].Id, Is.EqualTo(ChildKey));
+        });
+
+        Assert.Multiple(() =>
+        {
+            VerifyDocumentStructureValues(documents[0], RootKey, Guid.Empty, [RootKey]);
+            VerifyDocumentStructureValues(documents[1], GrandchildKey, Constants.System.RecycleBinContentKey, [Constants.System.RecycleBinContentKey, GrandchildKey]);
+            VerifyDocumentStructureValues(documents[2], GreatGrandchildKey, GrandchildKey, [Constants.System.RecycleBinContentKey, GrandchildKey, GreatGrandchildKey]);
+            VerifyDocumentStructureValues(documents[3], ChildKey, Constants.System.RecycleBinContentKey, [Constants.System.RecycleBinContentKey, ChildKey]);
+        });
+    }
 }

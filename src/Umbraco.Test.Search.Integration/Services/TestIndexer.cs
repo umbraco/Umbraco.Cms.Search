@@ -6,6 +6,7 @@ using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
 using Umbraco.Cms.Search.Core.Services;
+using Umbraco.Test.Search.Integration.Extensions;
 using Umbraco.Test.Search.Integration.Tests;
 using Constants = Umbraco.Cms.Search.Core.Constants;
 
@@ -36,6 +37,12 @@ public class TestIndexer : IIndexer, ISearcher
             }
         }
 
+        return Task.CompletedTask;
+    }
+
+    public Task ResetAsync(string indexAlias)
+    {
+        _indexes.Remove(indexAlias);
         return Task.CompletedTask;
     }
 
@@ -84,7 +91,7 @@ public class TestIndexer : IIndexer, ISearcher
             result = result.Where(document =>
                 document.Fields.Any(field =>
                     IsVarianceMatch(field)
-                    && field.Value.Texts?.Any(text => text.Contains(query)) is true
+                    && field.Value.AllTexts().Any(text => text.Contains(query)) is true
                 )
             ).ToArray();
         }
@@ -130,7 +137,7 @@ public class TestIndexer : IIndexer, ISearcher
                     document.Fields.FirstOrDefault(field =>
                         IsVarianceMatch(field)
                         && field.FieldName == stringSorter.FieldName
-                    )?.Value.Texts?.FirstOrDefault()
+                    )?.Value.AllTexts().FirstOrDefault()
                 ).ToArray(),
                 DateTimeOffsetSorter dateTimeOffsetSorter => result.OrderBy(document =>
                     document.Fields.FirstOrDefault(field =>

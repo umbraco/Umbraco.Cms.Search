@@ -1,9 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
+using Umbraco.Cms.Search.Core.Notifications;
 using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
@@ -13,6 +15,7 @@ internal class PublishedContentChangeStrategy : ContentChangeStrategyBase, IPubl
     private readonly IContentIndexingDataCollectionService _contentIndexingDataCollectionService;
     private readonly IContentProtectionProvider _contentProtectionProvider;
     private readonly IContentService _contentService;
+    private readonly IEventAggregator _eventAggregator;
     private readonly ILogger<PublishedContentChangeStrategy> _logger;
 
     protected override bool SupportsTrashedContent => false;
@@ -21,6 +24,7 @@ internal class PublishedContentChangeStrategy : ContentChangeStrategyBase, IPubl
         IContentIndexingDataCollectionService contentIndexingDataCollectionService,
         IContentProtectionProvider contentProtectionProvider,
         IContentService contentService,
+        IEventAggregator eventAggregator,
         IUmbracoDatabaseFactory umbracoDatabaseFactory,
         IIdKeyMap idKeyMap,
         ILogger<PublishedContentChangeStrategy> logger)
@@ -30,6 +34,7 @@ internal class PublishedContentChangeStrategy : ContentChangeStrategyBase, IPubl
         _contentProtectionProvider = contentProtectionProvider;
         _contentService = contentService;
         _logger = logger;
+        _eventAggregator = eventAggregator;
     }
 
     public async Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
@@ -49,7 +54,7 @@ internal class PublishedContentChangeStrategy : ContentChangeStrategyBase, IPubl
         ).ToArray();
 
         var pendingRemovals = new List<Guid>();
-        foreach (var change in changesAsArray.Where(change => change.ContentState is ContentState.Published))
+        foreach (var change in changesAsArray)
         {
             if (change.ChangeImpact is ChangeImpact.Remove)
             {
@@ -72,6 +77,23 @@ internal class PublishedContentChangeStrategy : ContentChangeStrategyBase, IPubl
         }
 
         await RemoveFromIndexAsync(indexInfosAsArray, pendingRemovals);
+    }
+
+    public async Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
+    {
+        await indexInfo.Indexer.ResetAsync(indexInfo.IndexAlias);
+
+        var indexInfos = new[] { indexInfo };
+        foreach (var content in _contentService.GetRootContent())
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                LogIndexRebuildCancellation(indexInfo);
+                return;
+            }
+
+            await ReindexAsync(indexInfos, content, true, cancellationToken);
+        }
     }
 
     private async Task ReindexAsync(IndexInfo[] indexInfos, IContentBase content, bool forceReindexDescendants, CancellationToken cancellationToken)
@@ -145,11 +167,18 @@ internal class PublishedContentChangeStrategy : ContentChangeStrategyBase, IPubl
 
         foreach (var indexInfo in indexInfos)
         {
-            await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, UmbracoObjectTypes.Document, variations, fields, contentProtection);
+            var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, variations, fields);
+            if (await _eventAggregator.PublishCancelableAsync(notification))
+            {
+                // the indexing operation was cancelled for this index; continue with the rest of the indexes
+                continue;
+            }
+
+            await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, UmbracoObjectTypes.Document, variations, notification.Fields, contentProtection);
         }
 
         return variations;
-    }
+    } 
 
     private async Task RemoveFromIndexAsync(IndexInfo[] indexInfos, Guid id)
         => await RemoveFromIndexAsync(indexInfos, [id]);

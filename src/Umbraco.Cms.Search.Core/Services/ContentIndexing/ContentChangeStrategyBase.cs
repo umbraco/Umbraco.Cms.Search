@@ -3,6 +3,7 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Persistence.Querying;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Infrastructure.Persistence;
+using Umbraco.Cms.Search.Core.Models.Indexing;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
@@ -13,6 +14,8 @@ internal abstract class ContentChangeStrategyBase
     private readonly ILogger<ContentChangeStrategyBase> _logger;
 
     protected abstract bool SupportsTrashedContent { get; }
+
+    protected const int ContentEnumerationPageSize = 1000;
     
     protected ContentChangeStrategyBase(
         IUmbracoDatabaseFactory umbracoDatabaseFactory,
@@ -38,7 +41,6 @@ internal abstract class ContentChangeStrategyBase
             return;
         }
 
-        const int pageSize = 10000;
         var pageIndex = 0;
 
         T[] descendants;
@@ -51,12 +53,14 @@ internal abstract class ContentChangeStrategyBase
 
         do
         {
-            descendants = getPagedDescendants(rootIdAttempt.Result, pageIndex, pageSize, query, Ordering.By("Path"));
+            descendants = getPagedDescendants(rootIdAttempt.Result, pageIndex, ContentEnumerationPageSize, query, Ordering.By("Path"));
 
             await actionToPerform(descendants.ToArray());
 
             pageIndex++;
-        } while (descendants.Length == pageSize);
+        } while (descendants.Length == ContentEnumerationPageSize);
     }
 
+    protected void LogIndexRebuildCancellation(IndexInfo indexInfo)
+        => _logger.LogInformation("Cancellation requested for rebuild of index: {indexAlias}", indexInfo.IndexAlias);
 }

@@ -1,9 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
+using Umbraco.Cms.Search.Core.Notifications;
 using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
@@ -14,6 +17,7 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
     private readonly IContentService _contentService;
     private readonly IMediaService _mediaService;
     private readonly IMemberService _memberService;
+    private readonly IEventAggregator _eventAggregator;
 
     protected override bool SupportsTrashedContent => true;
 
@@ -22,6 +26,7 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
         IContentService contentService,
         IMediaService mediaService,
         IMemberService memberService,
+        IEventAggregator eventAggregator,
         IUmbracoDatabaseFactory umbracoDatabaseFactory,
         IIdKeyMap idKeyMap,
         ILogger<DraftContentChangeStrategy> logger)
@@ -31,6 +36,7 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
         _contentService = contentService;
         _mediaService = mediaService;
         _memberService = memberService;
+        _eventAggregator = eventAggregator;
     }
 
     public async Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
@@ -73,6 +79,69 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
         await RemoveFromIndexAsync(indexInfosAsArray, pendingRemovals);
     }
 
+    public async Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
+    {
+        await indexInfo.Indexer.ResetAsync(indexInfo.IndexAlias);
+
+        await RebuildAsync(
+            indexInfo,
+            UmbracoObjectTypes.Document,
+            () => _contentService.GetRootContent(),
+            (pageIndex, pageSize) => _contentService.GetPagedChildren(Cms.Core.Constants.System.RecycleBinContent, pageIndex, pageSize, out _),
+            cancellationToken);
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            LogIndexRebuildCancellation(indexInfo);
+            return;
+        }
+
+        await RebuildAsync(
+            indexInfo,
+            UmbracoObjectTypes.Media,
+            () => _mediaService.GetRootMedia(),
+            (pageIndex, pageSize) => _mediaService.GetPagedChildren(Cms.Core.Constants.System.RecycleBinMedia, pageIndex, pageSize, out _),
+            cancellationToken);
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            LogIndexRebuildCancellation(indexInfo);
+            return;
+        }
+
+        if (indexInfo.ContainedObjectTypes.Contains(UmbracoObjectTypes.Member) is false)
+        {
+            return;
+        }
+
+        IMember[] members;
+        var pageIndex = 0;
+        do
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+
+            members = _memberService.GetAll(pageIndex, ContentEnumerationPageSize, out _, "sortOrder", Direction.Ascending).ToArray();
+            foreach (var member in members)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                await UpdateIndexAsync([indexInfo], ContentChange.Member(member.Key, ChangeImpact.Refresh, ContentState.Draft), member, cancellationToken);
+            }
+            pageIndex++;
+        }
+        while (members.Length == ContentEnumerationPageSize);
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            LogIndexRebuildCancellation(indexInfo);
+        }
+    }
+    
     private async Task<bool> UpdateIndexAsync(IndexInfo[] indexInfos, ContentChange change, IContentBase content, CancellationToken cancellationToken)
     {
         var applicableIndexInfos = indexInfos.Where(info => info.ContainedObjectTypes.Contains(change.ObjectType)).ToArray();
@@ -150,7 +219,14 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
 
         foreach (var indexInfo in indexInfos)
         {
-            await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, objectType, variations, fields, null);
+            var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, variations, fields);
+            if (await _eventAggregator.PublishCancelableAsync(notification))
+            {
+                // the indexing operation was cancelled for this index; continue with the rest of the indexes
+                continue;
+            }
+
+            await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, objectType, variations, notification.Fields, null);
         }
 
         return true;
@@ -181,4 +257,77 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
             UmbracoObjectTypes.Member => _memberService.GetById(change.Id),
             _ => throw new ArgumentOutOfRangeException(nameof(change.ObjectType))
         };
+
+    private async Task RebuildAsync(
+        IndexInfo indexInfo,
+        UmbracoObjectTypes objectType,
+        Func<IEnumerable<IContentBase>> getContentAtRoot,
+        Func<int, int, IEnumerable<IContentBase>> getPagedContentAtRecycleBinRoot,
+        CancellationToken cancellationToken)
+    {
+        if (indexInfo.ContainedObjectTypes.Contains(objectType) is false)
+        {
+            return;
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            LogIndexRebuildCancellation(indexInfo);
+            return;
+        }
+
+        var indexInfos = new [] { indexInfo };
+
+        foreach (var rootContent in getContentAtRoot())
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+
+            await UpdateIndexAsync(indexInfos, GetContentChange(rootContent), rootContent, cancellationToken);
+        }
+        
+        if (cancellationToken.IsCancellationRequested)
+        {
+            LogIndexRebuildCancellation(indexInfo);
+            return;
+        }
+
+        IContentBase[] contentInRecycleBin;
+        var pageIndex = 0;
+        do
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+
+            contentInRecycleBin = getPagedContentAtRecycleBinRoot(pageIndex, ContentEnumerationPageSize).ToArray();
+            foreach (var content in contentInRecycleBin)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                await UpdateIndexAsync(indexInfos, GetContentChange(content), content, cancellationToken);
+            }
+            pageIndex++;
+        }
+        while (contentInRecycleBin.Length == ContentEnumerationPageSize);
+
+        return;
+
+        ContentChange GetContentChange(IContentBase content)
+        {
+            var contentChange = objectType switch
+            {
+                UmbracoObjectTypes.Document => ContentChange.Document(content.Key, ChangeImpact.RefreshWithDescendants, ContentState.Draft),
+                UmbracoObjectTypes.Media => ContentChange.Media(content.Key, ChangeImpact.RefreshWithDescendants, ContentState.Draft),
+                UmbracoObjectTypes.Member => ContentChange.Member(content.Key, ChangeImpact.Refresh, ContentState.Draft),
+                _ => throw new ArgumentOutOfRangeException(nameof(objectType), objectType, "This strategy only supports documents, media and members")
+            };
+            return contentChange;
+        }
+    }
 }

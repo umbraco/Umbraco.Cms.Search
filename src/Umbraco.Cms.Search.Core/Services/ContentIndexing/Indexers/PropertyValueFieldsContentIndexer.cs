@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
-using Umbraco.Cms.Search.Core.PropertyValueHandlers;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
 using Umbraco.Extensions;
 
@@ -40,14 +40,8 @@ internal sealed class PropertyValueFieldsContentIndexer : IContentIndexer
                 // explicitly filter out sensitive properties
                 continue;
             }
-            
-            var applicableHandlers = _propertyValueHandlerCollection
-                .Where(handler => handler.CanHandle(property.PropertyType.PropertyEditorAlias))
-                .ToArray();
 
-            // always prioritize custom value handlers over the built-in ones
-            var handler = applicableHandlers.FirstOrDefault(handler => handler is not ICorePropertyValueHandler)
-                ?? applicableHandlers.FirstOrDefault();
+            var handler = _propertyValueHandlerCollection.GetPropertyValueHandler(property.PropertyType);
             if (handler is null)
             {
                 _logger.LogDebug(
@@ -68,13 +62,12 @@ internal sealed class PropertyValueFieldsContentIndexer : IContentIndexer
             {
                 foreach (var segment in propertySegments)
                 {
-                    var value = handler.GetIndexValue(content, property, culture, segment, published);
-                    if (value is null)
+                    var indexFields = handler.GetIndexFields(property, culture, segment, published, content);
+                    if (indexFields is null)
                     {
                         continue;
                     }
-
-                    fields.Add(new IndexField(property.Alias, value, culture, segment));
+                    fields.AddRange(indexFields);
                 }
             }
         }

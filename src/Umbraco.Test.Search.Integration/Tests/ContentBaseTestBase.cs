@@ -36,7 +36,7 @@ public abstract class ContentBaseTestBase : TestBase
             var contentTypeIdValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.ContentTypeId)?.Value.Keywords?.SingleOrDefault();
             Assert.That(contentTypeIdValue, Is.EqualTo(content.ContentType.Key.AsKeyword()));
 
-            var nameValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.Name)?.Value.Texts?.SingleOrDefault();
+            var nameValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.Name)?.Value.TextsR1?.SingleOrDefault();
             Assert.That(nameValue, Is.EqualTo(content.Name));
 
             var createDateValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.CreateDate)?.Value.DateTimeOffsets?.SingleOrDefault();

@@ -1,6 +1,7 @@
 ﻿using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 using Umbraco.Test.Search.Integration.Services;
@@ -9,6 +10,8 @@ namespace Umbraco.Test.Search.Integration.Tests;
 
 public class MemberTests : ContentBaseTestBase
 {
+    private IContentIndexingService ContentIndexingService => GetRequiredService<IContentIndexingService>();
+
     [Test]
     public void AllMembers_YieldsAllDocuments()
     {
@@ -98,7 +101,54 @@ public class MemberTests : ContentBaseTestBase
         });
     }
 
+    [TestCase(true)]
+    [TestCase(false)]
+    public void AllMembers_RebuildIndexYieldsAllDocuments(bool populateIndexBeforeRebuild)
+    {
+        if (populateIndexBeforeRebuild)
+        {
+            MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
+        }
+
+        ContentIndexingService.Rebuild(IndexAliases.Member);
+
+        var documents = Indexer.Dump(IndexAliases.Member);
+        Assert.That(documents, Has.Count.EqualTo(3));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(documents[0].Id, Is.EqualTo(MemberOneKey));
+            Assert.That(documents[1].Id, Is.EqualTo(MemberTwoKey));
+            Assert.That(documents[2].Id, Is.EqualTo(MemberThreeKey));
+
+            Assert.That(documents.All(d => d.ObjectType is UmbracoObjectTypes.Member), Is.True);
+        });
+
+        Assert.Multiple(() =>
+        {
+            VerifyDocumentPropertyValues(documents[0], "Organization One");
+            VerifyDocumentPropertyValues(documents[1], "Organization Two");
+            VerifyDocumentPropertyValues(documents[2], "Organization Three");
+        });
+    }
+
+    [Test]
+    public async Task DeleteMemberType_RemovesDocuments()
+    {
+        MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
+
+        var documents = Indexer.Dump(IndexAliases.Member);
+        Assert.That(documents, Has.Count.EqualTo(3));
+
+        await MemberTypeService.DeleteAsync(MemberOne().ContentType.Key, Constants.Security.SuperUserKey);
+        
+        documents = Indexer.Dump(IndexAliases.Media);
+        Assert.That(documents, Has.Count.EqualTo(0));
+    }
+
     private IMemberService MemberService => GetRequiredService<IMemberService>();
+
+    private IMemberTypeService MemberTypeService => GetRequiredService<IMemberTypeService>();
 
     private Guid MemberOneKey { get; } = Guid.NewGuid();
 

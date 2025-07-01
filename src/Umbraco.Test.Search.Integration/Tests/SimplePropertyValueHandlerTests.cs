@@ -1,6 +1,5 @@
-﻿using Umbraco.Cms.Core;
-using Umbraco.Cms.Core.Models;
-using Umbraco.Cms.Core.Services;
+﻿using Umbraco.Cms.Core.PropertyEditors;
+using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
 using Umbraco.Cms.Tests.Common.Builders;
@@ -8,13 +7,15 @@ using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
-public class SimplePropertyValueHandlerTests : ContentTestBase
+public class SimplePropertyValueHandlerTests : PropertyValueHandlerTestsBase
 {
     [Test]
     public void AllSupportedEditors_CanBeIndexed()
     {
+        var jsonSerializer = GetRequiredService<IJsonSerializer>();
+        
         var content = new ContentBuilder()
-            .WithContentType(GetContentType())
+            .WithContentType(GetAllSimpleEditorsContentType())
             .WithName("All Supported Editors")
             .WithPropertyValues(
                 new
@@ -29,6 +30,31 @@ public class SimplePropertyValueHandlerTests : ContentTestBase
                     tagsAsCsvValue = "Four,Five,Six",
                     multipleTextstringsValue = "First\nSecond\nThird",
                     contentPickerValue = "udi://document/55bf7f6d-acd2-4f1e-92bd-f0b5c41dbfed",
+                    booleanAsBooleanValue = true,
+                    booleanAsIntegerValue = 1,
+                    booleanAsStringValue = "1",
+                    sliderSingleValue = "123.45",
+                    sliderRangeValue = "123.45,567.89",
+                    multiUrlPickerValue = jsonSerializer.Serialize(new []
+                    {
+                        new MultiUrlPickerValueEditor.LinkDto
+                        {
+                            Name = "Link One"
+                        },
+                        new MultiUrlPickerValueEditor.LinkDto
+                        {
+                            Name = "Link Two"
+                        },
+                        new MultiUrlPickerValueEditor.LinkDto
+                        {
+                            // should be ignored - but make sure we test it all the same
+                            Name = null
+                        }
+                    }),
+                    dropdownSingleValue = "[\"One\"]",
+                    dropdownMultipleValue = "[\"One\", \"Two\", \"Three\"]",
+                    radioButtonListValue = "One",
+                    checkBoxListValue = "Two"
                 })
             .Build();
 
@@ -73,6 +99,36 @@ public class SimplePropertyValueHandlerTests : ContentTestBase
 
             var contentPickerValue = document.Fields.FirstOrDefault(f => f.FieldName == "contentPickerValue")?.Value.Keywords?.SingleOrDefault();
             CollectionAssert.AreEqual(contentPickerValue, "55bf7f6d-acd2-4f1e-92bd-f0b5c41dbfed");
+
+            var booleanAsBooleanValue = document.Fields.FirstOrDefault(f => f.FieldName == "booleanAsBooleanValue")?.Value.Integers?.SingleOrDefault();
+            Assert.That(booleanAsBooleanValue, Is.EqualTo(1));
+
+            var booleanAsIntegerValue = document.Fields.FirstOrDefault(f => f.FieldName == "booleanAsIntegerValue")?.Value.Integers?.SingleOrDefault();
+            Assert.That(booleanAsIntegerValue, Is.EqualTo(1));
+
+            var booleanAsStringValue = document.Fields.FirstOrDefault(f => f.FieldName == "booleanAsStringValue")?.Value.Integers?.SingleOrDefault();
+            Assert.That(booleanAsStringValue, Is.EqualTo(1));
+
+            var sliderSingleValue = document.Fields.FirstOrDefault(f => f.FieldName == "sliderSingleValue")?.Value.Decimals?.SingleOrDefault();
+            Assert.That(sliderSingleValue, Is.EqualTo(123.45m));
+
+            var sliderRangeValue = document.Fields.FirstOrDefault(f => f.FieldName == "sliderRangeValue")?.Value.Decimals?.ToArray();
+            CollectionAssert.AreEqual(sliderRangeValue, new[] { 123.45m, 567.89m });
+
+            var multiUrlPickerValue = document.Fields.FirstOrDefault(f => f.FieldName == "multiUrlPickerValue")?.Value.Texts?.ToArray();
+            CollectionAssert.AreEqual(multiUrlPickerValue, new[] { "Link One", "Link Two" });
+
+            var dropdownSingleValue = document.Fields.FirstOrDefault(f => f.FieldName == "dropdownSingleValue")?.Value.Keywords?.ToArray();
+            CollectionAssert.AreEqual(dropdownSingleValue, new[] { "One" });
+
+            var dropdownMultipleValue = document.Fields.FirstOrDefault(f => f.FieldName == "dropdownMultipleValue")?.Value.Keywords?.ToArray();
+            CollectionAssert.AreEqual(dropdownMultipleValue, new[] { "One", "Two", "Three" });
+
+            var radioButtonListValue = document.Fields.FirstOrDefault(f => f.FieldName == "radioButtonListValue")?.Value.Keywords?.ToArray();
+            CollectionAssert.AreEqual(radioButtonListValue, new[] { "One" });
+
+            var checkBoxListValue = document.Fields.FirstOrDefault(f => f.FieldName == "checkBoxListValue")?.Value.Keywords?.ToArray();
+            CollectionAssert.AreEqual(checkBoxListValue, new[] { "Two" });
         });
     }
 
@@ -86,123 +142,5 @@ public class SimplePropertyValueHandlerTests : ContentTestBase
     
     [SetUp]
     public async Task SetupTest()
-    {
-        var dataTypeService = GetRequiredService<IDataTypeService>();
-
-        var decimalDataType = new DataTypeBuilder()
-            .WithId(0)
-            .WithDatabaseType(ValueStorageType.Decimal)
-            .WithName("Decimal")
-            .AddEditor()
-            .WithAlias(Constants.PropertyEditors.Aliases.Decimal)
-            .Done()
-            .Build();
-        await dataTypeService.CreateAsync(decimalDataType, Constants.Security.SuperUserKey);
-
-        var tagsAsCsvDataType = new DataTypeBuilder()
-            .WithId(0)
-            .WithDatabaseType(ValueStorageType.Nvarchar)
-            .WithName("Tags as CSV")
-            .AddEditor()
-            .WithAlias(Constants.PropertyEditors.Aliases.Tags)
-            .Done()
-            .Build();
-        tagsAsCsvDataType.ConfigurationData = new Dictionary<string, object>
-        {
-            {"storageType", TagsStorageType.Csv}
-        }; 
-        await dataTypeService.CreateAsync(tagsAsCsvDataType, Constants.Security.SuperUserKey);
-
-        var tagsAsJsonDataType = new DataTypeBuilder()
-            .WithId(0)
-            .WithDatabaseType(ValueStorageType.Nvarchar)
-            .WithName("Tags as JSON")
-            .AddEditor()
-            .WithAlias(Constants.PropertyEditors.Aliases.Tags)
-            .Done()
-            .Build();
-        tagsAsJsonDataType.ConfigurationData = new Dictionary<string, object>
-        {
-            {"storageType", TagsStorageType.Json}
-        }; 
-        await dataTypeService.CreateAsync(tagsAsCsvDataType, Constants.Security.SuperUserKey);
-
-        var multipleTextstringsDataType = new DataTypeBuilder()
-            .WithId(0)
-            .WithDatabaseType(ValueStorageType.Nvarchar)
-            .WithName("Multiple textstrings")
-            .AddEditor()
-            .WithAlias(Constants.PropertyEditors.Aliases.MultipleTextstring)
-            .Done()
-            .Build();
-        await dataTypeService.CreateAsync(multipleTextstringsDataType, Constants.Security.SuperUserKey);
-
-        var contentPickerDataType = new DataTypeBuilder()
-            .WithId(0)
-            .WithDatabaseType(ValueStorageType.Nvarchar)
-            .WithName("Content picker")
-            .AddEditor()
-            .WithAlias(Constants.PropertyEditors.Aliases.ContentPicker)
-            .Done()
-            .Build();
-        await dataTypeService.CreateAsync(contentPickerDataType, Constants.Security.SuperUserKey);
-
-        var contentType = new ContentTypeBuilder()
-            .WithAlias("allEditors")
-            .AddPropertyType()
-            .WithAlias("textBoxValue")
-            .WithDataTypeId(Constants.DataTypes.Textbox)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("textAreaValue")
-            .WithDataTypeId(Constants.DataTypes.Textarea)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextArea)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("integerValue")
-            .WithDataTypeId(-51)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("decimalValue")
-            .WithDataTypeId(decimalDataType.Id)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Decimal)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("dateValue")
-            .WithDataTypeId(-41)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.DateTime)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("dateAndTimeValue")
-            .WithDataTypeId(Constants.DataTypes.DateTime)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.DateTime)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("tagsAsJsonValue")
-            .WithDataTypeId(tagsAsJsonDataType.Id)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Tags)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("tagsAsCsvValue")
-            .WithDataTypeId(tagsAsCsvDataType.Id)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Tags)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("multipleTextstringsValue")
-            .WithDataTypeId(multipleTextstringsDataType.Id)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.MultipleTextstring)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("contentPickerValue")
-            .WithDataTypeId(contentPickerDataType.Id)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.ContentPicker)
-            .Done()
-            .Build();
-        await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
-    }
-
-    private IContentType GetContentType() => ContentTypeService.Get("allEditors")
-                                             ?? throw new InvalidOperationException("Could not find the content type");
+        => await CreateAllSimpleEditorsContentType();
 }

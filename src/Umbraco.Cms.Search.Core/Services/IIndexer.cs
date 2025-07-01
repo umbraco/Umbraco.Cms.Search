@@ -8,4 +8,6 @@ public interface IIndexer
     Task AddOrUpdateAsync(string indexAlias, Guid id, UmbracoObjectTypes objectType, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection);
 
     Task DeleteAsync(string indexAlias, IEnumerable<Guid> ids);
+
+    Task ResetAsync(string indexAlias);
 }

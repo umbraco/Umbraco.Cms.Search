@@ -8,22 +8,17 @@ public sealed class MultipleTextstringPropertyValueHandler : IPropertyValueHandl
     public bool CanHandle(string propertyEditorAlias)
         => propertyEditorAlias is Umbraco.Cms.Core.Constants.PropertyEditors.Aliases.MultipleTextstring;
 
-    public IndexValue? GetIndexValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
+    public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
-        var values = ParsePropertyValue(content, property, culture, segment, published);
+        var values = ParsePropertyValue(property, culture, segment, published);
         return values?.Any() is true
-            ? new IndexValue
-            {
-                Texts = values
-            }
-            : null;
+            ? [new IndexField(property.Alias, new IndexValue { Texts = values }, culture, segment)]
+            : [];
     }
 
-    private static string[]? ParsePropertyValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
+    private static string[]? ParsePropertyValue(IProperty property, string? culture, string? segment, bool published)
     {
-        var values = content
-            .GetValue<string>(property.Alias, culture, segment, published)?
-            .Split("\n");
+        var values = (property.GetValue(culture, segment, published) as string)?.Split("\n");
         return values;
     }
 }

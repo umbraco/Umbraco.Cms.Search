@@ -1,5 +1,7 @@
-﻿using Umbraco.Cms.Core.Models;
+﻿using Umbraco.Cms.Core.Cache;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Entities;
+using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Extensions;
@@ -12,11 +14,17 @@ internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIn
 {
     private readonly ISearcher _searcher;
     private readonly IEntityService _entityService;
+    private readonly IBackOfficeSecurityAccessor _backOfficeSecurityAccessor;
+    private readonly AppCaches _appCaches;
+    private readonly IIdKeyMap _idKeyMap;
 
-    public IndexedEntitySearchService(ISearcher searcher, IEntityService entityService)
+    public IndexedEntitySearchService(ISearcher searcher, IEntityService entityService, IBackOfficeSecurityAccessor backOfficeSecurityAccessor, AppCaches appCaches, IIdKeyMap idKeyMap)
     {
         _searcher = searcher;
         _entityService = entityService;
+        _backOfficeSecurityAccessor = backOfficeSecurityAccessor;
+        _appCaches = appCaches;
+        _idKeyMap = idKeyMap;
     }
 
     public PagedModel<IEntitySlim> Search(UmbracoObjectTypes objectType, string query, int skip = 0, int take = 100, bool ignoreUserStartNodes = false)
@@ -33,6 +41,14 @@ internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIn
         int take = 100,
         bool ignoreUserStartNodes = false)
     {
+        var startNodeKeys = CurrentUserStartNodeKeys(objectType);
+
+        // cannot combine trashed and start node filtering - this should always yield zero results
+        if (startNodeKeys.Length > 0 && trashed is true)
+        {
+            return new PagedModel<IEntitySlim>();
+        }
+
         var indexAlias = objectType switch
         {
             UmbracoObjectTypes.Document => Constants.IndexAliases.DraftContent,
@@ -55,7 +71,17 @@ internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIn
             );
         }
 
-        if (trashed.HasValue)
+        if (startNodeKeys.Length > 0)
+        {
+            filters.Add(
+                new KeywordFilter(
+                    FieldName: Constants.FieldNames.PathIds,
+                    Values: startNodeKeys.Select(key => key.AsKeyword()).ToArray(),
+                    Negate: false
+                )
+            );
+        }
+        else if (trashed.HasValue)
         {
             var recycleBinId = objectType switch
             {
@@ -76,8 +102,6 @@ internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIn
             }
         }
 
-        // TODO: add user start nodes filtering
-        
         var result = await _searcher.SearchAsync(
             indexAlias,
             query: effectiveQuery,
@@ -96,5 +120,27 @@ internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIn
             : [];
 
         return new PagedModel<IEntitySlim> { Items = resultEntities, Total = result.Total };
+    }
+
+    private Guid[] CurrentUserStartNodeKeys(UmbracoObjectTypes objectType)
+    {
+        var currentUser = _backOfficeSecurityAccessor.BackOfficeSecurity?.CurrentUser;
+        var startNodeIds = objectType switch
+        {
+            UmbracoObjectTypes.Document => currentUser?.CalculateContentStartNodeIds(_entityService, _appCaches),
+            UmbracoObjectTypes.Media => currentUser?.CalculateMediaStartNodeIds(_entityService, _appCaches),
+            _ => null
+        };
+
+        return startNodeIds is not null
+            ? startNodeIds.Select(id =>
+                {
+                    var attempt = _idKeyMap.GetKeyForId(id, objectType);
+                    return attempt.Success ? attempt.Result : (Guid?)null;
+                })
+                .Where(key => key.HasValue)
+                .Select(key => key!.Value)
+                .ToArray()
+            : [];
     }
 }

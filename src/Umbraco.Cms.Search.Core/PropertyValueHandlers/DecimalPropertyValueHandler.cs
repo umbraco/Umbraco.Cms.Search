@@ -9,14 +9,8 @@ public sealed class DecimalPropertyValueHandler : IPropertyValueHandler, ICorePr
         => propertyEditorAlias is Cms.Core.Constants.PropertyEditors.Aliases.Decimal
             or Cms.Core.Constants.PropertyEditors.Aliases.PlainDecimal;
 
-    public IndexValue? GetIndexValue(IContentBase content, IProperty property, string? culture, string? segment, bool published)
-    {
-        var value = content.GetValue<decimal?>(property.Alias, culture, segment, published);
-        return value.HasValue
-            ? new IndexValue
-            {
-                Decimals = [value.Value]
-            }
-            : null;
-    }
+    public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
+        => property.GetValue(culture, segment, published) is decimal decimalValue
+            ? [new IndexField(property.Alias, new IndexValue { Decimals = [decimalValue] }, culture, segment)]
+            : [];
 }

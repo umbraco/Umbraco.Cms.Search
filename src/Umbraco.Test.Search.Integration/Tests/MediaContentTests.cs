@@ -1,5 +1,6 @@
 ﻿using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 using Umbraco.Test.Search.Integration.Services;
@@ -8,6 +9,8 @@ namespace Umbraco.Test.Search.Integration.Tests;
 
 public class MediaContentTests : MediaTestBase
 {
+    private IContentIndexingService ContentIndexingService => GetRequiredService<IContentIndexingService>();
+
     [Test]
     public void FullStructure_YieldsAllDocuments()
     {
@@ -240,6 +243,75 @@ public class MediaContentTests : MediaTestBase
             VerifyDocumentStructureValues(documents[0], RootFolderKey, Guid.Empty, [RootFolderKey]);
             VerifyDocumentStructureValues(documents[1], RootMediaKey, Guid.Empty, [RootMediaKey]);
             VerifyDocumentStructureValues(documents[2], ChildMediaKey, RootFolderKey, [RootFolderKey, ChildMediaKey]);
+        });
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public void DraftStructure_RebuildIndexYieldsAllDocuments(bool populateIndexBeforeRebuild)
+    {
+        if (populateIndexBeforeRebuild)
+        {
+            MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
+        }
+
+        ContentIndexingService.Rebuild(IndexAliases.Media);
+
+        var documents = Indexer.Dump(IndexAliases.Media);
+        Assert.That(documents, Has.Count.EqualTo(5));
+        
+        Assert.Multiple(() =>
+        {
+            Assert.That(documents[0].Id, Is.EqualTo(RootFolderKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildFolderKey));
+            Assert.That(documents[2].Id, Is.EqualTo(GrandchildMediaKey));
+            Assert.That(documents[3].Id, Is.EqualTo(ChildMediaKey));
+            Assert.That(documents[4].Id, Is.EqualTo(RootMediaKey));
+        });
+
+        Assert.Multiple(() =>
+        {
+            VerifyDocumentPropertyValues(documents[0], null, null);
+            VerifyDocumentPropertyValues(documents[1], null, null);
+            VerifyDocumentPropertyValues(documents[2], "The grandchild alt text", 9012);
+            VerifyDocumentPropertyValues(documents[3], "The child alt text", 5678);
+            VerifyDocumentPropertyValues(documents[4], "The root alt text", 1234);
+        });
+    }
+
+    [Test]
+    public void DraftStructure_RebuildIncludesTrashedContent()
+    {
+        MediaService.MoveToRecycleBin(ChildFolder());
+        MediaService.MoveToRecycleBin(RootMedia());
+
+        // at this point we have:
+        // - RootFolder in the media tree root
+        // - ChildMedia below RootFolder
+        // - RootMedia and ChildFolder in the recycle bin root
+        // - GrandchildMedia in the recycle bin below ChildFolder 
+
+        ContentIndexingService.Rebuild(IndexAliases.Media);
+
+        var documents = Indexer.Dump(IndexAliases.Media);
+        Assert.That(documents, Has.Count.EqualTo(5));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(documents[0].Id, Is.EqualTo(RootFolderKey));
+            Assert.That(documents[1].Id, Is.EqualTo(ChildMediaKey));
+            Assert.That(documents[2].Id, Is.EqualTo(ChildFolderKey));
+            Assert.That(documents[3].Id, Is.EqualTo(GrandchildMediaKey));
+            Assert.That(documents[4].Id, Is.EqualTo(RootMediaKey));
+        });
+
+        Assert.Multiple(() =>
+        {
+            VerifyDocumentStructureValues(documents[0], RootFolderKey, Guid.Empty, [RootFolderKey]);
+            VerifyDocumentStructureValues(documents[1], ChildMediaKey, RootFolderKey, [RootFolderKey, ChildMediaKey]);
+            VerifyDocumentStructureValues(documents[2], ChildFolderKey, Constants.System.RecycleBinMediaKey, [Constants.System.RecycleBinMediaKey, ChildFolderKey]);
+            VerifyDocumentStructureValues(documents[3], GrandchildMediaKey, ChildFolderKey, [Constants.System.RecycleBinMediaKey, ChildFolderKey, GrandchildMediaKey]);
+            VerifyDocumentStructureValues(documents[4], RootMediaKey, Constants.System.RecycleBinMediaKey, [Constants.System.RecycleBinMediaKey, RootMediaKey]);
         });
     }
 
