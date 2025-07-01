@@ -36,16 +36,15 @@ public static class UmbracoBuilderExtensions
         {
         });
         
-        builder.Services.AddTransient<Indexer>();
         builder.Services.AddTransient<IIndexer, Indexer>();
         builder.Services.AddTransient<ISearcher, Searcher>();
         
         builder.Services.Configure<IndexOptions>(options =>
         {
-            options.RegisterIndex<Indexer, Searcher, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<Indexer, Searcher, IPublishedContentChangeStrategy>(Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<Indexer, Searcher, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
-            options.RegisterIndex<Indexer, Searcher, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
+            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IIndexer, ISearcher, IPublishedContentChangeStrategy>(Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
+            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
         });
 
         return builder;
