@@ -92,7 +92,13 @@ public class Indexer : IIndexer
             index.DeleteFromIndex(idsToDelete);
         }
     }
-    
+
+    public Task ResetAsync(string indexAlias)
+    {
+        _examineManager.TryGetIndex(indexAlias, out var index);
+        index?.CreateIndex();
+        return Task.CompletedTask;
+    }
 
 
     private Dictionary<string, object> MapToDictionary(IEnumerable<IndexField> fields, ContentProtection? protection)
