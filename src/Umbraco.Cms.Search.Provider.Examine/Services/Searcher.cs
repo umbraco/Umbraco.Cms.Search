@@ -27,7 +27,19 @@ public class Searcher : ISearcher
             return await Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
         }
 
-        var results = index.Searcher.Search(query);
+        var searchQuery = index.Searcher.CreateQuery().ManagedQuery(query);
+        
+        if(culture is not null)
+        {
+            searchQuery.And().NativeQuery($"+(+culture:\"{culture}\")");
+        }
+        
+        if(segment is not null)
+        {
+            searchQuery.And().NativeQuery($"+(+segment:\"{segment}\")");
+        }
+
+        var results = searchQuery.Execute();
         
         
         return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull(), Array.Empty<FacetResult>()));
