@@ -147,15 +147,9 @@ public class Indexer : IIndexer
             result.Add("protection", protection.AccessIds);
         }
 
-        if (culture is not null)
-        {
-            result.Add("culture", culture);
-        }
-        
-        if (segment is not null)
-        {
-            result.Add("segment", segment);
-        }
+        result.Add("culture", culture ?? string.Empty);
+        result.Add("segment", segment ?? string.Empty);
+
 
         return result;
     }
