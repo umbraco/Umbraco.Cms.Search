@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Search.Core.Extensions;
@@ -6,7 +7,7 @@ using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
-public sealed class HtmlIndexValueParser : IHtmlIndexValueParser
+public sealed partial class HtmlIndexValueParser : IHtmlIndexValueParser
 {
     private readonly ILogger<HtmlIndexValueParser> _logger;
 
@@ -17,8 +18,15 @@ public sealed class HtmlIndexValueParser : IHtmlIndexValueParser
     {
         try
         {
-            var doc = new HtmlDocument();
-            doc.LoadHtml(html);
+            var doc = new HtmlDocument
+            {
+                OptionEnableBreakLineForInnerText = true
+            };
+
+            // HTML agility pack does not support indenting, which causes issues when extracting text from nested tags
+            // like (un)ordered lists. as a workaround we'll enforce newlines for all tag endings, and explicitly trim
+            // the resulting texts before utilizing them.
+            doc.LoadHtml(html.Replace("</", "\n</"));
 
             // all nodes of textual relevance to indexing is at document root level
             var children = doc.DocumentNode.ChildNodes;
@@ -48,12 +56,17 @@ public sealed class HtmlIndexValueParser : IHtmlIndexValueParser
             _logger.LogError(ex, "Could not parse markdown HTML, see exception for details");
             return null;
         }
-
     }
 
     private string[] ParseNodes(HtmlNode[] nodes)
         => nodes
-            .Select(node => node.InnerText.Replace('\n', ' ').Replace('\r', ' '))
+            .Select(node => MultipleWhiteSpaces().Replace(Newlines().Replace(node.InnerText, " "), " ").Trim())
             .Where(text => text.IsNullOrWhiteSpace() is false)
             .ToArray();
+
+    [GeneratedRegex(@"\s{2,}")]
+    private static partial Regex MultipleWhiteSpaces();
+
+    [GeneratedRegex(@"[\r\n]")]
+    private static partial Regex Newlines();
 }
