@@ -77,7 +77,7 @@ public class SearchController : RenderController
                     ? [new DateTimeOffsetSorter(sortBy, direction)]
                     : sortBy.InvariantContains("dropdown")
                         ? [new KeywordSorter(sortBy, direction)] 
-                        : [new StringSorter(sortBy, direction)];
+                        : [new TextSorter(sortBy, direction)];
 
         var accessContext = await CurrentMemberAccessContext();
         

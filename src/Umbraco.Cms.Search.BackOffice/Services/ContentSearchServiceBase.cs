@@ -133,7 +133,7 @@ internal abstract class ContentSearchServiceBase<TContent> : IndexedSearchServic
         switch (ordering.OrderBy)
         {
             case "name":
-                return new StringSorter(Core.Constants.FieldNames.Name, ordering.Direction);
+                return new TextSorter(Core.Constants.FieldNames.Name, ordering.Direction);
             case "updateDate":
                 return new DateTimeOffsetSorter(Core.Constants.FieldNames.UpdateDate, ordering.Direction);
             case "creator":
