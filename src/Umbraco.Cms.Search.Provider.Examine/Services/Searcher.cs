@@ -29,13 +29,8 @@ public class Searcher : ISearcher
 
         var searchQuery = index.Searcher.CreateQuery().ManagedQuery(query);
         
-        searchQuery.And().NativeQuery($"+(+culture:\"{culture ?? string.Empty}\")");
-
-        
-        if(segment is not null)
-        {
-            searchQuery.And().NativeQuery($"+(+segment:\"{segment ?? string.Empty}\")");
-        }
+        searchQuery.And().NativeQuery($"+(+culture:\"{culture ?? "none"}\")");
+        searchQuery.And().NativeQuery($"+(+segment:\"{segment ?? "none"}\")");
 
         var results = searchQuery.Execute();
         

@@ -134,6 +134,24 @@ public class Indexer : IIndexer
             {
                 result.Add(CalculateFieldName(field, "texts"), field.Value.Texts);
                 aggregatedTexts.AddRange(field.Value.Texts);
+            }            
+            
+            if (field.Value.TextsR1?.Any() ?? false)
+            {
+                result.Add(CalculateFieldName(field, "textsr1"), field.Value.TextsR1);
+                aggregatedTexts.AddRange(field.Value.TextsR1);
+            }
+            
+            if (field.Value.TextsR2?.Any() ?? false)
+            {
+                result.Add(CalculateFieldName(field, "textsr2"), field.Value.TextsR2);
+                aggregatedTexts.AddRange(field.Value.TextsR2);
+            }
+            
+            if (field.Value.TextsR3?.Any() ?? false)
+            {
+                result.Add(CalculateFieldName(field, "textsr3"), field.Value.TextsR3);
+                aggregatedTexts.AddRange(field.Value.TextsR3);
             }
         }
         
@@ -147,8 +165,9 @@ public class Indexer : IIndexer
             result.Add("protection", protection.AccessIds);
         }
 
-        result.Add("culture", culture ?? string.Empty);
-        result.Add("segment", segment ?? string.Empty);
+        // Cannot add null values, so we have to just say "none" here, so we can filter on variant / invariant content
+        result.Add("culture", culture ?? "none");
+        result.Add("segment", segment ?? "none");
 
 
         return result;

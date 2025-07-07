@@ -1,5 +1,4 @@
-﻿using Examine;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Tests.Common.Builders;
@@ -11,21 +10,75 @@ public class InvariantDocumentTests : SearcherTestBase
 {
     [TestCase(true)]
     [TestCase(false)]
-    public async Task CanIndexAnyDocument(bool publish)
+    public async Task CanSearchName(bool publish)
     {
-        var result = await Searcher.SearchAsync(GetIndexAlias(publish), "Root", null, null, null, null, null, null, 0, 100);
-        Assert.Multiple(() =>
-        {
-            Assert.That(result, Is.Not.Null);
-            Assert.That(result.Total, Is.EqualTo(1));
-        });
-    }
+        var indexAlias = GetIndexAlias(publish);
 
-    private string GetIndexAlias(bool publish)
+        var results = await Searcher.SearchAsync(indexAlias, "Test", null, null, null, null, null, null, 0, 100);
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
+    }
+    
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task CanSearchTextProperty(bool publish)
     {
-        return publish
-            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
-            : Cms.Search.Core.Constants.IndexAliases.DraftContent;
+        var indexAlias = GetIndexAlias(publish);
+
+        var results = await Searcher.SearchAsync(indexAlias, "The root title", null, null, null, null, null, null, 0, 100);
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
+    }
+    
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task CanSearchIntegerValue(bool publish)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        var results = await Searcher.SearchAsync(indexAlias, "12", null, null, null, null, null, null, 0, 100);
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
+    }
+    
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task CanSearchDecimalValues(bool publish)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        var results = await Searcher.SearchAsync(indexAlias, DecimalValue.ToString(), null, null, null, null, null, null, 0, 100);
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
+    }    
+    
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task CanSearchDateTimeValues(bool publish)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        var results = await Searcher.SearchAsync(indexAlias, CurrentDateTimeOffset.ToString(), null, null, null, null, null, null, 0, 100);
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
+    }
+    
+    
+    [TestCase("title", "updated title", false)]
+    [TestCase("title", "updated title", true)]
+    [TestCase("count", 12, false)]
+    [TestCase("count", 12, true)]
+    [TestCase("decimalproperty", 1.45, false)]
+    [TestCase("decimalproperty", 1.45, true)]
+    public async Task CanIndexUpdatedProperties(string propertyName, object updatedValue, bool publish)
+    {
+        UpdateProperty(propertyName, updatedValue, publish);
+
+        var indexAlias = GetIndexAlias(publish);
+
+        var results = await Searcher.SearchAsync(indexAlias, updatedValue.ToString(), null, null, null, null, null, null, 0, 100);
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
     
     [SetUp]
@@ -69,7 +122,7 @@ public class InvariantDocumentTests : SearcherTestBase
         var root = new ContentBuilder()
             .WithKey(RootKey)
             .WithContentType(contentType)
-            .WithName("Root")
+            .WithName("Test")
             .WithPropertyValues(
                 new
                 {
@@ -86,5 +139,28 @@ public class InvariantDocumentTests : SearcherTestBase
         
         var content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);
+    }
+    
+    private void UpdateProperty(string propertyName, object value, bool publish)
+    {
+        var content = ContentService.GetById(RootKey);
+        content.SetValue(propertyName, value);
+
+        if (publish)
+        {
+            ContentService.Save(content);
+            ContentService.Publish(content, ["*"]);
+        }
+        else
+        {
+            ContentService.Save(content);
+        }
+        
+        Thread.Sleep(3000);
+    }
+
+    private string GetIndexAlias(bool publish)
+    {
+        return publish ? Cms.Search.Core.Constants.IndexAliases.PublishedContent : Cms.Search.Core.Constants.IndexAliases.DraftContent;
     }
 }
