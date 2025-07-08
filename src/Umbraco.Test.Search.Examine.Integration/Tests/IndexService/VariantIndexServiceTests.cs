@@ -53,7 +53,7 @@ public class VariantIndexServiceTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
         
         var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField("Umb_Name_texts");
+        queryBuilder.SelectField("Umb_Name_textsr1");
         var results = queryBuilder.Execute();
         var result = results
             .SelectMany(x => x.Values.Values)
