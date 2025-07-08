@@ -158,9 +158,4 @@ public class InvariantDocumentTests : SearcherTestBase
         
         Thread.Sleep(3000);
     }
-
-    private string GetIndexAlias(bool publish)
-    {
-        return publish ? Cms.Search.Core.Constants.IndexAliases.PublishedContent : Cms.Search.Core.Constants.IndexAliases.DraftContent;
-    }
 }
