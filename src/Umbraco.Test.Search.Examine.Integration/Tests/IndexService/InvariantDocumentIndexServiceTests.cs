@@ -64,10 +64,10 @@ public class InvariantDocumentIndexServiceTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField("title_texts");
+        queryBuilder.SelectField("Umb_title_texts");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == "title_texts").Value, Is.EqualTo("The root title"));
+        Assert.That(results.First().Values.First(x => x.Key == "Umb_title_texts").Value, Is.EqualTo("The root title"));
     }
     
     [TestCase(true)]
@@ -79,10 +79,10 @@ public class InvariantDocumentIndexServiceTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField("count_integers");
+        queryBuilder.SelectField("Umb_count_integers");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == "count_integers").Value, Is.EqualTo("12"));
+        Assert.That(results.First().Values.First(x => x.Key == "Umb_count_integers").Value, Is.EqualTo("12"));
     }
     
     [TestCase(true)]
@@ -94,10 +94,10 @@ public class InvariantDocumentIndexServiceTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField("decimalproperty_decimals");
+        queryBuilder.SelectField("Umb_decimalproperty_decimals");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == "decimalproperty_decimals").Value, Is.EqualTo(DecimalValue.ToString()));
+        Assert.That(results.First().Values.First(x => x.Key == "Umb_decimalproperty_decimals").Value, Is.EqualTo(DecimalValue.ToString()));
     }    
     
     [TestCase(true)]
@@ -109,10 +109,10 @@ public class InvariantDocumentIndexServiceTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField("datetime_datetimeoffsets");
+        queryBuilder.SelectField("Umb_datetime_datetimeoffsets");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == "datetime_datetimeoffsets").Value, Is.EqualTo(CurrentDateTimeOffset.ToString()));
+        Assert.That(results.First().Values.First(x => x.Key == "Umb_datetime_datetimeoffsets").Value, Is.EqualTo(CurrentDateTimeOffset.ToString()));
     }
     
     
@@ -144,10 +144,10 @@ public class InvariantDocumentIndexServiceTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField("aggregated_texts");
+        queryBuilder.SelectField("Umb_aggregated_texts");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().AllValues.First(x => x.Key == "aggregated_texts").Value.Contains("The root title"), Is.True);
+        Assert.That(results.First().AllValues.First(x => x.Key == "Umb_aggregated_texts").Value.Contains("The root title"), Is.True);
     }
     
     

@@ -45,8 +45,8 @@ public class Searcher : ISearcher
         // We have to do to lower on all queries.
         var searchQuery = index.Searcher.CreateQuery().ManagedQuery(culture is null ? query.ToLowerInvariant() : query.ToLower(new CultureInfo(culture)));
         
-        searchQuery.And().NativeQuery($"+(+culture:\"{culture ?? "none"}\")");
-        searchQuery.And().NativeQuery($"+(+segment:\"{segment ?? "none"}\")");
+        searchQuery.And().NativeQuery($"+(+Umb_culture:\"{culture ?? "none"}\")");
+        searchQuery.And().NativeQuery($"+(+Umb_segment:\"{segment ?? "none"}\")");
 
         var results = searchQuery.Execute();
         

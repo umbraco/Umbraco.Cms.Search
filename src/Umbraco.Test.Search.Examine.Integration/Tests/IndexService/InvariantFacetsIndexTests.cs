@@ -26,7 +26,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
 
         var results = index.Searcher.CreateQuery()
             .All()
-            .WithFacets(facets => facets.FacetLongRange("otherName_integers", new Int64Range("0-9", 0, true, 9, true)))
+            .WithFacets(facets => facets.FacetLongRange("Umb_otherName_integers", new Int64Range("0-9", 0, true, 9, true)))
             .Execute();
 
         var facets = results.GetFacets();
@@ -50,7 +50,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
 
         var results = index.Searcher.CreateQuery()
             .All()
-            .WithFacets(facets => facets.FacetDoubleRange("decimalproperty_decimals", new DoubleRange("values", 3.5, true, 654.9, true)))
+            .WithFacets(facets => facets.FacetDoubleRange("Umb_decimalproperty_decimals", new DoubleRange("values", 3.5, true, 654.9, true)))
             .Execute();
 
         var facets = results.GetFacets();
@@ -74,7 +74,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
 
         var results = index.Searcher.CreateQuery()
             .All()
-            .WithFacets(facets => facets.FacetString("title_texts"))
+            .WithFacets(facets => facets.FacetString("Umb_title_texts"))
             .Execute();
 
         var facets = results.GetFacets();
@@ -99,7 +99,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
 
         var results = index.Searcher.CreateQuery()
             .All()
-            .WithFacets(facets => facets.FacetLongRange("otherName_integers", new Int64Range("0-9", 0, true, 9, true),  new Int64Range("100-199", 100, true, 199, true)))
+            .WithFacets(facets => facets.FacetLongRange("Umb_otherName_integers", new Int64Range("0-9", 0, true, 9, true),  new Int64Range("100-199", 100, true, 199, true)))
             .Execute();
 
         var facets = results.GetFacets();

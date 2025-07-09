@@ -24,9 +24,9 @@ public class InvariantSortableIndexTests : IndexTestBase
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
-        var results = index.Searcher.CreateQuery().All().OrderBy(new SortableField("sortableTitle_texts", SortType.String)).Execute();
+        var results = index.Searcher.CreateQuery().All().OrderBy(new SortableField("Umb_sortableTitle_texts", SortType.String)).Execute();
         var values = results
-            .SelectMany(x => x.Values.Where(x => x.Key == "sortableTitle_texts")).Select(x => x.Value);
+            .SelectMany(x => x.Values.Where(x => x.Key == "Umb_sortableTitle_texts")).Select(x => x.Value);
         
         Assert.Multiple(() =>
         {
@@ -47,9 +47,9 @@ public class InvariantSortableIndexTests : IndexTestBase
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
-        var results = index.Searcher.CreateQuery().All().OrderBy(new SortableField("title_texts", SortType.String)).Execute();
+        var results = index.Searcher.CreateQuery().All().OrderBy(new SortableField("Umb_title_texts", SortType.String)).Execute();
         var values = results
-            .SelectMany(x => x.Values.Where(x => x.Key == "title_texts")).Select(x => x.Value);
+            .SelectMany(x => x.Values.Where(x => x.Key == "Umb_title_texts")).Select(x => x.Value);
         
         Assert.Multiple(() =>
         {

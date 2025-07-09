@@ -157,17 +157,17 @@ public class Indexer : IIndexer
         
         if (aggregatedTexts.Any())
         {
-            result.Add("aggregated_texts", aggregatedTexts.ToArray());
+            result.Add("Umb_aggregated_texts", aggregatedTexts.ToArray());
         }
 
         if (protection is not null)
         {
-            result.Add("protection", protection.AccessIds);
+            result.Add("Umb_protection", protection.AccessIds);
         }
 
         // Cannot add null values, so we have to just say "none" here, so we can filter on variant / invariant content
-        result.Add("culture", culture ?? "none");
-        result.Add("segment", segment ?? "none");
+        result.Add("Umb_culture", culture ?? "none");
+        result.Add("Umb_segment", segment ?? "none");
 
 
         return result;
@@ -175,7 +175,11 @@ public class Indexer : IIndexer
 
     private string CalculateFieldName(IndexField field, string property)
     {
-        var result = field.FieldName;
+        var result = $"{field.FieldName}";
+        if (result.StartsWith("Umb_") is false)
+        {
+            result = "Umb_" + result;
+        }
         return result + $"_{property}";
     }
 

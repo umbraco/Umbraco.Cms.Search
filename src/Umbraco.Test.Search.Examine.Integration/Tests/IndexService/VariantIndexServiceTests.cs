@@ -73,7 +73,7 @@ public class VariantIndexServiceTests : IndexTestBase
         
         var results = index.Searcher.Search(updatedValue);
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == $"{propertyName}_texts").Value, Is.EqualTo(updatedValue));
+        Assert.That(results.First().Values.First(x => x.Key == $"Umb_{propertyName}_texts").Value, Is.EqualTo(updatedValue));
     }
     
     [TestCase(true, "en-US", "Root")]
@@ -89,7 +89,7 @@ public class VariantIndexServiceTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
         
         var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField("title_texts");
+        queryBuilder.SelectField("Umb_title_texts");
         var results = queryBuilder.Execute();
         
         var result = results
@@ -113,7 +113,7 @@ public class VariantIndexServiceTests : IndexTestBase
         
         var results = index.Searcher.Search(expectedValue);
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == "body_texts").Value, Is.EqualTo(expectedValue));
+        Assert.That(results.First().Values.First(x => x.Key == "Umb_body_texts").Value, Is.EqualTo(expectedValue));
     }
     
     [SetUp]

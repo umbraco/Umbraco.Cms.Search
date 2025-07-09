@@ -32,7 +32,7 @@ public class InvariantContentProtectionIndexTests : IndexTestBase
         var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
         var results = index.Searcher.CreateQuery().All().Execute();
-        var indexedAccessKeys = results.First().AllValues.First(x => x.Key == "protection").Value;
+        var indexedAccessKeys = results.First().AllValues.First(x => x.Key == "Umb_protection").Value;
         Assert.That(indexedAccessKeys, Has.Count.EqualTo(1));
         Assert.That(indexedAccessKeys, Has.Member(result.Result.Key.ToString()));
     }
@@ -60,7 +60,7 @@ public class InvariantContentProtectionIndexTests : IndexTestBase
         var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         
         var results = index.Searcher.CreateQuery().All().Execute();
-        var indexedAccessKeys = results.First().AllValues.First(x => x.Key == "protection").Value;
+        var indexedAccessKeys = results.First().AllValues.First(x => x.Key == "Umb_protection").Value;
         Assert.That(indexedAccessKeys, Has.Count.EqualTo(5));
         Assert.That(indexedAccessKeys, Has.Member(group.Result.Key.ToString()));
         Assert.That(indexedAccessKeys, Has.Member(group2.Result.Key.ToString()));
@@ -77,7 +77,7 @@ public class InvariantContentProtectionIndexTests : IndexTestBase
         var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
         var results = index.Searcher.CreateQuery().All().Execute();
-        Assert.That(results.First().AllValues.SelectMany(x => x.Value), Does.Not.Contain("protection"));
+        Assert.That(results.First().AllValues.SelectMany(x => x.Value), Does.Not.Contain("umb_protection"));
     }
 
     private void CreateInvariantDocument()
