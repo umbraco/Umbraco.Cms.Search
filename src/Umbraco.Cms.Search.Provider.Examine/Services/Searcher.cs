@@ -1,14 +1,19 @@
 ﻿using System.Globalization;
 using System.Text;
 using Examine;
+using Examine.Lucene;
+using Examine.Search;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
 using Umbraco.Extensions;
+using FacetResult = Umbraco.Cms.Search.Core.Models.Searching.Faceting.FacetResult;
+using FacetValue = Umbraco.Cms.Search.Core.Models.Searching.Faceting.FacetValue;
 using ISearcher = Umbraco.Cms.Search.Core.Services.ISearcher;
 using SearchResult = Umbraco.Cms.Search.Core.Models.Searching.SearchResult;
+using IndexValue = Umbraco.Cms.Search.Core.Models.Indexing.IndexValue;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
@@ -38,8 +43,11 @@ public class Searcher : ISearcher
                 return await Task.FromResult(new SearchResult(cultureAndSegmentQuery.TotalItemCount, cultureAndSegmentQuery.Select(MapToDocument).WhereNotNull(), Array.Empty<FacetResult>()));
             }
 
-            var all = index.Searcher.CreateQuery().All().Execute();
-            return await Task.FromResult(new SearchResult(all.TotalItemCount, all.Select(MapToDocument).WhereNotNull(), Array.Empty<FacetResult>()));
+            var allQuery = index.Searcher.CreateQuery().All();
+            AddFacets(allQuery, facets);
+            var all = allQuery.Execute();
+            all.GetFacets();
+            return await Task.FromResult(new SearchResult(all.TotalItemCount, all.Select(MapToDocument).WhereNotNull(), facets is null ? Array.Empty<FacetResult>() : MapFacets(all, facets)));
         }
 
         // We have to do to lower on all queries.
@@ -47,11 +55,81 @@ public class Searcher : ISearcher
         
         searchQuery.And().NativeQuery($"+(+Umb_culture:\"{culture ?? "none"}\")");
         searchQuery.And().NativeQuery($"+(+Umb_segment:\"{segment ?? "none"}\")");
-
+        
+        // Add facets
+        AddFacets(searchQuery, facets);
         var results = searchQuery.Execute();
         
         
         return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull(), Array.Empty<FacetResult>()));
+    }
+
+    private IEnumerable<FacetResult> MapFacets(ISearchResults results, IEnumerable<Facet> queryFacets)
+    {
+        var facetResults = new List<FacetResult>();
+        foreach (var facet in queryFacets)
+        {
+            var fieldName = $"Umb_{facet.FieldName}_integers";
+            var facetForFacet = results.GetFacet(fieldName);
+            if (facetForFacet is null)
+            {
+                continue;
+            }
+            if (facet is IntegerRangeFacet integerRangeFacet)
+            {
+                var result = integerRangeFacet.Ranges.Select(x =>
+                {
+                    int value = (int?) facetForFacet.Facet(x.Key)?.Value ?? 0;
+                    return new IntegerRangeFacetValue(x.Key, x.Min, x.Max, value);
+                });
+                facetResults.Add(new FacetResult(facet.FieldName, result));
+            }
+        }
+
+        return facetResults;
+    }
+
+    private void AddFacets(IOrdering searchQuery, IEnumerable<Facet>? facets)
+    {
+        if (facets is null)
+        {
+            return;
+        }
+
+        foreach (var facet in facets)
+        {
+            if (facet is IntegerRangeFacet integerRangeFacet)
+            {
+                searchQuery.WithFacets(facets => facets.FacetLongRange($"Umb_{integerRangeFacet.FieldName}_integers", integerRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min ?? 0, true, x.Max ?? int.MaxValue, true)).ToArray()));
+            }
+        }
+    }
+    
+    IEnumerable<FacetValue> GetFacetValues(Facet facet, IEnumerable<IndexValue> values)
+        => facet switch
+        {
+            // KeywordFacet => values.SelectMany(v => v.Keywords ?? []).GroupBy(v => v).Select(g => new KeywordFacetValue(g.Key, g.Count())),
+            // IntegerExactFacet => values.SelectMany(v => v.Integers ?? []).GroupBy(v => v).Select(g => new IntegerExactFacetValue(g.Key, g.Count())),
+            // DecimalExactFacet => values.SelectMany(v => v.Decimals ?? []).GroupBy(v => v).Select(g => new DecimalExactFacetValue(g.Key, g.Count())),
+            // DateTimeOffsetExactFacet => values.SelectMany(v => v.DateTimeOffsets ?? []).GroupBy(v => v).Select(g => new DateTimeOffsetExactFacetValue(g.Key, g.Count())),
+            IntegerRangeFacet integerRangeFacet => ExtractIntegerRangeFacetValues(integerRangeFacet, values), 
+            // DecimalRangeFacet decimalRangeFacet => ExtractDecimalRangeFacetValues(decimalRangeFacet, values),
+            // DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet => ExtractDateTimeOffsetRangeFacetValues(dateTimeOffsetRangeFacet, values),
+            _ => throw new ArgumentOutOfRangeException(nameof(facet), $"Encountered an unsupported facet type: {facet.GetType().Name}")
+        }; 
+    
+    
+    private IntegerRangeFacetValue[] ExtractIntegerRangeFacetValues(IntegerRangeFacet facet, IEnumerable<IndexValue> values)
+    {
+        var allValues = values.SelectMany(v => v.Integers ?? []).ToArray();
+        return facet
+            .Ranges
+            .Select(range => new IntegerRangeFacetValue(
+                range.Key,
+                range.Min,
+                range.Max,
+                allValues.Count(v => v > (range.Min ?? int.MinValue) && v <= (range.Max ?? int.MaxValue)))
+            ).ToArray();
     }
     
     private Document? MapToDocument(ISearchResult item)
