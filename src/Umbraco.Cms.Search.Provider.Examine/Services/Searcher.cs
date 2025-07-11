@@ -10,10 +10,8 @@ using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
 using Umbraco.Extensions;
 using FacetResult = Umbraco.Cms.Search.Core.Models.Searching.Faceting.FacetResult;
-using FacetValue = Umbraco.Cms.Search.Core.Models.Searching.Faceting.FacetValue;
 using ISearcher = Umbraco.Cms.Search.Core.Services.ISearcher;
 using SearchResult = Umbraco.Cms.Search.Core.Models.Searching.SearchResult;
-using IndexValue = Umbraco.Cms.Search.Core.Models.Indexing.IndexValue;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
@@ -83,6 +81,18 @@ public class Searcher : ISearcher
                     break;
                 }
                 case IntegerExactFacet integerExactFacet:
+                    throw new NotImplementedException();
+                    // This does not work in examine for now, maybe we'll find a solution later.
+                    // var examineIntegerFacets = searchResults.GetFacet($"Umb_{integerExactFacet.FieldName}_integers");
+                    // if (examineIntegerFacets is null)
+                    // {
+                    //     continue;
+                    // }
+                    //
+                    // foreach (var examineKeywordFacet in examineIntegerFacets)
+                    // {
+                    //     facetResults.Add(new FacetResult(facet.FieldName, new []{ new KeywordFacetValue(examineKeywordFacet.Label, (int?)examineKeywordFacet.Value ?? 0)}));
+                    // }
                     break;
                 case DecimalRangeFacet decimalRangeFacet:
                     var decimalRangeFacetResult = decimalRangeFacet.Ranges.Select(x =>
@@ -141,7 +151,7 @@ public class Searcher : ISearcher
                     searchQuery.WithFacets(facets => facets.FacetString($"Umb_{keywordFacet.FieldName}_texts"));
                     break;
                 case IntegerExactFacet integerExactFacet:
-                    throw new NotImplementedException();
+                    searchQuery.WithFacets(facets => facets.FacetLongRange($"Umb_{integerExactFacet.FieldName}_integers"));
                     break;
                 case DecimalRangeFacet decimalRangeFacet:
                 {
