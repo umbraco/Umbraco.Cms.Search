@@ -28,6 +28,12 @@ public class TestIndexConfigureOptions : IConfigureOptions<IndexOptions>
                 Values = ["texts"],
                 Type = FieldDefinitionTypes.FullTextSortable,
             },
+            new IndexOptions.Field
+            {
+                PropertyName = "datetime",
+                Values = ["datetimeoffsets"],
+                Type = FieldDefinitionTypes.FacetDateTime,
+            },
         ];
     }
 }

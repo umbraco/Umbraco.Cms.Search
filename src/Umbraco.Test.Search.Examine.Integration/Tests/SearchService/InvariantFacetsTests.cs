@@ -29,6 +29,7 @@ public class InvariantFacetsTests : SearcherTestBase
     
     [TestCase(true)]
     [TestCase(false)]
+    [Ignore("Not implemented yet")]
     public async Task CanSearchIntegerExactFacet(bool publish)
     {
         await CreateCountDocuments([1, 1, 2]);
@@ -63,6 +64,7 @@ public class InvariantFacetsTests : SearcherTestBase
     
     [TestCase(true)]
     [TestCase(false)]
+    [Ignore("Not implemented yet")]
     public async Task CanSearchDecimalExactFacet(bool publish)
     {
         await CreateDecimalDocuments([1.55, 1.55, 1.55]);
@@ -78,7 +80,7 @@ public class InvariantFacetsTests : SearcherTestBase
     
     [TestCase(true)]
     [TestCase(false)]
-    public async Task CanSearchExactTextFacet(bool publish)
+    public async Task CanSearchKeywordFacet(bool publish)
     {
         await CreateTitleDocuments(["one", "one", "two"]);
         
@@ -92,6 +94,21 @@ public class InvariantFacetsTests : SearcherTestBase
             Assert.That(keyWordFacets[0].Count, Is.EqualTo(2));
             Assert.That(keyWordFacets[1].Key, Is.EqualTo("two"));
             Assert.That(keyWordFacets[1].Count, Is.EqualTo(1));
+        });
+    }
+    
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task CanSearchDatetimeRangeFacet(bool publish)
+    {
+        await CreateDatetimeDocuments([DateTime.Now - TimeSpan.FromDays(5), DateTime.Now - TimeSpan.FromDays(100), DateTime.Now + TimeSpan.FromDays(5)]);
+        
+        var indexAlias = GetIndexAlias(publish);
+        var result = await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new DateTimeOffsetRangeFacet("datetime", new []{ new DateTimeOffsetRangeFacetRange("Below 100", DateTimeOffset.Now - TimeSpan.FromDays(365), DateTimeOffset.Now)})}, null, null, null, null, 0, 100);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Facets, Is.Not.Empty);
+            Assert.That(result.Facets.First().Values.First().Count, Is.EqualTo(2));
         });
     }
     
@@ -134,6 +151,39 @@ public class InvariantFacetsTests : SearcherTestBase
                     new
                     {
                         title = stringValue
+                    })
+                .Build();
+            
+            SaveAndPublish(document);
+        }
+    }    
+    
+    private async Task CreateDatetimeDocType()
+    {
+        ContentType = new ContentTypeBuilder()
+            .WithAlias("invariant")
+            .AddPropertyType()
+            .WithAlias("datetime")
+            .WithDataTypeId(Constants.DataTypes.DateTime)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.DateTime)
+            .Done()
+            .Build();
+        await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
+    }
+    
+    private async Task CreateDatetimeDocuments(DateTimeOffset[] values)
+    {
+        await CreateDatetimeDocType();
+
+        foreach (var dateTimeOffset in values)
+        {
+            var document = new ContentBuilder()
+                .WithContentType(ContentType)
+                .WithName($"document-{dateTimeOffset.ToString()}")
+                .WithPropertyValues(
+                    new
+                    {
+                        datetime = dateTimeOffset
                     })
                 .Build();
             

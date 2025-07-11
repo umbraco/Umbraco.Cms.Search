@@ -116,6 +116,14 @@ public class Searcher : ISearcher
                         facetResults.Add(new FacetResult(facet.FieldName, new []{ new KeywordFacetValue(examineKeywordFacet.Label, (int?)examineKeywordFacet.Value ?? 0)}));
                     }
                     break;
+                 case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
+                    var dateTimeOffsetRangeFacetResult = dateTimeOffsetRangeFacet.Ranges.Select(x =>
+                    {
+                        int value = GetFacetCount($"Umb_{facet.FieldName}_decimals", x.Key, searchResults);
+                        return new DecimalRangeFacetValue(x.Key, x.Min.Value.Ticks, x.Max.Value.Ticks, value);
+                    });
+                    facetResults.Add(new FacetResult(facet.FieldName, dateTimeOffsetRangeFacetResult));
+                    break;
             }
         }
 
@@ -139,7 +147,7 @@ public class Searcher : ISearcher
             switch (facet)
             {
                 case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
-                    throw new NotImplementedException();
+                    searchQuery.WithFacets(facets => facets.FacetLongRange($"Umb_{dateTimeOffsetRangeFacet.FieldName}_datetimeoffsets", dateTimeOffsetRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min!.Value.Ticks, true, x.Max!.Value.Ticks, true)).ToArray()));
                     break;
                 case DecimalExactFacet decimalExactFacet:
                     throw new NotImplementedException();
@@ -175,11 +183,5 @@ public class Searcher : ISearcher
         }
        
         return new Document(id, UmbracoObjectTypes.Document);
-    }
-    
-    
-    private string ToUTF8(string text)
-    {
-        return Encoding.UTF8.GetString(Encoding.Default.GetBytes(text));
     }
 }
