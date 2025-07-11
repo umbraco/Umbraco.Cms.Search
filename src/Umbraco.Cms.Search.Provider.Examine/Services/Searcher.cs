@@ -64,29 +64,45 @@ public class Searcher : ISearcher
         return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull(), Array.Empty<FacetResult>()));
     }
 
-    private IEnumerable<FacetResult> MapFacets(ISearchResults results, IEnumerable<Facet> queryFacets)
+    private IEnumerable<FacetResult> MapFacets(ISearchResults searchResults, IEnumerable<Facet> queryFacets)
     {
         var facetResults = new List<FacetResult>();
         foreach (var facet in queryFacets)
         {
-            var fieldName = $"Umb_{facet.FieldName}_integers";
-            var facetForFacet = results.GetFacet(fieldName);
-            if (facetForFacet is null)
+            switch (facet)
             {
-                continue;
-            }
-            if (facet is IntegerRangeFacet integerRangeFacet)
-            {
-                var result = integerRangeFacet.Ranges.Select(x =>
+                case IntegerRangeFacet integerRangeFacet:
                 {
-                    int value = (int?) facetForFacet.Facet(x.Key)?.Value ?? 0;
-                    return new IntegerRangeFacetValue(x.Key, x.Min, x.Max, value);
-                });
-                facetResults.Add(new FacetResult(facet.FieldName, result));
+                    var integerRangeFacetResult = integerRangeFacet.Ranges.Select(x =>
+                    {
+                        
+                        int value = GetFacetCount($"Umb_{facet.FieldName}_integers", x.Key, searchResults);
+                        return new IntegerRangeFacetValue(x.Key, x.Min, x.Max, value);
+                    });
+                    facetResults.Add(new FacetResult(facet.FieldName, integerRangeFacetResult));
+                    break;
+                }
+                case IntegerExactFacet integerExactFacet:
+                    break;
+                case DecimalRangeFacet decimalRangeFacet:
+                    var decimalRangeFacetResult = decimalRangeFacet.Ranges.Select(x =>
+                    {
+                        int value = GetFacetCount($"Umb_{facet.FieldName}_decimals", x.Key, searchResults);
+                        return new DecimalRangeFacetValue(x.Key, x.Min, x.Max, value);
+                    });
+                    facetResults.Add(new FacetResult(facet.FieldName, decimalRangeFacetResult));
+                    break;
+                case DecimalExactFacet decimalExactFacet:
+                    break;
             }
         }
 
         return facetResults;
+    }
+
+    private int GetFacetCount(string fieldName, string key, ISearchResults results)
+    {
+        return (int?)results.GetFacet(fieldName)?.Facet(key)?.Value ?? 0;
     }
 
     private void AddFacets(IOrdering searchQuery, IEnumerable<Facet>? facets)
@@ -98,38 +114,34 @@ public class Searcher : ISearcher
 
         foreach (var facet in facets)
         {
-            if (facet is IntegerRangeFacet integerRangeFacet)
+            switch (facet)
             {
-                searchQuery.WithFacets(facets => facets.FacetLongRange($"Umb_{integerRangeFacet.FieldName}_integers", integerRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min ?? 0, true, x.Max ?? int.MaxValue, true)).ToArray()));
+                case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
+                    throw new NotImplementedException();
+                    break;
+                case DecimalExactFacet decimalExactFacet:
+                    throw new NotImplementedException();
+                    break;
+                case IntegerRangeFacet integerRangeFacet:
+                    searchQuery.WithFacets(facets => facets.FacetLongRange($"Umb_{integerRangeFacet.FieldName}_integers", integerRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min ?? 0, true, x.Max ?? int.MaxValue, true)).ToArray()));
+                    break;
+                case KeywordFacet keywordFacet:
+                    throw new NotImplementedException();
+                    break;
+                case IntegerExactFacet integerExactFacet:
+                    throw new NotImplementedException();
+                    break;
+                case DecimalRangeFacet decimalRangeFacet:
+                {
+                    var doubleRanges = decimalRangeFacet.Ranges.Select(x => new DoubleRange(x.Key, decimal.ToDouble(x.Min ?? 0) , true, decimal.ToDouble(x.Max ?? 0), true)).ToArray();
+                    searchQuery.WithFacets(facets => facets.FacetDoubleRange($"Umb_{facet.FieldName}_decimals", doubleRanges));
+                    break;
+                }
+                case DateTimeOffsetExactFacet dateTimeOffsetExactFacet:
+                    throw new NotImplementedException();
+                    break;
             }
         }
-    }
-    
-    IEnumerable<FacetValue> GetFacetValues(Facet facet, IEnumerable<IndexValue> values)
-        => facet switch
-        {
-            // KeywordFacet => values.SelectMany(v => v.Keywords ?? []).GroupBy(v => v).Select(g => new KeywordFacetValue(g.Key, g.Count())),
-            // IntegerExactFacet => values.SelectMany(v => v.Integers ?? []).GroupBy(v => v).Select(g => new IntegerExactFacetValue(g.Key, g.Count())),
-            // DecimalExactFacet => values.SelectMany(v => v.Decimals ?? []).GroupBy(v => v).Select(g => new DecimalExactFacetValue(g.Key, g.Count())),
-            // DateTimeOffsetExactFacet => values.SelectMany(v => v.DateTimeOffsets ?? []).GroupBy(v => v).Select(g => new DateTimeOffsetExactFacetValue(g.Key, g.Count())),
-            IntegerRangeFacet integerRangeFacet => ExtractIntegerRangeFacetValues(integerRangeFacet, values), 
-            // DecimalRangeFacet decimalRangeFacet => ExtractDecimalRangeFacetValues(decimalRangeFacet, values),
-            // DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet => ExtractDateTimeOffsetRangeFacetValues(dateTimeOffsetRangeFacet, values),
-            _ => throw new ArgumentOutOfRangeException(nameof(facet), $"Encountered an unsupported facet type: {facet.GetType().Name}")
-        }; 
-    
-    
-    private IntegerRangeFacetValue[] ExtractIntegerRangeFacetValues(IntegerRangeFacet facet, IEnumerable<IndexValue> values)
-    {
-        var allValues = values.SelectMany(v => v.Integers ?? []).ToArray();
-        return facet
-            .Ranges
-            .Select(range => new IntegerRangeFacetValue(
-                range.Key,
-                range.Min,
-                range.Max,
-                allValues.Count(v => v > (range.Min ?? int.MinValue) && v <= (range.Max ?? int.MaxValue)))
-            ).ToArray();
     }
     
     private Document? MapToDocument(ISearchResult item)

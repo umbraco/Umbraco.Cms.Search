@@ -14,7 +14,7 @@ public class InvariantFacetsTests : SearcherTestBase
     
     [TestCase(true)]
     [TestCase(false)]
-    public async Task CanGetOneIntFacet(bool publish)
+    public async Task CanSearchOneIntegerRangeFacet(bool publish)
     {
         await CreateCountDocuments([1, 2]);
         
@@ -24,6 +24,51 @@ public class InvariantFacetsTests : SearcherTestBase
         {
             Assert.That(result.Facets, Is.Not.Empty);
             Assert.That(result.Facets.First().Values.First().Count, Is.EqualTo(2));
+        });
+    }    
+    
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task CanSearchIntegerExactFacet(bool publish)
+    {
+        await CreateCountDocuments([1, 1, 1]);
+        
+        var indexAlias = GetIndexAlias(publish);
+        var result = await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new IntegerExactFacet("otherName")}, null, null, null, null, 0, 100);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Facets, Is.Not.Empty);
+            Assert.That(result.Facets.First().Values.First().Count, Is.EqualTo(3));
+        });
+    }
+    
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task CanSearchOneDecimalRangeFacet(bool publish)
+    {
+        await CreateDecimalDocuments([1.5, 2.5]);
+        
+        var indexAlias = GetIndexAlias(publish);
+        var result = await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new DecimalRangeFacet("decimalproperty", new []{ new DecimalRangeFacetRange("Below 100", 0, 100)})}, null, null, null, null, 0, 100);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Facets, Is.Not.Empty);
+            Assert.That(result.Facets.First().Values.First().Count, Is.EqualTo(2));
+        });
+    }
+    
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task CanSearchDecimalExactFacet(bool publish)
+    {
+        await CreateCountDocuments([1, 1, 1]);
+        
+        var indexAlias = GetIndexAlias(publish);
+        var result = await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new IntegerExactFacet("decimalproperty")}, null, null, null, null, 0, 100);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Facets, Is.Not.Empty);
+            Assert.That(result.Facets.First().Values.First().Count, Is.EqualTo(3));
         });
     }
     
