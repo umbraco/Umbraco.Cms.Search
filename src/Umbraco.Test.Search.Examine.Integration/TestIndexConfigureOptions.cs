@@ -13,7 +13,7 @@ public class TestIndexConfigureOptions : IConfigureOptions<IndexOptions>
             new IndexOptions.Field
             {
                 PropertyName = "title",
-                Values = ["texts"],
+                Values = ["texts", "keywords"],
                 Type = FieldDefinitionTypes.FacetFullText,
             },
             new IndexOptions.Field

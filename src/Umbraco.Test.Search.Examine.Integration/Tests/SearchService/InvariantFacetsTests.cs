@@ -16,10 +16,10 @@ public class InvariantFacetsTests : SearcherTestBase
     [TestCase(false)]
     public async Task CanSearchOneIntegerRangeFacet(bool publish)
     {
-        await CreateCountDocuments([1, 2]);
+        await CreateCountDocuments([1, 2, 101]);
         
         var indexAlias = GetIndexAlias(publish);
-        var result = await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new IntegerRangeFacet("otherName", new []{ new IntegerRangeFacetRange("Below 100", 0, 100)})}, null, null, null, null, 0, 100);
+        var result = await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new IntegerRangeFacet("count", new []{ new IntegerRangeFacetRange("Below 100", 0, 100)})}, null, null, null, null, 0, 100);
         Assert.Multiple(() =>
         {
             Assert.That(result.Facets, Is.Not.Empty);
@@ -31,14 +31,18 @@ public class InvariantFacetsTests : SearcherTestBase
     [TestCase(false)]
     public async Task CanSearchIntegerExactFacet(bool publish)
     {
-        await CreateCountDocuments([1, 1, 1]);
+        await CreateCountDocuments([1, 1, 2]);
         
         var indexAlias = GetIndexAlias(publish);
-        var result = await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new IntegerExactFacet("otherName")}, null, null, null, null, 0, 100);
+        var facets = (await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new IntegerExactFacet("count")}, null, null, null, null, 0, 100)).Facets;
+        var exactFacetValues = facets.Select(x => (IntegerExactFacetValue)x.Values.First()).ToArray();
         Assert.Multiple(() =>
         {
-            Assert.That(result.Facets, Is.Not.Empty);
-            Assert.That(result.Facets.First().Values.First().Count, Is.EqualTo(3));
+            Assert.That(facets, Is.Not.Empty);
+            Assert.That(exactFacetValues[0].Key, Is.EqualTo(1));
+            Assert.That(exactFacetValues[0].Count, Is.EqualTo(2));
+            Assert.That(exactFacetValues[1].Key, Is.EqualTo(2));
+            Assert.That(exactFacetValues[1].Count, Is.EqualTo(1));
         });
     }
     
@@ -46,7 +50,7 @@ public class InvariantFacetsTests : SearcherTestBase
     [TestCase(false)]
     public async Task CanSearchOneDecimalRangeFacet(bool publish)
     {
-        await CreateDecimalDocuments([1.5, 2.5]);
+        await CreateDecimalDocuments([1.5, 2.5, 100.5]);
         
         var indexAlias = GetIndexAlias(publish);
         var result = await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new DecimalRangeFacet("decimalproperty", new []{ new DecimalRangeFacetRange("Below 100", 0, 100)})}, null, null, null, null, 0, 100);
@@ -61,14 +65,33 @@ public class InvariantFacetsTests : SearcherTestBase
     [TestCase(false)]
     public async Task CanSearchDecimalExactFacet(bool publish)
     {
-        await CreateCountDocuments([1, 1, 1]);
+        await CreateDecimalDocuments([1.55, 1.55, 1.55]);
         
         var indexAlias = GetIndexAlias(publish);
-        var result = await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new IntegerExactFacet("decimalproperty")}, null, null, null, null, 0, 100);
+        var result = await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new DecimalExactFacet("decimalproperty")}, null, null, null, null, 0, 100);
         Assert.Multiple(() =>
         {
             Assert.That(result.Facets, Is.Not.Empty);
             Assert.That(result.Facets.First().Values.First().Count, Is.EqualTo(3));
+        });
+    }
+    
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task CanSearchExactTextFacet(bool publish)
+    {
+        await CreateTitleDocuments(["one", "one", "two"]);
+        
+        var indexAlias = GetIndexAlias(publish);
+        var facets = (await Searcher.SearchAsync(indexAlias, null, null, new List<Facet> { new KeywordFacet("title")}, null, null, null, null, 0, 100)).Facets;
+        var keyWordFacets = facets.Select(x => (KeywordFacetValue)x.Values.First()).ToArray();
+        Assert.Multiple(() =>
+        {
+            Assert.That(facets, Is.Not.Empty);
+            Assert.That(keyWordFacets[0].Key, Is.EqualTo("one"));
+            Assert.That(keyWordFacets[0].Count, Is.EqualTo(2));
+            Assert.That(keyWordFacets[1].Key, Is.EqualTo("two"));
+            Assert.That(keyWordFacets[1].Count, Is.EqualTo(1));
         });
     }
     
@@ -77,7 +100,7 @@ public class InvariantFacetsTests : SearcherTestBase
         ContentType = new ContentTypeBuilder()
             .WithAlias("invariant")
             .AddPropertyType()
-            .WithAlias("otherName")
+            .WithAlias("count")
             .WithDataTypeId(-51)
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
             .Done()
@@ -173,7 +196,7 @@ public class InvariantFacetsTests : SearcherTestBase
                 .WithPropertyValues(
                     new
                     {
-                        otherName = countValue,
+                        count = countValue,
                     })
                 .Build();
             

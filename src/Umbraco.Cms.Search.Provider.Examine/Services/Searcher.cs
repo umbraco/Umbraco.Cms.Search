@@ -94,6 +94,18 @@ public class Searcher : ISearcher
                     break;
                 case DecimalExactFacet decimalExactFacet:
                     break;
+                case KeywordFacet keywordFacet:
+                    var examineKeywordFacets = searchResults.GetFacet($"Umb_{keywordFacet.FieldName}_texts");
+                    if (examineKeywordFacets is null)
+                    {
+                        continue;
+                    }
+
+                    foreach (var examineKeywordFacet in examineKeywordFacets)
+                    {
+                        facetResults.Add(new FacetResult(facet.FieldName, new []{ new KeywordFacetValue(examineKeywordFacet.Label, (int?)examineKeywordFacet.Value ?? 0)}));
+                    }
+                    break;
             }
         }
 
@@ -126,7 +138,7 @@ public class Searcher : ISearcher
                     searchQuery.WithFacets(facets => facets.FacetLongRange($"Umb_{integerRangeFacet.FieldName}_integers", integerRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min ?? 0, true, x.Max ?? int.MaxValue, true)).ToArray()));
                     break;
                 case KeywordFacet keywordFacet:
-                    throw new NotImplementedException();
+                    searchQuery.WithFacets(facets => facets.FacetString($"Umb_{keywordFacet.FieldName}_texts"));
                     break;
                 case IntegerExactFacet integerExactFacet:
                     throw new NotImplementedException();
