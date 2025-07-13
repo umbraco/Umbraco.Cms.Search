@@ -32,33 +32,18 @@ public class Searcher : ISearcher
             return await Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
         }
 
-        if (query is null)
+        var searchQuery = index.Searcher.CreateQuery().NativeQuery($"+(+Umb_culture:\"{culture ?? "none"}\")").And().NativeQuery($"+(+Umb_segment:\"{segment ?? "none"}\")");
+        if (query is not null)
         {
-            if (culture is not null || segment is not null)
-            {
-                var noQueryQuery = index.Searcher.CreateQuery().NativeQuery($"+(+culture:\"{culture ?? "none"}\")").And().NativeQuery($"+(+segment:\"{segment ?? "none"}\")");
-                var cultureAndSegmentQuery = noQueryQuery.Execute();
-                return await Task.FromResult(new SearchResult(cultureAndSegmentQuery.TotalItemCount, cultureAndSegmentQuery.Select(MapToDocument).WhereNotNull(), Array.Empty<FacetResult>()));
-            }
-
-            var allQuery = index.Searcher.CreateQuery().All();
-            AddFacets(allQuery, facets);
-            var all = allQuery.Execute();
-            all.GetFacets();
-            return await Task.FromResult(new SearchResult(all.TotalItemCount, all.Select(MapToDocument).WhereNotNull(), facets is null ? Array.Empty<FacetResult>() : MapFacets(all, facets)));
+            // We have to do to lower on all queries.
+            searchQuery.And().ManagedQuery(culture is null ? query.ToLowerInvariant() : query.ToLower(new CultureInfo(culture)));
         }
-
-        // We have to do to lower on all queries.
-        var searchQuery = index.Searcher.CreateQuery().ManagedQuery(culture is null ? query.ToLowerInvariant() : query.ToLower(new CultureInfo(culture)));
-        
-        searchQuery.And().NativeQuery($"+(+Umb_culture:\"{culture ?? "none"}\")");
-        searchQuery.And().NativeQuery($"+(+Umb_segment:\"{segment ?? "none"}\")");
         
         // Add facets
         AddFacets(searchQuery, facets);
         var results = searchQuery.Execute();
         
-        return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull(), Array.Empty<FacetResult>()));
+        return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull(), facets is null ? Array.Empty<FacetResult>() : MapFacets(results, facets)));
     }
 
     private IEnumerable<FacetResult> MapFacets(ISearchResults searchResults, IEnumerable<Facet> queryFacets)

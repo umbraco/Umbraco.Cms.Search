@@ -58,7 +58,7 @@ public class InvariantDocumentTests : SearcherTestBase
     {
         var indexAlias = GetIndexAlias(publish);
 
-        var results = await Searcher.SearchAsync(indexAlias, CurrentDateTimeOffset.ToString(), null, null, null, null, null, null, 0, 100);
+        var results = await Searcher.SearchAsync(indexAlias, CurrentDateTimeOffset.DateTime.ToString(), null, null, null, null, null, null, 0, 100);
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
