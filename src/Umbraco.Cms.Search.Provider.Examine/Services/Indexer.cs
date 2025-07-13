@@ -128,6 +128,7 @@ public class Indexer : IIndexer
             
             if (field.Value.DateTimeOffsets?.Any() ?? false)
             {
+                // We have to use DateTime here, as examine facets does not play nice with DatetimeOffsets for now.
                 result.Add(CalculateFieldName(field, "datetimeoffsets"), field.Value.DateTimeOffsets.First().DateTime);
             }
             if (field.Value.Texts?.Any() ?? false)
