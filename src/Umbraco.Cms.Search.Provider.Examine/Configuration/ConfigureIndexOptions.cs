@@ -6,9 +6,9 @@ namespace Umbraco.Cms.Search.Provider.Examine.Configuration;
 
 public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirectoryIndexOptions>
 {
-    private readonly IOptions<IndexOptions> _facetOptions;
+    private readonly IOptions<FacetOptions> _facetOptions;
 
-    public ConfigureIndexOptions(IOptions<IndexOptions> facetOptions)
+    public ConfigureIndexOptions(IOptions<FacetOptions> facetOptions)
     {
         _facetOptions = facetOptions;
     }

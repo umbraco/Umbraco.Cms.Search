@@ -1,6 +1,6 @@
 ﻿namespace Umbraco.Cms.Search.Provider.Examine.Configuration;
 
-public class IndexOptions
+public class FacetOptions
 {
     public Field[] Fields { get; set; } = [];
     
