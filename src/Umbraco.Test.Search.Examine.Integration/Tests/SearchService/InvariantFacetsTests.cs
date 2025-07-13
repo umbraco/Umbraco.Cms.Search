@@ -101,10 +101,10 @@ public class InvariantFacetsTests : SearcherTestBase
     [TestCase(false)]
     public async Task CanSearchDatetimeRangeFacet(bool publish)
     {
-        await CreateDatetimeDocuments([DateTime.Now - TimeSpan.FromDays(5), DateTime.Now - TimeSpan.FromDays(100), DateTime.Now + TimeSpan.FromDays(5)]);
+        await CreateDatetimeDocuments([new DateTime(2025, 06, 06), new DateTime(2025, 02, 01), new DateTime(2024, 01, 01)]);
         
         var indexAlias = GetIndexAlias(publish);
-        var result = await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new DateTimeOffsetRangeFacet("datetime", new []{ new DateTimeOffsetRangeFacetRange("Below 100", DateTimeOffset.Now - TimeSpan.FromDays(365), DateTimeOffset.Now)})}, null, null, null, null, 0, 100);
+        var result = await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new DateTimeOffsetRangeFacet("datetime", new []{ new DateTimeOffsetRangeFacetRange("Below 100", new DateTime(2025, 01, 01), null)})}, null, null, null, null, 0, 100);
         Assert.Multiple(() =>
         {
             Assert.That(result.Facets, Is.Not.Empty);

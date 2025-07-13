@@ -128,7 +128,7 @@ public class Indexer : IIndexer
             
             if (field.Value.DateTimeOffsets?.Any() ?? false)
             {
-                result.Add(CalculateFieldName(field, "datetimeoffsets"), field.Value.DateTimeOffsets);
+                result.Add(CalculateFieldName(field, "datetimeoffsets"), field.Value.DateTimeOffsets.First().DateTime);
             }
             if (field.Value.Texts?.Any() ?? false)
             {

@@ -58,7 +58,6 @@ public class Searcher : ISearcher
         AddFacets(searchQuery, facets);
         var results = searchQuery.Execute();
         
-        
         return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull(), Array.Empty<FacetResult>()));
     }
 
@@ -119,8 +118,8 @@ public class Searcher : ISearcher
                  case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
                     var dateTimeOffsetRangeFacetResult = dateTimeOffsetRangeFacet.Ranges.Select(x =>
                     {
-                        int value = GetFacetCount($"Umb_{facet.FieldName}_decimals", x.Key, searchResults);
-                        return new DecimalRangeFacetValue(x.Key, x.Min.Value.Ticks, x.Max.Value.Ticks, value);
+                        int value = GetFacetCount($"Umb_{facet.FieldName}_datetimeoffsets", x.Key, searchResults);
+                        return new DateTimeOffsetRangeFacetValue(x.Key, x.Min, x.Max, value);
                     });
                     facetResults.Add(new FacetResult(facet.FieldName, dateTimeOffsetRangeFacetResult));
                     break;
@@ -147,7 +146,7 @@ public class Searcher : ISearcher
             switch (facet)
             {
                 case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
-                    searchQuery.WithFacets(facets => facets.FacetLongRange($"Umb_{dateTimeOffsetRangeFacet.FieldName}_datetimeoffsets", dateTimeOffsetRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min!.Value.Ticks, true, x.Max!.Value.Ticks, true)).ToArray()));
+                    searchQuery.WithFacets(facets => facets.FacetLongRange($"Umb_{dateTimeOffsetRangeFacet.FieldName}_datetimeoffsets", dateTimeOffsetRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min?.Ticks ?? DateTime.MinValue.Ticks, true, x.Max?.Ticks ?? DateTime.MaxValue.Ticks, true)).ToArray()));
                     break;
                 case DecimalExactFacet decimalExactFacet:
                     throw new NotImplementedException();
