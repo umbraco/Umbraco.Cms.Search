@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Collections;
+using System.Globalization;
 using Examine;
 using Examine.Search;
 using Umbraco.Cms.Core.Models;
@@ -67,9 +68,44 @@ public class Searcher : ISearcher
                     else
                     {
                         var keywordValues = string.Join(" ", keywordFilter.Values ?? []);
-                        searchQuery.And().Field($"{keywordFilter.FieldName}_keywords", string.Join(" ", keywordValues));
+                        var field = keywordFilter.FieldName.StartsWith("Umb_") ? $"{keywordFilter.FieldName}_keywords" : $"Umb_{keywordFilter.FieldName}_keywords";
+                        searchQuery.And().Field(field, string.Join(" ", keywordValues));
                         // Don't include oneself, this is for searches such as path id for ancestors.
                         searchQuery.Not().Field("Umb_Id_keywords", keywordValues);
+                    }
+                    break;
+                case IntegerExactFilter integerExactFilter:
+                    if (integerExactFilter.Negate)
+                    {
+                        foreach (var integerFilterValue in integerExactFilter.Values)
+                        {
+                            searchQuery.Not().Group(query => query.Field($"Umb_{integerExactFilter.FieldName}_integers", integerFilterValue));
+                        }
+                    }
+                    else
+                    {
+                        foreach (var integerFilterValue in integerExactFilter.Values)
+                        {
+                            searchQuery.And().Group(query => query.Field($"Umb_{integerExactFilter.FieldName}_integers", integerFilterValue));
+                        }
+                    }
+                    break;
+                case DecimalExactFilter decimalExactFilter:
+                    if (decimalExactFilter.Negate)
+                    {
+                        foreach (var decimalFilterValue in decimalExactFilter.Values)
+                        {
+                            // Examine does not support decimals out of the box, so convert to double, we might loose some precision here (after 17 digits).
+                            searchQuery.Not().Group(query => query.Field($"Umb_{decimalExactFilter.FieldName}_decimals", (double)decimalFilterValue));
+                        }
+                    }
+                    else
+                    {
+                        foreach (var decimalFilterValue in decimalExactFilter.Values)
+                        {
+                            // Examine does not support decimals out of the box, so convert to double, we might loose some precision here (after 17 digits).
+                            searchQuery.And().Group(query => query.Field($"Umb_{decimalExactFilter.FieldName}_decimals", (double)decimalFilterValue));
+                        }
                     }
                     break;
             }

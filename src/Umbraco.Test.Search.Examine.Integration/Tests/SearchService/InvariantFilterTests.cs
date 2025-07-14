@@ -75,6 +75,60 @@ public class InvariantFilterTests : SearcherTestBase
         });
     }
     
+    [TestCase(1, true)]
+    [TestCase(2, false)]
+    public async Task CanFilterByExactInteger(int expectedCount, bool negate)
+    {
+        CreateInvariantDocumentTree(false);
+    
+        var indexAlias = GetIndexAlias(false);
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { new IntegerExactFilter("count", [12], negate) },
+            null, null, null, null, null,
+            0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
+    }
+    
+    [TestCase(1, true)]
+    [TestCase(2, false)]
+    public async Task CanFilterByExactDecimal(int expectedCount, bool negate)
+    {
+        CreateInvariantDocumentTree(false);
+    
+        var indexAlias = GetIndexAlias(false);
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { new DecimalExactFilter("decimalproperty", [DecimalValue], negate) },
+            null, null, null, null, null,
+            0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
+    }
+    
+    [TestCase(1, true)]
+    [TestCase(2, false)]
+    public async Task CanFilterByExactDatetimeOffset(int expectedCount, bool negate)
+    {
+        CreateInvariantDocumentTree(false);
+    
+        var indexAlias = GetIndexAlias(false);
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { new DateTimeOffsetExactFilter("decimalproperty", [ new DateTime(2025, 06, 06)], negate) },
+            null, null, null, null, null,
+            0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
+    }
+    
     private void CreateInvariantDocumentTree(bool publish)
     {
         var dataType = new DataTypeBuilder()
@@ -123,7 +177,7 @@ public class InvariantFilterTests : SearcherTestBase
                 {
                     title = "The root title",
                     count = 12,
-                    datetime = CurrentDateTimeOffset.DateTime,
+                    datetime =  new DateTime(2025, 06, 06),
                     decimalproperty = DecimalValue
                 })
             .Build();
@@ -148,7 +202,7 @@ public class InvariantFilterTests : SearcherTestBase
                 {
                     title = "The child title",
                     count = 12,
-                    datetime = CurrentDateTimeOffset.DateTime,
+                    datetime =  new DateTime(2025, 06, 06),
                     decimalproperty = DecimalValue
                 })
             .Build();
@@ -171,9 +225,9 @@ public class InvariantFilterTests : SearcherTestBase
                 new
                 {
                     title = "The grandchild title",
-                    count = 12,
-                    datetime = CurrentDateTimeOffset.DateTime,
-                    decimalproperty = DecimalValue
+                    count = 13,
+                    datetime = new DateTime(2025, 06, 07),
+                    decimalproperty = 1.11111m
                 })
             .Build();
         

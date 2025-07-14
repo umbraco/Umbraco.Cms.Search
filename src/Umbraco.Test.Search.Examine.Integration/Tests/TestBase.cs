@@ -32,7 +32,7 @@ public abstract class TestBase : UmbracoIntegrationTest
     
     protected DateTimeOffset CurrentDateTimeOffset = DateTimeOffset.Now;
 
-    protected double DecimalValue = 12.43;
+    protected decimal DecimalValue = 12.431167165486823626216m;
     protected IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>();
 
     protected IContentService ContentService => GetRequiredService<IContentService>();
