@@ -29,7 +29,9 @@ public abstract class TestBase : UmbracoIntegrationTest
 
     protected Guid GrandchildKey { get; } = Guid.NewGuid();
     
-    protected DateTimeOffset CurrentDateTimeOffset = DateTimeOffset.UtcNow;
+    protected DateTime CurrentDateTime { get; set; }
+    
+    protected DateTimeOffset CurrentDateTimeOffset = DateTimeOffset.Now;
 
     protected double DecimalValue = 12.43;
     protected IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>();

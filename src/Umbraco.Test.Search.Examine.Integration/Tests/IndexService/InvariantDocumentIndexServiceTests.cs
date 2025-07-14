@@ -112,7 +112,7 @@ public class InvariantDocumentIndexServiceTests : IndexTestBase
         queryBuilder.SelectField("Umb_datetime_datetimeoffsets");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == "Umb_datetime_datetimeoffsets").Value, Is.EqualTo(CurrentDateTimeOffset.ToString()));
+        Assert.That(results.First().Values.First().Value, Is.EqualTo(CurrentDateTime.Ticks.ToString()));
     }
     
     
@@ -189,6 +189,8 @@ public class InvariantDocumentIndexServiceTests : IndexTestBase
             .Build();
         ContentTypeService.Save(contentType);
 
+        CurrentDateTime = CurrentDateTimeOffset.DateTime.TruncateTo(DateTimeExtensions.DateTruncate.Second);
+
         var root = new ContentBuilder()
             .WithKey(RootKey)
             .WithContentType(contentType)
@@ -198,7 +200,7 @@ public class InvariantDocumentIndexServiceTests : IndexTestBase
                 {
                     title = "The root title",
                     count = 12,
-                    datetime = CurrentDateTimeOffset.DateTime,
+                    datetime = CurrentDateTime,
                     decimalproperty = DecimalValue
                 })
             .Build();
