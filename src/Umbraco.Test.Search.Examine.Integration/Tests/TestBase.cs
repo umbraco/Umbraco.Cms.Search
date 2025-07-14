@@ -11,6 +11,7 @@ using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
+using Umbraco.Cms.Search.Provider.Examine.Mapping;
 using Umbraco.Cms.Search.Provider.Examine.Services;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
@@ -60,16 +61,17 @@ public abstract class TestBase : UmbracoIntegrationTest
         builder.Services.AddExamineLuceneIndex<TestIndex, TestInMemoryDirectoryFactory>(
             Cms.Search.Core.Constants.IndexAliases.DraftMembers,
             config => { });
-        builder.Services.AddTransient<Indexer>();
+        
         builder.Services.AddTransient<IIndexer, Indexer>();
         builder.Services.AddTransient<ISearcher, Searcher>();
+        builder.Services.AddTransient<IExamineMapper, ExamineMapper>();
         
         builder.Services.Configure<Umbraco.Cms.Search.Core.Configuration.IndexOptions>(options =>
         {
-            options.RegisterIndex<Indexer, Searcher, IDraftContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<Indexer, Searcher, IPublishedContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<Indexer, Searcher, IDraftContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
-            options.RegisterIndex<Indexer, Searcher, IDraftContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
+            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IIndexer, ISearcher, IPublishedContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
+            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(Cms.Search.Core.Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
         });
 
         builder.AddSearchCore();

@@ -35,14 +35,15 @@ public class InvariantFacetsTests : SearcherTestBase
         
         var indexAlias = GetIndexAlias(publish);
         var facets = (await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new IntegerExactFacet("count")}, null, null, null, null, 0, 100)).Facets;
-        var exactFacetValues = facets.Select(x => (IntegerExactFacetValue)x.Values.First()).ToArray();
+        var firstFacetValues = (IntegerExactFacetValue) facets.First().Values.First();
+        var secondFacetValues = (IntegerExactFacetValue) facets.First().Values.Last();
         Assert.Multiple(() =>
         {
             Assert.That(facets, Is.Not.Empty);
-            Assert.That(exactFacetValues[0].Key, Is.EqualTo(1));
-            Assert.That(exactFacetValues[0].Count, Is.EqualTo(2));
-            Assert.That(exactFacetValues[1].Key, Is.EqualTo(2));
-            Assert.That(exactFacetValues[1].Count, Is.EqualTo(1));
+            Assert.That(firstFacetValues.Key, Is.EqualTo(1));
+            Assert.That(firstFacetValues.Count, Is.EqualTo(2));
+            Assert.That(secondFacetValues.Key, Is.EqualTo(2));
+            Assert.That(secondFacetValues.Count, Is.EqualTo(1));
         });
     }
     
@@ -65,14 +66,19 @@ public class InvariantFacetsTests : SearcherTestBase
     [TestCase(false)]
     public async Task CanSearchDecimalExactFacet(bool publish)
     {
-        await CreateDecimalDocuments([1.55, 1.55, 1.55]);
+        await CreateDecimalDocuments([1.55, 1.55, 1.56]);
         
         var indexAlias = GetIndexAlias(publish);
-        var result = await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new DecimalExactFacet("decimalproperty")}, null, null, null, null, 0, 100);
+        var facets = (await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new DecimalExactFacet("decimalproperty")}, null, null, null, null, 0, 100)).Facets;
+        var firstFacetValues = (DecimalExactFacetValue) facets.First().Values.First();
+        var secondFacetValues = (DecimalExactFacetValue) facets.First().Values.Last();
         Assert.Multiple(() =>
         {
-            Assert.That(result.Facets, Is.Not.Empty);
-            Assert.That(result.Facets.First().Values.First().Count, Is.EqualTo(3));
+            Assert.That(facets, Is.Not.Empty);
+            Assert.That(firstFacetValues.Key, Is.EqualTo(1.55));
+            Assert.That(firstFacetValues.Count, Is.EqualTo(2));
+            Assert.That(secondFacetValues.Key, Is.EqualTo(1.56));
+            Assert.That(secondFacetValues.Count, Is.EqualTo(1));
         });
     }
     
@@ -84,14 +90,15 @@ public class InvariantFacetsTests : SearcherTestBase
         
         var indexAlias = GetIndexAlias(publish);
         var facets = (await Searcher.SearchAsync(indexAlias, null, null, new List<Facet> { new KeywordFacet("title")}, null, null, null, null, 0, 100)).Facets;
-        var keyWordFacets = facets.Select(x => (KeywordFacetValue)x.Values.First()).ToArray();
+        var firstFacetValues = (KeywordFacetValue) facets.First().Values.First();
+        var secondFacetValues = (KeywordFacetValue) facets.First().Values.Last();
         Assert.Multiple(() =>
         {
             Assert.That(facets, Is.Not.Empty);
-            Assert.That(keyWordFacets[0].Key, Is.EqualTo("one"));
-            Assert.That(keyWordFacets[0].Count, Is.EqualTo(2));
-            Assert.That(keyWordFacets[1].Key, Is.EqualTo("two"));
-            Assert.That(keyWordFacets[1].Count, Is.EqualTo(1));
+            Assert.That(firstFacetValues.Key, Is.EqualTo("one"));
+            Assert.That(firstFacetValues.Count, Is.EqualTo(2));
+            Assert.That(secondFacetValues.Key, Is.EqualTo("two"));
+            Assert.That(secondFacetValues.Count, Is.EqualTo(1));
         });
     }
     
@@ -107,6 +114,29 @@ public class InvariantFacetsTests : SearcherTestBase
         {
             Assert.That(result.Facets, Is.Not.Empty);
             Assert.That(result.Facets.First().Values.First().Count, Is.EqualTo(2));
+        });
+    }
+    
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task CanSearchDatetimeExactFacet(bool publish)
+    {
+        var firstDateTime = new DateTime(2025, 06, 06);
+        var secondDateTime = new DateTime(2025, 06, 06);
+        var thirdDateTime = new DateTime(2025, 06, 01);
+        await CreateDatetimeDocuments([firstDateTime, secondDateTime, thirdDateTime]);
+        
+        var indexAlias = GetIndexAlias(publish);
+        var result = await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new DateTimeOffsetExactFacet("datetime")}, null, null, null, null, 0, 100);
+        var firstFacetValues = (DateTimeOffsetExactFacetValue) result.Facets.First().Values.First();
+        var secondFacetValues = (DateTimeOffsetExactFacetValue) result.Facets.First().Values.Last();
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Facets, Is.Not.Empty);
+            Assert.That(firstFacetValues.Count, Is.EqualTo(2));
+            Assert.That(firstFacetValues.Key.DateTime, Is.EqualTo(firstDateTime));
+            Assert.That(secondFacetValues.Count, Is.EqualTo(1));
+            Assert.That(secondFacetValues.Key.DateTime, Is.EqualTo(thirdDateTime));
         });
     }
     

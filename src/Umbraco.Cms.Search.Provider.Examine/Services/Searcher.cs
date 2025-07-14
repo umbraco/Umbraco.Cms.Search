@@ -1,13 +1,12 @@
 ﻿using System.Globalization;
-using System.Text;
 using Examine;
-using Examine.Lucene;
 using Examine.Search;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
+using Umbraco.Cms.Search.Provider.Examine.Mapping;
 using Umbraco.Extensions;
 using FacetResult = Umbraco.Cms.Search.Core.Models.Searching.Faceting.FacetResult;
 using ISearcher = Umbraco.Cms.Search.Core.Services.ISearcher;
@@ -18,10 +17,12 @@ namespace Umbraco.Cms.Search.Provider.Examine.Services;
 public class Searcher : ISearcher
 {
     private readonly IExamineManager _examineManager;
+    private readonly IExamineMapper _examineMapper;
 
-    public Searcher(IExamineManager examineManager)
+    public Searcher(IExamineManager examineManager, IExamineMapper examineMapper)
     {
         _examineManager = examineManager;
+        _examineMapper = examineMapper;
     }
     
     public async Task<SearchResult> SearchAsync(string indexAlias, string? query, IEnumerable<Filter>? filters, IEnumerable<Facet>? facets, IEnumerable<Sorter>? sorters,
@@ -43,100 +44,7 @@ public class Searcher : ISearcher
         AddFacets(searchQuery, facets);
         var results = searchQuery.Execute();
         
-        return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull(), facets is null ? Array.Empty<FacetResult>() : MapFacets(results, facets)));
-    }
-
-    private IEnumerable<FacetResult> MapFacets(ISearchResults searchResults, IEnumerable<Facet> queryFacets)
-    {
-        var facetResults = new List<FacetResult>();
-        foreach (var facet in queryFacets)
-        {
-            switch (facet)
-            {
-                case IntegerRangeFacet integerRangeFacet:
-                {
-                    var integerRangeFacetResult = integerRangeFacet.Ranges.Select(x =>
-                    {
-                        
-                        int value = GetFacetCount($"Umb_{facet.FieldName}_integers", x.Key, searchResults);
-                        return new IntegerRangeFacetValue(x.Key, x.Min, x.Max, value);
-                    });
-                    facetResults.Add(new FacetResult(facet.FieldName, integerRangeFacetResult));
-                    break;
-                }
-                case IntegerExactFacet integerExactFacet:
-                    var examineIntegerFacets = searchResults.GetFacet($"Umb_{integerExactFacet.FieldName}_integers");
-                    if (examineIntegerFacets is null)
-                    {
-                        continue;
-                    }
-                    
-                    foreach (var integerExactFacetValue in examineIntegerFacets)
-                    {
-                        if (int.TryParse(integerExactFacetValue.Label, out var labelValue) is false)
-                        {
-                            // Cannot convert the label to int, skipping.
-                            continue;
-                        }
-                        facetResults.Add(new FacetResult(facet.FieldName, [new IntegerExactFacetValue(labelValue, (int?)integerExactFacetValue.Value ?? 0)
-                        ]));
-                    }
-                    break;
-                case DecimalRangeFacet decimalRangeFacet:
-                    var decimalRangeFacetResult = decimalRangeFacet.Ranges.Select(x =>
-                    {
-                        int value = GetFacetCount($"Umb_{facet.FieldName}_decimals", x.Key, searchResults);
-                        return new DecimalRangeFacetValue(x.Key, x.Min, x.Max, value);
-                    });
-                    facetResults.Add(new FacetResult(facet.FieldName, decimalRangeFacetResult));
-                    break;
-                case DecimalExactFacet decimalExactFacet:
-                    var examineDecimalFacets = searchResults.GetFacet($"Umb_{decimalExactFacet.FieldName}_decimals");
-                    if (examineDecimalFacets is null)
-                    {
-                        continue;
-                    }
-                    
-                    foreach (var decimalExactFacetValue in examineDecimalFacets)
-                    {
-                        if (decimal.TryParse(decimalExactFacetValue.Label, out var labelValue) is false)
-                        {
-                            // Cannot convert the label to decimal, skipping.
-                            continue;
-                        }
-                        facetResults.Add(new FacetResult(facet.FieldName, [new DecimalExactFacetValue(labelValue, (int?)decimalExactFacetValue.Value ?? 0)
-                        ]));
-                    }
-                    break;
-                case KeywordFacet keywordFacet:
-                    var examineKeywordFacets = searchResults.GetFacet($"Umb_{keywordFacet.FieldName}_texts");
-                    if (examineKeywordFacets is null)
-                    {
-                        continue;
-                    }
-
-                    foreach (var examineKeywordFacet in examineKeywordFacets)
-                    {
-                        facetResults.Add(new FacetResult(facet.FieldName, new []{ new KeywordFacetValue(examineKeywordFacet.Label, (int?)examineKeywordFacet.Value ?? 0)}));
-                    }
-                    break;
-                 case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
-                    var dateTimeOffsetRangeFacetResult = dateTimeOffsetRangeFacet.Ranges.Select(x =>
-                    {
-                        int value = GetFacetCount($"Umb_{facet.FieldName}_datetimeoffsets", x.Key, searchResults);
-                        return new DateTimeOffsetRangeFacetValue(x.Key, x.Min, x.Max, value);
-                    });
-                    facetResults.Add(new FacetResult(facet.FieldName, dateTimeOffsetRangeFacetResult));
-                    break;
-            }
-        }
-
-        return facetResults;
-    }
-
-    private int GetFacetCount(string fieldName, string key, ISearchResults results)
-    {
-        return (int?)results.GetFacet(fieldName)?.Facet(key)?.Value ?? 0;
+        return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
     }
 
     private void AddFacets(IOrdering searchQuery, IEnumerable<Facet>? facets)
@@ -172,7 +80,7 @@ public class Searcher : ISearcher
                     break;
                 }
                 case DateTimeOffsetExactFacet dateTimeOffsetExactFacet:
-                    throw new NotImplementedException();
+                    searchQuery.WithFacets(facets => facets.FacetString($"Umb_{dateTimeOffsetExactFacet.FieldName}_datetimeoffsets"));
                     break;
             }
         }

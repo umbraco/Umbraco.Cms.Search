@@ -6,6 +6,7 @@ using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
+using Umbraco.Cms.Search.Provider.Examine.Mapping;
 using Umbraco.Cms.Search.Provider.Examine.Services;
 using IndexOptions = Umbraco.Cms.Search.Core.Configuration.IndexOptions;
 using ISearcher = Umbraco.Cms.Search.Core.Services.ISearcher;
@@ -38,6 +39,7 @@ public static class UmbracoBuilderExtensions
         
         builder.Services.AddTransient<IIndexer, Indexer>();
         builder.Services.AddTransient<ISearcher, Searcher>();
+        builder.Services.AddTransient<IExamineMapper, ExamineMapper>();
         
         builder.Services.Configure<IndexOptions>(options =>
         {
