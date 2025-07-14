@@ -66,8 +66,10 @@ public class Searcher : ISearcher
                     }
                     else
                     {
-                        searchQuery.And().Field($"{keywordFilter.FieldName}_keywords", string.Join(" ", keywordFilter.Values ?? []));
-
+                        var keywordValues = string.Join(" ", keywordFilter.Values ?? []);
+                        searchQuery.And().Field($"{keywordFilter.FieldName}_keywords", string.Join(" ", keywordValues));
+                        // Don't include oneself, this is for searches such as path id for ancestors.
+                        searchQuery.Not().Field("Umb_Id_keywords", keywordValues);
                     }
                     break;
             }

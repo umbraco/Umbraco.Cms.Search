@@ -10,9 +10,9 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.SearchService;
 public class FilterTests : SearcherTestBase
 {
     
-    [TestCase("RootKey", 3, false)]
-    [TestCase("ChildKey", 2, false)]
-    [TestCase("GrandchildKey", 1, false)]  
+    [TestCase("RootKey", 2, false)]
+    [TestCase("ChildKey", 1, false)]
+    [TestCase("GrandchildKey", 0, false)]  
     [TestCase("RootKey", 0, true)]
     [TestCase("ChildKey", 1, true)]
     [TestCase("GrandchildKey", 2, true)]
