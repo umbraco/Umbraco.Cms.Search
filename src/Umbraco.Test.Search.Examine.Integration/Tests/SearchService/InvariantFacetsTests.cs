@@ -29,7 +29,6 @@ public class InvariantFacetsTests : SearcherTestBase
     
     [TestCase(true)]
     [TestCase(false)]
-    [Ignore("Not implemented yet")]
     public async Task CanSearchIntegerExactFacet(bool publish)
     {
         await CreateCountDocuments([1, 1, 2]);
@@ -64,7 +63,6 @@ public class InvariantFacetsTests : SearcherTestBase
     
     [TestCase(true)]
     [TestCase(false)]
-    [Ignore("Not implemented yet")]
     public async Task CanSearchDecimalExactFacet(bool publish)
     {
         await CreateDecimalDocuments([1.55, 1.55, 1.55]);

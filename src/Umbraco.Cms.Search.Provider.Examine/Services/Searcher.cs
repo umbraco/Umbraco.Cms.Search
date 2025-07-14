@@ -65,18 +65,22 @@ public class Searcher : ISearcher
                     break;
                 }
                 case IntegerExactFacet integerExactFacet:
-                    throw new NotImplementedException();
-                    // This does not work in examine for now, maybe we'll find a solution later.
-                    // var examineIntegerFacets = searchResults.GetFacet($"Umb_{integerExactFacet.FieldName}_integers");
-                    // if (examineIntegerFacets is null)
-                    // {
-                    //     continue;
-                    // }
-                    //
-                    // foreach (var examineKeywordFacet in examineIntegerFacets)
-                    // {
-                    //     facetResults.Add(new FacetResult(facet.FieldName, new []{ new KeywordFacetValue(examineKeywordFacet.Label, (int?)examineKeywordFacet.Value ?? 0)}));
-                    // }
+                    var examineIntegerFacets = searchResults.GetFacet($"Umb_{integerExactFacet.FieldName}_integers");
+                    if (examineIntegerFacets is null)
+                    {
+                        continue;
+                    }
+                    
+                    foreach (var integerExactFacetValue in examineIntegerFacets)
+                    {
+                        if (int.TryParse(integerExactFacetValue.Label, out var labelValue) is false)
+                        {
+                            // Cannot convert the label to int, skipping.
+                            continue;
+                        }
+                        facetResults.Add(new FacetResult(facet.FieldName, [new IntegerExactFacetValue(labelValue, (int?)integerExactFacetValue.Value ?? 0)
+                        ]));
+                    }
                     break;
                 case DecimalRangeFacet decimalRangeFacet:
                     var decimalRangeFacetResult = decimalRangeFacet.Ranges.Select(x =>
@@ -87,6 +91,22 @@ public class Searcher : ISearcher
                     facetResults.Add(new FacetResult(facet.FieldName, decimalRangeFacetResult));
                     break;
                 case DecimalExactFacet decimalExactFacet:
+                    var examineDecimalFacets = searchResults.GetFacet($"Umb_{decimalExactFacet.FieldName}_decimals");
+                    if (examineDecimalFacets is null)
+                    {
+                        continue;
+                    }
+                    
+                    foreach (var decimalExactFacetValue in examineDecimalFacets)
+                    {
+                        if (decimal.TryParse(decimalExactFacetValue.Label, out var labelValue) is false)
+                        {
+                            // Cannot convert the label to decimal, skipping.
+                            continue;
+                        }
+                        facetResults.Add(new FacetResult(facet.FieldName, [new DecimalExactFacetValue(labelValue, (int?)decimalExactFacetValue.Value ?? 0)
+                        ]));
+                    }
                     break;
                 case KeywordFacet keywordFacet:
                     var examineKeywordFacets = searchResults.GetFacet($"Umb_{keywordFacet.FieldName}_texts");
@@ -134,7 +154,7 @@ public class Searcher : ISearcher
                     searchQuery.WithFacets(facets => facets.FacetLongRange($"Umb_{dateTimeOffsetRangeFacet.FieldName}_datetimeoffsets", dateTimeOffsetRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min?.Ticks ?? DateTime.MinValue.Ticks, true, x.Max?.Ticks ?? DateTime.MaxValue.Ticks, true)).ToArray()));
                     break;
                 case DecimalExactFacet decimalExactFacet:
-                    throw new NotImplementedException();
+                    searchQuery.WithFacets(facets => facets.FacetString($"Umb_{decimalExactFacet.FieldName}_decimals"));
                     break;
                 case IntegerRangeFacet integerRangeFacet:
                     searchQuery.WithFacets(facets => facets.FacetLongRange($"Umb_{integerRangeFacet.FieldName}_integers", integerRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min ?? 0, true, x.Max ?? int.MaxValue, true)).ToArray()));
@@ -143,7 +163,7 @@ public class Searcher : ISearcher
                     searchQuery.WithFacets(facets => facets.FacetString($"Umb_{keywordFacet.FieldName}_texts"));
                     break;
                 case IntegerExactFacet integerExactFacet:
-                    searchQuery.WithFacets(facets => facets.FacetLongRange($"Umb_{integerExactFacet.FieldName}_integers"));
+                    searchQuery.WithFacets(facets => facets.FacetString($"Umb_{integerExactFacet.FieldName}_integers"));
                     break;
                 case DecimalRangeFacet decimalRangeFacet:
                 {

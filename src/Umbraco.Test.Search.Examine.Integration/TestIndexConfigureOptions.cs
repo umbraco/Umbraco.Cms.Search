@@ -33,6 +33,12 @@ public class TestIndexConfigureOptions : IConfigureOptions<FacetOptions>
                 PropertyName = "datetime",
                 Values = ["datetimeoffsets"],
                 Type = FieldDefinitionTypes.FacetDateTime,
+            },            
+            new FacetOptions.Field
+            {
+                PropertyName = "count",
+                Values = ["integers"],
+                Type = FieldDefinitionTypes.FacetInteger,
             },
         ];
     }
