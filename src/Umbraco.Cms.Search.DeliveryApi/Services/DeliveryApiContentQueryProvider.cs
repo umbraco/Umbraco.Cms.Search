@@ -225,7 +225,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
         sorter = fieldType switch
         {
             FieldType.StringRaw => new KeywordSorter(fieldName, direction),
-            FieldType.StringAnalyzed or FieldType.StringSortable => new StringSorter(fieldName, direction),
+            FieldType.StringAnalyzed or FieldType.StringSortable => new TextSorter(fieldName, direction),
             FieldType.Number => new DecimalSorter(fieldName, direction),
             FieldType.Date => new DateTimeOffsetSorter(fieldName, direction),
             _ => throw new ArgumentOutOfRangeException(nameof(fieldType), fieldType, null)

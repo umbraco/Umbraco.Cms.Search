@@ -45,35 +45,7 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
         }
 
         var blockIndexValues = GetCumulativeIndexValues(blockValue, property, culture, segment, published, contentContext);
-        return blockIndexValues.Select(kvp =>
-                kvp.Value.TextsR1.Count > 0
-                || kvp.Value.TextsR2.Count > 0
-                || kvp.Value.TextsR3.Count > 0
-                || kvp.Value.Texts.Count > 0
-                || kvp.Value.Keywords.Count > 0
-                || kvp.Value.Integers.Count > 0
-                || kvp.Value.Decimals.Count > 0
-                || kvp.Value.DateTimeOffsets.Count > 0
-                    ? new IndexField(
-                        property.Alias,
-                        new IndexValue
-                        {
-                            TextsR1 = kvp.Value.TextsR1.NullIfEmpty(),
-                            TextsR2 = kvp.Value.TextsR2.NullIfEmpty(),
-                            TextsR3 = kvp.Value.TextsR3.NullIfEmpty(),
-                            Texts = kvp.Value.Texts.NullIfEmpty(),
-                            Keywords = kvp.Value.Keywords.NullIfEmpty(),
-                            Integers = kvp.Value.Integers.NullIfEmpty(),
-                            Decimals = kvp.Value.Decimals.NullIfEmpty(),
-                            DateTimeOffsets = kvp.Value.DateTimeOffsets.NullIfEmpty(),
-                        },
-                        kvp.Key.Culture,
-                        kvp.Key.Segment
-                    )
-                    : null
-            )
-            .WhereNotNull()
-            .ToArray();
+        return ToIndexFields(blockIndexValues, property.Alias);
     }
 
     private BlockValue? ParsePropertyValue(IProperty property, string? culture, string? segment, bool published)
@@ -91,19 +63,29 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
         string? segment,
         bool published,
         IContentBase contentContext)
+        => GetCumulativeIndexValues(blockValue.ContentData, blockValue.Expose, property, culture, segment, published, contentContext);
+
+    protected Dictionary<(string? Culture, string? Segment), CumulativeIndexValue> GetCumulativeIndexValues(
+        IList<BlockItemData> items,
+        IList<BlockItemVariation> expose,
+        IProperty property,
+        string? culture,
+        string? segment,
+        bool published,
+        IContentBase contentContext)
     {
         // block level variance can cause invariant culture to expand into multiple concrete cultures
         var propertyCultures = GetPropertyCultures(property.PropertyType, culture, published, contentContext);
 
         // load all the contained element types up front
         var elementTypesByKey = _contentTypeService
-            .GetMany(blockValue.ContentData.Select(cd => cd.ContentTypeKey).Distinct())
+            .GetMany(items.Select(cd => cd.ContentTypeKey).Distinct())
             .ToDictionary(c => c.Key);
 
         // these are the cumulative index values (for all contained blocks) per contained variation
         var cumulativeIndexValuesByVariation = new Dictionary<(string? Culture, string? Segment), CumulativeIndexValue>();
 
-        foreach (var contentData in blockValue.ContentData)
+        foreach (var contentData in items)
         {
             var propertyTypesByAlias = GetPropertyTypesByAlias(contentData.ContentTypeKey, elementTypesByKey, culture, segment);
             if (propertyTypesByAlias is null)
@@ -117,7 +99,7 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
                 {
                     if (published
                         && propertyCulture is not null
-                        && blockValue.Expose.Any(e =>
+                        && expose.Any(e =>
                             e.ContentKey == contentData.Key &&
                             e.Culture.InvariantEquals(blockPropertyValue.Culture) &&
                             e.Segment.InvariantEquals(blockPropertyValue.Segment)) is false)
@@ -138,7 +120,7 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
                     {
                         _logger.LogDebug(
                             "No property editor found for property editor alias {propertyEditorAlias} - skipped indexing of property value.",
-                            property.PropertyType.PropertyEditorAlias);
+                            propertyType.PropertyEditorAlias);
                         continue;
                     }
 
@@ -159,7 +141,7 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
                     {
                         _logger.LogDebug(
                             "No property value handler found for property editor alias {propertyEditorAlias} - skipped indexing of property value.",
-                            property.PropertyType.PropertyEditorAlias);
+                            propertyType.PropertyEditorAlias);
                         continue;
                     }
 
@@ -174,14 +156,8 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
                             blockIndexValue = new CumulativeIndexValue();
                             cumulativeIndexValuesByVariation.Add((blockPropertyIndexField.Culture, blockPropertyIndexField.Segment), blockIndexValue);
                         }
-                        blockIndexValue.TextsR1.AddRange(blockPropertyIndexField.Value.TextsR1.EmptyNull());
-                        blockIndexValue.TextsR2.AddRange(blockPropertyIndexField.Value.TextsR2.EmptyNull());
-                        blockIndexValue.TextsR3.AddRange(blockPropertyIndexField.Value.TextsR3.EmptyNull());
-                        blockIndexValue.Texts.AddRange(blockPropertyIndexField.Value.Texts.EmptyNull());
-                        blockIndexValue.Keywords.AddRange(blockPropertyIndexField.Value.Keywords.EmptyNull());
-                        blockIndexValue.Integers.AddRange(blockPropertyIndexField.Value.Integers.EmptyNull());
-                        blockIndexValue.Decimals.AddRange(blockPropertyIndexField.Value.Decimals.EmptyNull());
-                        blockIndexValue.DateTimeOffsets.AddRange(blockPropertyIndexField.Value.DateTimeOffsets.EmptyNull());
+
+                        AmendCumulativeIndexValue(blockIndexValue, blockPropertyIndexField.Value);
                     }
                 }
             }
@@ -190,6 +166,54 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
         return cumulativeIndexValuesByVariation;
     }
 
+    protected void AmendCumulativeIndexValue(CumulativeIndexValue cumulativeIndexValue, IndexValue indexValue)
+    {
+        cumulativeIndexValue.TextsR1.AddRange(indexValue.TextsR1.EmptyNull());
+        cumulativeIndexValue.TextsR2.AddRange(indexValue.TextsR2.EmptyNull());
+        cumulativeIndexValue.TextsR3.AddRange(indexValue.TextsR3.EmptyNull());
+        cumulativeIndexValue.Texts.AddRange(indexValue.Texts.EmptyNull());
+        cumulativeIndexValue.Keywords.AddRange(indexValue.Keywords.EmptyNull());
+        cumulativeIndexValue.Integers.AddRange(indexValue.Integers.EmptyNull());
+        cumulativeIndexValue.Decimals.AddRange(indexValue.Decimals.EmptyNull());
+        cumulativeIndexValue.DateTimeOffsets.AddRange(indexValue.DateTimeOffsets.EmptyNull());
+    }
+
+    protected IndexValue? ToIndexValue(CumulativeIndexValue cumulativeIndexValue)
+        => cumulativeIndexValue.TextsR1.Count > 0
+           || cumulativeIndexValue.TextsR2.Count > 0
+           || cumulativeIndexValue.TextsR3.Count > 0
+           || cumulativeIndexValue.Texts.Count > 0
+           || cumulativeIndexValue.Keywords.Count > 0
+           || cumulativeIndexValue.Integers.Count > 0
+           || cumulativeIndexValue.Decimals.Count > 0
+           || cumulativeIndexValue.DateTimeOffsets.Count > 0
+            ? new IndexValue
+            {
+                TextsR1 = cumulativeIndexValue.TextsR1.NullIfEmpty(),
+                TextsR2 = cumulativeIndexValue.TextsR2.NullIfEmpty(),
+                TextsR3 = cumulativeIndexValue.TextsR3.NullIfEmpty(),
+                Texts = cumulativeIndexValue.Texts.NullIfEmpty(),
+                Keywords = cumulativeIndexValue.Keywords.NullIfEmpty(),
+                Integers = cumulativeIndexValue.Integers.NullIfEmpty(),
+                Decimals = cumulativeIndexValue.Decimals.NullIfEmpty(),
+                DateTimeOffsets = cumulativeIndexValue.DateTimeOffsets.NullIfEmpty(),
+            }
+            : null;
+
+    protected IEnumerable<IndexField> ToIndexFields(Dictionary<(string? Culture, string? Segment), CumulativeIndexValue> cumulativeIndexValues, string propertyAlias)
+        => cumulativeIndexValues.Select(kvp
+                => ToIndexValue(kvp.Value) is { } indexValue
+                    ? new IndexField(
+                        propertyAlias,
+                        indexValue,
+                        kvp.Key.Culture,
+                        kvp.Key.Segment
+                    )
+                    : null
+            )
+            .WhereNotNull()
+            .ToArray();
+    
     private string?[] GetPropertyCultures(IPropertyType propertyType, string? requestedCulture, bool published, IContentBase contentContext)
     {
         // block level variance can cause invariant culture to expand into multiple concrete cultures

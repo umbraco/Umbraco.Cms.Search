@@ -133,10 +133,10 @@ public class TestIndexer : IIndexer, ISearcher
 
             result = sortersAsArray.First() switch
             {
-                StringSorter stringSorter => result.OrderBy(document =>
+                TextSorter textSorter => result.OrderBy(document =>
                     document.Fields.FirstOrDefault(field =>
                         IsVarianceMatch(field)
-                        && field.FieldName == stringSorter.FieldName
+                        && field.FieldName == textSorter.FieldName
                     )?.Value.AllTexts().FirstOrDefault()
                 ).ToArray(),
                 DateTimeOffsetSorter dateTimeOffsetSorter => result.OrderBy(document =>

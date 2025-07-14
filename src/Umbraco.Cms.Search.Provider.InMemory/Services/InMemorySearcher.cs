@@ -266,7 +266,7 @@ internal sealed class InMemorySearcher : IInMemorySearcher
                     DecimalSorter => field.Value.Decimals?.FirstOrDefault(),
                     IntegerSorter => field.Value.Integers?.FirstOrDefault(),
                     KeywordSorter => field.Value.Keywords?.FirstOrDefault(),
-                    StringSorter => AllTexts(field.Value).FirstOrDefault(),
+                    TextSorter => AllTexts(field.Value).FirstOrDefault(),
                     _ => throw new ArgumentOutOfRangeException($"Unsupported sorter type: {_sorter.GetType().FullName}")
                 };
     }

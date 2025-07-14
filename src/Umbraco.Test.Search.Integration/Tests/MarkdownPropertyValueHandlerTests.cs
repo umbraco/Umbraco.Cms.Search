@@ -94,8 +94,10 @@ public class MarkdownPropertyValueHandlerTests : ContentTestBase
         CollectionAssert.AreEqual(new [] { "Some bold text", "A link to somewhere" }, markdownValue.Texts);
     }
 
-    [Test]
-    public void MarkdownEditor_IgnoresEmptyValue()
+    
+    [TestCase(null)]
+    [TestCase("")]
+    public void MarkdownEditor_IgnoresEmptyValues(object? value)
     {
         var content = new ContentBuilder()
             .WithContentType(_contentType)
@@ -103,7 +105,7 @@ public class MarkdownPropertyValueHandlerTests : ContentTestBase
             .WithPropertyValues(
                 new
                 {
-                    markdownValue = ""
+                    markdownValue = value
                 })
             .Build();
 
@@ -114,6 +116,33 @@ public class MarkdownPropertyValueHandlerTests : ContentTestBase
 
         var document = documents.Single();
         Assert.That(document.Fields.Any(field => field.FieldName == "markdownValue"), Is.False);
+    }
+
+    [TestCase(true)]
+    [TestCase(123)]
+    [TestCase("A text string")]
+    public void MarkdownEditor_IncludesSimpleValues(object value)
+    {
+        var content = new ContentBuilder()
+            .WithContentType(_contentType)
+            .WithName("Markdown Editor")
+            .WithPropertyValues(
+                new
+                {
+                    markdownValue = value
+                })
+            .Build();
+
+        ContentService.Save(content);
+
+        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        Assert.That(documents, Has.Count.EqualTo(1));
+
+
+        var document = documents.Single();
+        var markdownValue = document.Fields.FirstOrDefault(f => f.FieldName == "markdownValue")?.Value;
+        Assert.That(markdownValue, Is.Not.Null);
+        CollectionAssert.AreEqual(new [] { value.ToString() }, markdownValue.Texts);
     }
     
     [SetUp]
