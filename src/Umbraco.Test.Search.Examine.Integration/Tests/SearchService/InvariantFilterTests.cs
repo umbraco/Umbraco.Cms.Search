@@ -41,6 +41,7 @@ public class InvariantFilterTests : SearcherTestBase
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
     
+        
     [TestCase("RootKey", 1, false)]
     [TestCase("ChildKey", 1, false)]
     [TestCase("GrandchildKey", 0, false)]    
@@ -73,6 +74,60 @@ public class InvariantFilterTests : SearcherTestBase
         {
             Assert.That(results.Documents.Count(), Is.EqualTo(count));
         });
+    }
+    
+    [TestCase(1, true)]
+    [TestCase(2, false)]
+    public async Task CanFilterByText(int expectedCount, bool negate)
+    {
+        CreateInvariantDocumentTree(false);
+    
+        var indexAlias = GetIndexAlias(false);
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { new TextFilter("title", ["Test"], negate) },
+            null, null, null, null, null,
+            0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
+    }
+    
+    [TestCase(1, true)]
+    [TestCase(2, false)]
+    public async Task CanFilterByOneIntegerRange(int expectedCount, bool negate)
+    {
+        CreateInvariantDocumentTree(false);
+    
+        var indexAlias = GetIndexAlias(false);
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { new IntegerRangeFilter("count", [new FilterRange<int?>(0, 50)], negate) },
+            null, null, null, null, null,
+            0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
+    }
+    
+    [TestCase(0, true)]
+    [TestCase(3, false)]
+    public async Task CanFilterByMultipleIntegerRanges(int expectedCount, bool negate)
+    {
+        CreateInvariantDocumentTree(false);
+    
+        var indexAlias = GetIndexAlias(false);
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { new IntegerRangeFilter("count", [new FilterRange<int?>(0, 50), new FilterRange<int?>(0, 1000)], negate) },
+            null, null, null, null, null,
+            0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
     
     [TestCase(1, true)]
@@ -175,7 +230,7 @@ public class InvariantFilterTests : SearcherTestBase
             .WithPropertyValues(
                 new
                 {
-                    title = "The root title",
+                    title = "Test",
                     count = 12,
                     datetime =  new DateTime(2025, 06, 06),
                     decimalproperty = DecimalValue
@@ -200,7 +255,7 @@ public class InvariantFilterTests : SearcherTestBase
             .WithPropertyValues(
                 new
                 {
-                    title = "The child title",
+                    title = "Test",
                     count = 12,
                     datetime =  new DateTime(2025, 06, 06),
                     decimalproperty = DecimalValue
@@ -225,7 +280,7 @@ public class InvariantFilterTests : SearcherTestBase
                 new
                 {
                     title = "The grandchild title",
-                    count = 13,
+                    count = 100,
                     datetime = new DateTime(2025, 06, 07),
                     decimalproperty = 1.11111m
                 })

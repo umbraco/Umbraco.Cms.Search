@@ -61,17 +61,61 @@ public class Searcher : ISearcher
             switch (filter)
             {
                 case KeywordFilter keywordFilter:
+                    var keywordFilterValue = string.Join(" ", keywordFilter.Values);
                     if (keywordFilter.Negate)
                     {
-                        searchQuery.Not().Field($"{keywordFilter.FieldName}_keywords", string.Join(" ", keywordFilter.Values ?? []));
+                        searchQuery.Not().Field($"{keywordFilter.FieldName}_keywords", keywordFilterValue);
                     }
                     else
                     {
-                        var keywordValues = string.Join(" ", keywordFilter.Values ?? []);
                         var field = keywordFilter.FieldName.StartsWith("Umb_") ? $"{keywordFilter.FieldName}_keywords" : $"Umb_{keywordFilter.FieldName}_keywords";
-                        searchQuery.And().Field(field, string.Join(" ", keywordValues));
+                        searchQuery.And().Field(field, string.Join(" ", keywordFilterValue));
                         // Don't include oneself, this is for searches such as path id for ancestors.
-                        searchQuery.Not().Field("Umb_Id_keywords", keywordValues);
+                        searchQuery.Not().Field("Umb_Id_keywords", keywordFilterValue);
+                    }
+                    break;
+                case TextFilter textFilter:
+                    var textFilterValue = string.Join(" ", textFilter.Values);
+                    if (textFilter.Negate)
+                    {
+                        searchQuery.Not().Field($"Umb_{textFilter.FieldName}_texts", textFilterValue);
+                    }
+                    else
+                    {
+                        searchQuery.And().Field($"Umb_{textFilter.FieldName}_texts", textFilterValue);
+                    }
+                    break;
+                case IntegerRangeFilter integerRangeFilter:
+                    if (integerRangeFilter.Negate)
+                    {
+                        foreach (var integerRange in integerRangeFilter.Ranges)
+                        {
+                            searchQuery.Not().RangeQuery<int>([$"Umb_{integerRangeFilter.FieldName}_integers"], integerRange.MinimumValue, integerRange.MaximumValue);
+                        }
+                    }
+                    else
+                    {
+                        var integerRanges = integerRangeFilter.Ranges;
+
+                        if (integerRanges.Length == 1)
+                        {
+                            var integerRange = integerRanges[0];
+                            searchQuery.And().RangeQuery<int>([$"Umb_{integerRangeFilter.FieldName}_integers"], integerRange.MinimumValue, integerRange.MaximumValue);
+                        }
+                        else
+                        {
+                            searchQuery.And().Group(query =>
+                            {
+                                var rangeQuery = query.RangeQuery<int>([$"Umb_{integerRangeFilter.FieldName}_integers"], integerRanges[0].MinimumValue, integerRanges[0].MaximumValue);
+                                for (int i = 1; i < integerRanges.Length; i++)
+                                {
+                                    rangeQuery.Or().RangeQuery<int>([$"Umb_{integerRangeFilter.FieldName}_integers"], integerRanges[i].MinimumValue, integerRanges[i].MaximumValue);
+                                }
+
+                                return rangeQuery;
+                            });
+                        }
+  
                     }
                     break;
                 case IntegerExactFilter integerExactFilter:
