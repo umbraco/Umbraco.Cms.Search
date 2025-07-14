@@ -40,11 +40,30 @@ public class Searcher : ISearcher
             searchQuery.And().ManagedQuery(culture is null ? query.ToLowerInvariant() : query.ToLower(new CultureInfo(culture)));
         }
         
-        // Add facets
+        // Add facets and filters
+        AddFilters(searchQuery, filters);
         AddFacets(searchQuery, facets);
         var results = searchQuery.Execute();
         
         return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
+    }
+
+    private void AddFilters(IBooleanOperation searchQuery, IEnumerable<Filter>? filters)
+    {
+        if (filters is null)
+        {
+            return;
+        }
+
+        foreach (var filter in filters)
+        {
+            switch (filter)
+            {
+                case KeywordFilter keywordFilter:
+                    searchQuery.And().Field($"{keywordFilter.FieldName}_keywords", string.Join(" ", keywordFilter.Values ?? []));
+                    break;
+            }
+        }
     }
 
     private void AddFacets(IOrdering searchQuery, IEnumerable<Facet>? facets)

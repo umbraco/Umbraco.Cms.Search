@@ -24,11 +24,9 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
 public abstract class TestBase : UmbracoIntegrationTest
 {
-    protected Guid RootKey { get; } = Guid.NewGuid();
-    
-    protected Guid ChildKey { get; } = Guid.NewGuid();
-
-    protected Guid GrandchildKey { get; } = Guid.NewGuid();
+    protected static readonly Guid RootKey = Guid.Parse("D9EBF985-C65C-4341-955F-FFADA160F6D9");
+    protected static readonly Guid ChildKey = Guid.Parse("C84E91B2-3351-4BA9-9906-09C2260D77EC");
+    protected static readonly Guid GrandchildKey = Guid.Parse("201858C2-5AC2-4505-AC2E-E4BF38F39AC4");
     
     protected DateTime CurrentDateTime { get; set; }
     

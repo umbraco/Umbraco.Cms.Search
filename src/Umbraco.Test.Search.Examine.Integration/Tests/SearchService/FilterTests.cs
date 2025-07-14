@@ -10,17 +10,63 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.SearchService;
 public class FilterTests : SearcherTestBase
 {
     
-    [Test]
-    public async Task CanFilterByParentKey()
+    [TestCase("RootKey", 3)]
+    [TestCase("ChildKey", 2)]
+    [TestCase("GrandchildKey", 1)]
+    public async Task CanFilterByPathIds(string keyName, int expectedCount)
     {
         CreateInvariantDocumentTree(false);
-        
+    
         var indexAlias = GetIndexAlias(false);
-        var results = await Searcher.SearchAsync(indexAlias, null, new List<Filter> { new KeywordFilter("Umb_PathIds", [RootKey.ToString()], false)}, null, null, null, null, null, 0, 100);
-        
+
+        // Resolve the keys, we cannot use them directly in TestCase, as they are not constant.. :(
+        var key = keyName switch
+        {
+            "RootKey" => RootKey.ToString(),
+            "ChildKey" => ChildKey.ToString(),
+            "GrandchildKey" => GrandchildKey.ToString(),
+            _ => throw new ArgumentOutOfRangeException(nameof(keyName), keyName, null)
+        };
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { new KeywordFilter("Umb_PathIds", [key], false) },
+            null, null, null, null, null,
+            0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
+    }
+    
+    [TestCase("RootKey", true)]
+    [TestCase("ChildKey", true)]
+    [TestCase("GrandchildKey", false)]
+    public async Task CanFilterByParentId(string keyName, bool expectedToFindAny)
+    {
+        CreateInvariantDocumentTree(false);
+    
+        var indexAlias = GetIndexAlias(false);
+
+        // Resolve the keys, we cannot use them directly in TestCase, as they are not constant.. :(
+        var key = keyName switch
+        {
+            "RootKey" => RootKey.ToString(),
+            "ChildKey" => ChildKey.ToString(),
+            "GrandchildKey" => GrandchildKey.ToString(),
+            _ => throw new ArgumentOutOfRangeException(nameof(keyName), keyName, null)
+        };
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { new KeywordFilter("Umb_ParentId", [key], false) },
+            null, null, null, null, null,
+            0, 100);
+
         Assert.Multiple(() =>
         {
-            Assert.That(results.Total, Is.EqualTo(2));
+            Assert.That(results.Documents.Any(), Is.EqualTo(expectedToFindAny));
+            Assert.That(results.Total, Is.EqualTo(expectedToFindAny ? 1 : 0));
         });
     }
     
