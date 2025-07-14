@@ -108,6 +108,22 @@ public class Searcher : ISearcher
                         }
                     }
                     break;
+                case DateTimeOffsetExactFilter dateTimeOffsetExactFilter:
+                    if (dateTimeOffsetExactFilter.Negate)
+                    {
+                        foreach (var dateTimeOffsetFilterValue in dateTimeOffsetExactFilter.Values)
+                        {
+                            searchQuery.Not().Group(query => query.Field($"Umb_{dateTimeOffsetExactFilter.FieldName}_datetimeoffsets", dateTimeOffsetFilterValue.DateTime));
+                        }
+                    }
+                    else
+                    {
+                        foreach (var dateTimeOffsetFilterValue in dateTimeOffsetExactFilter.Values)
+                        {
+                            searchQuery.And().Group(query => query.Field($"Umb_{dateTimeOffsetExactFilter.FieldName}_datetimeoffsets", dateTimeOffsetFilterValue.DateTime));
+                        }
+                    }
+                    break;
             }
         }
     }

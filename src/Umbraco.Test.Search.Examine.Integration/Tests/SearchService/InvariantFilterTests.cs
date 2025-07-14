@@ -122,7 +122,7 @@ public class InvariantFilterTests : SearcherTestBase
         var results = await Searcher.SearchAsync(
             indexAlias,
             null,
-            new List<Filter> { new DateTimeOffsetExactFilter("decimalproperty", [ new DateTime(2025, 06, 06)], negate) },
+            new List<Filter> { new DateTimeOffsetExactFilter("datetime", [ new DateTime(2025, 06, 06)], negate) },
             null, null, null, null, null,
             0, 100);
 
