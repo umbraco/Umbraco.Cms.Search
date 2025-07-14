@@ -60,7 +60,15 @@ public class Searcher : ISearcher
             switch (filter)
             {
                 case KeywordFilter keywordFilter:
-                    searchQuery.And().Field($"{keywordFilter.FieldName}_keywords", string.Join(" ", keywordFilter.Values ?? []));
+                    if (keywordFilter.Negate)
+                    {
+                        searchQuery.Not().Field($"{keywordFilter.FieldName}_keywords", string.Join(" ", keywordFilter.Values ?? []));
+                    }
+                    else
+                    {
+                        searchQuery.And().Field($"{keywordFilter.FieldName}_keywords", string.Join(" ", keywordFilter.Values ?? []));
+
+                    }
                     break;
             }
         }

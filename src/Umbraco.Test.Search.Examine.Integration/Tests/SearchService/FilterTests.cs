@@ -10,10 +10,13 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.SearchService;
 public class FilterTests : SearcherTestBase
 {
     
-    [TestCase("RootKey", 3)]
-    [TestCase("ChildKey", 2)]
-    [TestCase("GrandchildKey", 1)]
-    public async Task CanFilterByPathIds(string keyName, int expectedCount)
+    [TestCase("RootKey", 3, false)]
+    [TestCase("ChildKey", 2, false)]
+    [TestCase("GrandchildKey", 1, false)]  
+    [TestCase("RootKey", 0, true)]
+    [TestCase("ChildKey", 1, true)]
+    [TestCase("GrandchildKey", 2, true)]
+    public async Task CanFilterByPathIds(string keyName, int expectedCount, bool negate)
     {
         CreateInvariantDocumentTree(false);
     
@@ -31,17 +34,20 @@ public class FilterTests : SearcherTestBase
         var results = await Searcher.SearchAsync(
             indexAlias,
             null,
-            new List<Filter> { new KeywordFilter("Umb_PathIds", [key], false) },
+            new List<Filter> { new KeywordFilter("Umb_PathIds", [key], negate) },
             null, null, null, null, null,
             0, 100);
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
     
-    [TestCase("RootKey", true)]
-    [TestCase("ChildKey", true)]
-    [TestCase("GrandchildKey", false)]
-    public async Task CanFilterByParentId(string keyName, bool expectedToFindAny)
+    [TestCase("RootKey", 1, false)]
+    [TestCase("ChildKey", 1, false)]
+    [TestCase("GrandchildKey", 0, false)]    
+    [TestCase("RootKey", 2, true)]
+    [TestCase("ChildKey", 2, true)]
+    [TestCase("GrandchildKey", 3, true)]
+    public async Task CanFilterByParentId(string keyName, int count, bool negate)
     {
         CreateInvariantDocumentTree(false);
     
@@ -59,14 +65,13 @@ public class FilterTests : SearcherTestBase
         var results = await Searcher.SearchAsync(
             indexAlias,
             null,
-            new List<Filter> { new KeywordFilter("Umb_ParentId", [key], false) },
+            new List<Filter> { new KeywordFilter("Umb_ParentId", [key], negate) },
             null, null, null, null, null,
             0, 100);
 
         Assert.Multiple(() =>
         {
-            Assert.That(results.Documents.Any(), Is.EqualTo(expectedToFindAny));
-            Assert.That(results.Total, Is.EqualTo(expectedToFindAny ? 1 : 0));
+            Assert.That(results.Documents.Count(), Is.EqualTo(count));
         });
     }
     
