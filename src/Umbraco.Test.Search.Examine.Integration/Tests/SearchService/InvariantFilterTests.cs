@@ -7,7 +7,7 @@ using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.SearchService;
 
-public class FilterTests : SearcherTestBase
+public class InvariantFilterTests : SearcherTestBase
 {
     
     [TestCase("RootKey", 2, false)]
