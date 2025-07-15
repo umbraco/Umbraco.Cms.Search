@@ -15,7 +15,7 @@ public static class Constants
         public const string TextsR2 = "textsr2";
         public const string TextsR3 = "textsr3";
         public const string Protection = "protection";
-        public const string Culture = "protection";
-        public const string Segment = "protection";
+        public const string Culture = "culture";
+        public const string Segment = "segment";
     }
 }

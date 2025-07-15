@@ -35,7 +35,7 @@ public class Searcher : ISearcher
             return await Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
         }
 
-        var searchQuery = index.Searcher.CreateQuery().NativeQuery($"+(+Umb_culture:\"{culture ?? "none"}\")").And().NativeQuery($"+(+Umb_segment:\"{segment ?? "none"}\")");
+        var searchQuery = index.Searcher.CreateQuery().NativeQuery($"+(+{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}:\"{culture ?? "none"}\")").And().NativeQuery($"+(+{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}:\"{segment ?? "none"}\")");
         if (query is not null)
         {
             // We have to do to lower on all queries.
@@ -78,10 +78,16 @@ public class Searcher : ISearcher
                     if (textFilter.Negate)
                     {
                         searchQuery.Not().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", textFilterValue);
+                        searchQuery.Not().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR1}", textFilterValue);
+                        searchQuery.Not().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR2}", textFilterValue);
+                        searchQuery.Not().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR3}", textFilterValue);
                     }
                     else
                     {
                         searchQuery.And().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", textFilterValue);
+                        searchQuery.And().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR1}", textFilterValue.Boost(30));
+                        searchQuery.And().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR2}", textFilterValue.Boost(20));
+                        searchQuery.And().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR3}", textFilterValue.Boost(10));
                     }
                     break;
                 case IntegerRangeFilter integerRangeFilter:
