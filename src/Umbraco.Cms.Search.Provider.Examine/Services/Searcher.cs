@@ -71,8 +71,6 @@ public class Searcher : ISearcher
                     {
                         var field = keywordFilter.FieldName.StartsWith("Umb_") ? $"{keywordFilter.FieldName}_keywords" : $"Umb_{keywordFilter.FieldName}_keywords";
                         searchQuery.And().Field(field, string.Join(" ", keywordFilterValue));
-                        // Don't include oneself, this is for searches such as path id for ancestors.
-                        searchQuery.Not().Field("Umb_Id_keywords", keywordFilterValue);
                     }
                     break;
                 case TextFilter textFilter:

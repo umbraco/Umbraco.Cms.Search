@@ -34,7 +34,7 @@ public class InvariantFilterTests : SearcherTestBase
         var results = await Searcher.SearchAsync(
             indexAlias,
             null,
-            new List<Filter> { new KeywordFilter("Umb_PathIds", [key], negate) },
+            new List<Filter> { new KeywordFilter("Umb_PathIds", [key], negate), new KeywordFilter("Umb_Id", [key], true)},
             null, null, null, null, null,
             0, 100);
 
