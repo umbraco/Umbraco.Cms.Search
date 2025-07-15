@@ -170,7 +170,6 @@ public class Indexer : IIndexer
         result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}", culture ?? "none");
         result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}", segment ?? "none");
 
-
         return result;
     }
 

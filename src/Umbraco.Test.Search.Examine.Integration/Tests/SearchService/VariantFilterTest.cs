@@ -17,7 +17,7 @@ public class VariantFilterTest : SearcherTestBase
     [TestCase("da-DK", false, 1)]
     [TestCase("ja-JP", true, 0)]
     [TestCase("ja-JP", false, 1)]
-    public async Task CanFilterByPathIds(string culture, bool negate, int expectedCount)
+    public async Task ByCulture_CanFilterByPathIds(string culture, bool negate, int expectedCount)
     {
         var indexAlias = GetIndexAlias(false);
 
@@ -25,8 +25,58 @@ public class VariantFilterTest : SearcherTestBase
             indexAlias,
             null,
             new List<Filter> { new KeywordFilter("Id", [RootKey.ToString()], negate)},
+            null, 
+            null, 
+            culture, 
+            null, 
+            null,
+            0, 
+            100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
+    }
+    
+    [TestCase("Root", "en-US", true, 0)]
+    [TestCase("Root", "en-US", false, 1)]
+    [TestCase("Rod", "da-DK", true, 0)]
+    [TestCase("Rod", "da-DK", false, 1)]
+    [TestCase("ル-ト", "ja-JP", true, 0)]
+    [TestCase("ル-ト", "ja-JP", false, 1)]
+    public async Task CanFilterByTextByCulture(string text, string culture, bool negate, int expectedCount)
+    {
+        var indexAlias = GetIndexAlias(false);
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { new TextFilter("title", [text], negate) },
             null, null, culture, null, null,
             0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
+    }
+    
+    [TestCase("body-segment-1", "en-US", "segment-1", false, 1)]
+    [TestCase("body-segment-2", "en-US", "segment-2", false, 1)]
+    [TestCase("krop-segment-1", "da-DK", "segment-1", false, 1)]
+    [TestCase("krop-segment-2", "da-DK", "segment-2", false, 1)]
+    [TestCase("ボディ-segment-1", "ja-JP", "segment-1", false, 1)]
+    [TestCase("ボディ-segment-2", "ja-JP", "segment-2", false, 1)]
+    public async Task CanFilterByTextByCultureAndSegment(string text, string culture, string segment, bool negate, int expectedCount)
+    {
+        var indexAlias = GetIndexAlias(false);
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { new TextFilter("body", [text], negate) },
+            null,
+            null, 
+            culture, 
+            segment, 
+            null,
+            0, 
+            100);
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
