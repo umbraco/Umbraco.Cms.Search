@@ -65,11 +65,11 @@ public class Searcher : ISearcher
                     var keywordFilterValue = string.Join(" ", keywordFilter.Values);
                     if (keywordFilter.Negate)
                     {
-                        searchQuery.Not().Field($"{keywordFilter.FieldName}_keywords", keywordFilterValue);
+                        searchQuery.Not().Field($"{keywordFilter.FieldName}_{Constants.Fields.Keywords}", keywordFilterValue);
                     }
                     else
                     {
-                        var field = keywordFilter.FieldName.StartsWith("Umb_") ? $"{keywordFilter.FieldName}_keywords" : $"Umb_{keywordFilter.FieldName}_keywords";
+                        var field = keywordFilter.FieldName.StartsWith(Constants.Fields.FieldPrefix) ? $"{keywordFilter.FieldName}_{Constants.Fields.Keywords}" : $"{Constants.Fields.FieldPrefix}{keywordFilter.FieldName}_{Constants.Fields.Keywords}";
                         searchQuery.And().Field(field, string.Join(" ", keywordFilterValue));
                     }
                     break;
@@ -77,35 +77,35 @@ public class Searcher : ISearcher
                     var textFilterValue = string.Join(" ", textFilter.Values);
                     if (textFilter.Negate)
                     {
-                        searchQuery.Not().Field($"Umb_{textFilter.FieldName}_texts", textFilterValue);
+                        searchQuery.Not().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", textFilterValue);
                     }
                     else
                     {
-                        searchQuery.And().Field($"Umb_{textFilter.FieldName}_texts", textFilterValue);
+                        searchQuery.And().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", textFilterValue);
                     }
                     break;
                 case IntegerRangeFilter integerRangeFilter:
-                    var integerRangeFieldName = $"Umb_{integerRangeFilter.FieldName}_integers";
+                    var integerRangeFieldName = $"{Constants.Fields.FieldPrefix}{integerRangeFilter.FieldName}_{Constants.Fields.Integers}";
                     searchQuery.AddRangeFilter(integerRangeFieldName, integerRangeFilter.ToNonNullableRangeFilter());
                     break;
                 case IntegerExactFilter integerExactFilter:
-                    var integerExactFieldName = $"Umb_{integerExactFilter.FieldName}_integers";
+                    var integerExactFieldName = $"{Constants.Fields.FieldPrefix}{integerExactFilter.FieldName}_{Constants.Fields.Integers}";
                     searchQuery.AddExactFilter(integerExactFieldName, integerExactFilter);
                     break;
                 case DecimalRangeFilter decimalRangeFilter:
-                    var decimalRangeFieldName = $"Umb_{decimalRangeFilter.FieldName}_decimals";
+                    var decimalRangeFieldName = $"{Constants.Fields.FieldPrefix}{decimalRangeFilter.FieldName}_{Constants.Fields.Decimals}";
                     searchQuery.AddRangeFilter(decimalRangeFieldName, decimalRangeFilter.ToNonNullableRangeFilter());
                     break;
                 case DecimalExactFilter decimalExactFilter:
-                    var decimalExactFieldName = $"Umb_{decimalExactFilter.FieldName}_decimals";
+                    var decimalExactFieldName = $"{Constants.Fields.FieldPrefix}{decimalExactFilter.FieldName}_{Constants.Fields.Decimals}";
                     searchQuery.AddExactFilter(decimalExactFieldName, decimalExactFilter.ToDoubleExactFilter());
                     break;
                 case DateTimeOffsetRangeFilter dateTimeOffsetRangeFilter:
-                    var dateTimeOffsetRangeFieldName = $"Umb_{dateTimeOffsetRangeFilter.FieldName}_datetimeoffsets";
+                    var dateTimeOffsetRangeFieldName = $"{Constants.Fields.FieldPrefix}{dateTimeOffsetRangeFilter.FieldName}_{Constants.Fields.DateTimeOffsets}";
                     searchQuery.AddRangeFilter(dateTimeOffsetRangeFieldName, dateTimeOffsetRangeFilter.ToNonNullableRangeFilter());
                     break;
                 case DateTimeOffsetExactFilter dateTimeOffsetExactFilter:
-                    var dateTimeOffsetExactFieldName = $"Umb_{dateTimeOffsetExactFilter.FieldName}_datetimeoffsets";
+                    var dateTimeOffsetExactFieldName = $"{Constants.Fields.FieldPrefix}{dateTimeOffsetExactFilter.FieldName}_{Constants.Fields.DateTimeOffsets}";
                     searchQuery.AddExactFilter(dateTimeOffsetExactFieldName, dateTimeOffsetExactFilter.ToDateTimeExactFilter());
                     break;
             }
@@ -124,28 +124,28 @@ public class Searcher : ISearcher
             switch (facet)
             {
                 case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
-                    searchQuery.WithFacets(facets => facets.FacetLongRange($"Umb_{dateTimeOffsetRangeFacet.FieldName}_datetimeoffsets", dateTimeOffsetRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min?.Ticks ?? DateTime.MinValue.Ticks, true, x.Max?.Ticks ?? DateTime.MaxValue.Ticks, true)).ToArray()));
+                    searchQuery.WithFacets(facets => facets.FacetLongRange($"{Constants.Fields.FieldPrefix}{dateTimeOffsetRangeFacet.FieldName}_{Constants.Fields.DateTimeOffsets}", dateTimeOffsetRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min?.Ticks ?? DateTime.MinValue.Ticks, true, x.Max?.Ticks ?? DateTime.MaxValue.Ticks, true)).ToArray()));
                     break;
                 case DecimalExactFacet decimalExactFacet:
-                    searchQuery.WithFacets(facets => facets.FacetString($"Umb_{decimalExactFacet.FieldName}_decimals"));
+                    searchQuery.WithFacets(facets => facets.FacetString($"{Constants.Fields.FieldPrefix}{decimalExactFacet.FieldName}_{Constants.Fields.Decimals}"));
                     break;
                 case IntegerRangeFacet integerRangeFacet:
-                    searchQuery.WithFacets(facets => facets.FacetLongRange($"Umb_{integerRangeFacet.FieldName}_integers", integerRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min ?? 0, true, x.Max ?? int.MaxValue, true)).ToArray()));
+                    searchQuery.WithFacets(facets => facets.FacetLongRange($"{Constants.Fields.FieldPrefix}{integerRangeFacet.FieldName}_{Constants.Fields.Integers}", integerRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min ?? 0, true, x.Max ?? int.MaxValue, true)).ToArray()));
                     break;
                 case KeywordFacet keywordFacet:
-                    searchQuery.WithFacets(facets => facets.FacetString($"Umb_{keywordFacet.FieldName}_texts"));
+                    searchQuery.WithFacets(facets => facets.FacetString($"{Constants.Fields.FieldPrefix}{keywordFacet.FieldName}_{Constants.Fields.Texts}"));
                     break;
                 case IntegerExactFacet integerExactFacet:
-                    searchQuery.WithFacets(facets => facets.FacetString($"Umb_{integerExactFacet.FieldName}_integers"));
+                    searchQuery.WithFacets(facets => facets.FacetString($"{Constants.Fields.FieldPrefix}{integerExactFacet.FieldName}_{Constants.Fields.Integers}"));
                     break;
                 case DecimalRangeFacet decimalRangeFacet:
                 {
                     var doubleRanges = decimalRangeFacet.Ranges.Select(x => new DoubleRange(x.Key, decimal.ToDouble(x.Min ?? 0) , true, decimal.ToDouble(x.Max ?? 0), true)).ToArray();
-                    searchQuery.WithFacets(facets => facets.FacetDoubleRange($"Umb_{facet.FieldName}_decimals", doubleRanges));
+                    searchQuery.WithFacets(facets => facets.FacetDoubleRange($"{Constants.Fields.FieldPrefix}{facet.FieldName}_{Constants.Fields.Decimals}", doubleRanges));
                     break;
                 }
                 case DateTimeOffsetExactFacet dateTimeOffsetExactFacet:
-                    searchQuery.WithFacets(facets => facets.FacetString($"Umb_{dateTimeOffsetExactFacet.FieldName}_datetimeoffsets"));
+                    searchQuery.WithFacets(facets => facets.FacetString($"{Constants.Fields.FieldPrefix}{dateTimeOffsetExactFacet.FieldName}_{Constants.Fields.DateTimeOffsets}"));
                     break;
             }
         }
@@ -154,7 +154,7 @@ public class Searcher : ISearcher
     private Document? MapToDocument(ISearchResult item)
     {
         // We have to get the Id out, as the key is culture specific
-        if(Guid.TryParse(item.Values.Where(x => x.Key == "Umb_Id_keywords").Select(x => x.Value).First(), out var id) is false)
+        if(Guid.TryParse(item.Values.Where(x => x.Key == $"{Constants.Fields.FieldPrefix}Id_{Constants.Fields.Keywords}").Select(x => x.Value).First(), out var id) is false)
         {
             return null;
         }

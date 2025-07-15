@@ -21,19 +21,19 @@ public static class UmbracoBuilderExtensions
         
         builder.Services.ConfigureOptions<ConfigureIndexOptions>();
         
-        builder.Services.AddExamineLuceneIndex(Constants.IndexAliases.DraftContent, configuration =>
+        builder.Services.AddExamineLuceneIndex(Search.Core.Constants.IndexAliases.DraftContent, configuration =>
         {
         });     
         
-        builder.Services.AddExamineLuceneIndex(Constants.IndexAliases.PublishedContent, configuration =>
+        builder.Services.AddExamineLuceneIndex(Search.Core.Constants.IndexAliases.PublishedContent, configuration =>
         {
         });      
         
-        builder.Services.AddExamineLuceneIndex(Constants.IndexAliases.DraftMedia, configuration =>
+        builder.Services.AddExamineLuceneIndex(Search.Core.Constants.IndexAliases.DraftMedia, configuration =>
         {
         });     
         
-        builder.Services.AddExamineLuceneIndex(Constants.IndexAliases.DraftMembers, configuration =>
+        builder.Services.AddExamineLuceneIndex(Search.Core.Constants.IndexAliases.DraftMembers, configuration =>
         {
         });
         
@@ -43,10 +43,10 @@ public static class UmbracoBuilderExtensions
         
         builder.Services.Configure<IndexOptions>(options =>
         {
-            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<IIndexer, ISearcher, IPublishedContentChangeStrategy>(Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
-            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
+            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(Search.Core.Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IIndexer, ISearcher, IPublishedContentChangeStrategy>(Search.Core.Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(Search.Core.Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
+            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(Search.Core.Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
         });
 
         return builder;
