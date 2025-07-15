@@ -7,6 +7,7 @@ using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
+using Umbraco.Cms.Search.Provider.Examine.Extensions;
 using Umbraco.Cms.Search.Provider.Examine.Mapping;
 using Umbraco.Extensions;
 using FacetResult = Umbraco.Cms.Search.Core.Models.Searching.Faceting.FacetResult;
@@ -86,128 +87,28 @@ public class Searcher : ISearcher
                     }
                     break;
                 case IntegerRangeFilter integerRangeFilter:
-                    if (integerRangeFilter.Negate)
-                    {
-                        foreach (var integerRange in integerRangeFilter.Ranges)
-                        {
-                            searchQuery.Not().RangeQuery([$"Umb_{integerRangeFilter.FieldName}_integers"], integerRange.MinimumValue, integerRange.MaximumValue);
-                        }
-                    }
-                    else
-                    {
-                        var integerRanges = integerRangeFilter.Ranges;
-                        searchQuery.And().Group(query =>
-                        {
-                            var rangeQuery = query.RangeQuery([$"Umb_{integerRangeFilter.FieldName}_integers"], integerRanges[0].MinimumValue, integerRanges[0].MaximumValue);
-                            for (int i = 1; i < integerRanges.Length; i++)
-                            {
-                                rangeQuery.Or().RangeQuery([$"Umb_{integerRangeFilter.FieldName}_integers"], integerRanges[i].MinimumValue, integerRanges[i].MaximumValue);
-                            }
-
-                            return rangeQuery;
-                        });
-  
-                    }
+                    var integerRangeFieldName = $"Umb_{integerRangeFilter.FieldName}_integers";
+                    searchQuery.AddRangeFilter(integerRangeFieldName, integerRangeFilter.ToNonNullableRangeFilter());
                     break;
                 case IntegerExactFilter integerExactFilter:
-                    if (integerExactFilter.Negate)
-                    {
-                        foreach (var integerFilterValue in integerExactFilter.Values)
-                        {
-                            searchQuery.Not().Group(query => query.Field($"Umb_{integerExactFilter.FieldName}_integers", integerFilterValue));
-                        }
-                    }
-                    else
-                    {
-                        foreach (var integerFilterValue in integerExactFilter.Values)
-                        {
-                            searchQuery.And().Group(query => query.Field($"Umb_{integerExactFilter.FieldName}_integers", integerFilterValue));
-                        }
-                    }
+                    var integerExactFieldName = $"Umb_{integerExactFilter.FieldName}_integers";
+                    searchQuery.AddExactFilter(integerExactFieldName, integerExactFilter);
                     break;
                 case DecimalRangeFilter decimalRangeFilter:
-                    if (decimalRangeFilter.Negate)
-                    {
-                        foreach (var decimalRange in decimalRangeFilter.Ranges)
-                        {
-                            searchQuery.Not().RangeQuery([$"Umb_{decimalRangeFilter.FieldName}_decimals"], (double?)decimalRange.MinimumValue, (double?)decimalRange.MaximumValue);
-                        }
-                    }
-                    else
-                    {
-                        // Examine does not support decimals out of the box, so we convert to double, we might loose some precision here (after 17 digits).
-                        var decimalRanges = decimalRangeFilter.Ranges;
-
-                        searchQuery.And().Group(query =>
-                        {
-                            var rangeQuery = query.RangeQuery([$"Umb_{decimalRangeFilter.FieldName}_decimals"], (double?)decimalRanges[0].MinimumValue, (double?)decimalRanges[0].MaximumValue);
-                            for (int i = 1; i < decimalRanges.Length; i++)
-                            {
-                                rangeQuery.Or().RangeQuery([$"Umb_{decimalRangeFilter.FieldName}_decimals"], (double?)decimalRanges[i].MinimumValue, (double?)decimalRanges[i].MaximumValue);
-                            }
-
-                            return rangeQuery;
-                        });
-                    }
+                    var decimalRangeFieldName = $"Umb_{decimalRangeFilter.FieldName}_decimals";
+                    searchQuery.AddRangeFilter(decimalRangeFieldName, decimalRangeFilter.ToNonNullableRangeFilter());
                     break;
                 case DecimalExactFilter decimalExactFilter:
-                    if (decimalExactFilter.Negate)
-                    {
-                        foreach (var decimalFilterValue in decimalExactFilter.Values)
-                        {
-                            // Examine does not support decimals out of the box, so convert to double, we might loose some precision here (after 17 digits).
-                            searchQuery.Not().Group(query => query.Field($"Umb_{decimalExactFilter.FieldName}_decimals", (double)decimalFilterValue));
-                        }
-                    }
-                    else
-                    {
-                        foreach (var decimalFilterValue in decimalExactFilter.Values)
-                        {
-                            // Examine does not support decimals out of the box, so convert to double, we might loose some precision here (after 17 digits).
-                            searchQuery.And().Group(query => query.Field($"Umb_{decimalExactFilter.FieldName}_decimals", (double)decimalFilterValue));
-                        }
-                    }
+                    var decimalExactFieldName = $"Umb_{decimalExactFilter.FieldName}_decimals";
+                    searchQuery.AddExactFilter(decimalExactFieldName, decimalExactFilter.ToDoubleExactFilter());
                     break;
                 case DateTimeOffsetRangeFilter dateTimeOffsetRangeFilter:
-                    if (dateTimeOffsetRangeFilter.Negate)
-                    {
-                        foreach (var decimalRange in dateTimeOffsetRangeFilter.Ranges)
-                        {
-                            searchQuery.Not().RangeQuery([$"Umb_{dateTimeOffsetRangeFilter.FieldName}_datetimeoffsets"], decimalRange.MinimumValue?.DateTime, decimalRange.MaximumValue?.DateTime);
-                        }
-                    }
-                    else
-                    {
-                        // Examine does not support decimals out of the box, so we convert to double, we might loose some precision here (after 17 digits).
-                        var decimalRanges = dateTimeOffsetRangeFilter.Ranges;
-
-                        searchQuery.And().Group(query =>
-                        {
-                            var rangeQuery = query.RangeQuery([$"Umb_{dateTimeOffsetRangeFilter.FieldName}_datetimeoffsets"], decimalRanges[0].MinimumValue?.DateTime, decimalRanges[0].MaximumValue?.DateTime);
-                            for (int i = 1; i < decimalRanges.Length; i++)
-                            {
-                                rangeQuery.Or().RangeQuery([$"Umb_{dateTimeOffsetRangeFilter.FieldName}_datetimeoffsets"], decimalRanges[i].MinimumValue?.DateTime, decimalRanges[i].MaximumValue?.DateTime);
-                            }
-
-                            return rangeQuery;
-                        });
-                    }
+                    var dateTimeOffsetRangeFieldName = $"Umb_{dateTimeOffsetRangeFilter.FieldName}_datetimeoffsets";
+                    searchQuery.AddRangeFilter(dateTimeOffsetRangeFieldName, dateTimeOffsetRangeFilter.ToNonNullableRangeFilter());
                     break;
                 case DateTimeOffsetExactFilter dateTimeOffsetExactFilter:
-                    if (dateTimeOffsetExactFilter.Negate)
-                    {
-                        foreach (var dateTimeOffsetFilterValue in dateTimeOffsetExactFilter.Values)
-                        {
-                            searchQuery.Not().Group(query => query.Field($"Umb_{dateTimeOffsetExactFilter.FieldName}_datetimeoffsets", dateTimeOffsetFilterValue.DateTime));
-                        }
-                    }
-                    else
-                    {
-                        foreach (var dateTimeOffsetFilterValue in dateTimeOffsetExactFilter.Values)
-                        {
-                            searchQuery.And().Group(query => query.Field($"Umb_{dateTimeOffsetExactFilter.FieldName}_datetimeoffsets", dateTimeOffsetFilterValue.DateTime));
-                        }
-                    }
+                    var dateTimeOffsetExactFieldName = $"Umb_{dateTimeOffsetExactFilter.FieldName}_datetimeoffsets";
+                    searchQuery.AddExactFilter(dateTimeOffsetExactFieldName, dateTimeOffsetExactFilter.ToDateTimeExactFilter());
                     break;
             }
         }
