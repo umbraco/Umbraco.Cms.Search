@@ -17,8 +17,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Umbraco.Cms.Search.BackOffi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Umbraco.Test.Search.Unit", "Umbraco.Test.Search.Unit\Umbraco.Test.Search.Unit.csproj", "{3A41AECF-F50C-4DE3-9A74-732C9CDD03F8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Umbraco.Test.Search.Examine.Unit", "Umbraco.Test.Search.Examine.Unit\Umbraco.Test.Search.Examine.Unit.csproj", "{0A7AB631-B7C1-4C35-8080-BCC6A5675678}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Umbraco.Test.Search.Examine.Integration", "Umbraco.Test.Search.Examine.Integration\Umbraco.Test.Search.Examine.Integration.csproj", "{57D9EF59-CE06-49DD-9229-C1005EEC3E9E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Umbraco.Cms.Search.Provider.Examine", "Umbraco.Cms.Search.Provider.Examine\Umbraco.Cms.Search.Provider.Examine.csproj", "{DB4C592E-C57E-424E-8E46-C0CBE77E35D0}"
@@ -120,18 +118,6 @@ Global
 		{3A41AECF-F50C-4DE3-9A74-732C9CDD03F8}.Release|x64.Build.0 = Release|Any CPU
 		{3A41AECF-F50C-4DE3-9A74-732C9CDD03F8}.Release|x86.ActiveCfg = Release|Any CPU
 		{3A41AECF-F50C-4DE3-9A74-732C9CDD03F8}.Release|x86.Build.0 = Release|Any CPU
-		{0A7AB631-B7C1-4C35-8080-BCC6A5675678}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0A7AB631-B7C1-4C35-8080-BCC6A5675678}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0A7AB631-B7C1-4C35-8080-BCC6A5675678}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{0A7AB631-B7C1-4C35-8080-BCC6A5675678}.Debug|x64.Build.0 = Debug|Any CPU
-		{0A7AB631-B7C1-4C35-8080-BCC6A5675678}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{0A7AB631-B7C1-4C35-8080-BCC6A5675678}.Debug|x86.Build.0 = Debug|Any CPU
-		{0A7AB631-B7C1-4C35-8080-BCC6A5675678}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0A7AB631-B7C1-4C35-8080-BCC6A5675678}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0A7AB631-B7C1-4C35-8080-BCC6A5675678}.Release|x64.ActiveCfg = Release|Any CPU
-		{0A7AB631-B7C1-4C35-8080-BCC6A5675678}.Release|x64.Build.0 = Release|Any CPU
-		{0A7AB631-B7C1-4C35-8080-BCC6A5675678}.Release|x86.ActiveCfg = Release|Any CPU
-		{0A7AB631-B7C1-4C35-8080-BCC6A5675678}.Release|x86.Build.0 = Release|Any CPU
 		{57D9EF59-CE06-49DD-9229-C1005EEC3E9E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{57D9EF59-CE06-49DD-9229-C1005EEC3E9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{57D9EF59-CE06-49DD-9229-C1005EEC3E9E}.Debug|x64.ActiveCfg = Debug|Any CPU
