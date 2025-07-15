@@ -256,6 +256,66 @@ public class InvariantFilterTests : SearcherTestBase
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
     
+    [TestCase(1, true)]
+    [TestCase(2, false)]
+    public async Task CanFilterByOneDatetimeOffsetRange(int expectedCount, bool negate)
+    {
+        CreateInvariantDocumentTree(false);
+    
+        var indexAlias = GetIndexAlias(false);
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { new DateTimeOffsetRangeFilter("datetime", [new FilterRange<DateTimeOffset?>(new DateTimeOffset(new DateTime(2025, 01, 01)), new DateTimeOffset(new DateTime(2025, 12, 31)))], negate) },
+            null, null, null, null, null,
+            0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
+    }
+    
+    [TestCase(0, true)]
+    [TestCase(3, false)]
+    public async Task CanFilterByDatetimeOffsetRangeWithMaxAndMinNull(int expectedCount, bool negate)
+    {
+        CreateInvariantDocumentTree(false);
+    
+        var indexAlias = GetIndexAlias(false);
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { new DateTimeOffsetRangeFilter("datetime", [new FilterRange<DateTimeOffset?>(null, null)], negate) },
+            null, null, null, null, null,
+            0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
+    }
+    
+    [TestCase(0, true)]
+    [TestCase(3, false)]
+    public async Task CanFilterByMultipleDatetimeOffsetRanges(int expectedCount, bool negate)
+    {
+        CreateInvariantDocumentTree(false);
+    
+        var indexAlias = GetIndexAlias(false);
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { 
+                new DateTimeOffsetRangeFilter("datetime", [
+                new FilterRange<DateTimeOffset?>(new DateTimeOffset(new DateTime(2023, 01, 01)), new DateTimeOffset(new DateTime(2024, 12, 31))),
+                new FilterRange<DateTimeOffset?>(new DateTimeOffset(new DateTime(2025, 01, 01)), new DateTimeOffset(new DateTime(2025, 12, 31)))
+                ],
+                negate)
+            },
+            null, null, null, null, null,
+            0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
+    }
+    
     private void CreateInvariantDocumentTree(bool publish)
     {
         var dataType = new DataTypeBuilder()
@@ -353,7 +413,7 @@ public class InvariantFilterTests : SearcherTestBase
                 {
                     title = "The grandchild title",
                     count = 100,
-                    datetime = new DateTime(2025, 06, 07),
+                    datetime = new DateTime(2024, 06, 07),
                     decimalproperty = 1.11111m
                 })
             .Build();

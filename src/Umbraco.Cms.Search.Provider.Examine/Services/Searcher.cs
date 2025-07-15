@@ -185,6 +185,39 @@ public class Searcher : ISearcher
                         }
                     }
                     break;
+                case DateTimeOffsetRangeFilter dateTimeOffsetRangeFilter:
+                    if (dateTimeOffsetRangeFilter.Negate)
+                    {
+                        foreach (var decimalRange in dateTimeOffsetRangeFilter.Ranges)
+                        {
+                            searchQuery.Not().RangeQuery<DateTime>([$"Umb_{dateTimeOffsetRangeFilter.FieldName}_datetimeoffsets"], decimalRange.MinimumValue?.DateTime, decimalRange.MaximumValue?.DateTime);
+                        }
+                    }
+                    else
+                    {
+                        // Examine does not support decimals out of the box, so we convert to double, we might loose some precision here (after 17 digits).
+                        var decimalRanges = dateTimeOffsetRangeFilter.Ranges;
+
+                        if (decimalRanges.Length == 1)
+                        {
+                            var integerRange = decimalRanges[0];
+                            searchQuery.And().RangeQuery<DateTime>([$"Umb_{dateTimeOffsetRangeFilter.FieldName}_datetimeoffsets"], integerRange.MinimumValue?.DateTime, integerRange.MaximumValue?.DateTime);
+                        }
+                        else
+                        {
+                            searchQuery.And().Group(query =>
+                            {
+                                var rangeQuery = query.RangeQuery<DateTime>([$"Umb_{dateTimeOffsetRangeFilter.FieldName}_datetimeoffsets"], decimalRanges[0].MinimumValue?.DateTime, decimalRanges[0].MaximumValue?.DateTime);
+                                for (int i = 1; i < decimalRanges.Length; i++)
+                                {
+                                    rangeQuery.Or().RangeQuery<DateTime>([$"Umb_{dateTimeOffsetRangeFilter.FieldName}_datetimeoffsets"], decimalRanges[i].MinimumValue?.DateTime, decimalRanges[i].MaximumValue?.DateTime);
+                                }
+
+                                return rangeQuery;
+                            });
+                        }
+                    }
+                    break;
                 case DateTimeOffsetExactFilter dateTimeOffsetExactFilter:
                     if (dateTimeOffsetExactFilter.Negate)
                     {
