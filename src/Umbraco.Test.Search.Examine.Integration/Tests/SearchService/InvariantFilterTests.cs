@@ -316,6 +316,28 @@ public class InvariantFilterTests : SearcherTestBase
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
     
+    [TestCase(1, true)]
+    [TestCase(2, false)]
+    public async Task CanFilterByMultipleExactFilters(int expectedCount, bool negate)
+    {
+        CreateInvariantDocumentTree(false);
+    
+        var indexAlias = GetIndexAlias(false);
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { 
+                new DateTimeOffsetExactFilter("datetime", [ new DateTime(2025, 06, 06)], negate),
+                new DecimalExactFilter("decimalproperty", [DecimalValue], negate),
+                new IntegerExactFilter("count", [12], negate)
+            },
+            null, null, null, null, null,
+            0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
+    }
+    
     private void CreateInvariantDocumentTree(bool publish)
     {
         var dataType = new DataTypeBuilder()

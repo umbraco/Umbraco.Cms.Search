@@ -84,10 +84,13 @@ public class Searcher : ISearcher
                     }
                     else
                     {
-                        searchQuery.And().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", textFilterValue);
-                        searchQuery.And().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR1}", textFilterValue.Boost(30));
-                        searchQuery.And().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR2}", textFilterValue.Boost(20));
-                        searchQuery.And().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR3}", textFilterValue.Boost(10));
+                        searchQuery.And().Group(nestedQuery =>
+                        {
+                            var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", textFilterValue);
+                            fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR1}", textFilterValue.Boost(30));
+                            fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR2}", textFilterValue.Boost(20));
+                            return fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR3}", textFilterValue.Boost(10));
+                        });
                     }
                     break;
                 case IntegerRangeFilter integerRangeFilter:
