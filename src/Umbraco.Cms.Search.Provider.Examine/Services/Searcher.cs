@@ -134,6 +134,39 @@ public class Searcher : ISearcher
                         }
                     }
                     break;
+                case DecimalRangeFilter decimalRangeFilter:
+                    if (decimalRangeFilter.Negate)
+                    {
+                        foreach (var decimalRange in decimalRangeFilter.Ranges)
+                        {
+                            searchQuery.Not().RangeQuery<double>([$"Umb_{decimalRangeFilter.FieldName}_decimals"], (double?)decimalRange.MinimumValue, (double?)decimalRange.MaximumValue);
+                        }
+                    }
+                    else
+                    {
+                        // Examine does not support decimals out of the box, so we convert to double, we might loose some precision here (after 17 digits).
+                        var decimalRanges = decimalRangeFilter.Ranges;
+
+                        if (decimalRanges.Length == 1)
+                        {
+                            var integerRange = decimalRanges[0];
+                            searchQuery.And().RangeQuery<double>([$"Umb_{decimalRangeFilter.FieldName}_decimals"], (double?)integerRange.MinimumValue, (double?)integerRange.MaximumValue);
+                        }
+                        else
+                        {
+                            searchQuery.And().Group(query =>
+                            {
+                                var rangeQuery = query.RangeQuery<double>([$"Umb_{decimalRangeFilter.FieldName}_decimals"], (double?)decimalRanges[0].MinimumValue, (double?)decimalRanges[0].MaximumValue);
+                                for (int i = 1; i < decimalRanges.Length; i++)
+                                {
+                                    rangeQuery.Or().RangeQuery<double>([$"Umb_{decimalRangeFilter.FieldName}_decimals"], (double?)decimalRanges[i].MinimumValue, (double?)decimalRanges[i].MaximumValue);
+                                }
+
+                                return rangeQuery;
+                            });
+                        }
+                    }
+                    break;
                 case DecimalExactFilter decimalExactFilter:
                     if (decimalExactFilter.Negate)
                     {

@@ -94,6 +94,24 @@ public class InvariantFilterTests : SearcherTestBase
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
     
+    [TestCase(0, true)]
+    [TestCase(3, false)]
+    public async Task CanFilterByIntegerRangeMinAndMaxNull(int expectedCount, bool negate)
+    {
+        CreateInvariantDocumentTree(false);
+    
+        var indexAlias = GetIndexAlias(false);
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { new IntegerRangeFilter("count", [new FilterRange<int?>(null, null)], negate) },
+            null, null, null, null, null,
+            0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
+    }
+    
     [TestCase(1, true)]
     [TestCase(2, false)]
     public async Task CanFilterByOneIntegerRange(int expectedCount, bool negate)
@@ -142,6 +160,60 @@ public class InvariantFilterTests : SearcherTestBase
             indexAlias,
             null,
             new List<Filter> { new IntegerExactFilter("count", [12], negate) },
+            null, null, null, null, null,
+            0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
+    }
+    
+    [TestCase(1, true)]
+    [TestCase(2, false)]
+    public async Task CanFilterByOneDecimalRange(int expectedCount, bool negate)
+    {
+        CreateInvariantDocumentTree(false);
+    
+        var indexAlias = GetIndexAlias(false);
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { new DecimalRangeFilter("decimalproperty", [new FilterRange<decimal?>(10m, 50m)], negate) },
+            null, null, null, null, null,
+            0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
+    }
+    
+    [TestCase(0, true)]
+    [TestCase(3, false)]
+    public async Task CanFilterByDecimalRangeWithMaxAndMinNull(int expectedCount, bool negate)
+    {
+        CreateInvariantDocumentTree(false);
+    
+        var indexAlias = GetIndexAlias(false);
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { new DecimalRangeFilter("decimalproperty", [new FilterRange<decimal?>(null, null)], negate) },
+            null, null, null, null, null,
+            0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
+    }
+    
+    [TestCase(0, true)]
+    [TestCase(3, false)]
+    public async Task CanFilterByMultipleDecimalRanges(int expectedCount, bool negate)
+    {
+        CreateInvariantDocumentTree(false);
+    
+        var indexAlias = GetIndexAlias(false);
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { new DecimalRangeFilter("decimalproperty", [new FilterRange<decimal?>(0m, 2m), new FilterRange<decimal?>(5m, 200m)], negate) },
             null, null, null, null, null,
             0, 100);
 
