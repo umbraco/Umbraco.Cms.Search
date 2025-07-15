@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Globalization;
-using Examine;
+﻿using Examine;
 using Examine.Search;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Searching;
@@ -73,14 +71,14 @@ public class Searcher : ISearcher
             {
                 case KeywordFilter keywordFilter:
                     var keywordFilterValue = string.Join(" ", keywordFilter.Values);
+                    var keywordFieldName = keywordFilter.FieldName.StartsWith(Constants.Fields.FieldPrefix) ? $"{keywordFilter.FieldName}_{Constants.Fields.Keywords}" : $"{Constants.Fields.FieldPrefix}{keywordFilter.FieldName}_{Constants.Fields.Keywords}";
                     if (keywordFilter.Negate)
                     {
-                        searchQuery.Not().Field($"{keywordFilter.FieldName}_{Constants.Fields.Keywords}", keywordFilterValue);
+                        searchQuery.Not().Field(keywordFieldName, keywordFilterValue);
                     }
                     else
                     {
-                        var field = keywordFilter.FieldName.StartsWith(Constants.Fields.FieldPrefix) ? $"{keywordFilter.FieldName}_{Constants.Fields.Keywords}" : $"{Constants.Fields.FieldPrefix}{keywordFilter.FieldName}_{Constants.Fields.Keywords}";
-                        searchQuery.And().Field(field, string.Join(" ", keywordFilterValue));
+                        searchQuery.And().Field(keywordFieldName, string.Join(" ", keywordFilterValue));
                     }
                     break;
                 case TextFilter textFilter:

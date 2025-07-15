@@ -1,0 +1,92 @@
+﻿using NUnit.Framework;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
+using Umbraco.Cms.Tests.Common.Builders;
+using Umbraco.Cms.Tests.Common.Builders.Extensions;
+
+namespace Umbraco.Test.Search.Examine.Integration.Tests.SearchService;
+
+public class VariantFilterTest : SearcherTestBase
+{
+    
+
+    [TestCase("en-US", true, 0)]
+    [TestCase("en-US", false, 1)]
+    [TestCase("da-DK", true, 0)]
+    [TestCase("da-DK", false, 1)]
+    [TestCase("ja-JP", true, 0)]
+    [TestCase("ja-JP", false, 1)]
+    public async Task CanFilterByPathIds(string culture, bool negate, int expectedCount)
+    {
+        var indexAlias = GetIndexAlias(false);
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { new KeywordFilter("Id", [RootKey.ToString()], negate)},
+            null, null, culture, null, null,
+            0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
+    }
+    
+    [SetUp]
+    public void CreateVariantDocument()
+    {
+        var langDk = new LanguageBuilder()
+            .WithCultureInfo("da-DK")
+            .WithIsDefault(true)
+            .Build();
+        var langJp = new LanguageBuilder()
+            .WithCultureInfo("ja-JP")
+            .Build();
+
+        LocalizationService.Save(langDk);
+        LocalizationService.Save(langJp);
+
+        var contentType = new ContentTypeBuilder()
+            .WithAlias("variant")
+            .WithContentVariation(ContentVariation.CultureAndSegment)
+            .AddPropertyType()
+            .WithAlias("title")
+            .WithVariations(ContentVariation.Culture)
+            .WithDataTypeId(Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("body")
+            .WithVariations(ContentVariation.CultureAndSegment)
+            .WithDataTypeId(Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .Done()
+            .Build();
+        ContentTypeService.Save(contentType);
+        
+        var root = new ContentBuilder()
+            .WithKey(RootKey)
+            .WithContentType(contentType)
+            .WithCultureName("en-US", "Name")
+            .WithCultureName("da-DK", "Navn")
+            .WithCultureName("ja-JP", "名前")
+            .Build();
+        
+        root.SetValue("title", "Root", "en-US");
+        root.SetValue("title", "Rod", "da-DK");
+        root.SetValue("title", "ル-ト", "ja-JP");
+        
+        root.SetValue("body", "body-segment-1", "en-US", "segment-1");
+        root.SetValue("body", "body-segment-2", "en-US", "segment-2");
+        root.SetValue("body", "krop-segment-1", "da-DK", "segment-1");
+        root.SetValue("body", "krop-segment-2", "da-DK", "segment-2");
+        root.SetValue("body", "ボディ-segment-1", "ja-JP", "segment-1");
+        root.SetValue("body", "ボディ-segment-2", "ja-JP", "segment-2");
+
+        ContentService.Save(root);
+        ContentService.Publish(root, new []{ "*"});
+        Thread.Sleep(3000);
+        
+        var content = ContentService.GetById(RootKey);
+        Assert.That(content, Is.Not.Null);
+    }
+}
