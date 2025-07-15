@@ -112,63 +112,63 @@ public class Indexer : IIndexer
         {
             if (field.Value.Integers?.Any() ?? false)
             {
-                result.Add(CalculateFieldName(field, "integers"), field.Value.Integers);
+                result.Add(CalculateFieldName(field, Constants.Fields.Integers), field.Value.Integers);
             }
             
             if (field.Value.Keywords?.Any() ?? false)
             {
-                result.Add(CalculateFieldName(field, "keywords"), field.Value.Keywords);
+                result.Add(CalculateFieldName(field, Constants.Fields.Keywords), field.Value.Keywords);
                 aggregatedTexts.AddRange(field.Value.Keywords);
             }
             
             if (field.Value.Decimals?.Any() ?? false)
             {
-                result.Add(CalculateFieldName(field, "decimals"), field.Value.Decimals);
+                result.Add(CalculateFieldName(field, Constants.Fields.Decimals), field.Value.Decimals);
             }
             
             if (field.Value.DateTimeOffsets?.Any() ?? false)
             {
                 // We have to use DateTime here, as examine facets does not play nice with DatetimeOffsets for now.
-                result.Add(CalculateFieldName(field, "datetimeoffsets"), field.Value.DateTimeOffsets.First().DateTime);
+                result.Add(CalculateFieldName(field, Constants.Fields.DateTimeOffsets), field.Value.DateTimeOffsets.First().DateTime);
             }
             if (field.Value.Texts?.Any() ?? false)
             {
-                result.Add(CalculateFieldName(field, "texts"), field.Value.Texts);
+                result.Add(CalculateFieldName(field, Constants.Fields.Texts), field.Value.Texts);
                 aggregatedTexts.AddRange(field.Value.Texts);
             }            
             
             if (field.Value.TextsR1?.Any() ?? false)
             {
-                result.Add(CalculateFieldName(field, "textsr1"), field.Value.TextsR1);
+                result.Add(CalculateFieldName(field, Constants.Fields.TextsR1), field.Value.TextsR1);
                 aggregatedTexts.AddRange(field.Value.TextsR1);
             }
             
             if (field.Value.TextsR2?.Any() ?? false)
             {
-                result.Add(CalculateFieldName(field, "textsr2"), field.Value.TextsR2);
+                result.Add(CalculateFieldName(field, Constants.Fields.TextsR2), field.Value.TextsR2);
                 aggregatedTexts.AddRange(field.Value.TextsR2);
             }
             
             if (field.Value.TextsR3?.Any() ?? false)
             {
-                result.Add(CalculateFieldName(field, "textsr3"), field.Value.TextsR3);
+                result.Add(CalculateFieldName(field, Constants.Fields.TextsR3), field.Value.TextsR3);
                 aggregatedTexts.AddRange(field.Value.TextsR3);
             }
         }
         
         if (aggregatedTexts.Any())
         {
-            result.Add("Umb_aggregated_texts", aggregatedTexts.ToArray());
+            result.Add($"{Constants.Fields.FieldPrefix}aggregated_texts", aggregatedTexts.ToArray());
         }
 
         if (protection is not null)
         {
-            result.Add("Umb_protection", protection.AccessIds);
+            result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}", protection.AccessIds);
         }
 
         // Cannot add null values, so we have to just say "none" here, so we can filter on variant / invariant content
-        result.Add("Umb_culture", culture ?? "none");
-        result.Add("Umb_segment", segment ?? "none");
+        result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}", culture ?? "none");
+        result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}", segment ?? "none");
 
 
         return result;
@@ -177,9 +177,9 @@ public class Indexer : IIndexer
     private string CalculateFieldName(IndexField field, string property)
     {
         var result = $"{field.FieldName}";
-        if (result.StartsWith("Umb_") is false)
+        if (result.StartsWith(Constants.Fields.FieldPrefix) is false)
         {
-            result = "Umb_" + result;
+            result = Constants.Fields.FieldPrefix + result;
         }
         return result + $"_{property}";
     }
