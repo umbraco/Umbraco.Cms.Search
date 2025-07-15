@@ -70,7 +70,7 @@ public class InvariantDocumentTests : SearcherTestBase
     [TestCase("count", 12, true)]
     [TestCase("decimalproperty", 1.45, false)]
     [TestCase("decimalproperty", 1.45, true)]
-    public async Task CanIndexUpdatedProperties(string propertyName, object updatedValue, bool publish)
+    public async Task CanSearchUpdatedProperties(string propertyName, object updatedValue, bool publish)
     {
         UpdateProperty(propertyName, updatedValue, publish);
 
@@ -80,6 +80,16 @@ public class InvariantDocumentTests : SearcherTestBase
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
+    
+    // [Test]
+    // public async Task CanSearchUpdatedDateTime()
+    // {
+    //     var indexAlias = GetIndexAlias(publish);
+    //
+    //     var results = await Searcher.SearchAsync(indexAlias, updatedValue.ToString(), null, null, null, null, null, null, 0, 100);
+    //     Assert.That(results.Total, Is.EqualTo(1));
+    //     Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
+    // }
     
     [SetUp]
     public void CreateInvariantDocument()

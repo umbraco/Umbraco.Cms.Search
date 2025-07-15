@@ -38,8 +38,18 @@ public class Searcher : ISearcher
         var searchQuery = index.Searcher.CreateQuery().NativeQuery($"+(+{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}:\"{culture ?? "none"}\")").And().NativeQuery($"+(+{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}:\"{segment ?? "none"}\")");
         if (query is not null)
         {
-            // We have to do to lower on all queries.
-            searchQuery.And().ManagedQuery(culture is null ? query.ToLowerInvariant() : query.ToLower(new CultureInfo(culture)));
+            // This is super hacky, but native queries does NOT work with valuetypes such as integer / decimal
+            // therefore we have to try and parse the query as those, and if they are, do a managed query instead.
+            if (decimal.TryParse(query, out _) || int.TryParse(query, out _))
+            {
+                searchQuery.And().ManagedQuery(query);
+            }
+            else
+            {
+                // We cannot do a managed query here, as it will not work on queries in other cultures (like japanese).
+                searchQuery.And().NativeQuery(query);
+            }
+
         }
         
         // Add facets and filters
