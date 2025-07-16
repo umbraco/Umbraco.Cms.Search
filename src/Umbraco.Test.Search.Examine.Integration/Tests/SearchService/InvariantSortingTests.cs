@@ -32,6 +32,7 @@ public class InvariantSortingTests : SearcherTestBase
             null,
             0, 
             100);
+        
         Assert.Multiple(() =>
         {
             var documents = result.Documents.ToArray();
@@ -62,6 +63,7 @@ public class InvariantSortingTests : SearcherTestBase
             null,
             0, 
             100);
+        
         Assert.Multiple(() =>
         {
             var documents = result.Documents.ToArray();
@@ -71,7 +73,41 @@ public class InvariantSortingTests : SearcherTestBase
                 Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
             }
         });
-    }  
+    }
+    
+    [TestCase(true, Direction.Descending)]
+    [TestCase(false, Direction.Ascending)]
+    public async Task CanSortDateTimeOffsets(bool publish, Direction direction)
+    {
+        DateTime[] dateTimes = [new(2025, 06, 06), new(2025, 02, 01), new(2024, 01, 01), new(2019, 01, 01), new(2000, 01, 01), new(2003, 01, 01)];
+        
+        var keys = (await CreateDatetimeDocuments(dateTimes)).OrderBy(x => x.Value, direction).ToArray();
+        
+        var indexAlias = GetIndexAlias(publish);
+        var result = await Searcher.SearchAsync(
+            indexAlias,
+            null, 
+            [new DateTimeOffsetRangeFilter("datetime", [new FilterRange<DateTimeOffset?>(null, null)], false)],
+            null, 
+            [new DateTimeOffsetSorter("datetime", direction)],
+            null,
+            null, 
+            null,
+            0, 
+            100);
+        
+        Assert.Multiple(() =>
+        {
+            var documents = result.Documents.ToArray();
+            Assert.That(documents, Is.Not.Empty);
+            for (int i = 0; i < documents.Length; i++)
+            {
+                Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
+            }
+        });
+    }
+    
+    
     private async Task CreateCountDocType()
     {
         ContentType = new ContentTypeBuilder()
@@ -131,8 +167,9 @@ public class InvariantSortingTests : SearcherTestBase
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
     }
     
-    private async Task CreateDatetimeDocuments(DateTimeOffset[] values)
+    private async Task<Dictionary<Guid, DateTime>> CreateDatetimeDocuments(DateTime[] values)
     {
+        var keys = new Dictionary<Guid, DateTime>();
         await CreateDatetimeDocType();
 
         foreach (var dateTimeOffset in values)
@@ -147,8 +184,13 @@ public class InvariantSortingTests : SearcherTestBase
                     })
                 .Build();
             
-            SaveAndPublish(document);
+            ContentService.Save(document);
+            ContentService.Publish(document, new []{ "*"});
+            keys.Add(document.Key, dateTimeOffset);
         }
+        
+        Thread.Sleep(3000);
+        return keys;
     }
     
     private async Task CreateDecimalDocType()

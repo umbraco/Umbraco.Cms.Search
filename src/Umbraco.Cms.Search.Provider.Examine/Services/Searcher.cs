@@ -97,6 +97,7 @@ public class Searcher : ISearcher
         {
             IntegerSorter integerSorter => new SortableField($"{Constants.Fields.FieldPrefix}{integerSorter.FieldName}_{Constants.Fields.Integers}", SortType.Int),
             DecimalSorter decimalSorter => new SortableField($"{Constants.Fields.FieldPrefix}{decimalSorter.FieldName}_{Constants.Fields.Decimals}", SortType.Double),
+            DateTimeOffsetSorter dateTimeOffsetSorter => new SortableField($"{Constants.Fields.FieldPrefix}{dateTimeOffsetSorter.FieldName}_{Constants.Fields.DateTimeOffsets}", SortType.Long),
             _ => throw new NotSupportedException()
         };
     }
