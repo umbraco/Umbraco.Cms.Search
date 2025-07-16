@@ -140,7 +140,7 @@ public class InvariantFacetsTests : SearcherTestBase
         });
     }
     
-        private async Task CreateCountDocType()
+    private async Task CreateCountDocType()
     {
         ContentType = new ContentTypeBuilder()
             .WithAlias("invariant")

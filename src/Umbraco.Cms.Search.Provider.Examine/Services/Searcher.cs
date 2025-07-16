@@ -1,5 +1,6 @@
 ﻿using Examine;
 using Examine.Search;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
@@ -57,9 +58,43 @@ public class Searcher : ISearcher
         // Add facets and filters
         AddFilters(searchQuery, filters);
         AddFacets(searchQuery, facets);
+        AddSorters(searchQuery, sorters);
+        
         var results = searchQuery.Execute();
         
         return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
+    }
+
+    private void AddSorters(IBooleanOperation searchQuery, IEnumerable<Sorter>? sorters)
+    {
+        if (sorters is null)
+        {
+            return;
+        }
+
+        // TODO: Handling of multiple sorters, does this hold up?
+        foreach (var sorter in sorters)
+        {
+            var sortableField = MapSorter(sorter);
+            if (sorter.Direction is Direction.Ascending)
+            {
+                searchQuery.OrderBy(sortableField);
+            }
+            else
+            {
+                searchQuery.OrderByDescending(sortableField);
+            }
+        }
+    }
+
+    private SortableField MapSorter(Sorter sorter)
+    {
+        return sorter switch
+        {
+            IntegerSorter integerSorter => new SortableField($"{Constants.Fields.FieldPrefix}{integerSorter.FieldName}_{Constants.Fields.Integers}", SortType.Int),
+            DecimalSorter decimalSorter => new SortableField($"{Constants.Fields.FieldPrefix}{decimalSorter.FieldName}_{Constants.Fields.Decimals}", SortType.Double),
+            _ => throw new NotSupportedException()
+        };
     }
 
     private void AddFilters(IBooleanOperation searchQuery, IEnumerable<Filter>? filters)
