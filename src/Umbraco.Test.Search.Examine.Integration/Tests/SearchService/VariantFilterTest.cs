@@ -81,6 +81,26 @@ public class VariantFilterTest : SearcherTestBase
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
     
+    [TestCase("Root", "en-US", true, 0)]
+    [TestCase("Root", "en-US", false, 1)]
+    [TestCase("Root", "da-DK", true, 0)]
+    [TestCase("Root", "da-DK", false, 1)]
+    [TestCase("Root", "ja-JP", true, 0)]
+    [TestCase("Root", "ja-JP", false, 1)]
+    public async Task CanSearchInvariantTextByCulture(string text, string culture, bool negate, int expectedCount)
+    {
+        var indexAlias = GetIndexAlias(false);
+
+        var results = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            new List<Filter> { new TextFilter("invariantTitle", [text], negate) },
+            null, null, culture, null, null,
+            0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(expectedCount));
+    }
+    
     [SetUp]
     public void CreateVariantDocument()
     {
@@ -105,6 +125,12 @@ public class VariantFilterTest : SearcherTestBase
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
             .Done()
             .AddPropertyType()
+            .WithAlias("invariantTitle")
+            .WithVariations(ContentVariation.Nothing)
+            .WithDataTypeId(Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .Done()
+            .AddPropertyType()
             .WithAlias("body")
             .WithVariations(ContentVariation.CultureAndSegment)
             .WithDataTypeId(Constants.DataTypes.Textbox)
@@ -121,6 +147,7 @@ public class VariantFilterTest : SearcherTestBase
             .WithCultureName("ja-JP", "名前")
             .Build();
         
+        root.SetValue("invariantTitle", "Root");
         root.SetValue("title", "Root", "en-US");
         root.SetValue("title", "Rod", "da-DK");
         root.SetValue("title", "ル-ト", "ja-JP");

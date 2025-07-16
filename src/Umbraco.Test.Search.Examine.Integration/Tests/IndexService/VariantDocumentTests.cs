@@ -1,15 +1,13 @@
 ﻿using Examine;
-using Examine.Search;
 using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
-using Umbraco.Test.Search.Examine.Integration.Tests.IndexService;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.IndexService;
 
-public class VariantIndexServiceTests : IndexTestBase
+public class VariantDocumentTests : IndexTestBase
 {
     [TestCase(true)]
     [TestCase(false)]
@@ -60,6 +58,29 @@ public class VariantIndexServiceTests : IndexTestBase
             .First(x => x == expectedValue);
         Assert.That(results, Is.Not.Empty);
         Assert.That(result, Is.EqualTo(expectedValue));
+    }
+    
+    [TestCase("Umb_invarianttitle_texts", "Invariant", "en-US")]
+    [TestCase("Umb_invarianttitle_texts", "Invariant", "da-DK")]
+    [TestCase("Umb_invarianttitle_texts", "Invariant", "ja-JP")] 
+    [TestCase("Umb_invariantcount_integers", 12, "en-US")]
+    [TestCase("Umb_invariantcount_integers", 12, "da-DK")]
+    [TestCase("Umb_invariantcount_integers", 12, "ja-JP")]    
+    [TestCase("Umb_invariantdecimalproperty_decimals", 12.4552, "en-US")]
+    [TestCase("Umb_invariantdecimalproperty_decimals", 12.4552, "da-DK")]
+    [TestCase("Umb_invariantdecimalproperty_decimals", 12.4552, "ja-JP")]
+    public void CanIndexInvariantProperty(string field, object value, string culture)
+    {
+        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        
+        var queryBuilder = index.Searcher.CreateQuery().All();
+        queryBuilder.SelectField(field);
+        var results = queryBuilder.Execute();
+        var result = results
+            .SelectMany(x => x.Values.Values)
+            .First(x => x == value.ToString());
+        Assert.That(results, Is.Not.Empty);
+        Assert.That(result, Is.EqualTo(value.ToString()));
     }
     
     [TestCase("title", "updatedTitle", "en-US")]
@@ -120,6 +141,17 @@ public class VariantIndexServiceTests : IndexTestBase
     public void CreateVariantDocument()
     {
         
+        var dataType = new DataTypeBuilder()
+            .WithId(0)
+            .WithoutIdentity()
+            .WithDatabaseType(ValueStorageType.Decimal)
+            .AddEditor()
+            .WithAlias(Constants.PropertyEditors.Aliases.Decimal)
+            .Done()
+            .Build();
+        
+        DataTypeService.Save(dataType);
+        
         var langDk = new LanguageBuilder()
             .WithCultureInfo("da-DK")
             .WithIsDefault(true)
@@ -139,6 +171,24 @@ public class VariantIndexServiceTests : IndexTestBase
             .WithVariations(ContentVariation.Culture)
             .WithDataTypeId(Constants.DataTypes.Textbox)
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .Done()            
+            .AddPropertyType()
+            .WithAlias("invarianttitle")
+            .WithVariations(ContentVariation.Nothing)
+            .WithDataTypeId(Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .Done()           
+            .AddPropertyType()
+            .WithAlias("invariantcount")
+            .WithVariations(ContentVariation.Nothing)
+            .WithDataTypeId(-51)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
+            .Done()            
+            .AddPropertyType()
+            .WithAlias("invariantdecimalproperty")
+            .WithVariations(ContentVariation.Nothing)
+            .WithDataTypeId(dataType.Id)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Decimal)
             .Done()
             .AddPropertyType()
             .WithAlias("body")
@@ -157,6 +207,9 @@ public class VariantIndexServiceTests : IndexTestBase
             .WithCultureName("ja-JP", "名前")
             .Build();
         
+        root.SetValue("invarianttitle", "Invariant");
+        root.SetValue("invariantcount", 12);
+        root.SetValue("invariantdecimalproperty", 12.4552);
         root.SetValue("title", "Root", "en-US");
         root.SetValue("title", "Rod", "da-DK");
         root.SetValue("title", "ル-ト", "ja-JP");

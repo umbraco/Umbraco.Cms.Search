@@ -97,7 +97,7 @@ public class InvariantDocumentIndexServiceTests : IndexTestBase
         queryBuilder.SelectField("Umb_decimalproperty_decimals");
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == "Umb_decimalproperty_decimals").Value, Is.EqualTo(DecimalValue.ToString()));
+        Assert.That(results.First().Values.First(x => x.Key == "Umb_decimalproperty_decimals").Value, Is.EqualTo(((double)DecimalValue).ToString()));
     }    
     
     [TestCase(true)]
