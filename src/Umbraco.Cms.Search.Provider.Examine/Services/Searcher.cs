@@ -32,8 +32,12 @@ public class Searcher : ISearcher
         {
             return await Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
         }
-
-        var searchQuery = index.Searcher.CreateQuery().NativeQuery($"+(+{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}:\"{culture ?? "none"}\")").And().NativeQuery($"+(+{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}:\"{segment ?? "none"}\")");
+        
+        var searchQuery = index.Searcher
+            .CreateQuery()
+            .Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}", culture ?? "none")
+            .And()
+            .Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}", segment ?? "none");
         if (query is not null)
         {
             // This is super hacky, but native queries does NOT work with valuetypes such as integer / decimal
