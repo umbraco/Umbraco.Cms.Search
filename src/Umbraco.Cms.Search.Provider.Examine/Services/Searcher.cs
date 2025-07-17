@@ -1,4 +1,5 @@
 ﻿using Examine;
+using Examine.Lucene.Search;
 using Examine.Search;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
@@ -66,7 +67,32 @@ public class Searcher : ISearcher
         
         var results = searchQuery.Execute();
         
+        
+        // TODO: Fix this hacky sorting, but examine does not handle sorting Guids as string well, so we have to manually do it.
+        foreach (var sorter in sorters)
+        {
+            if (sorter is KeywordSorter keywordSorter)
+            {
+                var sorted = SortByKey(results, $"{keywordSorter.FieldName}_{Constants.Fields.Keywords}", keywordSorter.Direction);
+                return await Task.FromResult(new SearchResult(results.TotalItemCount, sorted.Select(MapToDocument).WhereNotNull(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
+            }
+        }
+        
+        
         return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
+    }
+    
+    private IEnumerable<ISearchResult> SortByKey(
+        ISearchResults results,
+        string key,
+        Direction direction)
+    {
+        return results.OrderBy(r => GetValueAsString(r.Values, key), direction).ToList();
+    }
+
+    private static string GetValueAsString(IReadOnlyDictionary<string, string> dict, string key)
+    {
+        return dict.TryGetValue(key, out var value) ? value : string.Empty; // Or null if preferred
     }
 
     private void AddSorters(IBooleanOperation searchQuery, IEnumerable<Sorter>? sorters)
@@ -93,11 +119,14 @@ public class Searcher : ISearcher
 
     private SortableField MapSorter(Sorter sorter)
     {
+        var fieldNamePrefix = sorter.FieldName.StartsWith(Constants.Fields.FieldPrefix) ? $"{sorter.FieldName}" : $"{Constants.Fields.FieldPrefix}{sorter.FieldName}";
+
         return sorter switch
         {
-            IntegerSorter integerSorter => new SortableField($"{Constants.Fields.FieldPrefix}{integerSorter.FieldName}_{Constants.Fields.Integers}", SortType.Int),
-            DecimalSorter decimalSorter => new SortableField($"{Constants.Fields.FieldPrefix}{decimalSorter.FieldName}_{Constants.Fields.Decimals}", SortType.Double),
-            DateTimeOffsetSorter dateTimeOffsetSorter => new SortableField($"{Constants.Fields.FieldPrefix}{dateTimeOffsetSorter.FieldName}_{Constants.Fields.DateTimeOffsets}", SortType.Long),
+            IntegerSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Integers}", SortType.Int),
+            DecimalSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Decimals}", SortType.Double),
+            DateTimeOffsetSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.DateTimeOffsets}", SortType.Long),
+            KeywordSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Keywords}", SortType.String),
             _ => throw new NotSupportedException()
         };
     }

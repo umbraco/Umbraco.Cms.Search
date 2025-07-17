@@ -107,6 +107,36 @@ public class InvariantSortingTests : SearcherTestBase
         });
     }
     
+    [TestCase(true, Direction.Descending)]
+    [TestCase(false, Direction.Ascending)]
+    public async Task CanSortKeywords(bool publish, Direction direction)
+    {
+        var keys = (await CreateDocuments(5)).OrderBy(x => x, direction).Select(x => x.ToString()).ToArray();
+        
+        var indexAlias = GetIndexAlias(publish);
+        var result = await Searcher.SearchAsync(
+            indexAlias,
+            null, 
+            [new KeywordFilter("Umb_Id", keys.ToArray(), false)],
+            null, 
+            [new KeywordSorter("Umb_Id", direction)],
+            null,
+            null, 
+            null,
+            0, 
+            100);
+        
+        Assert.Multiple(() =>
+        {
+            var documents = result.Documents.ToArray();
+            Assert.That(documents, Is.Not.Empty);
+            for (int i = 0; i < documents.Length; i++)
+            {
+                Assert.That(documents[i].Id.ToString(), Is.EqualTo(keys[i]));
+            }
+        });
+    }
+    
     
     private async Task CreateCountDocType()
     {
@@ -120,6 +150,35 @@ public class InvariantSortingTests : SearcherTestBase
             .Build();
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
     }
+    
+    private async Task CreateDocType()
+    {
+        ContentType = new ContentTypeBuilder()
+            .WithAlias("invariant")
+            .Build();
+        await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
+    }
+    
+    private async Task<IEnumerable<Guid>> CreateDocuments(int numberOfDocuments)
+    {
+        var keys = new List<Guid>();
+        await CreateDocType();
+
+        for (int i = 0; i < numberOfDocuments; i++)
+        {
+            var document = new ContentBuilder()
+                .WithContentType(ContentType)
+                .WithName($"document-{i}")
+                .Build();
+            
+            ContentService.Save(document);
+            ContentService.Publish(document, new []{ "*"});
+            keys.Add(document.Key);
+        }
+        
+        Thread.Sleep(3000);
+        return keys;
+    }  
     
     private async Task CreateTitleDocType()
     {
