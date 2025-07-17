@@ -66,18 +66,20 @@ public class Searcher : ISearcher
         AddSorters(searchQuery, sorters);
         
         var results = searchQuery.Execute();
-        
-        
-        // TODO: Fix this hacky sorting, but examine does not handle sorting Guids as string well, so we have to manually do it.
-        foreach (var sorter in sorters)
+
+
+        if (sorters is not null)
         {
-            if (sorter is KeywordSorter keywordSorter)
+            // TODO: Fix this hacky sorting, but examine does not handle sorting Guids as string well, so we have to manually do it.
+            foreach (var sorter in sorters)
             {
-                var sorted = SortByKey(results, $"{keywordSorter.FieldName}_{Constants.Fields.Keywords}", keywordSorter.Direction);
-                return await Task.FromResult(new SearchResult(results.TotalItemCount, sorted.Select(MapToDocument).WhereNotNull(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
+                if (sorter is KeywordSorter keywordSorter)
+                {
+                    var sorted = SortByKey(results, $"{keywordSorter.FieldName}_{Constants.Fields.Keywords}", keywordSorter.Direction);
+                    return await Task.FromResult(new SearchResult(results.TotalItemCount, sorted.Select(MapToDocument).WhereNotNull(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
+                }
             }
         }
-        
         
         return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
     }
@@ -127,6 +129,7 @@ public class Searcher : ISearcher
             DecimalSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Decimals}", SortType.Double),
             DateTimeOffsetSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.DateTimeOffsets}", SortType.Long),
             KeywordSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Keywords}", SortType.String),
+            TextSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Texts}", SortType.String),
             _ => throw new NotSupportedException()
         };
     }

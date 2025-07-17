@@ -137,6 +137,38 @@ public class InvariantSortingTests : SearcherTestBase
         });
     }
     
+    [TestCase(true, Direction.Descending)]
+    [TestCase(false, Direction.Ascending)]
+    public async Task CanSortTexts(bool publish, Direction direction)
+    {
+        string[] titles = ["aa", "ccc", "bbb", "ddd", "zzz", "xxx"];
+        
+        var keys = (await CreateTitleDocuments(titles)).OrderBy(x => x.Value, direction).ToArray();
+        
+        var indexAlias = GetIndexAlias(publish);
+        var result = await Searcher.SearchAsync(
+            indexAlias,
+            null, 
+            [new TextFilter("title", titles, false)],
+            null, 
+            [new TextSorter("title", direction)],
+            null,
+            null, 
+            null,
+            0, 
+            100);
+        
+        Assert.Multiple(() =>
+        {
+            var documents = result.Documents.ToArray();
+            Assert.That(documents, Is.Not.Empty);
+            for (int i = 0; i < documents.Length; i++)
+            {
+                Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
+            }
+        });
+    }
+    
     
     private async Task CreateCountDocType()
     {
@@ -193,8 +225,9 @@ public class InvariantSortingTests : SearcherTestBase
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
     }
     
-    private async Task CreateTitleDocuments(string[] values)
+    private async Task<Dictionary<Guid, string>> CreateTitleDocuments(string[] values)
     {
+        var keys = new Dictionary<Guid, string>();
         await CreateTitleDocType();
 
         foreach (var stringValue in values)
@@ -209,8 +242,13 @@ public class InvariantSortingTests : SearcherTestBase
                     })
                 .Build();
             
-            SaveAndPublish(document);
+            ContentService.Save(document);
+            ContentService.Publish(document, new []{ "*"});
+            keys.Add(document.Key, stringValue);
         }
+
+        Thread.Sleep(3000);
+        return keys;
     }    
     
     private async Task CreateDatetimeDocType()
