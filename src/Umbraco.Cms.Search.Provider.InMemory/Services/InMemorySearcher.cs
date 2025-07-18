@@ -130,11 +130,11 @@ internal sealed class InMemorySearcher : IInMemorySearcher
                 TextFilter textFilter => AllTexts(value).Any(t => textFilter.Values.Any(t.InvariantContains)),
                 KeywordFilter keywordFilter => value.Keywords?.ContainsAny(keywordFilter.Values) ?? false,
                 IntegerExactFilter integerExactFilter => value.Integers?.ContainsAny(integerExactFilter.Values) ?? false,
-                IntegerRangeFilter integerRangeFilter => value.Integers?.Any(i => integerRangeFilter.Ranges.Any(r => i >= (r.MinimumValue ?? int.MinValue) && i <= (r.MaximumValue ?? int.MaxValue))) ?? false,
+                IntegerRangeFilter integerRangeFilter => value.Integers?.Any(i => integerRangeFilter.Ranges.Any(r => i >= (r.Min ?? int.MinValue) && i <= (r.Max ?? int.MaxValue))) ?? false,
                 DecimalExactFilter decimalExactFilter => value.Decimals?.ContainsAny(decimalExactFilter.Values) ?? false,
-                DecimalRangeFilter decimalRangeFilter => value.Decimals?.Any(i => decimalRangeFilter.Ranges.Any(r => i >= (r.MinimumValue ?? decimal.MinValue) && i <= (r.MaximumValue ?? decimal.MaxValue))) ?? false,
+                DecimalRangeFilter decimalRangeFilter => value.Decimals?.Any(i => decimalRangeFilter.Ranges.Any(r => i >= (r.Min ?? decimal.MinValue) && i <= (r.Max ?? decimal.MaxValue))) ?? false,
                 DateTimeOffsetExactFilter dateTimeOffsetExactFilter => value.DateTimeOffsets?.ContainsAny(dateTimeOffsetExactFilter.Values) ?? false,
-                DateTimeOffsetRangeFilter dateTimeOffsetRangeFilter => value.DateTimeOffsets?.Any(i => dateTimeOffsetRangeFilter.Ranges.Any(r => i >= (r.MinimumValue ?? DateTimeOffset.MinValue) && i <= (r.MaximumValue ?? DateTimeOffset.MaxValue))) ?? false,
+                DateTimeOffsetRangeFilter dateTimeOffsetRangeFilter => value.DateTimeOffsets?.Any(i => dateTimeOffsetRangeFilter.Ranges.Any(r => i >= (r.Min ?? DateTimeOffset.MinValue) && i <= (r.Max ?? DateTimeOffset.MaxValue))) ?? false,
                 _ => throw new ArgumentOutOfRangeException(nameof(filter), $"Encountered an unsupported filter type: {filter.GetType().Name}")
             };
 
