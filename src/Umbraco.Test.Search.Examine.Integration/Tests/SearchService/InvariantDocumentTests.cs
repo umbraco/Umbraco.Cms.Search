@@ -10,6 +10,16 @@ public class InvariantDocumentTests : SearcherTestBase
 {
     [TestCase(true)]
     [TestCase(false)]
+    public async Task SearchWithNoParamsYieldsNoDocuments(bool publish)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        var results = await Searcher.SearchAsync(indexAlias, null, null, null, null, null, null, null, 0, 100);
+        Assert.That(results.Total, Is.EqualTo(0));
+    }
+    
+    [TestCase(true)]
+    [TestCase(false)]
     public async Task CanSearchName(bool publish)
     {
         var indexAlias = GetIndexAlias(publish);

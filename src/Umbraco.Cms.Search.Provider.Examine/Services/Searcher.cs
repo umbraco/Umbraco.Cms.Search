@@ -30,6 +30,11 @@ public class Searcher : ISearcher
     public async Task<SearchResult> SearchAsync(string indexAlias, string? query, IEnumerable<Filter>? filters, IEnumerable<Facet>? facets, IEnumerable<Sorter>? sorters,
         string? culture, string? segment, AccessContext? accessContext, int skip, int take)
     {
+        // Special case if no parameters are provided, return an empty list.
+        if (query is null && filters is null && facets is null && sorters is null && culture is null && segment is null && accessContext is null)
+        {
+            return await Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
+        }
         if (_examineManager.TryGetIndex(indexAlias, out var index) is false)
         {
             return await Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
