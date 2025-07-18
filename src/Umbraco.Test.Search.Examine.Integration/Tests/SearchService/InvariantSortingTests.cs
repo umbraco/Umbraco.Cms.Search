@@ -37,7 +37,7 @@ public class InvariantSortingTests : SearcherTestBase
         {
             var documents = result.Documents.ToArray();
             Assert.That(documents, Is.Not.Empty);
-            for (int i = 0; i < documents.Length; i++)
+            for (int i = 0; i < keys.Length; i++)
             {
                 Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
             }
@@ -68,7 +68,7 @@ public class InvariantSortingTests : SearcherTestBase
         {
             var documents = result.Documents.ToArray();
             Assert.That(documents, Is.Not.Empty);
-            for (int i = 0; i < documents.Length; i++)
+            for (int i = 0; i < keys.Length; i++)
             {
                 Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
             }
@@ -100,7 +100,7 @@ public class InvariantSortingTests : SearcherTestBase
         {
             var documents = result.Documents.ToArray();
             Assert.That(documents, Is.Not.Empty);
-            for (int i = 0; i < documents.Length; i++)
+            for (int i = 0; i < keys.Length; i++)
             {
                 Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
             }
@@ -130,7 +130,7 @@ public class InvariantSortingTests : SearcherTestBase
         {
             var documents = result.Documents.ToArray();
             Assert.That(documents, Is.Not.Empty);
-            for (int i = 0; i < documents.Length; i++)
+            for (int i = 0; i < keys.Length; i++)
             {
                 Assert.That(documents[i].Id.ToString(), Is.EqualTo(keys[i]));
             }
@@ -162,7 +162,39 @@ public class InvariantSortingTests : SearcherTestBase
         {
             var documents = result.Documents.ToArray();
             Assert.That(documents, Is.Not.Empty);
-            for (int i = 0; i < documents.Length; i++)
+            for (int i = 0; i < keys.Length; i++)
+            {
+                Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
+            }
+        });
+    }
+    
+    [TestCase(true, Direction.Descending)]
+    [TestCase(false, Direction.Ascending)]
+    public async Task CanSortByScore(bool publish, Direction direction)
+    {
+        string[] titles = ["exact", "exact aa ", "exact aaa aaaa", "exact aaa aaaa aaaaa"];
+
+        var keys = (await CreateTitleDocuments(titles)).OrderBy(x => x.Value, direction).ToArray();
+        
+        var indexAlias = GetIndexAlias(publish);
+        var result = await Searcher.SearchAsync(
+            indexAlias,
+            "exact", 
+            null,
+            null, 
+            [new ScoreSorter(direction)],
+            null,
+            null, 
+            null,
+            0, 
+            100);
+        
+        Assert.Multiple(() =>
+        {
+            var documents = result.Documents.ToArray();
+            Assert.That(documents, Is.Not.Empty);
+            for (int i = 0; i < keys.Length; i++)
             {
                 Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
             }

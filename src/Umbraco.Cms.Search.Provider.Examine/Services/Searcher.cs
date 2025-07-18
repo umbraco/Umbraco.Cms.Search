@@ -1,4 +1,5 @@
-﻿using Examine;
+﻿using System.Globalization;
+using Examine;
 using Examine.Lucene.Search;
 using Examine.Search;
 using Umbraco.Cms.Core;
@@ -51,18 +52,7 @@ public class Searcher : ISearcher
         
         if (query is not null)
         {
-            // This is super hacky, but native queries does NOT work with valuetypes such as integer / decimal
-            // therefore we have to try and parse the query as those, and if they are, do a managed query instead.
-            if (decimal.TryParse(query, out _) || int.TryParse(query, out _))
-            {
-                searchQuery.And().ManagedQuery(query);
-            }
-            else
-            {
-                // We cannot do a managed query here, as it will not work on queries in other cultures (like japanese).
-                searchQuery.And().NativeQuery(query);
-            }
-
+            searchQuery.And().ManagedQuery(culture is null ? query.ToLowerInvariant() : query.ToLower(new CultureInfo(culture)));
         }
         
         // Add facets and filters
@@ -135,6 +125,7 @@ public class Searcher : ISearcher
             DateTimeOffsetSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.DateTimeOffsets}", SortType.Long),
             KeywordSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Keywords}", SortType.String),
             TextSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Texts}", SortType.String),
+            ScoreSorter => new SortableField("", SortType.Score),
             _ => throw new NotSupportedException()
         };
     }
