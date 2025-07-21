@@ -19,7 +19,7 @@ public class InvariantContentProtectionTests : SearcherTestBase
     [TestCase(false)]
     public async Task CannotGetProtectedContent(bool publish)
     {
-        var result = await MemberGroupService.CreateAsync(new MemberGroup() {Name = "testGroup"});
+        await MemberGroupService.CreateAsync(new MemberGroup() {Name = "testGroup"});
         await PublicAccessService.CreateAsync(
             new PublicAccessEntrySlim
             {
@@ -33,7 +33,6 @@ public class InvariantContentProtectionTests : SearcherTestBase
         var indexAlias = GetIndexAlias(publish);
         var results = await Searcher.SearchAsync(indexAlias, "The root title", null, null, null, null, null, null, 0, 100);
         
-        // We should still be able to get draft content, as it is not protected
         Assert.That(results.Total, Is.EqualTo(publish ? 0 : 1));
     }
     
@@ -50,7 +49,7 @@ public class InvariantContentProtectionTests : SearcherTestBase
                 ContentId = RootKey,
                 MemberGroupNames = ["testGroup"]
             });
-        Thread.Sleep(5000);
+        Thread.Sleep(3000);
         
         IMemberType memberType = MemberTypeBuilder.CreateSimpleMemberType();
         MemberTypeService.Save(memberType);
@@ -122,7 +121,6 @@ public class InvariantContentProtectionTests : SearcherTestBase
 
         ContentService.Save(root);
         ContentService.Publish(root, ["*"]);
-        Thread.Sleep(3000);
 
         var content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);

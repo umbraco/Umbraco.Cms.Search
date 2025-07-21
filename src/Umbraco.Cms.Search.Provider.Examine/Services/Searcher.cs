@@ -104,7 +104,15 @@ public class Searcher : ISearcher
         }
         else
         {
-            var keys = string.Join(" ",  accessContext.GroupIds?.Select(x => x.ToString()).WhereNotNull(), Guid.Empty.ToString());
+            var keys = Guid.Empty.ToString();
+            if (accessContext.GroupIds is not null)
+            {
+                foreach (var id in  accessContext.GroupIds.Select(x => x.ToString()))
+                {
+                    keys += string.Join(" ", id);
+                }
+            }
+            
             searchQuery.And().Field(protectionFieldName, keys);
         }
     }
