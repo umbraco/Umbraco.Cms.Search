@@ -97,9 +97,15 @@ public class Searcher : ISearcher
     
     private void AddProtection(IBooleanOperation searchQuery, AccessContext? accessContext)
     {
+        string protectionFieldName = $"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}";
         if (accessContext is null)
         {
-            searchQuery.And().Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}", Guid.Empty.ToString());
+            searchQuery.And().Field(protectionFieldName, Guid.Empty.ToString());
+        }
+        else
+        {
+            var keys = string.Join(" ",  accessContext.GroupIds?.Select(x => x.ToString()).WhereNotNull(), Guid.Empty.ToString());
+            searchQuery.And().Field(protectionFieldName, keys);
         }
     }
 
