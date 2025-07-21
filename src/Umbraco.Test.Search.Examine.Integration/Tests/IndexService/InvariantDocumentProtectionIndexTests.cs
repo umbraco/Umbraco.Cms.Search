@@ -10,14 +10,12 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.IndexService;
 
 public class InvariantDocumentProtectionIndexTests : IndexTestBase
 {
-    public IPublicAccessService PublicAccessService => GetRequiredService<IPublicAccessService>();
-    public IMemberGroupService MemberGroupService => GetRequiredService<IMemberGroupService>();
+    private IPublicAccessService PublicAccessService => GetRequiredService<IPublicAccessService>();
+    private IMemberGroupService MemberGroupService => GetRequiredService<IMemberGroupService>();
 
     [Test]
     public async Task CanIndexContentProtection()
     {
-        CreateInvariantDocument();
-
         var result = await MemberGroupService.CreateAsync(new MemberGroup() {Name = "testGroup"});
         await PublicAccessService.CreateAsync(
             new PublicAccessEntrySlim
@@ -40,8 +38,6 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
     [Test]
     public async Task CanIndexMultipleContentProtection()
     {
-        CreateInvariantDocument();
-
         var group = await MemberGroupService.CreateAsync(new MemberGroup {Name = "testGroup"});
         var group2 = await MemberGroupService.CreateAsync(new MemberGroup {Name = "testGroup 2"});
         var group3 = await MemberGroupService.CreateAsync(new MemberGroup {Name = "testGroup 3"});
@@ -72,15 +68,14 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
     [Test]
     public void DoesNotIndexContentProtectionIfNoneExists()
     {
-        CreateInvariantDocument();
-
         var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
         var results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results.First().AllValues.SelectMany(x => x.Value), Does.Not.Contain("umb_protection"));
     }
 
-    private void CreateInvariantDocument()
+    [SetUp]
+    public void CreateInvariantDocument()
     {
         var contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
