@@ -91,15 +91,18 @@ public class InvariantDocumentTests : SearcherTestBase
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
     
-    // [Test]
-    // public async Task CanSearchUpdatedDateTime()
-    // {
-    //     var indexAlias = GetIndexAlias(publish);
-    //
-    //     var results = await Searcher.SearchAsync(indexAlias, updatedValue.ToString(), null, null, null, null, null, null, 0, 100);
-    //     Assert.That(results.Total, Is.EqualTo(1));
-    //     Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
-    // }
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task CanSearchUpdatedDateTime(bool publish)
+    {
+        var updatedValue = new DateTime(2000, 1, 1);
+        UpdateProperty("datetime", new DateTime(2000, 1, 1), publish);
+        var indexAlias = GetIndexAlias(publish);
+    
+        var results = await Searcher.SearchAsync(indexAlias, updatedValue.ToString(), null, null, null, null, null, null, 0, 100);
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
+    }
     
     [SetUp]
     public void CreateInvariantDocument()
