@@ -161,14 +161,11 @@ public class Indexer : IIndexer
             result.Add($"{Constants.Fields.FieldPrefix}aggregated_texts", aggregatedTexts.ToArray());
         }
 
-        if (protection is not null)
-        {
-            result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}", protection.AccessIds);
-        }
 
         // Cannot add null values, so we have to just say "none" here, so we can filter on variant / invariant content
         result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}", culture ?? "none");
         result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}", segment ?? "none");
+        result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}", protection?.AccessIds ?? new List<Guid> {Guid.Empty});
 
         return result;
     }

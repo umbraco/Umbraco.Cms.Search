@@ -59,6 +59,7 @@ public class Searcher : ISearcher
         AddFilters(searchQuery, filters);
         AddFacets(searchQuery, facets);
         AddSorters(searchQuery, sorters);
+        AddProtection(searchQuery, accessContext);
         
         var results = searchQuery.Execute();
 
@@ -78,6 +79,8 @@ public class Searcher : ISearcher
         
         return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
     }
+
+
     
     private IEnumerable<ISearchResult> SortByKey(
         ISearchResults results,
@@ -90,6 +93,14 @@ public class Searcher : ISearcher
     private static string GetValueAsString(IReadOnlyDictionary<string, string> dict, string key)
     {
         return dict.TryGetValue(key, out var value) ? value : string.Empty; // Or null if preferred
+    }
+    
+    private void AddProtection(IBooleanOperation searchQuery, AccessContext? accessContext)
+    {
+        if (accessContext is null)
+        {
+            searchQuery.And().Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}", Guid.Empty.ToString());
+        }
     }
 
     private void AddSorters(IBooleanOperation searchQuery, IEnumerable<Sorter>? sorters)
