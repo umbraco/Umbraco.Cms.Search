@@ -130,11 +130,11 @@ internal sealed class InMemorySearcher : IInMemorySearcher
                 TextFilter textFilter => AllTexts(value).Any(t => textFilter.Values.Any(t.InvariantContains)),
                 KeywordFilter keywordFilter => value.Keywords?.ContainsAny(keywordFilter.Values) ?? false,
                 IntegerExactFilter integerExactFilter => value.Integers?.ContainsAny(integerExactFilter.Values) ?? false,
-                IntegerRangeFilter integerRangeFilter => value.Integers?.Any(i => integerRangeFilter.Ranges.Any(r => i >= (r.Min ?? int.MinValue) && i <= (r.Max ?? int.MaxValue))) ?? false,
+                IntegerRangeFilter integerRangeFilter => value.Integers?.Any(i => integerRangeFilter.Ranges.Any(r => i >= (r.MinValue ?? int.MinValue) && i <= (r.MaxValue ?? int.MaxValue))) ?? false,
                 DecimalExactFilter decimalExactFilter => value.Decimals?.ContainsAny(decimalExactFilter.Values) ?? false,
-                DecimalRangeFilter decimalRangeFilter => value.Decimals?.Any(i => decimalRangeFilter.Ranges.Any(r => i >= (r.Min ?? decimal.MinValue) && i <= (r.Max ?? decimal.MaxValue))) ?? false,
+                DecimalRangeFilter decimalRangeFilter => value.Decimals?.Any(i => decimalRangeFilter.Ranges.Any(r => i >= (r.MinValue ?? decimal.MinValue) && i <= (r.MaxValue ?? decimal.MaxValue))) ?? false,
                 DateTimeOffsetExactFilter dateTimeOffsetExactFilter => value.DateTimeOffsets?.ContainsAny(dateTimeOffsetExactFilter.Values) ?? false,
-                DateTimeOffsetRangeFilter dateTimeOffsetRangeFilter => value.DateTimeOffsets?.Any(i => dateTimeOffsetRangeFilter.Ranges.Any(r => i >= (r.Min ?? DateTimeOffset.MinValue) && i <= (r.Max ?? DateTimeOffset.MaxValue))) ?? false,
+                DateTimeOffsetRangeFilter dateTimeOffsetRangeFilter => value.DateTimeOffsets?.Any(i => dateTimeOffsetRangeFilter.Ranges.Any(r => i >= (r.MinValue ?? DateTimeOffset.MinValue) && i <= (r.MaxValue ?? DateTimeOffset.MaxValue))) ?? false,
                 _ => throw new ArgumentOutOfRangeException(nameof(filter), $"Encountered an unsupported filter type: {filter.GetType().Name}")
             };
 
@@ -176,9 +176,9 @@ internal sealed class InMemorySearcher : IInMemorySearcher
             .Ranges
             .Select(range => new IntegerRangeFacetValue(
                 range.Key,
-                range.Min,
-                range.Max,
-                allValues.Count(v => v > (range.Min ?? int.MinValue) && v <= (range.Max ?? int.MaxValue)))
+                range.MinValue,
+                range.MaxValue,
+                allValues.Count(v => v > (range.MinValue ?? int.MinValue) && v <= (range.MaxValue ?? int.MaxValue)))
             ).ToArray();
     }
     
@@ -189,9 +189,9 @@ internal sealed class InMemorySearcher : IInMemorySearcher
             .Ranges
             .Select(range => new DecimalRangeFacetValue(
                 range.Key,
-                range.Min,
-                range.Max,
-                allValues.Count(v => v > (range.Min ?? decimal.MinValue) && v <= (range.Max ?? decimal.MaxValue)))
+                range.MinValue,
+                range.MaxValue,
+                allValues.Count(v => v > (range.MinValue ?? decimal.MinValue) && v <= (range.MaxValue ?? decimal.MaxValue)))
             ).ToArray();
     }
 
@@ -202,9 +202,9 @@ internal sealed class InMemorySearcher : IInMemorySearcher
             .Ranges
             .Select(range => new DateTimeOffsetRangeFacetValue(
                 range.Key,
-                range.Min,
-                range.Max,
-                allValues.Count(v => v > (range.Min ?? DateTimeOffset.MinValue) && v <= (range.Max ?? DateTimeOffset.MaxValue)))
+                range.MinValue,
+                range.MaxValue,
+                allValues.Count(v => v > (range.MinValue ?? DateTimeOffset.MinValue) && v <= (range.MaxValue ?? DateTimeOffset.MaxValue)))
             ).ToArray();
     }
 
