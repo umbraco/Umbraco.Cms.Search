@@ -7,7 +7,7 @@ using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.IndexService;
 
-public partial class InvariantContentTreeTests
+public partial class InvariantDocumentTreeTests
 {
     [Test]
     public void DraftStructure_YieldsAllDocuments()

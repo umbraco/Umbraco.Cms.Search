@@ -8,7 +8,7 @@ using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.IndexService;
 
-public class InvariantContentProtectionIndexTests : IndexTestBase
+public class InvariantDocumentProtectionIndexTests : IndexTestBase
 {
     public IPublicAccessService PublicAccessService => GetRequiredService<IPublicAccessService>();
     public IMemberGroupService MemberGroupService => GetRequiredService<IMemberGroupService>();

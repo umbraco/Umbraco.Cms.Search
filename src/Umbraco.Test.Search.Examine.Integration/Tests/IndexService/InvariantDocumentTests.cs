@@ -8,7 +8,7 @@ using Umbraco.Test.Search.Examine.Integration.Tests.IndexService;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.IndexService;
 
-public class InvariantDocumentIndexServiceTests : IndexTestBase
+public class InvariantDocumentTests : IndexTestBase
 {
     [TestCase(true)]
     [TestCase(false)]

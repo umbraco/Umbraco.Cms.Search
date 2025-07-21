@@ -4,7 +4,7 @@ using Umbraco.Test.Search.Examine.Integration.Tests.IndexService;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.IndexService;
 
-public partial class InvariantContentTreeTests : IndexTestBase
+public partial class InvariantDocumentTreeTests : IndexTestBase
 {
     [Test]
     public void PublishedStructure_YieldsAllPublishedDocuments()
