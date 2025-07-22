@@ -210,7 +210,7 @@ filters:
 ```
 
 > [!TIP]
-> Ranges include the lower interval and excludes the upper. The example above translates into "releaseYear either between 1950 and 1959 (both inclusive) or between 1980 and 1989 (both inclusive)".
+> Ranges include the lower interval and excludes the upper. The example above translates into: _"releaseYear" either between 1950 and 1959 (both inclusive) or between 1980 and 1989 (both inclusive)_.
 
 ### Facets in search results
 
