@@ -104,7 +104,8 @@ public class Searcher : ISearcher
         }
         else
         {
-            var keys = Guid.Empty.ToString();
+            var keys = $"{Guid.Empty} {accessContext.PrincipalId}";
+            
             if (accessContext.GroupIds is not null)
             {
                 foreach (var id in  accessContext.GroupIds.Select(x => x.ToString()))
