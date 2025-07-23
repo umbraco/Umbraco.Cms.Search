@@ -72,12 +72,12 @@ public class Searcher : ISearcher
                 if (sorter is KeywordSorter keywordSorter)
                 {
                     var sorted = SortByKey(results, $"{keywordSorter.FieldName}_{Constants.Fields.Keywords}", keywordSorter.Direction);
-                    return await Task.FromResult(new SearchResult(results.TotalItemCount, sorted.Select(MapToDocument).WhereNotNull(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
+                    return await Task.FromResult(new SearchResult(results.TotalItemCount, sorted.Select(MapToDocument).WhereNotNull().ToArray(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
                 }
             }
         }
         
-        return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
+        return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull().ToArray(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
     }
 
 
