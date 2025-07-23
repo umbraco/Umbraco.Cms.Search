@@ -268,12 +268,19 @@ public class Searcher : ISearcher
     
     private Document? MapToDocument(ISearchResult item)
     {
-        // We have to get the Id out, as the key is culture specific
-        if(Guid.TryParse(item.Values.Where(x => x.Key == $"{Constants.Fields.FieldPrefix}Id_{Constants.Fields.Keywords}").Select(x => x.Value).First(), out var id) is false)
+        if (Guid.TryParse(item.Id, out var guidId))
         {
-            return null;
+            return new Document(guidId, UmbracoObjectTypes.Document);
         }
-       
-        return new Document(id, UmbracoObjectTypes.Document);
+
+        // The id of an item may be appended with _{culture_{segment}, so strip those and map to guid.
+        var indexofUnderscore = item.Id.IndexOf('_');
+        var idWithOutCulture = item.Id.Remove(indexofUnderscore);
+        if (Guid.TryParse(idWithOutCulture, out var idWithoutCultureGuid))
+        {
+            return new Document(idWithoutCultureGuid, UmbracoObjectTypes.Document);
+        }
+
+        return null;
     }
 }
