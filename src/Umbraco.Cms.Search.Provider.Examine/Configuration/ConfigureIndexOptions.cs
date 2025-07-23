@@ -40,7 +40,9 @@ public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirecto
         {
             foreach (var propertyIndexValue in facetEntry.Values)
             {
-                options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"Umb_{facetEntry.PropertyName}_{propertyIndexValue}", facetEntry.Type));
+                var fieldName = $"Umb_{facetEntry.PropertyName}_{propertyIndexValue}";
+                options.FacetsConfig.SetMultiValued(fieldName, true);
+                options.FieldDefinitions.AddOrUpdate(new FieldDefinition(fieldName, facetEntry.Type));
             }
         }
     }
