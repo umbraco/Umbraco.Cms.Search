@@ -14,21 +14,7 @@ public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirecto
     }
     public void Configure(string name, LuceneDirectoryIndexOptions options)
     {
-        switch (name)
-        {
-            case Cms.Search.Core.Constants.IndexAliases.DraftContent:
-                AddOptions(options);
-                break;
-            case Cms.Search.Core.Constants.IndexAliases.PublishedContent:
-                AddOptions(options);
-                break;
-            case Cms.Search.Core.Constants.IndexAliases.DraftMembers:
-                AddOptions(options);
-                break;
-            case Cms.Search.Core.Constants.IndexAliases.DraftMedia:
-                AddOptions(options);
-                break;
-        }
+        AddOptions(options);
     }
 
     public void Configure(LuceneDirectoryIndexOptions options) 
