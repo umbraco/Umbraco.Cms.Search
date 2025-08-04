@@ -2,6 +2,7 @@
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Services;
+using Umbraco.Cms.Search.Provider.Examine.Extensions;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
@@ -163,8 +164,8 @@ public class Indexer : IIndexer
 
 
         // Cannot add null values, so we have to just say "none" here, so we can filter on variant / invariant content
-        result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}", culture ?? "none");
-        result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}", segment ?? "none");
+        result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}", culture?.TransformDashes() ?? "none");
+        result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}", segment?.TransformDashes() ?? "none");
         result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}", protection?.AccessIds ?? new List<Guid> {Guid.Empty});
 
         return result;
