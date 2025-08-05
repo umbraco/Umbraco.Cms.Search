@@ -49,7 +49,15 @@ public class Searcher : ISearcher
         
         if (query is not null)
         {
-            searchQuery.And().ManagedQuery(culture is null ? query.ToLowerInvariant() : query.ToLower(new CultureInfo(culture)));
+            // This looks a little hacky, but managed query alone cannot handle some multicultural words, as the analyser is english based.
+            // For example any japanese letters will not get a hit in the managed query.
+            // We luckily can also query on the aggregated text field, to assure that these cases also gets included.
+            searchQuery.And().Group(nestedQuery =>
+            {
+                var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}aggregated_texts", query);
+                fieldQuery.Or().ManagedQuery(query);
+                return fieldQuery;
+            });
         }
         
         // Add facets and filters

@@ -14,8 +14,8 @@ public class VariantDocumentTests : SearcherTestBase
     [TestCase(true, "da-DK", "Navn")]
     [TestCase(false, "da-DK", "Navn")]
     // The japanese characters aren't searchable in examine for now
-    // [TestCase(true, "ja-JP", "名前")]
-    // [TestCase(false, "ja-JP", "名前")]
+    [TestCase(true, "ja-JP", "名前")]
+    [TestCase(false, "ja-JP", "名前")]
     public async Task CanSearchVariantName(bool publish, string culture, string expectedValue)
     {
         var indexAlias = GetIndexAlias(publish);
