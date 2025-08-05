@@ -14,4 +14,10 @@
         <PackageReference Include="Examine" Version="4.0.0-beta.1" />
     </ItemGroup>
 
+    <ItemGroup>
+        <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+            <_Parameter1>Umbraco.Test.Search.Examine.Integration</_Parameter1>
+        </AssemblyAttribute>
+    </ItemGroup>
+
 </Project>

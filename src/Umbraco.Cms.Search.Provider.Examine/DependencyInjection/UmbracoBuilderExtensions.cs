@@ -1,8 +1,11 @@
 using Examine;
+using Examine.Lucene.Directories;
+using Examine.Lucene.Providers;
 using Microsoft.Extensions.DependencyInjection;
+using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Models;
-using Umbraco.Cms.Search.Core;
+using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
@@ -17,9 +20,7 @@ public static class UmbracoBuilderExtensions
 {
     public static IUmbracoBuilder AddExamineSearchProvider(this IUmbracoBuilder builder)
     {
-        builder.Services.AddExamine();
-        
-        builder.Services.ConfigureOptions<ConfigureIndexOptions>();
+        AddServices(builder);
         
         builder.Services.AddExamineLuceneIndex(Search.Core.Constants.IndexAliases.DraftContent, configuration =>
         {
@@ -36,7 +37,43 @@ public static class UmbracoBuilderExtensions
         builder.Services.AddExamineLuceneIndex(Search.Core.Constants.IndexAliases.DraftMembers, configuration =>
         {
         });
+
+
+        return builder;
+    }
+
+    internal static IUmbracoBuilder AddExamineSearchProviderForTest<TIndex, TDirectoryFactory>(this IUmbracoBuilder builder)
+        where TIndex : LuceneIndex
+        where TDirectoryFactory : class, IDirectoryFactory
+    {
+        AddServices(builder);
         
+        builder.Services.AddSingleton<TDirectoryFactory>();
+        
+        // Register indexes with optional custom type and factory
+        builder.Services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(
+            Search.Core.Constants.IndexAliases.DraftContent,
+            config => { });
+
+        builder.Services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(
+            Search.Core.Constants.IndexAliases.PublishedContent,
+            config => { });
+
+        builder.Services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(
+            Search.Core.Constants.IndexAliases.DraftMedia,
+            config => { });
+
+        builder.Services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(
+            Search.Core.Constants.IndexAliases.DraftMembers,
+            config => { });
+        
+        return builder;
+    }
+
+    private static void AddServices(IUmbracoBuilder builder)
+    {
+        builder.Services.AddExamine();
+        builder.Services.ConfigureOptions<ConfigureIndexOptions>();
         builder.Services.AddTransient<IIndexer, Indexer>();
         builder.Services.AddTransient<ISearcher, Searcher>();
         builder.Services.AddTransient<IExamineMapper, ExamineMapper>();
@@ -48,7 +85,11 @@ public static class UmbracoBuilderExtensions
             options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(Search.Core.Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
             options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(Search.Core.Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
         });
-
-        return builder;
+        
+                
+        builder.AddNotificationHandler<ContentTreeChangeNotification, ContentTreeChangeDistributedCacheNotificationHandler>();
+        builder.AddNotificationHandler<MediaTreeChangeNotification, MediaTreeChangeDistributedCacheNotificationHandler>();
+        builder.AddNotificationHandler<MemberSavedNotification, MemberSavedDistributedCacheNotificationHandler>();
+        builder.AddNotificationHandler<MemberDeletedNotification, MemberDeletedDistributedCacheNotificationHandler>();
     }
 }
