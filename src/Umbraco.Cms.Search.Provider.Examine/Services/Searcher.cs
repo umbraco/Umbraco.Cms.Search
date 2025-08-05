@@ -1,6 +1,5 @@
 ﻿using System.Globalization;
 using Examine;
-using Examine.Lucene.Search;
 using Examine.Search;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
@@ -59,8 +58,7 @@ public class Searcher : ISearcher
         AddSorters(searchQuery, sorters);
         AddProtection(searchQuery, accessContext);
         
-        var results = searchQuery.Execute();
-
+        var results = searchQuery.Execute(new QueryOptions(skip, take));
 
         if (sorters is not null)
         {
