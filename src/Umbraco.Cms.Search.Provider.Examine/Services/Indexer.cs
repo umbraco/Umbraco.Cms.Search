@@ -1,12 +1,11 @@
 ﻿using Examine;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Indexing;
-using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Provider.Examine.Extensions;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
-public class Indexer : IIndexer
+public class Indexer : IExamineIndexer
 {
     private readonly IExamineManager _examineManager;
 

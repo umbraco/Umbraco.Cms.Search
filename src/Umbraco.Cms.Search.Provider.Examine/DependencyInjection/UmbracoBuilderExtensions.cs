@@ -74,16 +74,21 @@ public static class UmbracoBuilderExtensions
     {
         builder.Services.AddExamine();
         builder.Services.ConfigureOptions<ConfigureIndexOptions>();
+        
+        // register the in-memory searcher and indexer so they can be used explicitly for index registrations
+        builder.Services.AddTransient<IExamineIndexer, Indexer>();
+        builder.Services.AddTransient<IExamineSearcher, Searcher>();
+        
         builder.Services.AddTransient<IIndexer, Indexer>();
         builder.Services.AddTransient<ISearcher, Searcher>();
         builder.Services.AddTransient<IExamineMapper, ExamineMapper>();
         
         builder.Services.Configure<IndexOptions>(options =>
         {
-            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(Search.Core.Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<IIndexer, ISearcher, IPublishedContentChangeStrategy>(Search.Core.Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(Search.Core.Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
-            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(Search.Core.Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
+            options.RegisterIndex<IExamineIndexer, IExamineSearcher, IDraftContentChangeStrategy>(Search.Core.Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IExamineIndexer, IExamineSearcher, IPublishedContentChangeStrategy>(Search.Core.Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IExamineIndexer, IExamineSearcher, IDraftContentChangeStrategy>(Search.Core.Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
+            options.RegisterIndex<IExamineIndexer, IExamineSearcher, IDraftContentChangeStrategy>(Search.Core.Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
         });
         
                 

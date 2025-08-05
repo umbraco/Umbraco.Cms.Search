@@ -16,7 +16,7 @@ using SearchResult = Umbraco.Cms.Search.Core.Models.Searching.SearchResult;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
-public class Searcher : ISearcher
+public class Searcher : IExamineSearcher
 {
     private readonly IExamineManager _examineManager;
     private readonly IExamineMapper _examineMapper;
