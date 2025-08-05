@@ -40,15 +40,6 @@ public class Searcher : ISearcher
         {
             return await Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
         }
-        
-        // TODO: Fix to proper examine field query.
-        // We cannot do normal field queries, as segments often contain "-", and field quries cannot handle that
-        // This results in searches like "segment-1", also yielding other segments like "segment-2", "segment-3" etc.
-        // var searchQuery = index.Searcher
-        //     .CreateQuery()
-        //     .NativeQuery($"+(+{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}:\"{culture ?? "none"}\")")
-        //     .And()
-        //     .NativeQuery($"+(+{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}:\"{segment ?? "none"}\")");
 
         var searchQuery = index.Searcher
             .CreateQuery()
