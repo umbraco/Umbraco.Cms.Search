@@ -2,6 +2,7 @@
 using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Provider.Examine.Extensions;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
@@ -115,9 +116,9 @@ public class VariantDocumentTests : IndexTestBase
         
         var result = results
             .SelectMany(x => x.Values.Values)
-            .First(x => x == expectedValue);
+            .First(x => x == expectedValue.TransformDashes());
         Assert.That(results, Is.Not.Empty);
-        Assert.That(result, Is.EqualTo(expectedValue));
+        Assert.That(result, Is.EqualTo(expectedValue.TransformDashes()));
     }
     
     [TestCase(true, "en-US", "segment-1", "body-segment-1")]
@@ -134,7 +135,7 @@ public class VariantDocumentTests : IndexTestBase
         
         var results = index.Searcher.Search(expectedValue);
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == "Umb_body_texts").Value, Is.EqualTo(expectedValue));
+        Assert.That(results.First().Values.First(x => x.Key == "Umb_body_texts").Value, Is.EqualTo(expectedValue.TransformDashes()));
     }
     
     [SetUp]

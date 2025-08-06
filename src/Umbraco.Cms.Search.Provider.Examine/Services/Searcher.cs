@@ -52,8 +52,9 @@ public class Searcher : IExamineSearcher
             // We luckily can also query on the aggregated text field, to assure that these cases also gets included.
             searchQuery.And().Group(nestedQuery =>
             {
-                var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}aggregated_texts", query);
-                fieldQuery.Or().ManagedQuery(query);
+                var transformedQuery = query.TransformDashes();
+                var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}aggregated_texts", transformedQuery);
+                fieldQuery.Or().ManagedQuery(transformedQuery);
                 return fieldQuery;
             });
         }
@@ -66,18 +67,18 @@ public class Searcher : IExamineSearcher
         
         var results = searchQuery.Execute(new QueryOptions(skip, take));
 
-        if (sorters is not null)
-        {
-            // TODO: Fix this hacky sorting, but examine does not handle sorting Guids as string well, so we have to manually do it.
-            foreach (var sorter in sorters)
-            {
-                if (sorter is KeywordSorter keywordSorter)
-                {
-                    var sorted = SortByKey(results, $"{keywordSorter.FieldName}_{Constants.Fields.Keywords}", keywordSorter.Direction);
-                    return await Task.FromResult(new SearchResult(results.TotalItemCount, sorted.Select(MapToDocument).WhereNotNull().ToArray(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
-                }
-            }
-        }
+        // if (sorters is not null)
+        // {
+        //     // TODO: Fix this hacky sorting, but examine does not handle sorting Guids as string well, so we have to manually do it.
+        //     foreach (var sorter in sorters)
+        //     {
+        //         if (sorter is KeywordSorter keywordSorter)
+        //         {
+        //             var sorted = SortByKey(results, $"{keywordSorter.FieldName}_{Constants.Fields.Keywords}", keywordSorter.Direction);
+        //             return await Task.FromResult(new SearchResult(results.TotalItemCount, sorted.Select(MapToDocument).WhereNotNull().ToArray(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
+        //         }
+        //     }
+        // }
         
         return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull().ToArray(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
     }
@@ -170,7 +171,7 @@ public class Searcher : IExamineSearcher
             switch (filter)
             {
                 case KeywordFilter keywordFilter:
-                    var keywordFilterValue = string.Join(" ", keywordFilter.Values);
+                    var keywordFilterValue = string.Join(" ", keywordFilter.Values).TransformDashes();
                     var keywordFieldName = keywordFilter.FieldName.StartsWith(Constants.Fields.FieldPrefix) ? $"{keywordFilter.FieldName}_{Constants.Fields.Keywords}" : $"{Constants.Fields.FieldPrefix}{keywordFilter.FieldName}_{Constants.Fields.Keywords}";
                     if (keywordFilter.Negate)
                     {
@@ -182,7 +183,7 @@ public class Searcher : IExamineSearcher
                     }
                     break;
                 case TextFilter textFilter:
-                    var textFilterValue = string.Join(" ", textFilter.Values);
+                    var textFilterValue = string.Join(" ", textFilter.Values).TransformDashes();
                     if (textFilter.Negate)
                     {
                         searchQuery.Not().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", textFilterValue);

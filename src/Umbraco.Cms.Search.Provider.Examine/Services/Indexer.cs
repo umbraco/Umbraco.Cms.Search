@@ -53,7 +53,7 @@ public class Indexer : IExamineIndexer
 
     private void DeleteSingleDoc(IIndex index, Guid key)
     {
-        var documents = index.Searcher.CreateQuery().Field("Umb_Id_keywords", key.ToString()).Execute();
+        var documents = index.Searcher.CreateQuery().Field("Umb_Id_keywords", key.ToString().TransformDashes()).Execute();
         
         var idsToDelete = new HashSet<string>();
         
@@ -117,7 +117,7 @@ public class Indexer : IExamineIndexer
             
             if (field.Value.Keywords?.Any() ?? false)
             {
-                result.Add(CalculateFieldName(field, Constants.Fields.Keywords), field.Value.Keywords);
+                result.Add(CalculateFieldName(field, Constants.Fields.Keywords), field.Value.Keywords.Select(x => x.TransformDashes()));
                 aggregatedTexts.AddRange(field.Value.Keywords);
             }
             
@@ -133,25 +133,25 @@ public class Indexer : IExamineIndexer
             }
             if (field.Value.Texts?.Any() ?? false)
             {
-                result.Add(CalculateFieldName(field, Constants.Fields.Texts), field.Value.Texts);
+                result.Add(CalculateFieldName(field, Constants.Fields.Texts), field.Value.Texts.Select(x => x.TransformDashes()));
                 aggregatedTexts.AddRange(field.Value.Texts);
             }            
             
             if (field.Value.TextsR1?.Any() ?? false)
             {
-                result.Add(CalculateFieldName(field, Constants.Fields.TextsR1), field.Value.TextsR1);
+                result.Add(CalculateFieldName(field, Constants.Fields.TextsR1), field.Value.TextsR1.Select(x => x.TransformDashes()));
                 aggregatedTexts.AddRange(field.Value.TextsR1);
             }
             
             if (field.Value.TextsR2?.Any() ?? false)
             {
-                result.Add(CalculateFieldName(field, Constants.Fields.TextsR2), field.Value.TextsR2);
+                result.Add(CalculateFieldName(field, Constants.Fields.TextsR2), field.Value.TextsR2.Select(x => x.TransformDashes()));
                 aggregatedTexts.AddRange(field.Value.TextsR2);
             }
             
             if (field.Value.TextsR3?.Any() ?? false)
             {
-                result.Add(CalculateFieldName(field, Constants.Fields.TextsR3), field.Value.TextsR3);
+                result.Add(CalculateFieldName(field, Constants.Fields.TextsR3), field.Value.TextsR3.Select(x => x.TransformDashes()));
                 aggregatedTexts.AddRange(field.Value.TextsR3);
             }
         }
