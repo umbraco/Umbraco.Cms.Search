@@ -12,6 +12,18 @@ public class TestIndexConfigureOptions : IConfigureOptions<FacetOptions>
         [
             new FacetOptions.Field
             {
+                PropertyName = "fieldtwo",
+                Values = ["integers"],
+                Type = FieldDefinitionTypes.FacetInteger,
+            },             
+            new FacetOptions.Field
+            {
+                PropertyName = "fieldone",
+                Values = ["integers"],
+                Type = FieldDefinitionTypes.Integer,
+            },           
+            new FacetOptions.Field
+            {
                 PropertyName = "title",
                 Values = ["texts", "keywords"],
                 Type = FieldDefinitionTypes.FacetFullText,

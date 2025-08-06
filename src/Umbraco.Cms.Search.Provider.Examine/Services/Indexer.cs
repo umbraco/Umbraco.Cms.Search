@@ -5,14 +5,8 @@ using Umbraco.Cms.Search.Provider.Examine.Extensions;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
-public class Indexer : IExamineIndexer
+public class Indexer(IExamineManager examineManager) : IExamineIndexer
 {
-    private readonly IExamineManager _examineManager;
-
-    public Indexer(IExamineManager examineManager)
-    {
-        _examineManager = examineManager;
-    }
     public Task AddOrUpdateAsync(string indexAlias, Guid key, UmbracoObjectTypes objectType, IEnumerable<Variation> variations,
         IEnumerable<IndexField> fields, ContentProtection? protection)
     {
@@ -35,9 +29,19 @@ public class Indexer : IExamineIndexer
         return Task.CompletedTask;
     }
 
-    private string CalculateIndexKey(Guid key, Variation variation)
+    public Task ResetAsync(string indexAlias)
     {
-        string result = key.ToString().ToLowerInvariant();
+        if (examineManager.TryGetIndex(indexAlias, out var index) is false)
+        {
+            return Task.CompletedTask;
+        }
+        index?.CreateIndex();
+        return Task.CompletedTask;
+    }
+    
+    private static string CalculateIndexKey(Guid key, Variation variation)
+    {
+        var result = key.ToString().ToLowerInvariant();
 
         if (variation.Culture is not null)
         {
@@ -91,16 +95,6 @@ public class Indexer : IExamineIndexer
             
             index.DeleteFromIndex(idsToDelete);
         }
-    }
-
-    public Task ResetAsync(string indexAlias)
-    {
-        if (_examineManager.TryGetIndex(indexAlias, out var index) is false)
-        {
-            return Task.CompletedTask;
-        }
-        index?.CreateIndex();
-        return Task.CompletedTask;
     }
 
 
@@ -182,11 +176,19 @@ public class Indexer : IExamineIndexer
 
     private IIndex GetIndex(string indexName)
     {
-        if (_examineManager.TryGetIndex(indexName, out var index) is false)
+        if (examineManager.TryGetIndex(indexName, out var index) is false)
         {
             throw new Exception($"The index {indexName} could not be found.");
         }
-
         return index;
+    }
+    
+    private void AddData(object sender, IndexingItemEventArgs e, string key, string value)
+    {
+        var updatedValues = e.ValueSet.Values.ToDictionary(x => x.Key, x => x.Value.ToList());
+
+        updatedValues[key] = new List<object>() { value };
+
+        e.SetValues(updatedValues.ToDictionary(x=>x.Key, x=>(IEnumerable<object>) x.Value));
     }
 }
