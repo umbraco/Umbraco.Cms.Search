@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using Examine;
+﻿using Examine;
 using Examine.Search;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
@@ -11,7 +10,6 @@ using Umbraco.Cms.Search.Provider.Examine.Extensions;
 using Umbraco.Cms.Search.Provider.Examine.Mapping;
 using Umbraco.Extensions;
 using FacetResult = Umbraco.Cms.Search.Core.Models.Searching.Faceting.FacetResult;
-using ISearcher = Umbraco.Cms.Search.Core.Services.ISearcher;
 using SearchResult = Umbraco.Cms.Search.Core.Models.Searching.SearchResult;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
@@ -243,48 +241,48 @@ public class Searcher : IExamineSearcher
             switch (facet)
             {
                 case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
-                    searchQuery.WithFacets(facets => facets.FacetLongRange($"{Constants.Fields.FieldPrefix}{dateTimeOffsetRangeFacet.FieldName}_{Constants.Fields.DateTimeOffsets}", dateTimeOffsetRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min?.Ticks ?? DateTime.MinValue.Ticks, true, x.Max?.Ticks ?? DateTime.MaxValue.Ticks, true)).ToArray()));
+                    searchQuery.WithFacets(facetOperations => facetOperations.FacetLongRange($"{Constants.Fields.FieldPrefix}{dateTimeOffsetRangeFacet.FieldName}_{Constants.Fields.DateTimeOffsets}", dateTimeOffsetRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min?.Ticks ?? DateTime.MinValue.Ticks, true, x.Max?.Ticks ?? DateTime.MaxValue.Ticks, true)).ToArray()));
                     break;
                 case DecimalExactFacet decimalExactFacet:
-                    searchQuery.WithFacets(facets => facets.FacetString($"{Constants.Fields.FieldPrefix}{decimalExactFacet.FieldName}_{Constants.Fields.Decimals}"));
+                    searchQuery.WithFacets(facetOperations => facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{decimalExactFacet.FieldName}_{Constants.Fields.Decimals}"));
                     break;
                 case IntegerRangeFacet integerRangeFacet:
-                    searchQuery.WithFacets(facets => facets.FacetLongRange($"{Constants.Fields.FieldPrefix}{integerRangeFacet.FieldName}_{Constants.Fields.Integers}", integerRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min ?? 0, true, x.Max ?? int.MaxValue, true)).ToArray()));
+                    searchQuery.WithFacets(facetOperations => facetOperations.FacetLongRange($"{Constants.Fields.FieldPrefix}{integerRangeFacet.FieldName}_{Constants.Fields.Integers}", integerRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min ?? 0, true, x.Max ?? int.MaxValue, true)).ToArray()));
                     break;
                 case KeywordFacet keywordFacet:
-                    searchQuery.WithFacets(facets => facets.FacetString($"{Constants.Fields.FieldPrefix}{keywordFacet.FieldName}_{Constants.Fields.Texts}"));
+                    searchQuery.WithFacets(facetOperations => facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{keywordFacet.FieldName}_{Constants.Fields.Texts}"));
                     break;
                 case IntegerExactFacet integerExactFacet:
-                    searchQuery.WithFacets(facets => facets.FacetString($"{Constants.Fields.FieldPrefix}{integerExactFacet.FieldName}_{Constants.Fields.Integers}"));
+                    searchQuery.WithFacets(facetOperations => facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{integerExactFacet.FieldName}_{Constants.Fields.Integers}"));
                     break;
                 case DecimalRangeFacet decimalRangeFacet:
                 {
                     var doubleRanges = decimalRangeFacet.Ranges.Select(x => new DoubleRange(x.Key, decimal.ToDouble(x.Min ?? 0) , true, decimal.ToDouble(x.Max ?? 0), true)).ToArray();
-                    searchQuery.WithFacets(facets => facets.FacetDoubleRange($"{Constants.Fields.FieldPrefix}{facet.FieldName}_{Constants.Fields.Decimals}", doubleRanges));
+                    searchQuery.WithFacets(facetOperations => facetOperations.FacetDoubleRange($"{Constants.Fields.FieldPrefix}{facet.FieldName}_{Constants.Fields.Decimals}", doubleRanges));
                     break;
                 }
                 case DateTimeOffsetExactFacet dateTimeOffsetExactFacet:
-                    searchQuery.WithFacets(facets => facets.FacetString($"{Constants.Fields.FieldPrefix}{dateTimeOffsetExactFacet.FieldName}_{Constants.Fields.DateTimeOffsets}"));
+                    searchQuery.WithFacets(facetOperations => facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{dateTimeOffsetExactFacet.FieldName}_{Constants.Fields.DateTimeOffsets}"));
                     break;
             }
         }
     }
     
-    private Document? MapToDocument(ISearchResult item)
+    private static Document? MapToDocument(ISearchResult item)
     {
+        
+        var objectTypeString = item.Values.GetValueOrDefault("__IndexType");
+        
+        Enum.TryParse(objectTypeString, out UmbracoObjectTypes umbracoObjectType);
+        
         if (Guid.TryParse(item.Id, out var guidId))
         {
-            return new Document(guidId, UmbracoObjectTypes.Document);
+            return new Document(guidId, umbracoObjectType);
         }
 
         // The id of an item may be appended with _{culture_{segment}, so strip those and map to guid.
         var indexofUnderscore = item.Id.IndexOf('_');
         var idWithOutCulture = item.Id.Remove(indexofUnderscore);
-        if (Guid.TryParse(idWithOutCulture, out var idWithoutCultureGuid))
-        {
-            return new Document(idWithoutCultureGuid, UmbracoObjectTypes.Document);
-        }
-
-        return null;
+        return Guid.TryParse(idWithOutCulture, out var idWithoutCultureGuid) ? new Document(idWithoutCultureGuid, umbracoObjectType) : null;
     }
 }

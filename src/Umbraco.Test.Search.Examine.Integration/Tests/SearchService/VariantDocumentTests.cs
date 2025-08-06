@@ -13,7 +13,6 @@ public class VariantDocumentTests : SearcherTestBase
     [TestCase(false, "en-US", "Name")]
     [TestCase(true, "da-DK", "Navn")]
     [TestCase(false, "da-DK", "Navn")]
-    // The japanese characters aren't searchable in examine for now
     [TestCase(true, "ja-JP", "名前")]
     [TestCase(false, "ja-JP", "名前")]
     public async Task CanSearchVariantName(bool publish, string culture, string expectedValue)
@@ -57,8 +56,8 @@ public class VariantDocumentTests : SearcherTestBase
     [TestCase(false, "en-US", "Root")]
     [TestCase(true, "da-DK", "Rod")]
     [TestCase(false, "da-DK", "Rod")]
-    // [TestCase(true, "ja-JP", "ル-ト")]
-    // [TestCase(false, "ja-JP", "ル-ト")]
+    [TestCase(true, "ja-JP", "ル-ト")]
+    [TestCase(false, "ja-JP", "ル-ト")]
     public async Task CanSearchVariantTextByCulture(bool publish, string culture, string expectedValue)
     {
         var indexAlias = GetIndexAlias(publish);
