@@ -13,10 +13,40 @@ public class TestIndexConfigureOptions : IConfigureOptions<FacetOptions>
         [
             new FacetOptions.Field
             {
-                PropertyName = "fieldtwo",
+                PropertyName = "fieldSingleValues",
+                Values = [Constants.Fields.Integers],
+                Type = FieldDefinitionTypes.FacetInteger,
+            }, 
+            new FacetOptions.Field
+            {
+                PropertyName = "fieldSingleValues",
+                Values = [Constants.Fields.Decimals],
+                Type = FieldDefinitionTypes.FacetDouble,
+            }, 
+            new FacetOptions.Field
+            {
+                PropertyName = "fieldSingleValues",
+                Values = [Constants.Fields.DateTimeOffsets],
+                Type = FieldDefinitionTypes.FacetDateTime,
+            },            
+            new FacetOptions.Field
+            {
+                PropertyName = "fieldMultipleValues",
                 Values = [Constants.Fields.Integers],
                 Type = FieldDefinitionTypes.Integer,
-            },             
+            }, 
+            new FacetOptions.Field
+            {
+                PropertyName = "fieldMultipleValues",
+                Values = [Constants.Fields.Decimals],
+                Type = FieldDefinitionTypes.Double,
+            }, 
+            new FacetOptions.Field
+            {
+                PropertyName = "fieldMultipleValues",
+                Values = [Constants.Fields.DateTimeOffsets],
+                Type = FieldDefinitionTypes.DateTime,
+            }, 
             new FacetOptions.Field
             {
                 PropertyName = "fieldone",

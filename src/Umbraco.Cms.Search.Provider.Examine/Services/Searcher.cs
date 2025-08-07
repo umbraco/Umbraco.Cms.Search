@@ -70,16 +70,6 @@ public class Searcher : IExamineSearcher
         return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull().ToArray(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
     }
 
-
-    
-    private IEnumerable<ISearchResult> SortByKey(
-        ISearchResults results,
-        string key,
-        Direction direction)
-    {
-        return results.OrderBy(r => GetValueAsString(r.Values, key), direction).ToList();
-    }
-
     private static string GetValueAsString(IReadOnlyDictionary<string, string> dict, string key)
     {
         return dict.TryGetValue(key, out var value) ? value : string.Empty; // Or null if preferred
@@ -229,13 +219,13 @@ public class Searcher : IExamineSearcher
             switch (facet)
             {
                 case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
-                    searchQuery.WithFacets(facetOperations => facetOperations.FacetLongRange($"{Constants.Fields.FieldPrefix}{dateTimeOffsetRangeFacet.FieldName}_{Constants.Fields.DateTimeOffsets}", dateTimeOffsetRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min?.Ticks ?? DateTime.MinValue.Ticks, true, x.Max?.Ticks ?? DateTime.MaxValue.Ticks, true)).ToArray()));
+                    searchQuery.WithFacets(facetOperations => facetOperations.FacetLongRange($"{Constants.Fields.FieldPrefix}{dateTimeOffsetRangeFacet.FieldName}_{Constants.Fields.DateTimeOffsets}", dateTimeOffsetRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min?.Ticks ?? DateTime.MinValue.Ticks, true, x.Max?.Ticks ?? DateTime.MaxValue.Ticks, false)).ToArray()));
                     break;
                 case DecimalExactFacet decimalExactFacet:
                     searchQuery.WithFacets(facetOperations => facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{decimalExactFacet.FieldName}_{Constants.Fields.Decimals}"));
                     break;
                 case IntegerRangeFacet integerRangeFacet:
-                    searchQuery.WithFacets(facetOperations => facetOperations.FacetLongRange($"{Constants.Fields.FieldPrefix}{integerRangeFacet.FieldName}_{Constants.Fields.Integers}", integerRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min ?? 0, true, x.Max ?? int.MaxValue, true)).ToArray()));
+                    searchQuery.WithFacets(facetOperations => facetOperations.FacetLongRange($"{Constants.Fields.FieldPrefix}{integerRangeFacet.FieldName}_{Constants.Fields.Integers}", integerRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min ?? 0, true, x.Max ?? int.MaxValue, false)).ToArray()));
                     break;
                 case KeywordFacet keywordFacet:
                     searchQuery.WithFacets(facetOperations => facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{keywordFacet.FieldName}_{Constants.Fields.Texts}"));
@@ -245,7 +235,7 @@ public class Searcher : IExamineSearcher
                     break;
                 case DecimalRangeFacet decimalRangeFacet:
                 {
-                    var doubleRanges = decimalRangeFacet.Ranges.Select(x => new DoubleRange(x.Key, decimal.ToDouble(x.Min ?? 0) , true, decimal.ToDouble(x.Max ?? 0), true)).ToArray();
+                    var doubleRanges = decimalRangeFacet.Ranges.Select(x => new DoubleRange(x.Key, decimal.ToDouble(x.Min ?? 0) , true, decimal.ToDouble(x.Max ?? 0), false)).ToArray();
                     searchQuery.WithFacets(facetOperations => facetOperations.FacetDoubleRange($"{Constants.Fields.FieldPrefix}{facet.FieldName}_{Constants.Fields.Decimals}", doubleRanges));
                     break;
                 }
