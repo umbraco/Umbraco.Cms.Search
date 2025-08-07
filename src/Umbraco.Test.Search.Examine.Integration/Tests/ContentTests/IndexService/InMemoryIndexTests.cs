@@ -33,13 +33,9 @@ public class InMemoryIndexTests : UmbracoIntegrationTest
     }
 
     [Test]
-    public async Task CanIndexAnyData()
+    public void CanIndexAnyData()
     {
         var index = GetIndex();
-        index.IndexOperationComplete += (_, _) =>
-        {
-            indexingHandle.Set();
-        };
         index.IndexItem(new ValueSet(
             "test",
             "Person",
@@ -50,8 +46,8 @@ public class InMemoryIndexTests : UmbracoIntegrationTest
                 {"Email", "nge@umbraco.dk" },
                 {"Age", 30}
             }));
-
-        await indexingHandle.WaitOneAsync(millisecondsTimeout: 3000);
+        
+        Thread.Sleep(3000);
 
         var results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results.TotalItemCount, Is.EqualTo(1));
@@ -62,15 +58,10 @@ public class InMemoryIndexTests : UmbracoIntegrationTest
     [TestCase(3)]
     [TestCase(50)]
     [TestCase(100)]
-    public async Task CanIndexData(int count)
+    public void CanIndexData(int count)
     {
         var index = GetIndex();
-        index.IndexOperationComplete += (_, _) =>
-        {
-            indexingHandle.Set();
-        };
         IndexData(index, count);
-        await indexingHandle.WaitOneAsync(millisecondsTimeout: 3000);
         var results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results.TotalItemCount, Is.EqualTo(count));
     }
@@ -89,9 +80,9 @@ public class InMemoryIndexTests : UmbracoIntegrationTest
                     {"Age", i },
                 }));
         }
+        
+        Thread.Sleep(3000);
     }
-    
-    private AutoResetEvent indexingHandle = new(false);
 
     private IIndex GetIndex()
     {
