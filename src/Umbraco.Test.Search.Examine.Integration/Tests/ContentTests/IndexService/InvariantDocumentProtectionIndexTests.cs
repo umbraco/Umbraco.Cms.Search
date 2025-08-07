@@ -7,7 +7,7 @@ using Umbraco.Cms.Search.Provider.Examine.Extensions;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
-namespace Umbraco.Test.Search.Examine.Integration.Tests.IndexService;
+namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
 
 public class InvariantDocumentProtectionIndexTests : IndexTestBase
 {

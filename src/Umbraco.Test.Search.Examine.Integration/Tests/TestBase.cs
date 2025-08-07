@@ -8,7 +8,7 @@ using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Search.Provider.Examine.DependencyInjection;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
-using Umbraco.Test.Search.Examine.Integration.Tests.IndexService;
+using Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests;
 

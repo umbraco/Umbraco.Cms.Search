@@ -1,63 +1,40 @@
-﻿using Examine;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
-namespace Umbraco.Test.Search.Examine.Integration.Tests.IndexService;
+namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.SearchService;
 
-public partial class InvariantDocumentTreeTests
+public partial class InvariantContentTreeTests : SearcherTestBase
 {
     [Test]
-    public void DraftStructure_YieldsAllDocuments()
-    {
-        CreateInvariantDocumentTree(false);
-        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
-
-        var results = index.Searcher.CreateQuery().All().Execute().ToArray();
-
-        Assert.Multiple(() =>
-        {
-            Assert.That(results.Length, Is.EqualTo(3));
-            Assert.That(results[0].Id, Is.EqualTo(RootKey.ToString()));
-            Assert.That(results[1].Id, Is.EqualTo(ChildKey.ToString()));
-            Assert.That(results[2].Id, Is.EqualTo(GrandchildKey.ToString()));
-        });
-    }
-    
-    [Test]
-    public void DraftStructure_YieldsNoPublishedDocuments()
-    {
-        CreateInvariantDocumentTree(false);
-        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
-
-        var results = index.Searcher.CreateQuery().All().Execute();
-        Assert.That(results.Count(), Is.EqualTo(0));
-    }
-
-    [Test]
-    public void DraftStructure_WithRootInRecycleBin_YieldsAllDocuments()
+    public async Task DraftStructure_WithRootInRecycleBin_YieldsAllDocuments()
     {
         CreateInvariantDocumentTree(false);
         var root = ContentService.GetById(RootKey);
         var result = ContentService.MoveToRecycleBin(root);
         Thread.Sleep(3000);
-        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
-        var results = index.Searcher.CreateQuery().All().Execute().ToArray();
+        
+        var indexAlias = GetIndexAlias(false);
+        var rootResult = await Searcher.SearchAsync(indexAlias, "Root", null, null, null, null, null, null, 0, 100);
+        var childResult = await Searcher.SearchAsync(indexAlias, "Child", null, null, null, null, null, null, 0, 100);
+        var grandChildResult = await Searcher.SearchAsync(indexAlias, "Grandchild", null, null, null, null, null, null, 0, 100);
         
         Assert.Multiple(() =>
         {
-            Assert.That(results.Length, Is.EqualTo(3));
-            Assert.That(results[0].Id, Is.EqualTo(RootKey.ToString()));
-            Assert.That(results[1].Id, Is.EqualTo(ChildKey.ToString()));
-            Assert.That(results[2].Id, Is.EqualTo(GrandchildKey.ToString()));
+            Assert.That(rootResult.Total, Is.EqualTo(1));
+            Assert.That(childResult.Total, Is.EqualTo(1));
+            Assert.That(grandChildResult.Total, Is.EqualTo(1));
+            Assert.That(rootResult.Documents.First().Id, Is.EqualTo(RootKey));
+            Assert.That(childResult.Documents.First().Id, Is.EqualTo(ChildKey));
+            Assert.That(grandChildResult.Documents.First().Id, Is.EqualTo(GrandchildKey));
         });
     }
     
         
     [Test]
-    public void DraftStructure_WithChildDeleted_YieldsNothingBelowRoot()
+    public async Task DraftStructure_WithChildDeleted_YieldsNothingBelowRoot()
     {
         CreateInvariantDocumentTree(false);
         var child = ContentService.GetById(ChildKey);
@@ -66,18 +43,22 @@ public partial class InvariantDocumentTreeTests
         // TODO: We need to await that the index deleting has completed, for now this is our only option
         Thread.Sleep(3000);
         
-        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
-        var results = index.Searcher.CreateQuery().All().Execute().ToArray();
+        var indexAlias = GetIndexAlias(false);
+        var rootResult = await Searcher.SearchAsync(indexAlias, "Root", null, null, null, null, null, null, 0, 100);
+        var childResult = await Searcher.SearchAsync(indexAlias, "Child", null, null, null, null, null, null, 0, 100);
+        var grandChildResult = await Searcher.SearchAsync(indexAlias, "Grandchild", null, null, null, null, null, null, 0, 100);
         
         Assert.Multiple(() =>
         {
-            Assert.That(results.Length, Is.EqualTo(1));
-            Assert.That(results[0].Id, Is.EqualTo(RootKey.ToString()));
+            Assert.That(rootResult.Total, Is.EqualTo(1));
+            Assert.That(childResult.Total, Is.EqualTo(0));
+            Assert.That(grandChildResult.Total, Is.EqualTo(0));
+            Assert.That(rootResult.Documents.First().Id, Is.EqualTo(RootKey));
         });
     }
     
     [Test]
-    public void DraftStructure_WithGrandchildDeleted_YieldsNothingBelowChild()
+    public async Task DraftStructure_WithGrandchildDeleted_YieldsNothingBelowChild()
     {
         CreateInvariantDocumentTree(false);
         var grandchild = ContentService.GetById(GrandchildKey);
@@ -86,14 +67,18 @@ public partial class InvariantDocumentTreeTests
         // TODO: We need to await that the index deleting has completed, for now this is our only option
         Thread.Sleep(3000);
         
-        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
-        var results = index.Searcher.CreateQuery().All().Execute().ToArray();
+        var indexAlias = GetIndexAlias(false);
+        var rootResult = await Searcher.SearchAsync(indexAlias, "Root", null, null, null, null, null, null, 0, 100);
+        var childResult = await Searcher.SearchAsync(indexAlias, "Child", null, null, null, null, null, null, 0, 100);
+        var grandChildResult = await Searcher.SearchAsync(indexAlias, "Grandchild", null, null, null, null, null, null, 0, 100);
         
         Assert.Multiple(() =>
         {
-            Assert.That(results.Length, Is.EqualTo(2));
-            Assert.That(results[0].Id, Is.EqualTo(RootKey.ToString()));
-            Assert.That(results[1].Id, Is.EqualTo(ChildKey.ToString()));
+            Assert.That(rootResult.Total, Is.EqualTo(1));
+            Assert.That(childResult.Total, Is.EqualTo(1));
+            Assert.That(grandChildResult.Total, Is.EqualTo(0));
+            Assert.That(rootResult.Documents.First().Id, Is.EqualTo(RootKey));
+            Assert.That(childResult.Documents.First().Id, Is.EqualTo(ChildKey));
         });
     }
 

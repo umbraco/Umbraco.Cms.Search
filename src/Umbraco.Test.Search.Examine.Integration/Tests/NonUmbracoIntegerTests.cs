@@ -1,7 +1,7 @@
 ﻿using NUnit.Framework;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 
-namespace Umbraco.Test.Search.Examine.Integration.Tests.NonUmbracoTests;
+namespace Umbraco.Test.Search.Examine.Integration.Tests;
 
 public class NonUmbracoIntegerTests : NonUmbracoTestBase
 {

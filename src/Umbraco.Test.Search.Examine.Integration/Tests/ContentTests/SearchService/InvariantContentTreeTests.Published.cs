@@ -1,8 +1,8 @@
 ﻿using NUnit.Framework;
 
-namespace Umbraco.Test.Search.Examine.Integration.Tests.SearchService;
+namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.SearchService;
 
-public partial class InvariantContentTreeTests : SearcherTestBase
+public partial class InvariantContentTreeTests
 {
     [Test]
     public async Task PublishStructure_WithRootInRecycleBin_YieldsNoDocuments()

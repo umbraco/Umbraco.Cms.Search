@@ -6,7 +6,7 @@ using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
-namespace Umbraco.Test.Search.Examine.Integration.Tests.SearchService;
+namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.SearchService;
 
 public class InvariantContentProtectionTests : SearcherTestBase
 {

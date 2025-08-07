@@ -4,7 +4,7 @@ using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Services;
 
-namespace Umbraco.Test.Search.Examine.Integration.Tests.NonUmbracoTests;
+namespace Umbraco.Test.Search.Examine.Integration.Tests;
 
 public abstract class NonUmbracoTestBase : TestBase
 {
