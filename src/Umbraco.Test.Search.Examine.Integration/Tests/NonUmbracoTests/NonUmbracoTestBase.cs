@@ -44,19 +44,19 @@ public abstract class NonUmbracoTestBase : TestBase
                         Culture: null,
                         Segment: null
                     ),
-                    // new IndexField(
-                    //     FieldMultipleValue,
-                    //     new IndexValue
-                    //     {
-                    //         // Decimals = [i * 0.01m],
-                    //         Integers = [i, i + 1],
-                    //         // Keywords = [$"single{i}"],
-                    //         // DateTimeOffsets = [StartDate().AddDays(i)],
-                    //         // Texts = [$"single{i}"]
-                    //     },
-                    //     Culture: null,
-                    //     Segment: null
-                    // ),
+                    new IndexField(
+                        FieldMultipleValue,
+                        new IndexValue
+                        {
+                            // Decimals = [i * 0.01m],
+                            Integers = [i, i + 1],
+                            // Keywords = [$"single{i}"],
+                            // DateTimeOffsets = [StartDate().AddDays(i)],
+                            // Texts = [$"single{i}"]
+                        },
+                        Culture: null,
+                        Segment: null
+                    ),
                 ],
                 null);
         }

@@ -1,5 +1,6 @@
 ﻿using Examine;
 using Microsoft.Extensions.Options;
+using Umbraco.Cms.Search.Provider.Examine;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
 
 namespace Umbraco.Test.Search.Examine.Integration;
@@ -13,43 +14,43 @@ public class TestIndexConfigureOptions : IConfigureOptions<FacetOptions>
             new FacetOptions.Field
             {
                 PropertyName = "fieldtwo",
-                Values = ["integers"],
-                Type = FieldDefinitionTypes.FacetInteger,
+                Values = [Constants.Fields.Integers],
+                Type = FieldDefinitionTypes.Integer,
             },             
             new FacetOptions.Field
             {
                 PropertyName = "fieldone",
-                Values = ["integers"],
+                Values = [Constants.Fields.Integers],
                 Type = FieldDefinitionTypes.Integer,
             },           
             new FacetOptions.Field
             {
                 PropertyName = "title",
-                Values = ["texts", "keywords"],
+                Values = [Constants.Fields.Texts, Constants.Fields.Keywords],
                 Type = FieldDefinitionTypes.FacetFullText,
             },
             new FacetOptions.Field
             {
                 PropertyName = "decimalproperty",
-                Values = ["decimals"],
+                Values = [Constants.Fields.Decimals],
                 Type = FieldDefinitionTypes.FacetDouble,
             },            
             new FacetOptions.Field
             {
                 PropertyName = "sortableTitle",
-                Values = ["texts"],
+                Values = [Constants.Fields.Texts],
                 Type = FieldDefinitionTypes.FullTextSortable,
             },
             new FacetOptions.Field
             {
                 PropertyName = "datetime",
-                Values = ["datetimeoffsets"],
+                Values = [Constants.Fields.DateTimeOffsets],
                 Type = FieldDefinitionTypes.FacetDateTime,
             },            
             new FacetOptions.Field
             {
                 PropertyName = "count",
-                Values = ["integers"],
+                Values = [Constants.Fields.Integers],
                 Type = FieldDefinitionTypes.FacetInteger,
             },
         ];

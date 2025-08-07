@@ -66,19 +66,6 @@ public class Searcher : IExamineSearcher
         AddProtection(searchQuery, accessContext);
         
         var results = searchQuery.Execute(new QueryOptions(skip, take));
-
-        // if (sorters is not null)
-        // {
-        //     // TODO: Fix this hacky sorting, but examine does not handle sorting Guids as string well, so we have to manually do it.
-        //     foreach (var sorter in sorters)
-        //     {
-        //         if (sorter is KeywordSorter keywordSorter)
-        //         {
-        //             var sorted = SortByKey(results, $"{keywordSorter.FieldName}_{Constants.Fields.Keywords}", keywordSorter.Direction);
-        //             return await Task.FromResult(new SearchResult(results.TotalItemCount, sorted.Select(MapToDocument).WhereNotNull().ToArray(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
-        //         }
-        //     }
-        // }
         
         return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull().ToArray(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
     }
@@ -103,17 +90,17 @@ public class Searcher : IExamineSearcher
         string protectionFieldName = $"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}";
         if (accessContext is null)
         {
-            searchQuery.And().Field(protectionFieldName, Guid.Empty.ToString());
+            searchQuery.And().Field(protectionFieldName, Guid.Empty.ToString().TransformDashes());
         }
         else
         {
-            var keys = $"{Guid.Empty} {accessContext.PrincipalId}";
+            var keys = $"{Guid.Empty.ToString().TransformDashes()} {accessContext.PrincipalId.ToString().TransformDashes()}";
             
             if (accessContext.GroupIds is not null)
             {
-                foreach (var id in  accessContext.GroupIds.Select(x => x.ToString()))
+                foreach (var id in  accessContext.GroupIds)
                 {
-                    keys += string.Join(" ", id);
+                    keys += $" {id.ToString().TransformDashes()}";
                 }
             }
             

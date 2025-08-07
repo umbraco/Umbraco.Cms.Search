@@ -8,7 +8,10 @@ public class NonUmbracoIntegerTests : NonUmbracoTestBase
     [Test]
     public async Task ExactFilterSingleValueTest()
     {
-        var results = await Searcher.SearchAsync(IndexAlias, null, [new IntegerExactFilter(FieldSingleValue, [1], false)], null, null, null, null, null, 0 , 100);
+        
+        // var resultsQuery = await Searcher.SearchAsync(IndexAlias, "5", null, null, null, null, null, null, 0 , 100);
+
+        var results = await Searcher.SearchAsync(IndexAlias, null, [new IntegerExactFilter(FieldSingleValue, [5], false)], null, null, null, null, null, 0 , 100);
         
         Assert.That(results.Total, Is.EqualTo(1));
     }

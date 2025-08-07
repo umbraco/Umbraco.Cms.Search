@@ -1,16 +1,19 @@
 ﻿using Examine;
+using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Provider.Examine.Extensions;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
-public class Indexer(IExamineManager examineManager) : IExamineIndexer
+public class Indexer(IExamineManager examineManager, ILogger<Indexer> logger) : IExamineIndexer
 {
     public Task AddOrUpdateAsync(string indexAlias, Guid key, UmbracoObjectTypes objectType, IEnumerable<Variation> variations,
         IEnumerable<IndexField> fields, ContentProtection? protection)
     {
         var index = GetIndex(indexAlias);
+        
+        index.IndexingError += IndexingError;
 
         DeleteSingleDoc(index, key);
 
@@ -26,6 +29,8 @@ public class Indexer(IExamineManager examineManager) : IExamineIndexer
         }
         
         index.IndexItems(valuesToIndex);
+        
+        // index.IndexingError -= IndexingError;
         return Task.CompletedTask;
     }
 
@@ -72,6 +77,11 @@ public class Indexer(IExamineManager examineManager) : IExamineIndexer
         }
     }
     
+    private void IndexingError(object? sender, IndexingErrorEventArgs e)
+    {
+        logger.LogCritical(e.Message, e);
+    }
+    
     
     public async Task DeleteAsync(string indexAlias, IEnumerable<Guid> keys)
     {
@@ -98,15 +108,16 @@ public class Indexer(IExamineManager examineManager) : IExamineIndexer
     }
 
 
-    private Dictionary<string, object> MapToDictionary(IEnumerable<IndexField> fields, string? culture, string? segment, ContentProtection? protection)
+    private Dictionary<string, IEnumerable<object>> MapToDictionary(IEnumerable<IndexField> fields, string? culture, string? segment, ContentProtection? protection)
     {
-        var result = new Dictionary<string, object>();
+        var result = new Dictionary<string, IEnumerable<object>>();
         List<string> aggregatedTexts = [];
         foreach (var field in fields)
         {
             if (field.Value.Integers?.Any() ?? false)
             {
-                result.Add(CalculateFieldName(field, Constants.Fields.Integers), field.Value.Integers);
+                List<object> integers = field.Value.Integers.Cast<object>().ToList();
+                result.Add(CalculateFieldName(field, Constants.Fields.Integers),  integers);
             }
             
             if (field.Value.Keywords?.Any() ?? false)
@@ -117,13 +128,15 @@ public class Indexer(IExamineManager examineManager) : IExamineIndexer
             
             if (field.Value.Decimals?.Any() ?? false)
             {
-                result.Add(CalculateFieldName(field, Constants.Fields.Decimals), field.Value.Decimals);
+                List<object> decimals = field.Value.Decimals.Cast<object>().ToList();
+                result.Add(CalculateFieldName(field, Constants.Fields.Decimals), decimals);
             }
             
             if (field.Value.DateTimeOffsets?.Any() ?? false)
             {
                 // We have to use DateTime here, as examine facets does not play nice with DatetimeOffsets for now.
-                result.Add(CalculateFieldName(field, Constants.Fields.DateTimeOffsets), field.Value.DateTimeOffsets.First().DateTime);
+                List<object> dates = field.Value.DateTimeOffsets.Select(x => x.DateTime).Cast<object>().ToList();
+                result.Add(CalculateFieldName(field, Constants.Fields.DateTimeOffsets), dates);
             }
             if (field.Value.Texts?.Any() ?? false)
             {
@@ -157,9 +170,10 @@ public class Indexer(IExamineManager examineManager) : IExamineIndexer
 
 
         // Cannot add null values, so we have to just say "none" here, so we can filter on variant / invariant content
-        result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}", culture?.TransformDashes() ?? "none");
-        result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}", segment?.TransformDashes() ?? "none");
-        result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}", protection?.AccessIds ?? new List<Guid> {Guid.Empty});
+        result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}", [culture?.TransformDashes() ?? "none"]);
+        result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}", [segment?.TransformDashes() ?? "none"]);
+        var protectionIds = protection?.AccessIds ?? new List<Guid> {Guid.Empty};
+        result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}", protectionIds.Select(x => x.ToString().TransformDashes()));
 
         return result;
     }
@@ -181,14 +195,5 @@ public class Indexer(IExamineManager examineManager) : IExamineIndexer
             throw new Exception($"The index {indexName} could not be found.");
         }
         return index;
-    }
-    
-    private void AddData(object sender, IndexingItemEventArgs e, string key, string value)
-    {
-        var updatedValues = e.ValueSet.Values.ToDictionary(x => x.Key, x => x.Value.ToList());
-
-        updatedValues[key] = new List<object>() { value };
-
-        e.SetValues(updatedValues.ToDictionary(x=>x.Key, x=>(IEnumerable<object>) x.Value));
     }
 }
