@@ -73,7 +73,7 @@ public abstract class SearcherTestBase : TestBase
                         FieldSingleValue,
                         new IndexValue
                         {
-                            Decimals = [i * 0.01m],
+                            Decimals = [i],
                             Integers = [i],
                             Keywords = [$"single{i}"],
                             DateTimeOffsets = [StartDate().AddDays(i)],
@@ -82,30 +82,30 @@ public abstract class SearcherTestBase : TestBase
                         Culture: null,
                         Segment: null
                     ),
-                    // new IndexField(
-                    //     FieldMultiSorting,
-                    //     new IndexValue
-                    //     {
-                    //         Decimals = [i % 2 == 0 ? 10m : 20m],
-                    //         Integers = [i],
-                    //         Keywords = [i % 2 == 0 ? "even" : "odd"],
-                    //         DateTimeOffsets = [i % 2 == 0 ? StartDate().AddDays(1) : StartDate().AddDays(2)]
-                    //     },
-                    //     Culture: null,
-                    //     Segment: null
-                    // ),
-                    // new IndexField(
-                    //     FieldTextRelevance,
-                    //     new IndexValue
-                    //     {
-                    //         Texts = [$"texts_{i}", i == 10 ? "special" : "common"],
-                    //         TextsR1 = [$"texts_r1_{i}", i == 30 ? "special" : "common"],
-                    //         TextsR2 = [$"texts_r2_{i}", i == 20 ? "special" : "common"],
-                    //         TextsR3 = [$"texts_r3_{i}", i == 40 ? "special" : "common"]
-                    //     },
-                    //     Culture: null,
-                    //     Segment: null
-                    // ),
+                    new IndexField(
+                        FieldMultiSorting,
+                        new IndexValue
+                        {
+                            Decimals = [i % 2 == 0 ? 10m : 20m],
+                            Integers = [i],
+                            Keywords = [i % 2 == 0 ? "even" : "odd"],
+                            DateTimeOffsets = [i % 2 == 0 ? StartDate().AddDays(1) : StartDate().AddDays(2)]
+                        },
+                        Culture: null,
+                        Segment: null
+                    ),
+                    new IndexField(
+                        FieldTextRelevance,
+                        new IndexValue
+                        {
+                            Texts = [$"texts_{i}", i == 10 ? "special" : "common"],
+                            TextsR1 = [$"texts_r1_{i}", i == 30 ? "special" : "common"],
+                            TextsR2 = [$"texts_r2_{i}", i == 20 ? "special" : "common"],
+                            TextsR3 = [$"texts_r3_{i}", i == 40 ? "special" : "common"]
+                        },
+                        Culture: null,
+                        Segment: null
+                    ),
                 ],
                 null
             );
