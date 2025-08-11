@@ -58,7 +58,7 @@ public class Searcher : IExamineSearcher
             searchQuery.And().Group(nestedQuery =>
             {
                 var transformedQuery = query.TransformDashes();
-                var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}aggregated_texts", transformedQuery);
+                var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}aggregated_texts", transformedQuery.Escape());
                 fieldQuery.Or().ManagedQuery(transformedQuery);
                 return fieldQuery;
             });
