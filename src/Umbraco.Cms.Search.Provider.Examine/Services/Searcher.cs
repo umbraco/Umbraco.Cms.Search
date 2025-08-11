@@ -24,15 +24,18 @@ public class Searcher : IExamineSearcher
         _examineManager = examineManager;
         _examineMapper = examineMapper;
     }
-    
-    public async Task<SearchResult> SearchAsync(string indexAlias, string? query, IEnumerable<Filter>? filters, IEnumerable<Facet>? facets, IEnumerable<Sorter>? sorters,
+
+    public async Task<SearchResult> SearchAsync(string indexAlias, string? query, IEnumerable<Filter>? filters,
+        IEnumerable<Facet>? facets, IEnumerable<Sorter>? sorters,
         string? culture, string? segment, AccessContext? accessContext, int skip, int take)
     {
         // Special case if no parameters are provided, return an empty list.
-        if (query is null && filters is null && facets is null && sorters is null && culture is null && segment is null && accessContext is null)
+        if (query is null && filters is null && facets is null && sorters is null && culture is null &&
+            segment is null && accessContext is null)
         {
             return await Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
         }
+
         if (_examineManager.TryGetIndex(indexAlias, out var index) is false)
         {
             return await Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
@@ -40,11 +43,13 @@ public class Searcher : IExamineSearcher
 
         var searchQuery = index.Searcher
             .CreateQuery()
-            .Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}", $"{culture ?? "none"}".TransformDashes())
+            .Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}",
+                $"{culture ?? "none"}".TransformDashes())
             .And()
-            .Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}", $"{segment ?? "none"}".TransformDashes());
+            .Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}",
+                $"{segment ?? "none"}".TransformDashes());
 
-        
+
         if (query is not null)
         {
             // This looks a little hacky, but managed query alone cannot handle some multicultural words, as the analyser is english based.
@@ -58,23 +63,20 @@ public class Searcher : IExamineSearcher
                 return fieldQuery;
             });
         }
-        
+
         // Add facets and filters
         AddFilters(searchQuery, filters);
         AddFacets(searchQuery, facets);
         AddSorters(searchQuery, sorters);
         AddProtection(searchQuery, accessContext);
-        
+
         var results = searchQuery.Execute(new QueryOptions(skip, take));
-        
-        return await Task.FromResult(new SearchResult(results.TotalItemCount, results.Select(MapToDocument).WhereNotNull().ToArray(), facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
+
+        return await Task.FromResult(new SearchResult(results.TotalItemCount,
+            results.Select(MapToDocument).WhereNotNull().ToArray(),
+            facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
     }
 
-    private static string GetValueAsString(IReadOnlyDictionary<string, string> dict, string key)
-    {
-        return dict.TryGetValue(key, out var value) ? value : string.Empty; // Or null if preferred
-    }
-    
     private void AddProtection(IBooleanOperation searchQuery, AccessContext? accessContext)
     {
         string protectionFieldName = $"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}";
@@ -84,16 +86,17 @@ public class Searcher : IExamineSearcher
         }
         else
         {
-            var keys = $"{Guid.Empty.ToString().TransformDashes()} {accessContext.PrincipalId.ToString().TransformDashes()}";
-            
+            var keys =
+                $"{Guid.Empty.ToString().TransformDashes()} {accessContext.PrincipalId.ToString().TransformDashes()}";
+
             if (accessContext.GroupIds is not null)
             {
-                foreach (var id in  accessContext.GroupIds)
+                foreach (var id in accessContext.GroupIds)
                 {
                     keys += $" {id.ToString().TransformDashes()}";
                 }
             }
-            
+
             searchQuery.And().Field(protectionFieldName, keys);
         }
     }
@@ -122,13 +125,16 @@ public class Searcher : IExamineSearcher
 
     private SortableField MapSorter(Sorter sorter)
     {
-        var fieldNamePrefix = sorter.FieldName.StartsWith(Constants.Fields.FieldPrefix) ? $"{sorter.FieldName}" : $"{Constants.Fields.FieldPrefix}{sorter.FieldName}";
+        var fieldNamePrefix = sorter.FieldName.StartsWith(Constants.Fields.FieldPrefix)
+            ? $"{sorter.FieldName}"
+            : $"{Constants.Fields.FieldPrefix}{sorter.FieldName}";
 
         return sorter switch
         {
             IntegerSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Integers}", SortType.Int),
             DecimalSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Decimals}", SortType.Double),
-            DateTimeOffsetSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.DateTimeOffsets}", SortType.Long),
+            DateTimeOffsetSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.DateTimeOffsets}",
+                SortType.Long),
             KeywordSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Keywords}", SortType.String),
             TextSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Texts}", SortType.String),
             ScoreSorter => new SortableField("", SortType.Score),
@@ -149,7 +155,9 @@ public class Searcher : IExamineSearcher
             {
                 case KeywordFilter keywordFilter:
                     var keywordFilterValue = string.Join(" ", keywordFilter.Values).TransformDashes();
-                    var keywordFieldName = keywordFilter.FieldName.StartsWith(Constants.Fields.FieldPrefix) ? $"{keywordFilter.FieldName}_{Constants.Fields.Keywords}" : $"{Constants.Fields.FieldPrefix}{keywordFilter.FieldName}_{Constants.Fields.Keywords}";
+                    var keywordFieldName = keywordFilter.FieldName.StartsWith(Constants.Fields.FieldPrefix)
+                        ? $"{keywordFilter.FieldName}_{Constants.Fields.Keywords}"
+                        : $"{Constants.Fields.FieldPrefix}{keywordFilter.FieldName}_{Constants.Fields.Keywords}";
                     if (keywordFilter.Negate)
                     {
                         searchQuery.Not().Field(keywordFieldName, keywordFilterValue);
@@ -158,50 +166,76 @@ public class Searcher : IExamineSearcher
                     {
                         searchQuery.And().Field(keywordFieldName, string.Join(" ", keywordFilterValue));
                     }
+
                     break;
                 case TextFilter textFilter:
-                    var textFilterValue = string.Join(" ", textFilter.Values).TransformDashes();
+                    
                     if (textFilter.Negate)
                     {
-                        searchQuery.Not().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", textFilterValue);
-                        searchQuery.Not().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR1}", textFilterValue);
-                        searchQuery.Not().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR2}", textFilterValue);
-                        searchQuery.Not().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR3}", textFilterValue);
+                        var negatedValue = string.Join(" ", textFilter.Values).TransformDashes();
+                        searchQuery.Not().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", negatedValue);
+                        searchQuery.Not().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR1}", negatedValue);
+                        searchQuery.Not().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR2}", negatedValue);
+                        searchQuery.Not().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR3}", negatedValue);
+                        continue;
+                    }
+
+                    // We only want to do wildcard searches IF there is just one word for now, as we can't do wildcards when joining.
+                    if (textFilter.Values.Length == 1)
+                    {
+                        searchQuery.And().Group(nestedQuery =>
+                        {
+                            var textFilterValue = string.Join(" ", textFilter.Values).TransformDashes();
+                            var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", textFilterValue.MultipleCharacterWildcard());
+                            fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR1}", textFilterValue.MultipleCharacterWildcard());
+                            fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR2}", textFilterValue.MultipleCharacterWildcard());
+                            return fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR3}", textFilterValue.MultipleCharacterWildcard());
+                        });
                     }
                     else
                     {
                         searchQuery.And().Group(nestedQuery =>
                         {
+                            var textFilterValue = string.Join(" ", textFilter.Values).TransformDashes();
                             var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", textFilterValue);
-                            fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR1}", textFilterValue.Boost(30));
-                            fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR2}", textFilterValue.Boost(20));
-                            return fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR3}", textFilterValue.Boost(10));
+                            fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR1}", textFilterValue);
+                            fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR2}", textFilterValue); 
+                            return fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR3}", textFilterValue);
                         });
                     }
+
                     break;
                 case IntegerRangeFilter integerRangeFilter:
-                    var integerRangeFieldName = $"{Constants.Fields.FieldPrefix}{integerRangeFilter.FieldName}_{Constants.Fields.Integers}";
+                    var integerRangeFieldName =
+                        $"{Constants.Fields.FieldPrefix}{integerRangeFilter.FieldName}_{Constants.Fields.Integers}";
                     searchQuery.AddRangeFilter(integerRangeFieldName, integerRangeFilter.ToNonNullableRangeFilter());
                     break;
                 case IntegerExactFilter integerExactFilter:
-                    var integerExactFieldName = $"{Constants.Fields.FieldPrefix}{integerExactFilter.FieldName}_{Constants.Fields.Integers}";
+                    var integerExactFieldName =
+                        $"{Constants.Fields.FieldPrefix}{integerExactFilter.FieldName}_{Constants.Fields.Integers}";
                     searchQuery.AddExactFilter(integerExactFieldName, integerExactFilter);
                     break;
                 case DecimalRangeFilter decimalRangeFilter:
-                    var decimalRangeFieldName = $"{Constants.Fields.FieldPrefix}{decimalRangeFilter.FieldName}_{Constants.Fields.Decimals}";
+                    var decimalRangeFieldName =
+                        $"{Constants.Fields.FieldPrefix}{decimalRangeFilter.FieldName}_{Constants.Fields.Decimals}";
                     searchQuery.AddRangeFilter(decimalRangeFieldName, decimalRangeFilter.ToNonNullableRangeFilter());
                     break;
                 case DecimalExactFilter decimalExactFilter:
-                    var decimalExactFieldName = $"{Constants.Fields.FieldPrefix}{decimalExactFilter.FieldName}_{Constants.Fields.Decimals}";
+                    var decimalExactFieldName =
+                        $"{Constants.Fields.FieldPrefix}{decimalExactFilter.FieldName}_{Constants.Fields.Decimals}";
                     searchQuery.AddExactFilter(decimalExactFieldName, decimalExactFilter.ToDoubleExactFilter());
                     break;
                 case DateTimeOffsetRangeFilter dateTimeOffsetRangeFilter:
-                    var dateTimeOffsetRangeFieldName = $"{Constants.Fields.FieldPrefix}{dateTimeOffsetRangeFilter.FieldName}_{Constants.Fields.DateTimeOffsets}";
-                    searchQuery.AddRangeFilter(dateTimeOffsetRangeFieldName, dateTimeOffsetRangeFilter.ToNonNullableRangeFilter());
+                    var dateTimeOffsetRangeFieldName =
+                        $"{Constants.Fields.FieldPrefix}{dateTimeOffsetRangeFilter.FieldName}_{Constants.Fields.DateTimeOffsets}";
+                    searchQuery.AddRangeFilter(dateTimeOffsetRangeFieldName,
+                        dateTimeOffsetRangeFilter.ToNonNullableRangeFilter());
                     break;
                 case DateTimeOffsetExactFilter dateTimeOffsetExactFilter:
-                    var dateTimeOffsetExactFieldName = $"{Constants.Fields.FieldPrefix}{dateTimeOffsetExactFilter.FieldName}_{Constants.Fields.DateTimeOffsets}";
-                    searchQuery.AddExactFilter(dateTimeOffsetExactFieldName, dateTimeOffsetExactFilter.ToDateTimeExactFilter());
+                    var dateTimeOffsetExactFieldName =
+                        $"{Constants.Fields.FieldPrefix}{dateTimeOffsetExactFilter.FieldName}_{Constants.Fields.DateTimeOffsets}";
+                    searchQuery.AddExactFilter(dateTimeOffsetExactFieldName,
+                        dateTimeOffsetExactFilter.ToDateTimeExactFilter());
                     break;
             }
         }
@@ -219,40 +253,61 @@ public class Searcher : IExamineSearcher
             switch (facet)
             {
                 case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
-                    searchQuery.WithFacets(facetOperations => facetOperations.FacetLongRange($"{Constants.Fields.FieldPrefix}{dateTimeOffsetRangeFacet.FieldName}_{Constants.Fields.DateTimeOffsets}", dateTimeOffsetRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min?.Ticks ?? DateTime.MinValue.Ticks, true, x.Max?.Ticks ?? DateTime.MaxValue.Ticks, false)).ToArray()));
+                    searchQuery.WithFacets(facetOperations => facetOperations.FacetLongRange(
+                        $"{Constants.Fields.FieldPrefix}{dateTimeOffsetRangeFacet.FieldName}_{Constants.Fields.DateTimeOffsets}",
+                        dateTimeOffsetRangeFacet.Ranges.Select(x => new Int64Range(x.Key,
+                            x.Min?.Ticks ?? DateTime.MinValue.Ticks, true, x.Max?.Ticks ?? DateTime.MaxValue.Ticks,
+                            false)).ToArray()));
                     break;
                 case DecimalExactFacet decimalExactFacet:
-                    searchQuery.WithFacets(facetOperations => facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{decimalExactFacet.FieldName}_{Constants.Fields.Decimals}"));
+                    searchQuery.WithFacets(facetOperations =>
+                        facetOperations.FacetString(
+                            $"{Constants.Fields.FieldPrefix}{decimalExactFacet.FieldName}_{Constants.Fields.Decimals}"));
                     break;
                 case IntegerRangeFacet integerRangeFacet:
-                    searchQuery.WithFacets(facetOperations => facetOperations.FacetLongRange($"{Constants.Fields.FieldPrefix}{integerRangeFacet.FieldName}_{Constants.Fields.Integers}", integerRangeFacet.Ranges.Select(x => new Int64Range(x.Key, x.Min ?? 0, true, x.Max ?? int.MaxValue, false)).ToArray()));
+                    searchQuery.WithFacets(facetOperations => facetOperations.FacetLongRange(
+                        $"{Constants.Fields.FieldPrefix}{integerRangeFacet.FieldName}_{Constants.Fields.Integers}",
+                        integerRangeFacet.Ranges
+                            .Select(x => new Int64Range(x.Key, x.Min ?? 0, true, x.Max ?? int.MaxValue, false))
+                            .ToArray()));
                     break;
                 case KeywordFacet keywordFacet:
-                    searchQuery.WithFacets(facetOperations => facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{keywordFacet.FieldName}_{Constants.Fields.Texts}"));
+                    searchQuery.WithFacets(facetOperations =>
+                        facetOperations.FacetString(
+                            $"{Constants.Fields.FieldPrefix}{keywordFacet.FieldName}_{Constants.Fields.Texts}"));
                     break;
                 case IntegerExactFacet integerExactFacet:
-                    searchQuery.WithFacets(facetOperations => facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{integerExactFacet.FieldName}_{Constants.Fields.Integers}"));
+                    searchQuery.WithFacets(facetOperations =>
+                        facetOperations.FacetString(
+                            $"{Constants.Fields.FieldPrefix}{integerExactFacet.FieldName}_{Constants.Fields.Integers}"));
                     break;
                 case DecimalRangeFacet decimalRangeFacet:
                 {
-                    var doubleRanges = decimalRangeFacet.Ranges.Select(x => new DoubleRange(x.Key, decimal.ToDouble(x.Min ?? 0) , true, decimal.ToDouble(x.Max ?? 0), false)).ToArray();
-                    searchQuery.WithFacets(facetOperations => facetOperations.FacetDoubleRange($"{Constants.Fields.FieldPrefix}{facet.FieldName}_{Constants.Fields.Decimals}", doubleRanges));
+                    var doubleRanges = decimalRangeFacet.Ranges.Select(x =>
+                            new DoubleRange(x.Key, decimal.ToDouble(x.Min ?? 0), true, decimal.ToDouble(x.Max ?? 0),
+                                false))
+                        .ToArray();
+                    searchQuery.WithFacets(facetOperations =>
+                        facetOperations.FacetDoubleRange(
+                            $"{Constants.Fields.FieldPrefix}{facet.FieldName}_{Constants.Fields.Decimals}",
+                            doubleRanges));
                     break;
                 }
                 case DateTimeOffsetExactFacet dateTimeOffsetExactFacet:
-                    searchQuery.WithFacets(facetOperations => facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{dateTimeOffsetExactFacet.FieldName}_{Constants.Fields.DateTimeOffsets}"));
+                    searchQuery.WithFacets(facetOperations =>
+                        facetOperations.FacetString(
+                            $"{Constants.Fields.FieldPrefix}{dateTimeOffsetExactFacet.FieldName}_{Constants.Fields.DateTimeOffsets}"));
                     break;
             }
         }
     }
-    
+
     private static Document? MapToDocument(ISearchResult item)
     {
-        
         var objectTypeString = item.Values.GetValueOrDefault("__IndexType");
-        
+
         Enum.TryParse(objectTypeString, out UmbracoObjectTypes umbracoObjectType);
-        
+
         if (Guid.TryParse(item.Id, out var guidId))
         {
             return new Document(guidId, umbracoObjectType);
@@ -261,6 +316,8 @@ public class Searcher : IExamineSearcher
         // The id of an item may be appended with _{culture_{segment}, so strip those and map to guid.
         var indexofUnderscore = item.Id.IndexOf('_');
         var idWithOutCulture = item.Id.Remove(indexofUnderscore);
-        return Guid.TryParse(idWithOutCulture, out var idWithoutCultureGuid) ? new Document(idWithoutCultureGuid, umbracoObjectType) : null;
+        return Guid.TryParse(idWithOutCulture, out var idWithoutCultureGuid)
+            ? new Document(idWithoutCultureGuid, umbracoObjectType)
+            : null;
     }
 }
