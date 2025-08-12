@@ -58,7 +58,10 @@ public class Searcher : IExamineSearcher
             searchQuery.And().Group(nestedQuery =>
             {
                 var transformedQuery = query.TransformDashes();
-                var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}aggregated_texts", transformedQuery.Escape());
+                // var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}aggregated_texts", transformedQuery.Escape());
+                var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR1}", transformedQuery.Boost(4));
+                fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR2}", transformedQuery.Boost(3));
+                fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR3}", transformedQuery.Boost(2));
                 fieldQuery.Or().ManagedQuery(transformedQuery);
                 return fieldQuery;
             });
@@ -72,8 +75,20 @@ public class Searcher : IExamineSearcher
 
         var results = searchQuery.Execute(new QueryOptions(skip, take));
 
+        IEnumerable<ISearchResult> searchResults;
+
+        var scoreSorters = sorters?.Select(x => x is ScoreSorter ? x : null).WhereNotNull();
+        if (scoreSorters is not null && scoreSorters.Any())
+        {
+            searchResults = results.OrderBy(x => x.Score, scoreSorters.First().Direction);
+        }
+        else
+        {
+            searchResults = results;
+        }
+
         return await Task.FromResult(new SearchResult(results.TotalItemCount,
-            results.Select(MapToDocument).WhereNotNull().ToArray(),
+            searchResults.Select(MapToDocument).WhereNotNull().ToArray(),
             facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
     }
 
@@ -112,18 +127,23 @@ public class Searcher : IExamineSearcher
         foreach (var sorter in sorters)
         {
             var sortableField = MapSorter(sorter);
+            if (sortableField is null)
+            {
+                continue;
+            }
+            
             if (sorter.Direction is Direction.Ascending)
             {
-                searchQuery.OrderBy(sortableField);
+                searchQuery.OrderBy(sortableField.Value);
             }
             else
             {
-                searchQuery.OrderByDescending(sortableField);
+                searchQuery.OrderByDescending(sortableField.Value);
             }
         }
     }
 
-    private SortableField MapSorter(Sorter sorter)
+    private SortableField? MapSorter(Sorter sorter)
     {
         var fieldNamePrefix = sorter.FieldName.StartsWith(Constants.Fields.FieldPrefix)
             ? $"{sorter.FieldName}"
@@ -137,7 +157,7 @@ public class Searcher : IExamineSearcher
                 SortType.Long),
             KeywordSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Keywords}", SortType.String),
             TextSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Texts}", SortType.String),
-            ScoreSorter => new SortableField("", SortType.Score),
+            ScoreSorter => null,
             _ => throw new NotSupportedException()
         };
     }

@@ -112,6 +112,9 @@ public class Indexer(IExamineManager examineManager, ILogger<Indexer> logger) : 
     {
         var result = new Dictionary<string, IEnumerable<object>>();
         List<string> aggregatedTexts = [];
+        List<string> aggregatedR1Texts = [];
+        List<string> aggregatedR2Texts = [];
+        List<string> aggregatedR3Texts = [];
         foreach (var field in fields)
         {
             if (field.Value.Integers?.Any() ?? false)
@@ -146,18 +149,21 @@ public class Indexer(IExamineManager examineManager, ILogger<Indexer> logger) : 
             
             if (field.Value.TextsR1?.Any() ?? false)
             {
+                aggregatedR1Texts.AddRange(field.Value.TextsR1);
                 result.Add(CalculateFieldName(field, Constants.Fields.TextsR1), field.Value.TextsR1.Select(x => x.TransformDashes()));
                 aggregatedTexts.AddRange(field.Value.TextsR1);
             }
             
             if (field.Value.TextsR2?.Any() ?? false)
             {
+                aggregatedR2Texts.AddRange(field.Value.TextsR2);
                 result.Add(CalculateFieldName(field, Constants.Fields.TextsR2), field.Value.TextsR2.Select(x => x.TransformDashes()));
                 aggregatedTexts.AddRange(field.Value.TextsR2);
             }
             
             if (field.Value.TextsR3?.Any() ?? false)
             {
+                aggregatedR3Texts.AddRange(field.Value.TextsR3);
                 result.Add(CalculateFieldName(field, Constants.Fields.TextsR3), field.Value.TextsR3.Select(x => x.TransformDashes()));
                 aggregatedTexts.AddRange(field.Value.TextsR3);
             }
@@ -166,6 +172,19 @@ public class Indexer(IExamineManager examineManager, ILogger<Indexer> logger) : 
         if (aggregatedTexts.Any())
         {
             result.Add($"{Constants.Fields.FieldPrefix}aggregated_texts", aggregatedTexts.ToArray());
+        }
+        
+        if (aggregatedR1Texts.Any())
+        {
+            result.Add($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR1}", aggregatedR1Texts.ToArray());
+        }     
+        if (aggregatedR2Texts.Any())
+        {
+            result.Add($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR2}", aggregatedR2Texts.ToArray());
+        }       
+        if (aggregatedR3Texts.Any())
+        {
+            result.Add($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR3}", aggregatedR3Texts.ToArray());
         }
 
 
