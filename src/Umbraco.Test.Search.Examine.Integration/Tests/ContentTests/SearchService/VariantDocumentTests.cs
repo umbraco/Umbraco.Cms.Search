@@ -54,8 +54,8 @@ public class VariantDocumentTests : SearcherTestBase
     
     [TestCase(true, "en-US", "Root")]
     [TestCase(false, "en-US", "Root")]
-    [TestCase(true, "da-DK", "Rod")]
-    [TestCase(false, "da-DK", "Rod")]
+    [TestCase(true, "da-DK", "Roden")]
+    [TestCase(false, "da-DK", "Roden")]
     [TestCase(true, "ja-JP", "ル-ト")]
     [TestCase(false, "ja-JP", "ル-ト")]
     public async Task CanSearchVariantTextByCulture(bool publish, string culture, string expectedValue)
@@ -124,7 +124,7 @@ public class VariantDocumentTests : SearcherTestBase
             .Build();
         
         root.SetValue("title", "Root", "en-US");
-        root.SetValue("title", "Rod", "da-DK");
+        root.SetValue("title", "Roden", "da-DK");
         root.SetValue("title", "ル-ト", "ja-JP");
         
         root.SetValue("body", "body-segment-1", "en-US", "segment-1");

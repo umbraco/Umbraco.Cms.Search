@@ -58,11 +58,12 @@ public class Searcher : IExamineSearcher
             searchQuery.And().Group(nestedQuery =>
             {
                 var transformedQuery = query.TransformDashes();
-                // var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}aggregated_texts", transformedQuery.Escape());
                 var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR1}", transformedQuery.Boost(4));
                 fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR2}", transformedQuery.Boost(3));
                 fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR3}", transformedQuery.Boost(2));
                 fieldQuery.Or().ManagedQuery(transformedQuery);
+                fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}aggregated_texts", transformedQuery.Escape());
+
                 return fieldQuery;
             });
         }
