@@ -108,20 +108,20 @@ stages:
     displayName: Integration Tests
     dependsOn: Build
     jobs:
+
       # Integration Tests (SQLite)
       - job: IntegrationTestsSQLite
         displayName: Run Integration Tests (SQLite)
         pool:
           vmImage: 'windows-latest'
         timeoutInMinutes: 30
-        variables:
-          Tests__Database__DatabaseType: "Sqlite"
         steps:
           - checkout: self
             submodules: false
             lfs: false,
             fetchDepth: 1
             fetchFilter: tree:0
+
           # Setup test environment
           - task: DownloadPipelineArtifact@2
             displayName: Download build artifacts
@@ -142,3 +142,76 @@ stages:
               projects: "src/Umbraco.Test.Search.Integration/Umbraco.Test.Search.Integration.csproj"
               arguments: '--configuration $(buildConfiguration) --no-build'
               testRunTitle: Integration Tests SQLite - $(Agent.OS)
+
+      # Integration Tests (SQL Server)
+      - job: IntegrationTestsSQLServer
+        displayName: Run Integration Tests (SQLite)
+        pool:
+          vmImage: 'windows-latest'
+        timeoutInMinutes: 30
+        steps:
+          # Setup test environment
+          - task: DownloadPipelineArtifact@2
+            displayName: Download build artifacts
+            inputs:
+              artifact: build_output
+              path: $(Build.SourcesDirectory)
+
+          - task: UseDotNet@2
+            displayName: Use .NET SDK from global.json
+            inputs:
+              useGlobalJson: true
+
+          # Start SQL Server
+          - powershell: docker run --name mssql -d -p 1433:1433 -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=$(SA_PASSWORD)" mcr.microsoft.com/mssql/server:2022-latest
+            displayName: Start SQL Server Docker image (Linux)
+            condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))
+
+          - powershell: |
+              $maxAttempts = 12
+              $attempt = 0
+              $status = ""
+
+              while (($status -ne 'running') -and ($attempt -lt $maxAttempts)) {
+                Start-Sleep -Seconds 5
+                # We use the docker inspect command to check the status of the container. If the container is not running, we wait 5 seconds and try again. And if reaches 12 attempts, we fail the build.
+                $status = docker inspect -f '{{.State.Status}}' mssql
+
+                if ($status -ne 'running') {
+                  Write-Host "Waiting for SQL Server to be ready... Attempt $($attempt + 1)"
+                  $attempt++
+                }
+              }
+
+              if ($status -eq 'running') {
+                Write-Host "SQL Server container is running"
+                docker ps -a
+              } else {
+                Write-Host "SQL Server did not become ready in time. Last known status: $status"
+                docker logs mssql
+                exit 1
+              }
+            displayName: Wait for SQL Server to be ready (Linux)
+            condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))
+
+          - pwsh: SqlLocalDB start MSSQLLocalDB
+            displayName: Start SQL Server LocalDB (Windows)
+            condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+
+          # Test
+          - task: DotNetCoreCLI@2
+            displayName: Run dotnet test
+            inputs:
+              command: test
+              projects: "src/Umbraco.Test.Search.Integration/Umbraco.Test.Search.Integration.csproj"
+              arguments: '--configuration $(buildConfiguration) --no-build'
+              testRunTitle: Integration Tests SQL Server - $(Agent.OS)
+
+          # Stop SQL Server
+          - pwsh: docker stop mssql
+            displayName: Stop SQL Server Docker image (Linux)
+            condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))
+
+          - pwsh: SqlLocalDB stop MSSQLLocalDB
+            displayName: Stop SQL Server LocalDB (Windows)
+            condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
