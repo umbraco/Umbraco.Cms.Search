@@ -104,13 +104,41 @@ stages:
               arguments: "--configuration $(buildConfiguration) --no-build"
               testRunTitle: Unit Tests - $(Agent.OS)
 
-          # Publish
-          - task: PublishTestResults@2
-            displayName: Publish test results
-            condition: succeededOrFailed()
+  - stage: IntegrationTests
+    displayName: Integration Tests
+    dependsOn: Build
+    jobs:
+      # Integration Tests (SQLite)
+      - job: IntegrationTestsSQLite
+        displayName: Run Integration Tests (SQLite)
+        pool:
+          vmImage: 'windows-latest'
+        timeoutInMinutes: 30
+        variables:
+          Tests__Database__DatabaseType: "Sqlite"
+        steps:
+          - checkout: self
+            submodules: false
+            lfs: false,
+            fetchDepth: 1
+            fetchFilter: tree:0
+          # Setup test environment
+          - task: DownloadPipelineArtifact@2
+            displayName: Download build artifacts
             inputs:
-              testResultsFormat: VSTest
-              testResultsFiles: '*.trx'
-              searchFolder: $(Build.ArtifactStagingDirectory)/tests
-              testRunTitle: Unit Tests - $(Agent.OS)
-              configuration: $(buildConfiguration)
+              artifact: build_output
+              path: $(Build.SourcesDirectory)
+
+          - task: UseDotNet@2
+            displayName: Use .NET SDK from global.json
+            inputs:
+              useGlobalJson: true
+
+          # Test
+          - task: DotNetCoreCLI@2
+            displayName: Run dotnet test
+            inputs:
+              command: test
+              projects: "src/Umbraco.Test.Search.Integration/Umbraco.Test.Search.Integration.csproj"
+              arguments: '--configuration $(buildConfiguration) --no-build'
+              testRunTitle: Integration Tests SQLite - $(Agent.OS)
