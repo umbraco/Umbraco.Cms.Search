@@ -1,0 +1,18 @@
+{
+  "$schema": "https://marketplace.umbraco.com/umbraco-marketplace-schema.json",
+  "AuthorDetails": {
+    "Description": "Umbraco HQ",
+    "Url": "https://umbraco.com/",
+    "ImageUrl": "https://github.com/umbraco.png"
+  },
+  "DocumentationUrl": "https://github.com/umbraco/Umbraco.Cms.Search",
+  "Category": "Developer Tools",
+  "IssueTrackerUrl": "https://github.com/umbraco/Umbraco.Cms.Search/issues",
+  "LicenseTypes": [
+    "Free"
+  ],
+  "PackageType": "Package",
+  "Tags": [
+    "search"
+  ]
+}
