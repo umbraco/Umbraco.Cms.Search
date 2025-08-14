@@ -1,6 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <ItemGroup>
+  <PropertyGroup>
+    <Title>Umbraco Search</Title>
+    <Description>Umbraco Search provides an abstraction for search services in Umbraco, allowing for implementations using search providers such as Examine.</Description>
+    <Company>Umbraco HQ</Company>
+    <Authors>Umbraco</Authors>
+    <Copyright>Copyright © Umbraco $([System.DateTime]::Today.ToString('yyyy'))</Copyright>
+    <Product>Umbraco Search</Product>
+    <PackageProjectUrl>https://github.com/umbraco/Umbraco.Cms.Search</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/umbraco/Umbraco.Cms.Search</RepositoryUrl>
+    <PackageTags>umbraco search umbraco-marketplace</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
       <PackageReference Include="Umbraco.Cms.Infrastructure" Version="16.0.0" />
     </ItemGroup>
 
