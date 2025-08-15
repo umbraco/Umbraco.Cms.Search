@@ -21,7 +21,7 @@ namespace Umbraco.Test.Search.Integration.Tests;
 public class SearcherResolverTests : UmbracoIntegrationTest
 {
     private ISearcherResolver SearcherResolver => GetRequiredService<ISearcherResolver>();
-    private Mock<ILogger<SearcherResolver>> _loggerMock;
+    private Mock<ILogger<SearcherResolver>>? _loggerMock;
 
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
@@ -76,7 +76,7 @@ public class SearcherResolverTests : UmbracoIntegrationTest
     }
 
     private void VerifyLogging(LogLevel logLevel, string startOfMessage)
-        => _loggerMock.Verify(logger =>
+        => _loggerMock!.Verify(logger =>
             logger.Log(
                 logLevel,
                 It.IsAny<EventId>(),
@@ -85,7 +85,7 @@ public class SearcherResolverTests : UmbracoIntegrationTest
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()
             )
         );
-    
+
     private class FirstSearcher : SearcherBase
     { 
     }
