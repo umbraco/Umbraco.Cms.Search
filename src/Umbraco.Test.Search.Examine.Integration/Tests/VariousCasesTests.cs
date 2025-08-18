@@ -56,7 +56,6 @@ public class VariousCasesTests : SearcherTestBase
     }
 
     [Test]
-    [Ignore("While this works, we cannot have a max count higher than 10 facets.")]
     public async Task CanCombineFacetsWithinFields()
     {
         SearchResult result = await SearchAsync(
