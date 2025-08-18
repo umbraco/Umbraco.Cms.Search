@@ -288,7 +288,7 @@ public class Searcher : IExamineSearcher
                 switch (facet)
                 {
                     case IntegerExactFacet integerExactFacet:
-                        facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{integerExactFacet.FieldName}_{Constants.Fields.Integers}");
+                        facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{integerExactFacet.FieldName}_{Constants.Fields.Integers}", config => config.MaxCount(100));
                         break;
                     case IntegerRangeFacet integerRangeFacet:
                         facetOperations.FacetLongRange(
@@ -299,7 +299,7 @@ public class Searcher : IExamineSearcher
                                 .ToArray());
                         break;
                     case DecimalExactFacet decimalExactFacet:
-                        facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{decimalExactFacet.FieldName}_{Constants.Fields.Decimals}");
+                        facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{decimalExactFacet.FieldName}_{Constants.Fields.Decimals}", config => config.MaxCount(100));
                         break;
                     case DecimalRangeFacet decimalRangeFacet:
                     {
@@ -317,7 +317,7 @@ public class Searcher : IExamineSearcher
                         break;
                     }
                     case DateTimeOffsetExactFacet dateTimeOffsetExactFacet:
-                        facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{dateTimeOffsetExactFacet.FieldName}_{Constants.Fields.DateTimeOffsets}");
+                        facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{dateTimeOffsetExactFacet.FieldName}_{Constants.Fields.DateTimeOffsets}", config => config.MaxCount(100));
                         break;
                     case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
                         facetOperations.FacetLongRange(
@@ -334,7 +334,7 @@ public class Searcher : IExamineSearcher
                             ? $"{keywordFacet.FieldName}_{Constants.Fields.Keywords}"
                             : $"{Constants.Fields.FieldPrefix}{keywordFacet.FieldName}_{Constants.Fields.Keywords}";
 
-                        facetOperations.FacetString(keywordFieldName);
+                        facetOperations.FacetString(keywordFieldName, config => config.MaxCount(100));
                         break;
 
                 }
