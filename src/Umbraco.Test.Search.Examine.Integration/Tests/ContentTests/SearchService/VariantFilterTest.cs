@@ -9,7 +9,7 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.SearchServi
 
 public class VariantFilterTest : SearcherTestBase
 {
-    
+
 
     [TestCase("en-US", true, 0)]
     [TestCase("en-US", false, 1)]
@@ -25,17 +25,17 @@ public class VariantFilterTest : SearcherTestBase
             indexAlias,
             null,
             new List<Filter> { new KeywordFilter("Id", [RootKey.ToString()], negate)},
-            null, 
-            null, 
-            culture, 
-            null, 
             null,
-            0, 
+            null,
+            culture,
+            null,
+            null,
+            0,
             100);
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
+
     [TestCase("Root", "en-US", true, 0)]
     [TestCase("Root", "en-US", false, 1)]
     [TestCase("Rod", "da-DK", true, 0)]
@@ -55,7 +55,7 @@ public class VariantFilterTest : SearcherTestBase
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
+
     [TestCase("body-segment-1", "en-US", "segment-1", false, 1)]
     [TestCase("body-segment-2", "en-US", "segment-2", false, 1)]
     [TestCase("krop-segment-1", "da-DK", "segment-1", false, 1)]
@@ -71,16 +71,16 @@ public class VariantFilterTest : SearcherTestBase
             null,
             new List<Filter> { new TextFilter("body", [text], negate) },
             null,
-            null, 
-            culture, 
-            segment, 
             null,
-            0, 
+            culture,
+            segment,
+            null,
+            0,
             100);
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
+
     [TestCase("Root", "en-US", true, 0)]
     [TestCase("Root", "en-US", false, 1)]
     [TestCase("Root", "da-DK", true, 0)]
@@ -100,13 +100,12 @@ public class VariantFilterTest : SearcherTestBase
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
+
     [SetUp]
     public void CreateVariantDocument()
     {
         var langDk = new LanguageBuilder()
             .WithCultureInfo("da-DK")
-            .WithIsDefault(true)
             .Build();
         var langJp = new LanguageBuilder()
             .WithCultureInfo("ja-JP")
@@ -138,7 +137,7 @@ public class VariantFilterTest : SearcherTestBase
             .Done()
             .Build();
         ContentTypeService.Save(contentType);
-        
+
         var root = new ContentBuilder()
             .WithKey(RootKey)
             .WithContentType(contentType)
@@ -146,12 +145,12 @@ public class VariantFilterTest : SearcherTestBase
             .WithCultureName("da-DK", "Navn")
             .WithCultureName("ja-JP", "名前")
             .Build();
-        
+
         root.SetValue("invariantTitle", "Root");
         root.SetValue("title", "Root", "en-US");
         root.SetValue("title", "Rod", "da-DK");
         root.SetValue("title", "ル-ト", "ja-JP");
-        
+
         root.SetValue("body", "body-segment-1", "en-US", "segment-1");
         root.SetValue("body", "body-segment-2", "en-US", "segment-2");
         root.SetValue("body", "krop-segment-1", "da-DK", "segment-1");
@@ -162,7 +161,7 @@ public class VariantFilterTest : SearcherTestBase
         ContentService.Save(root);
         ContentService.Publish(root, new []{ "*"});
         Thread.Sleep(3000);
-        
+
         var content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);
     }

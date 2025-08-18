@@ -12,7 +12,7 @@ public class Indexer(IExamineManager examineManager, IDefaultCultureAccessor def
     public Task AddOrUpdateAsync(string indexAlias, Guid key, UmbracoObjectTypes objectType, IEnumerable<Variation> variations,
         IEnumerable<IndexField> fields, ContentProtection? protection)
     {
-        var index = GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
 
         DeleteSingleDoc(index, key);
 
@@ -21,15 +21,39 @@ public class Indexer(IExamineManager examineManager, IDefaultCultureAccessor def
         foreach (Variation variation in variations)
         {
             var indexKey = CalculateIndexKey(key, variation);
+            IEnumerable<IndexField> fieldsToMap = GetMappableFields(fields, variation);
             valuesToIndex.Add(new ValueSet(
                 indexKey,
                 objectType.ToString(),
-                MapToDictionary(fields.Where(x => (x.Culture is null && x.Segment is null) || (x.Culture == variation.Culture && x.Segment == variation.Segment)), variation.Culture, variation.Segment, protection)));
+                MapToDictionary(fieldsToMap, variation.Culture, variation.Segment, protection)));
         }
 
         index.IndexItems(valuesToIndex);
 
         return Task.CompletedTask;
+    }
+
+    IEnumerable<IndexField> GetMappableFields(IEnumerable<IndexField> fields, Variation variation)
+    {
+        var results = new Dictionary<string, IndexField>();
+        foreach (IndexField field in fields)
+        {
+            if (field.Culture is null && field.Segment is null)
+            {
+                results[field.FieldName] = field;
+                continue;
+            }
+
+            // This looks kinda wierd but works great.
+            // This is because we  want to always index invariant properties
+            // However, if there is variant version of the property, we'll overwrite the invariant one
+            if (field.Culture == variation.Culture && field.Segment == variation.Segment)
+            {
+                results[field.FieldName] = field;
+            }
+        }
+
+        return results.Select(x => x.Value);
     }
 
     public Task ResetAsync(string indexAlias)
@@ -109,13 +133,6 @@ public class Indexer(IExamineManager examineManager, IDefaultCultureAccessor def
         List<string> aggregatedR3Texts = [];
         foreach (var field in fields)
         {
-            if (field.FieldName.StartsWith(Constants.Fields.FieldPrefix) is false && (culture is not null || segment is not null))
-            {
-                if ((field.Culture != culture && culture != defaultCultureAccessor.DefaultCulture)  || field.Segment != segment)
-                {
-                    continue;
-                }
-            }
             if (field.Value.Integers?.Any() ?? false)
             {
                 List<object> integers = field.Value.Integers.Cast<object>().ToList();
