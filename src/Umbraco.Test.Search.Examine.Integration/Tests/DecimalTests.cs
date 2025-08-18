@@ -46,8 +46,7 @@ public class DecimalTests : SearcherTestBase
     public async Task CanFilterSingleDocumentByDecimalRange()
     {
         SearchResult result = await SearchAsync(
-            filters: [new DecimalRangeFilter(FieldMultipleValues, [new FilterRange<decimal?>(1m, 2m)], false)]
-            // filters: [new DecimalRangeFilter(FieldMultipleValues, [new DecimalRangeFilterRange(1m, 2m)], false)]
+            filters: [new DecimalRangeFilter(FieldMultipleValues, [new DecimalRangeFilterRange(1m, 2m)], false)]
         );
 
         Assert.Multiple(
@@ -63,8 +62,7 @@ public class DecimalTests : SearcherTestBase
     public async Task CanFilterSingleDocumentByNegativeDecimalRange()
     {
         SearchResult result = await SearchAsync(
-            filters: [new DecimalRangeFilter(FieldMultipleValues, [new FilterRange<decimal?>(-1.9m, -1.1m)], false)]
-            // filters: [new DecimalRangeFilter(FieldMultipleValues, [new DecimalRangeFilterRange(-1.9m, -1.1m)], false)]
+            filters: [new DecimalRangeFilter(FieldMultipleValues, [new DecimalRangeFilterRange(-1.9m, -1.1m)], false)]
         );
 
         Assert.Multiple(
@@ -117,12 +115,9 @@ public class DecimalTests : SearcherTestBase
                 new DecimalRangeFilter(
                     FieldMultipleValues,
                     [
-                        new FilterRange<decimal?>(1m, 5m),
-                        new FilterRange<decimal?>(20m, 25m),
-                        new FilterRange<decimal?>(100m, 101m)
-                        // new DecimalRangeFilterRange(1m, 5m),
-                        // new DecimalRangeFilterRange(20m, 25m),
-                        // new DecimalRangeFilterRange(100m, 101m)
+                        new DecimalRangeFilterRange(1m, 5m),
+                        new DecimalRangeFilterRange(20m, 25m),
+                        new DecimalRangeFilterRange(100m, 101m)
                     ],
                     false
                 )
@@ -185,8 +180,7 @@ public class DecimalTests : SearcherTestBase
     public async Task CanFilterDocumentsByDecimalRangeNegated()
     {
         SearchResult result = await SearchAsync(
-            filters: [new DecimalRangeFilter(FieldMultipleValues, [new FilterRange<decimal?>(1m, 2m)], true)]
-            // filters: [new DecimalRangeFilter(FieldMultipleValues, [new DecimalRangeFilterRange(1m, 2m)], true)]
+            filters: [new DecimalRangeFilter(FieldMultipleValues, [new DecimalRangeFilterRange(1m, 2m)], true)]
         );
 
         Assert.Multiple(

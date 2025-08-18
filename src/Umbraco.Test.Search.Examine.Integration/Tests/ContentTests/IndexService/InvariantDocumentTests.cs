@@ -21,12 +21,12 @@ public class InvariantDocumentTests : IndexTestBase
         Assert.That(results.Length, Is.EqualTo(1));
         Assert.That(results[0].Id, Is.EqualTo(RootKey.ToString()));
     }
-    
+
     [TestCase(true)]
     [TestCase(false)]
     public void CanRemoveAnyDocument(bool publish)
     {
-        var content = ContentService.GetById(RootKey);
+        var content = ContentService.GetById(RootKey)!;
         ContentService.Delete(content);
 
         var index = ExamineManager.GetIndex(publish
@@ -35,15 +35,15 @@ public class InvariantDocumentTests : IndexTestBase
 
         // TODO: We need to await that the index deleting has completed, for now this is our only option
         Thread.Sleep(3000);
-        
+
         var results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results, Is.Empty);
     }
-    
+
     [Test]
     public void CanRemoveUnpublishedDocument()
     {
-        var content = ContentService.GetById(RootKey);
+        var content = ContentService.GetById(RootKey)!;
         ContentService.Unpublish(content);
 
         var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
@@ -53,7 +53,7 @@ public class InvariantDocumentTests : IndexTestBase
         var results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results, Is.Empty);
     }
-    
+
     [TestCase(true)]
     [TestCase(false)]
     public void CanIndexTextProperty(bool publish)
@@ -68,7 +68,7 @@ public class InvariantDocumentTests : IndexTestBase
         Assert.That(results, Is.Not.Empty);
         Assert.That(results.First().Values.First(x => x.Key == "Umb_title_texts").Value, Is.EqualTo("The root title"));
     }
-    
+
     [TestCase(true)]
     [TestCase(false)]
     public void CanIndexIntegerValues(bool publish)
@@ -83,7 +83,7 @@ public class InvariantDocumentTests : IndexTestBase
         Assert.That(results, Is.Not.Empty);
         Assert.That(results.First().Values.First(x => x.Key == "Umb_count_integers").Value, Is.EqualTo("12"));
     }
-    
+
     [TestCase(true)]
     [TestCase(false)]
     public void CanIndexDecimalValues(bool publish)
@@ -97,8 +97,8 @@ public class InvariantDocumentTests : IndexTestBase
         var results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
         Assert.That(results.First().Values.First(x => x.Key == "Umb_decimalproperty_decimals").Value, Is.EqualTo(((double)DecimalValue).ToString()));
-    }    
-    
+    }
+
     [TestCase(true)]
     [TestCase(false)]
     public void CanIndexDateTimeValues(bool publish)
@@ -113,8 +113,8 @@ public class InvariantDocumentTests : IndexTestBase
         Assert.That(results, Is.Not.Empty);
         Assert.That(results.First().Values.First().Value, Is.EqualTo(CurrentDateTime.Ticks.ToString()));
     }
-    
-    
+
+
     [TestCase("title", "updated title", false)]
     [TestCase("title", "updated title", true)]
     [TestCase("count", 12, false)]
@@ -129,11 +129,11 @@ public class InvariantDocumentTests : IndexTestBase
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
-        var results = index.Searcher.Search(updatedValue.ToString());
+        var results = index.Searcher.Search(updatedValue.ToString()!);
         Assert.That(results, Is.Not.Empty);
         Assert.That(results.First().Values.First(x => x.Value == updatedValue.ToString()).Value, Is.EqualTo(updatedValue.ToString()));
     }
-    
+
     [TestCase(true)]
     [TestCase(false)]
     public void CanIndexAggregatedTexts(bool publish)
@@ -148,8 +148,8 @@ public class InvariantDocumentTests : IndexTestBase
         Assert.That(results, Is.Not.Empty);
         Assert.That(results.First().AllValues.First(x => x.Key == "Umb_aggregated_texts").Value.Contains("The root title"), Is.True);
     }
-    
-    
+
+
     [SetUp]
     public void CreateInvariantDocument()
     {
@@ -161,7 +161,7 @@ public class InvariantDocumentTests : IndexTestBase
             .WithAlias(Constants.PropertyEditors.Aliases.Decimal)
             .Done()
             .Build();
-        
+
         DataTypeService.Save(dataType);
         var contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
@@ -207,14 +207,14 @@ public class InvariantDocumentTests : IndexTestBase
         ContentService.Save(root);
         ContentService.Publish(root, new []{ "*"});
         Thread.Sleep(3000);
-        
+
         var content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);
     }
-    
+
     private void UpdateProperty(string propertyName, object value, bool publish)
     {
-        var content = ContentService.GetById(RootKey);
+        var content = ContentService.GetById(RootKey)!;
         content.SetValue(propertyName, value);
 
         if (publish)
@@ -226,7 +226,7 @@ public class InvariantDocumentTests : IndexTestBase
         {
             ContentService.Save(content);
         }
-        
+
         Thread.Sleep(3000);
     }
 }

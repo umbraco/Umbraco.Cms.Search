@@ -9,15 +9,12 @@ public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirecto
     private readonly IOptions<FacetOptions> _facetOptions;
 
     public ConfigureIndexOptions(IOptions<FacetOptions> facetOptions)
-    {
-        _facetOptions = facetOptions;
-    }
-    public void Configure(string name, LuceneDirectoryIndexOptions options)
-    {
-        AddOptions(options);
-    }
+        => _facetOptions = facetOptions;
 
-    public void Configure(LuceneDirectoryIndexOptions options) 
+    public void Configure(string? name, LuceneDirectoryIndexOptions options)
+        => AddOptions(options);
+
+    public void Configure(LuceneDirectoryIndexOptions options)
         => Configure(string.Empty, options);
 
     private void AddOptions(LuceneDirectoryIndexOptions options)

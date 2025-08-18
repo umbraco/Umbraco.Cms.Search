@@ -8,7 +8,7 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.SearchServi
 
 public class VariantDocumentTests : SearcherTestBase
 {
-    
+
     [TestCase(true, "en-US", "Name")]
     [TestCase(false, "en-US", "Name")]
     [TestCase(true, "da-DK", "Navn")]
@@ -23,7 +23,7 @@ public class VariantDocumentTests : SearcherTestBase
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
-    
+
     [TestCase(true, "en-US", "Name")]
     [TestCase(false, "en-US", "Name")]
     [TestCase(true, "da-DK", "Navn")]
@@ -37,21 +37,21 @@ public class VariantDocumentTests : SearcherTestBase
         var results = await Searcher.SearchAsync(indexAlias, expectedValue, null, null, null, null, null, null, 0, 100);
         Assert.That(results.Total, Is.EqualTo(0));
     }
-    
+
     [TestCase("title", "updatedTitle", "en-US")]
     [TestCase("title", "updatedTitle", "da-DK")]
     [TestCase("title", "updatedTitle", "ja-JP")]
     public async Task CanSearchUpdatedProperties(string propertyName, string updatedValue, string culture)
     {
         UpdateProperty(propertyName, updatedValue, culture);
-        
+
         var indexAlias = GetIndexAlias(true);
 
         var results = await Searcher.SearchAsync(indexAlias, updatedValue, null, null, null, culture, null, null, 0, 100);
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
-    
+
     [TestCase(true, "en-US", "Root")]
     [TestCase(false, "en-US", "Root")]
     [TestCase(true, "da-DK", "Roden")]
@@ -66,7 +66,7 @@ public class VariantDocumentTests : SearcherTestBase
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
-    
+
     [TestCase(true, "en-US", "segment-1", "body-segment-1")]
     [TestCase(false, "en-US", "segment-2", "body-segment-2")]
     [TestCase(true, "da-DK","segment-1", "krop-segment-1")]
@@ -81,11 +81,11 @@ public class VariantDocumentTests : SearcherTestBase
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
-    
+
     [SetUp]
     public void CreateVariantDocument()
     {
-        
+
         var langDk = new LanguageBuilder()
             .WithCultureInfo("da-DK")
             .WithIsDefault(true)
@@ -114,7 +114,7 @@ public class VariantDocumentTests : SearcherTestBase
             .Done()
             .Build();
         ContentTypeService.Save(contentType);
-        
+
         var root = new ContentBuilder()
             .WithKey(RootKey)
             .WithContentType(contentType)
@@ -122,11 +122,11 @@ public class VariantDocumentTests : SearcherTestBase
             .WithCultureName("da-DK", "Navn")
             .WithCultureName("ja-JP", "名前")
             .Build();
-        
+
         root.SetValue("title", "Root", "en-US");
         root.SetValue("title", "Roden", "da-DK");
         root.SetValue("title", "ル-ト", "ja-JP");
-        
+
         root.SetValue("body", "body-segment-1", "en-US", "segment-1");
         root.SetValue("body", "body-segment-2", "en-US", "segment-2");
         root.SetValue("body", "krop-segment-1", "da-DK", "segment-1");
@@ -137,15 +137,15 @@ public class VariantDocumentTests : SearcherTestBase
         ContentService.Save(root);
         ContentService.Publish(root, new []{ "*"});
         Thread.Sleep(3000);
-        
+
         var content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);
     }
-    
-    
+
+
     private void UpdateProperty(string propertyName, object value, string culture)
     {
-        var content = ContentService.GetById(RootKey);
+        var content = ContentService.GetById(RootKey)!;
         content.SetValue(propertyName, value, culture);
 
         ContentService.Save(content);

@@ -10,8 +10,8 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexServic
 
 public class InvariantSortableIndexTests : IndexTestBase
 {
-    public IContentType ContentType { get; set; }
-    
+    public IContentType ContentType { get; set; } = null!;
+
     [TestCase(true)]
     [TestCase(false)]
     public async Task CanGetSortedTitles(bool publish)
@@ -25,7 +25,7 @@ public class InvariantSortableIndexTests : IndexTestBase
         var results = index.Searcher.CreateQuery().All().OrderBy(new SortableField("Umb_sortableTitle_texts", SortType.String)).Execute();
         var values = results
             .SelectMany(x => x.Values.Where(x => x.Key == "Umb_sortableTitle_texts")).Select(x => x.Value);
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(results, Is.Not.Empty);
@@ -34,7 +34,7 @@ public class InvariantSortableIndexTests : IndexTestBase
             Assert.That(values.Last(), Is.EqualTo("C Title"));
         });
     }
-    
+
     [TestCase(true)]
     [TestCase(false)]
     public async Task CanGetUnSortedTitles(bool publish)
@@ -48,7 +48,7 @@ public class InvariantSortableIndexTests : IndexTestBase
         var results = index.Searcher.CreateQuery().All().OrderBy(new SortableField("Umb_title_texts", SortType.String)).Execute();
         var values = results
             .SelectMany(x => x.Values.Where(x => x.Key == "Umb_title_texts")).Select(x => x.Value);
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(results, Is.Not.Empty);
@@ -57,8 +57,8 @@ public class InvariantSortableIndexTests : IndexTestBase
             Assert.That(values.Last(), Is.EqualTo("B Title"));
         });
     }
-    
-    
+
+
     private async Task CreateTitleDocType()
     {
         ContentType = new ContentTypeBuilder()
@@ -76,7 +76,7 @@ public class InvariantSortableIndexTests : IndexTestBase
             .Build();
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
     }
-    
+
     private async Task CreateTitleDocuments(string[] values)
     {
         await CreateTitleDocType();
@@ -93,7 +93,7 @@ public class InvariantSortableIndexTests : IndexTestBase
                         title = stringValue
                     })
                 .Build();
-            
+
             SaveAndPublish(document);
         }
     }

@@ -21,13 +21,13 @@ public partial class InvariantDocumentTreeTests : IndexTestBase
             Assert.That(results[2].Id, Is.EqualTo(GrandchildKey.ToString()));
         });
     }
-    
+
     [Test]
     public void PublishedStructure_AlsoIndexesDraftStructure()
     {
         CreateInvariantDocumentTree(true);
         var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
-        
+
         var results = index.Searcher.CreateQuery().All().Execute().ToArray();
 
         Assert.Multiple(() =>
@@ -38,14 +38,14 @@ public partial class InvariantDocumentTreeTests : IndexTestBase
             Assert.That(results[2].Id, Is.EqualTo(GrandchildKey.ToString()));
         });
     }
-    
+
     [Test]
     public void PublishedStructure_WithUnpublishedRoot_YieldsNoDocuments()
     {
         CreateInvariantDocumentTree(true);
-        var root = ContentService.GetById(RootKey);
+        var root = ContentService.GetById(RootKey)!;
         ContentService.Unpublish(root);
-        
+
         // TODO: We need to await that the index deleting has completed, for now this is our only option
         Thread.Sleep(3000);
 
@@ -53,17 +53,17 @@ public partial class InvariantDocumentTreeTests : IndexTestBase
         var publishedResultsRoot = index.Searcher.CreateQuery().All().Execute();
         Assert.That(publishedResultsRoot.TotalItemCount, Is.EqualTo(0));
     }
-    
+
     [Test]
     public void PublishedStructure_WithUnpublishedChild_YieldsNothingBelowRoot()
     {
         CreateInvariantDocumentTree(true);
-        var child = ContentService.GetById(ChildKey);
+        var child = ContentService.GetById(ChildKey)!;
         ContentService.Unpublish(child);
-        
+
         // TODO: We need to await that the index deleting has completed, for now this is our only option
         Thread.Sleep(3000);
-        
+
         var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         var results = index.Searcher.CreateQuery().All().Execute().ToArray();
         Assert.Multiple(() =>
@@ -72,17 +72,17 @@ public partial class InvariantDocumentTreeTests : IndexTestBase
             Assert.That(results[0].Id, Is.EqualTo(RootKey.ToString()));
         });
     }
-    
+
     [Test]
     public void PublishedStructure_WithUnpublishedGrandchild_YieldsNothingBelowChild()
     {
         CreateInvariantDocumentTree(true);
-        var grandChild = ContentService.GetById(GrandchildKey);
+        var grandChild = ContentService.GetById(GrandchildKey)!;
         ContentService.Unpublish(grandChild);
-        
+
         // TODO: We need to await that the index deleting has completed, for now this is our only option
         Thread.Sleep(3000);
-        
+
         var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         var results = index.Searcher.CreateQuery().All().Execute().ToArray();
         Assert.Multiple(() =>
@@ -97,9 +97,9 @@ public partial class InvariantDocumentTreeTests : IndexTestBase
     public void PublishedStructure_WithRootInRecycleBin_YieldsNoDocuments()
     {
         CreateInvariantDocumentTree(true);
-        var root = ContentService.GetById(RootKey);
+        var root = ContentService.GetById(RootKey)!;
         ContentService.MoveToRecycleBin(root);
-        
+
         // TODO: We need to await that the index deleting has completed, for now this is our only option
         Thread.Sleep(3000);
 
@@ -107,17 +107,17 @@ public partial class InvariantDocumentTreeTests : IndexTestBase
         var publishedResultsRoot = index.Searcher.CreateQuery().All().Execute();
         Assert.That(publishedResultsRoot.TotalItemCount, Is.EqualTo(0));
     }
-    
+
     [Test]
     public void PublishedStructure_WithChildInRecycleBin_YieldsNothingBelowRoot()
     {
         CreateInvariantDocumentTree(true);
-        var child = ContentService.GetById(ChildKey);
+        var child = ContentService.GetById(ChildKey)!;
         ContentService.MoveToRecycleBin(child);
-        
+
         // TODO: We need to await that the index deleting has completed, for now this is our only option
         Thread.Sleep(3000);
-        
+
         var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         var results = index.Searcher.CreateQuery().All().Execute().ToArray();
         Assert.Multiple(() =>
@@ -126,17 +126,17 @@ public partial class InvariantDocumentTreeTests : IndexTestBase
             Assert.That(results[0].Id, Is.EqualTo(RootKey.ToString()));
         });
     }
-    
+
     [Test]
     public void PublishedStructure_WithUGrandchildInRecycleBin_YieldsNothingBelowChild()
     {
         CreateInvariantDocumentTree(true);
-        var grandChild = ContentService.GetById(GrandchildKey);
+        var grandChild = ContentService.GetById(GrandchildKey)!;
         ContentService.MoveToRecycleBin(grandChild);
-        
+
         // TODO: We need to await that the index deleting has completed, for now this is our only option
         Thread.Sleep(3000);
-        
+
         var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         var results = index.Searcher.CreateQuery().All().Execute().ToArray();
         Assert.Multiple(() =>

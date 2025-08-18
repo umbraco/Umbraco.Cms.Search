@@ -33,7 +33,7 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
         var results = index.Searcher.CreateQuery().All().Execute();
         var indexedAccessKeys = results.First().AllValues.First(x => x.Key == "Umb_protection").Value;
         Assert.That(indexedAccessKeys, Has.Count.EqualTo(1));
-        Assert.That(indexedAccessKeys, Has.Member(result.Result.Key.ToString().TransformDashes()));
+        Assert.That(indexedAccessKeys, Has.Member(result.Result!.Key.ToString().TransformDashes()));
     }
 
     [Test]
@@ -55,17 +55,17 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
         Thread.Sleep(3000);
 
         var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
-        
+
         var results = index.Searcher.CreateQuery().All().Execute();
         var indexedAccessKeys = results.First().AllValues.First(x => x.Key == "Umb_protection").Value;
         Assert.That(indexedAccessKeys, Has.Count.EqualTo(5));
-        Assert.That(indexedAccessKeys, Has.Member(group.Result.Key.ToString().TransformDashes()));
-        Assert.That(indexedAccessKeys, Has.Member(group2.Result.Key.ToString().TransformDashes()));
-        Assert.That(indexedAccessKeys, Has.Member(group3.Result.Key.ToString().TransformDashes()));
-        Assert.That(indexedAccessKeys, Has.Member(group4.Result.Key.ToString().TransformDashes()));
-        Assert.That(indexedAccessKeys, Has.Member(group5.Result.Key.ToString().TransformDashes()));
+        Assert.That(indexedAccessKeys, Has.Member(group.Result!.Key.ToString().TransformDashes()));
+        Assert.That(indexedAccessKeys, Has.Member(group2.Result!.Key.ToString().TransformDashes()));
+        Assert.That(indexedAccessKeys, Has.Member(group3.Result!.Key.ToString().TransformDashes()));
+        Assert.That(indexedAccessKeys, Has.Member(group4.Result!.Key.ToString().TransformDashes()));
+        Assert.That(indexedAccessKeys, Has.Member(group5.Result!.Key.ToString().TransformDashes()));
     }
-    
+
     [Test]
     public void DoesNotIndexContentProtectionIfNoneExists()
     {

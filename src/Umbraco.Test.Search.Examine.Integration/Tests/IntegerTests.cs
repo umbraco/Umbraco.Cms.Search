@@ -46,7 +46,7 @@ public class IntegerTests : SearcherTestBase
     public async Task CanFilterSingleDocumentByIntegerRange()
     {
         SearchResult result = await SearchAsync(
-            filters: [new IntegerRangeFilter(FieldMultipleValues, [new FilterRange<int?>(1, 2)], false)]
+            filters: [new IntegerRangeFilter(FieldMultipleValues, [new IntegerRangeFilterRange(1, 2)], false)]
         );
 
         Assert.Multiple(
@@ -62,8 +62,7 @@ public class IntegerTests : SearcherTestBase
     public async Task CanFilterSingleDocumentByNegativeIntegerRange()
     {
         SearchResult result = await SearchAsync(
-            filters: [new IntegerRangeFilter(FieldMultipleValues, [new FilterRange<int?>(-2, -1)], false)]
-            // filters: [new IntegerRangeFilter(FieldMultipleValues, [new IntegerRangeFilterRange(-2, -1)], false)]
+            filters: [new IntegerRangeFilter(FieldMultipleValues, [new IntegerRangeFilterRange(-2, -1)], false)]
         );
 
         Assert.Multiple(
@@ -111,12 +110,9 @@ public class IntegerTests : SearcherTestBase
                 new IntegerRangeFilter(
                     FieldMultipleValues,
                     [
-                        new FilterRange<int?>(1, 5),
-                        new FilterRange<int?>(20, 25),
-                        new FilterRange<int?>(100, 101)
-                        // new IntegerRangeFilterRange(1, 5),
-                        // new IntegerRangeFilterRange(20, 25),
-                        // new IntegerRangeFilterRange(100, 101)
+                        new IntegerRangeFilterRange(1, 5),
+                        new IntegerRangeFilterRange(20, 25),
+                        new IntegerRangeFilterRange(100, 101)
                     ],
                     false
                 )
@@ -176,8 +172,7 @@ public class IntegerTests : SearcherTestBase
     public async Task CanFilterDocumentsByIntegerRangeNegated()
     {
         SearchResult result = await SearchAsync(
-            filters: [new IntegerRangeFilter(FieldMultipleValues, [new FilterRange<int?>(1, 2)], true)]
-            // filters: [new IntegerRangeFilter(FieldMultipleValues, [new IntegerRangeFilterRange(1, 2)], true)]
+            filters: [new IntegerRangeFilter(FieldMultipleValues, [new IntegerRangeFilterRange(1, 2)], true)]
         );
 
         Assert.Multiple(

@@ -25,7 +25,7 @@ public partial class InvariantDocumentTreeTests
             Assert.That(results[2].Id, Is.EqualTo(GrandchildKey.ToString()));
         });
     }
-    
+
     [Test]
     public void DraftStructure_YieldsNoPublishedDocuments()
     {
@@ -40,12 +40,12 @@ public partial class InvariantDocumentTreeTests
     public void DraftStructure_WithRootInRecycleBin_YieldsAllDocuments()
     {
         CreateInvariantDocumentTree(false);
-        var root = ContentService.GetById(RootKey);
+        var root = ContentService.GetById(RootKey)!;
         var result = ContentService.MoveToRecycleBin(root);
         Thread.Sleep(3000);
         var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
         var results = index.Searcher.CreateQuery().All().Execute().ToArray();
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(results.Length, Is.EqualTo(3));
@@ -54,41 +54,41 @@ public partial class InvariantDocumentTreeTests
             Assert.That(results[2].Id, Is.EqualTo(GrandchildKey.ToString()));
         });
     }
-    
-        
+
+
     [Test]
     public void DraftStructure_WithChildDeleted_YieldsNothingBelowRoot()
     {
         CreateInvariantDocumentTree(false);
-        var child = ContentService.GetById(ChildKey);
+        var child = ContentService.GetById(ChildKey)!;
         ContentService.Delete(child);
-        
+
         // TODO: We need to await that the index deleting has completed, for now this is our only option
         Thread.Sleep(3000);
-        
+
         var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
         var results = index.Searcher.CreateQuery().All().Execute().ToArray();
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(results.Length, Is.EqualTo(1));
             Assert.That(results[0].Id, Is.EqualTo(RootKey.ToString()));
         });
     }
-    
+
     [Test]
     public void DraftStructure_WithGrandchildDeleted_YieldsNothingBelowChild()
     {
         CreateInvariantDocumentTree(false);
-        var grandchild = ContentService.GetById(GrandchildKey);
+        var grandchild = ContentService.GetById(GrandchildKey)!;
         ContentService.Delete(grandchild);
-        
+
         // TODO: We need to await that the index deleting has completed, for now this is our only option
         Thread.Sleep(3000);
-        
+
         var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
         var results = index.Searcher.CreateQuery().All().Execute().ToArray();
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(results.Length, Is.EqualTo(2));
@@ -107,7 +107,7 @@ public partial class InvariantDocumentTreeTests
             .WithAlias(Constants.PropertyEditors.Aliases.Decimal)
             .Done()
             .Build();
-        
+
         DataTypeService.Save(dataType);
         var contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
@@ -198,7 +198,7 @@ public partial class InvariantDocumentTreeTests
                     decimalproperty = DecimalValue
                 })
             .Build();
-        
+
         if (publish)
         {
             SaveAndPublish(grandchild);

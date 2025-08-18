@@ -132,7 +132,7 @@ public class Searcher : IExamineSearcher
             {
                 continue;
             }
-            
+
             if (sorter.Direction is Direction.Ascending)
             {
                 searchQuery.OrderBy(sortableField.Value);
@@ -190,7 +190,6 @@ public class Searcher : IExamineSearcher
 
                     break;
                 case TextFilter textFilter:
-                    
                     if (textFilter.Negate)
                     {
                         var negatedValue = string.Join(" ", textFilter.Values).TransformDashes();
@@ -220,7 +219,7 @@ public class Searcher : IExamineSearcher
                             var textFilterValue = string.Join(" ", textFilter.Values).TransformDashes();
                             var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", textFilterValue);
                             fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR1}", textFilterValue);
-                            fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR2}", textFilterValue); 
+                            fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR2}", textFilterValue);
                             return fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR3}", textFilterValue);
                         });
                     }
@@ -229,7 +228,10 @@ public class Searcher : IExamineSearcher
                 case IntegerRangeFilter integerRangeFilter:
                     var integerRangeFieldName =
                         $"{Constants.Fields.FieldPrefix}{integerRangeFilter.FieldName}_{Constants.Fields.Integers}";
-                    searchQuery.AddRangeFilter(integerRangeFieldName, integerRangeFilter.ToNonNullableRangeFilter());
+                    FilterRange<int>[] integerRanges = integerRangeFilter.Ranges
+                        .Select(r => new FilterRange<int>(r.MinValue ?? int.MinValue, r.MaxValue ?? int.MaxValue))
+                        .ToArray();
+                    searchQuery.AddRangeFilter<int>(integerRangeFieldName, integerRangeFilter.Negate, integerRanges);
                     break;
                 case IntegerExactFilter integerExactFilter:
                     var integerExactFieldName =
@@ -239,24 +241,30 @@ public class Searcher : IExamineSearcher
                 case DecimalRangeFilter decimalRangeFilter:
                     var decimalRangeFieldName =
                         $"{Constants.Fields.FieldPrefix}{decimalRangeFilter.FieldName}_{Constants.Fields.Decimals}";
-                    searchQuery.AddRangeFilter(decimalRangeFieldName, decimalRangeFilter.ToNonNullableRangeFilter());
+                    FilterRange<double>[] doubleRanges = decimalRangeFilter.Ranges
+                        .Select(r => new FilterRange<double>(Convert.ToDouble(r.MinValue ?? decimal.MinValue), Convert.ToDouble(r.MaxValue ?? decimal.MaxValue)))
+                        .ToArray();
+                    searchQuery.AddRangeFilter(decimalRangeFieldName, decimalRangeFilter.Negate, doubleRanges);
                     break;
                 case DecimalExactFilter decimalExactFilter:
                     var decimalExactFieldName =
                         $"{Constants.Fields.FieldPrefix}{decimalExactFilter.FieldName}_{Constants.Fields.Decimals}";
-                    searchQuery.AddExactFilter(decimalExactFieldName, decimalExactFilter.ToDoubleExactFilter());
+                    var doubleExactFilter = new DoubleExactFilter(filter.FieldName, decimalExactFilter.Values.Select(Convert.ToDouble).ToArray(), filter.Negate);
+                    searchQuery.AddExactFilter(decimalExactFieldName, doubleExactFilter);
                     break;
                 case DateTimeOffsetRangeFilter dateTimeOffsetRangeFilter:
                     var dateTimeOffsetRangeFieldName =
                         $"{Constants.Fields.FieldPrefix}{dateTimeOffsetRangeFilter.FieldName}_{Constants.Fields.DateTimeOffsets}";
-                    searchQuery.AddRangeFilter(dateTimeOffsetRangeFieldName,
-                        dateTimeOffsetRangeFilter.ToNonNullableRangeFilter());
+                    FilterRange<DateTime>[] dateTimeRanges = dateTimeOffsetRangeFilter.Ranges
+                        .Select(r => new FilterRange<DateTime>(r.MinValue?.DateTime ?? DateTime.MinValue, r.MaxValue?.DateTime ?? DateTime.MaxValue))
+                        .ToArray();
+                    searchQuery.AddRangeFilter(dateTimeOffsetRangeFieldName, dateTimeOffsetRangeFilter.Negate, dateTimeRanges);
                     break;
                 case DateTimeOffsetExactFilter dateTimeOffsetExactFilter:
                     var dateTimeOffsetExactFieldName =
                         $"{Constants.Fields.FieldPrefix}{dateTimeOffsetExactFilter.FieldName}_{Constants.Fields.DateTimeOffsets}";
-                    searchQuery.AddExactFilter(dateTimeOffsetExactFieldName,
-                        dateTimeOffsetExactFilter.ToDateTimeExactFilter());
+                    var datetimeExactFilter = new DateTimeExactFilter(filter.FieldName, dateTimeOffsetExactFilter.Values.Select(value => value.DateTime).ToArray(), filter.Negate);
+                    searchQuery.AddExactFilter(dateTimeOffsetExactFieldName, datetimeExactFilter);
                     break;
             }
         }
@@ -277,7 +285,7 @@ public class Searcher : IExamineSearcher
                     searchQuery.WithFacets(facetOperations => facetOperations.FacetLongRange(
                         $"{Constants.Fields.FieldPrefix}{dateTimeOffsetRangeFacet.FieldName}_{Constants.Fields.DateTimeOffsets}",
                         dateTimeOffsetRangeFacet.Ranges.Select(x => new Int64Range(x.Key,
-                            x.Min?.Ticks ?? DateTime.MinValue.Ticks, true, x.Max?.Ticks ?? DateTime.MaxValue.Ticks,
+                            x.MinValue?.Ticks ?? DateTime.MinValue.Ticks, true, x.MaxValue?.Ticks ?? DateTime.MaxValue.Ticks,
                             false)).ToArray()));
                     break;
                 case DecimalExactFacet decimalExactFacet:
@@ -289,7 +297,7 @@ public class Searcher : IExamineSearcher
                     searchQuery.WithFacets(facetOperations => facetOperations.FacetLongRange(
                         $"{Constants.Fields.FieldPrefix}{integerRangeFacet.FieldName}_{Constants.Fields.Integers}",
                         integerRangeFacet.Ranges
-                            .Select(x => new Int64Range(x.Key, x.Min ?? 0, true, x.Max ?? int.MaxValue, false))
+                            .Select(x => new Int64Range(x.Key, x.MinValue ?? 0, true, x.MaxValue ?? int.MaxValue, false))
                             .ToArray()));
                     break;
                 case KeywordFacet keywordFacet:
@@ -305,7 +313,7 @@ public class Searcher : IExamineSearcher
                 case DecimalRangeFacet decimalRangeFacet:
                 {
                     var doubleRanges = decimalRangeFacet.Ranges.Select(x =>
-                            new DoubleRange(x.Key, decimal.ToDouble(x.Min ?? 0), true, decimal.ToDouble(x.Max ?? 0),
+                            new DoubleRange(x.Key, decimal.ToDouble(x.MinValue ?? 0), true, decimal.ToDouble(x.MaxValue ?? 0),
                                 false))
                         .ToArray();
                     searchQuery.WithFacets(facetOperations =>

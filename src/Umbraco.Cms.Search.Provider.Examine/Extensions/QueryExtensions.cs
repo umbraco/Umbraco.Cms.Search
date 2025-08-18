@@ -3,33 +3,34 @@ using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Extensions;
 
-public static class QueryExtensions
+internal static class QueryExtensions
 {
-    public static void AddRangeFilter<T>(this IBooleanOperation query, string fieldName, RangeFilter<T> filter) where T : struct
+    public static void AddRangeFilter<T>(this IBooleanOperation query, string fieldName, bool negate, IEnumerable<FilterRange<T>> ranges)
+        where T : struct
     {
-        var ranges = filter.Ranges;
-        if (filter.Negate)
+        FilterRange<T>[] rangesAsArray = ranges as FilterRange<T>[] ?? ranges.ToArray();
+        if (negate)
         {
-            foreach (var integerRange in ranges)
+            foreach (var range in rangesAsArray)
             {
-                query.Not().RangeQuery<T>([fieldName], integerRange.MinimumValue, integerRange.MaximumValue, true, false);
+                query.Not().RangeQuery<T>([fieldName], range.MinValue, range.MaxValue, true, false);
             }
         }
         else
         {
             query.And().Group(nestedQuery =>
             {
-                var rangeQuery = nestedQuery.RangeQuery<T>([fieldName], ranges[0].MinimumValue, ranges[0].MaximumValue, true, false);
-                for (var i = 1; i < ranges.Length; i++)
+                var rangeQuery = nestedQuery.RangeQuery<T>([fieldName], rangesAsArray[0].MinValue, rangesAsArray[0].MaxValue, true, false);
+                for (var i = 1; i < rangesAsArray.Length; i++)
                 {
-                    rangeQuery.Or().RangeQuery<T>([fieldName], ranges[i].MinimumValue, ranges[i].MaximumValue, true, false);
+                    rangeQuery.Or().RangeQuery<T>([fieldName], rangesAsArray[i].MinValue, rangesAsArray[i].MaxValue, true, false);
                 }
 
                 return rangeQuery;
             });
         }
     }
-    
+
     public static void AddExactFilter<T>(this IBooleanOperation query, string fieldName, ExactFilter<T> filter) where T : struct
     {
         if (filter.Negate)
@@ -58,4 +59,10 @@ public static class QueryExtensions
 
         }
     }
+}
+
+// TODO KJA: move somewhere else
+internal record FilterRange<T>(T MinValue, T MaxValue)
+    where T : struct
+{
 }

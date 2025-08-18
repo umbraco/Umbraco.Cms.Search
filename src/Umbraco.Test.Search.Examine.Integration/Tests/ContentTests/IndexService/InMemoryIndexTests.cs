@@ -14,7 +14,7 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexServic
 [UmbracoTest(Database = UmbracoTestOptions.Database.None)]
 public class InMemoryIndexTests : UmbracoIntegrationTest
 {
-    
+
     public IExamineManager ExamineManager => GetRequiredService<IExamineManager>();
     protected override void ConfigureTestServices(IServiceCollection services)
     {
@@ -46,14 +46,14 @@ public class InMemoryIndexTests : UmbracoIntegrationTest
                 {"Email", "nge@umbraco.dk" },
                 {"Age", 30}
             }));
-        
+
         Thread.Sleep(3000);
 
         var results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results.TotalItemCount, Is.EqualTo(1));
         Assert.That(results.First().Id, Is.EqualTo("test"));
     }
-    
+
     [Test]
     [TestCase(3)]
     [TestCase(50)]
@@ -80,13 +80,13 @@ public class InMemoryIndexTests : UmbracoIntegrationTest
                     {"Age", i },
                 }));
         }
-        
+
         Thread.Sleep(3000);
     }
 
     private IIndex GetIndex()
     {
-        ExamineManager.TryGetIndex("TestIndex", out IIndex index);
-        return index;
+        ExamineManager.TryGetIndex("TestIndex", out IIndex? index);
+        return index!;
     }
 }

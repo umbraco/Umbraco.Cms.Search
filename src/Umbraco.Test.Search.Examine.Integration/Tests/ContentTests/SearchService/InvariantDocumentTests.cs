@@ -17,7 +17,7 @@ public class InvariantDocumentTests : SearcherTestBase
         var results = await Searcher.SearchAsync(indexAlias, null, null, null, null, null, null, null, 0, 100);
         Assert.That(results.Total, Is.EqualTo(0));
     }
-    
+
     [TestCase(true)]
     [TestCase(false)]
     public async Task CanSearchName(bool publish)
@@ -28,7 +28,7 @@ public class InvariantDocumentTests : SearcherTestBase
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
-    
+
     [TestCase(true)]
     [TestCase(false)]
     public async Task CanSearchTextProperty(bool publish)
@@ -39,7 +39,7 @@ public class InvariantDocumentTests : SearcherTestBase
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
-    
+
     [TestCase(true)]
     [TestCase(false)]
     public async Task CanSearchIntegerValue(bool publish)
@@ -50,7 +50,7 @@ public class InvariantDocumentTests : SearcherTestBase
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
-    
+
     [TestCase(true)]
     [TestCase(false)]
     public async Task CanSearchDecimalValues(bool publish)
@@ -60,8 +60,8 @@ public class InvariantDocumentTests : SearcherTestBase
         var results = await Searcher.SearchAsync(indexAlias, DecimalValue.ToString(), null, null, null, null, null, null, 0, 100);
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
-    }    
-    
+    }
+
     [TestCase(true)]
     [TestCase(false)]
     public async Task CanSearchDateTimeValues(bool publish)
@@ -72,8 +72,8 @@ public class InvariantDocumentTests : SearcherTestBase
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
-    
-    
+
+
     [TestCase("title", "updated title", false)]
     [TestCase("title", "updated title", true)]
     [TestCase("count", 12, false)]
@@ -90,7 +90,7 @@ public class InvariantDocumentTests : SearcherTestBase
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
-    
+
     [TestCase(true)]
     [TestCase(false)]
     public async Task CanSearchUpdatedDateTime(bool publish)
@@ -98,12 +98,12 @@ public class InvariantDocumentTests : SearcherTestBase
         var updatedValue = new DateTime(2000, 1, 1);
         UpdateProperty("datetime", new DateTime(2000, 1, 1), publish);
         var indexAlias = GetIndexAlias(publish);
-    
+
         var results = await Searcher.SearchAsync(indexAlias, updatedValue.ToString(), null, null, null, null, null, null, 0, 100);
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
-    
+
     [SetUp]
     public void CreateInvariantDocument()
     {
@@ -115,7 +115,7 @@ public class InvariantDocumentTests : SearcherTestBase
             .WithAlias(Constants.PropertyEditors.Aliases.Decimal)
             .Done()
             .Build();
-        
+
         DataTypeService.Save(dataType);
         var contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
@@ -159,14 +159,14 @@ public class InvariantDocumentTests : SearcherTestBase
         ContentService.Save(root);
         ContentService.Publish(root, new []{ "*"});
         Thread.Sleep(3000);
-        
+
         var content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);
     }
-    
+
     private void UpdateProperty(string propertyName, object value, bool publish)
     {
-        var content = ContentService.GetById(RootKey);
+        var content = ContentService.GetById(RootKey)!;
         content.SetValue(propertyName, value);
 
         if (publish)
@@ -178,7 +178,7 @@ public class InvariantDocumentTests : SearcherTestBase
         {
             ContentService.Save(content);
         }
-        
+
         Thread.Sleep(3000);
     }
 }

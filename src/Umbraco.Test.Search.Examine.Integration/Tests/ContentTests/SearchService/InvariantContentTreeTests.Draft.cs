@@ -12,15 +12,15 @@ public partial class InvariantContentTreeTests : SearcherTestBase
     public async Task DraftStructure_WithRootInRecycleBin_YieldsAllDocuments()
     {
         CreateInvariantDocumentTree(false);
-        var root = ContentService.GetById(RootKey);
+        var root = ContentService.GetById(RootKey)!;
         var result = ContentService.MoveToRecycleBin(root);
         Thread.Sleep(3000);
-        
+
         var indexAlias = GetIndexAlias(false);
         var rootResult = await Searcher.SearchAsync(indexAlias, "Root", null, null, null, null, null, null, 0, 100);
         var childResult = await Searcher.SearchAsync(indexAlias, "Child", null, null, null, null, null, null, 0, 100);
         var grandChildResult = await Searcher.SearchAsync(indexAlias, "Grandchild", null, null, null, null, null, null, 0, 100);
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(rootResult.Total, Is.EqualTo(1));
@@ -31,23 +31,23 @@ public partial class InvariantContentTreeTests : SearcherTestBase
             Assert.That(grandChildResult.Documents.First().Id, Is.EqualTo(GrandchildKey));
         });
     }
-    
-        
+
+
     [Test]
     public async Task DraftStructure_WithChildDeleted_YieldsNothingBelowRoot()
     {
         CreateInvariantDocumentTree(false);
-        var child = ContentService.GetById(ChildKey);
+        var child = ContentService.GetById(ChildKey)!;
         ContentService.Delete(child);
-        
+
         // TODO: We need to await that the index deleting has completed, for now this is our only option
         Thread.Sleep(3000);
-        
+
         var indexAlias = GetIndexAlias(false);
         var rootResult = await Searcher.SearchAsync(indexAlias, "Root", null, null, null, null, null, null, 0, 100);
         var childResult = await Searcher.SearchAsync(indexAlias, "Child", null, null, null, null, null, null, 0, 100);
         var grandChildResult = await Searcher.SearchAsync(indexAlias, "Grandchild", null, null, null, null, null, null, 0, 100);
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(rootResult.Total, Is.EqualTo(1));
@@ -56,22 +56,22 @@ public partial class InvariantContentTreeTests : SearcherTestBase
             Assert.That(rootResult.Documents.First().Id, Is.EqualTo(RootKey));
         });
     }
-    
+
     [Test]
     public async Task DraftStructure_WithGrandchildDeleted_YieldsNothingBelowChild()
     {
         CreateInvariantDocumentTree(false);
-        var grandchild = ContentService.GetById(GrandchildKey);
+        var grandchild = ContentService.GetById(GrandchildKey)!;
         ContentService.Delete(grandchild);
-        
+
         // TODO: We need to await that the index deleting has completed, for now this is our only option
         Thread.Sleep(3000);
-        
+
         var indexAlias = GetIndexAlias(false);
         var rootResult = await Searcher.SearchAsync(indexAlias, "Root", null, null, null, null, null, null, 0, 100);
         var childResult = await Searcher.SearchAsync(indexAlias, "Child", null, null, null, null, null, null, 0, 100);
         var grandChildResult = await Searcher.SearchAsync(indexAlias, "Grandchild", null, null, null, null, null, null, 0, 100);
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(rootResult.Total, Is.EqualTo(1));
@@ -92,7 +92,7 @@ public partial class InvariantContentTreeTests : SearcherTestBase
             .WithAlias(Constants.PropertyEditors.Aliases.Decimal)
             .Done()
             .Build();
-        
+
         DataTypeService.Save(dataType);
         var contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
@@ -183,7 +183,7 @@ public partial class InvariantContentTreeTests : SearcherTestBase
                     decimalproperty = DecimalValue
                 })
             .Build();
-        
+
         if (publish)
         {
             SaveAndPublish(grandchild);

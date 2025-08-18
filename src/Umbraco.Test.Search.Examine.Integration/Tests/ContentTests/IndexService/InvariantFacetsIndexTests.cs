@@ -11,8 +11,8 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexServic
 
 public class InvariantFacetsIndexTests : IndexTestBase
 {
-    private IContentType ContentType { get; set; }
-    
+    private IContentType ContentType { get; set; } = null!;
+
     [TestCase(true)]
     [TestCase(false)]
     public async Task CanGetOneIntFacet(bool publish)
@@ -33,10 +33,10 @@ public class InvariantFacetsIndexTests : IndexTestBase
         Assert.Multiple(() =>
         {
             Assert.That(facets, Is.Not.Empty);
-            Assert.That(facet.Value, Is.EqualTo(2));
+            Assert.That(facet!.Value, Is.EqualTo(2));
         });
     }
-    
+
     [TestCase(true)]
     [TestCase(false)]
     public async Task CanGetOneDecimalFacet(bool publish)
@@ -57,10 +57,10 @@ public class InvariantFacetsIndexTests : IndexTestBase
         Assert.Multiple(() =>
         {
             Assert.That(facets, Is.Not.Empty);
-            Assert.That(facet.Value, Is.EqualTo(2));
+            Assert.That(facet!.Value, Is.EqualTo(2));
         });
     }
-    
+
     [TestCase(true)]
     [TestCase(false)]
     public async Task CanGetOneTextFacet(bool publish)
@@ -81,10 +81,10 @@ public class InvariantFacetsIndexTests : IndexTestBase
         Assert.Multiple(() =>
         {
             Assert.That(facets, Is.Not.Empty);
-            Assert.That(facet.Value, Is.EqualTo(2));
+            Assert.That(facet!.Value, Is.EqualTo(2));
         });
     }
-    
+
     [Test]
     [TestCase(true)]
     [TestCase(false)]
@@ -106,8 +106,8 @@ public class InvariantFacetsIndexTests : IndexTestBase
         var secondFacet = facets.First().Facet("100-199");
         Assert.Multiple(() =>
         {
-            Assert.That(firstFacet.Value, Is.EqualTo(2));
-            Assert.That(secondFacet.Value, Is.EqualTo(2));
+            Assert.That(firstFacet!.Value, Is.EqualTo(2));
+            Assert.That(secondFacet!.Value, Is.EqualTo(2));
         });
     }
 
@@ -124,7 +124,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
             .Build();
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
     }
-    
+
     private async Task CreateTitleDocType()
     {
         ContentType = new ContentTypeBuilder()
@@ -137,7 +137,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
             .Build();
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
     }
-    
+
     private async Task CreateTitleDocuments(string[] values)
     {
         await CreateTitleDocType();
@@ -153,11 +153,11 @@ public class InvariantFacetsIndexTests : IndexTestBase
                         title = stringValue
                     })
                 .Build();
-            
+
             SaveAndPublish(document);
         }
     }
-    
+
     private async Task CreateDecimalDocType()
     {
         var dataType = new DataTypeBuilder()
@@ -168,7 +168,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
             .WithAlias(Constants.PropertyEditors.Aliases.Decimal)
             .Done()
             .Build();
-        
+
         DataTypeService.Save(dataType);
         ContentType = new ContentTypeBuilder()
             .WithAlias("invariant")
@@ -180,7 +180,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
             .Build();
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
     }
-    
+
     private async Task CreateDecimalDocuments(double[] values)
     {
         await CreateDecimalDocType();
@@ -196,7 +196,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
                         decimalproperty = doubleValue
                     })
                 .Build();
-            
+
             SaveAndPublish(document);
         }
     }
@@ -216,7 +216,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
                         otherName = countValue,
                     })
                 .Build();
-            
+
             SaveAndPublish(document);
         }
     }

@@ -10,29 +10,29 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.SearchServi
 
 public class InvariantSortingTests : SearcherTestBase
 {
-    private IContentType ContentType { get; set; }
+    private IContentType ContentType { get; set; } = null!;
 
-    
+
     [TestCase(Direction.Descending)]
     [TestCase(Direction.Ascending)]
     public async Task CanSortIntegers(Direction direction)
     {
         int[] integers = [9, 3, 4, 2, 5, 7, 1, 11, 10];
         var keys = (await CreateCountDocuments(integers)).OrderBy(x => x.Value, direction).ToArray();
-        
+
         var indexAlias = GetIndexAlias(true);
         var result = await Searcher.SearchAsync(
             indexAlias,
-            null, 
-            [new IntegerRangeFilter("count", [new FilterRange<int?>(null, null)], false)],
-            null, 
+            null,
+            [new IntegerRangeFilter("count", [new IntegerRangeFilterRange(null, null)], false)],
+            null,
             [new IntegerSorter("count", direction)],
             null,
-            null, 
             null,
-            0, 
+            null,
+            0,
             100);
-        
+
         Assert.Multiple(() =>
         {
             var documents = result.Documents.ToArray();
@@ -43,27 +43,27 @@ public class InvariantSortingTests : SearcherTestBase
             }
         });
     }
-    
+
     [TestCase(true, Direction.Descending)]
     [TestCase(false, Direction.Ascending)]
     public async Task CanSortDecimals(bool publish, Direction direction)
     {
         double[] doubles = [5,12412d, 0,51251d, 1.15215d, 3.251d, 2.2515125d, 125.5215d, 142.214124d];
         var keys = (await CreateDecimalDocuments(doubles)).OrderBy(x => x.Value, direction).ToArray();
-        
+
         var indexAlias = GetIndexAlias(publish);
         var result = await Searcher.SearchAsync(
             indexAlias,
-            null, 
-            [new DecimalRangeFilter("decimalproperty", [new FilterRange<decimal?>(null, null)], false)],
-            null, 
+            null,
+            [new DecimalRangeFilter("decimalproperty", [new DecimalRangeFilterRange(null, null)], false)],
+            null,
             [new DecimalSorter("decimalproperty", direction)],
             null,
-            null, 
             null,
-            0, 
+            null,
+            0,
             100);
-        
+
         Assert.Multiple(() =>
         {
             var documents = result.Documents.ToArray();
@@ -74,28 +74,28 @@ public class InvariantSortingTests : SearcherTestBase
             }
         });
     }
-    
+
     [TestCase(true, Direction.Descending)]
     [TestCase(false, Direction.Ascending)]
     public async Task CanSortDateTimeOffsets(bool publish, Direction direction)
     {
         DateTime[] dateTimes = [new(2025, 06, 06), new(2025, 02, 01), new(2024, 01, 01), new(2019, 01, 01), new(2000, 01, 01), new(2003, 01, 01)];
-        
+
         var keys = (await CreateDatetimeDocuments(dateTimes)).OrderBy(x => x.Value, direction).ToArray();
-        
+
         var indexAlias = GetIndexAlias(publish);
         var result = await Searcher.SearchAsync(
             indexAlias,
-            null, 
-            [new DateTimeOffsetRangeFilter("datetime", [new FilterRange<DateTimeOffset?>(null, null)], false)],
-            null, 
+            null,
+            [new DateTimeOffsetRangeFilter("datetime", [new DateTimeOffsetRangeFilterRange(null, null)], false)],
+            null,
             [new DateTimeOffsetSorter("datetime", direction)],
             null,
-            null, 
             null,
-            0, 
+            null,
+            0,
             100);
-        
+
         Assert.Multiple(() =>
         {
             var documents = result.Documents.ToArray();
@@ -106,26 +106,26 @@ public class InvariantSortingTests : SearcherTestBase
             }
         });
     }
-    
+
     [TestCase(true, Direction.Descending)]
     [TestCase(false, Direction.Ascending)]
     public async Task CanSortKeywords(bool publish, Direction direction)
     {
         var keys = (await CreateDocuments(5)).OrderBy(x => x, direction).Select(x => x.ToString()).ToArray();
-        
+
         var indexAlias = GetIndexAlias(publish);
         var result = await Searcher.SearchAsync(
             indexAlias,
-            null, 
+            null,
             [new KeywordFilter("Umb_Id", keys.ToArray(), false)],
-            null, 
+            null,
             [new KeywordSorter("Umb_Id", direction)],
             null,
-            null, 
             null,
-            0, 
+            null,
+            0,
             100);
-        
+
         Assert.Multiple(() =>
         {
             var documents = result.Documents.ToArray();
@@ -136,28 +136,28 @@ public class InvariantSortingTests : SearcherTestBase
             }
         });
     }
-    
+
     [TestCase(true, Direction.Descending)]
     [TestCase(false, Direction.Ascending)]
     public async Task CanSortTexts(bool publish, Direction direction)
     {
         string[] titles = ["aa", "ccc", "bbb", "ddd", "zzz", "xxx"];
-        
+
         var keys = (await CreateTitleDocuments(titles)).OrderBy(x => x.Value, direction).ToArray();
-        
+
         var indexAlias = GetIndexAlias(publish);
         var result = await Searcher.SearchAsync(
             indexAlias,
-            null, 
+            null,
             [new TextFilter("title", titles, false)],
-            null, 
+            null,
             [new TextSorter("title", direction)],
             null,
-            null, 
             null,
-            0, 
+            null,
+            0,
             100);
-        
+
         Assert.Multiple(() =>
         {
             var documents = result.Documents.ToArray();
@@ -168,7 +168,7 @@ public class InvariantSortingTests : SearcherTestBase
             }
         });
     }
-    
+
     // TODO: Remake these with actual properties in different r1 texts...
     // [TestCase(true, Direction.Descending)]
     // [TestCase(false, Direction.Ascending)]
@@ -177,20 +177,20 @@ public class InvariantSortingTests : SearcherTestBase
     //     string[] titles = ["exact", "exact aa ", "exact aaa aaaa", "exact aaa aaaa aaaaa"];
     //
     //     var keys = (await CreateTitleDocuments(titles)).OrderBy(x => x.Value, direction).ToArray();
-    //     
+    //
     //     var indexAlias = GetIndexAlias(publish);
     //     var result = await Searcher.SearchAsync(
     //         indexAlias,
-    //         "exact", 
+    //         "exact",
     //         null,
-    //         null, 
+    //         null,
     //         [new ScoreSorter(direction)],
     //         null,
-    //         null, 
     //         null,
-    //         0, 
+    //         null,
+    //         0,
     //         100);
-    //     
+    //
     //     Assert.Multiple(() =>
     //     {
     //         var documents = result.Documents.ToArray();
@@ -201,8 +201,8 @@ public class InvariantSortingTests : SearcherTestBase
     //         }
     //     });
     // }
-    
-    
+
+
     private async Task CreateCountDocType()
     {
         ContentType = new ContentTypeBuilder()
@@ -215,7 +215,7 @@ public class InvariantSortingTests : SearcherTestBase
             .Build();
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
     }
-    
+
     private async Task CreateDocType()
     {
         ContentType = new ContentTypeBuilder()
@@ -223,7 +223,7 @@ public class InvariantSortingTests : SearcherTestBase
             .Build();
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
     }
-    
+
     private async Task<IEnumerable<Guid>> CreateDocuments(int numberOfDocuments)
     {
         var keys = new List<Guid>();
@@ -235,16 +235,16 @@ public class InvariantSortingTests : SearcherTestBase
                 .WithContentType(ContentType)
                 .WithName($"document-{i}")
                 .Build();
-            
+
             ContentService.Save(document);
             ContentService.Publish(document, new []{ "*"});
             keys.Add(document.Key);
         }
-        
+
         Thread.Sleep(3000);
         return keys;
-    }  
-    
+    }
+
     private async Task CreateTitleDocType()
     {
         ContentType = new ContentTypeBuilder()
@@ -257,7 +257,7 @@ public class InvariantSortingTests : SearcherTestBase
             .Build();
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
     }
-    
+
     private async Task<Dictionary<Guid, string>> CreateTitleDocuments(string[] values)
     {
         var keys = new Dictionary<Guid, string>();
@@ -274,7 +274,7 @@ public class InvariantSortingTests : SearcherTestBase
                         title = stringValue
                     })
                 .Build();
-            
+
             ContentService.Save(document);
             ContentService.Publish(document, new []{ "*"});
             keys.Add(document.Key, stringValue);
@@ -282,8 +282,8 @@ public class InvariantSortingTests : SearcherTestBase
 
         Thread.Sleep(3000);
         return keys;
-    }    
-    
+    }
+
     private async Task CreateDatetimeDocType()
     {
         ContentType = new ContentTypeBuilder()
@@ -296,7 +296,7 @@ public class InvariantSortingTests : SearcherTestBase
             .Build();
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
     }
-    
+
     private async Task<Dictionary<Guid, DateTime>> CreateDatetimeDocuments(DateTime[] values)
     {
         var keys = new Dictionary<Guid, DateTime>();
@@ -313,16 +313,16 @@ public class InvariantSortingTests : SearcherTestBase
                         datetime = dateTimeOffset
                     })
                 .Build();
-            
+
             ContentService.Save(document);
             ContentService.Publish(document, new []{ "*"});
             keys.Add(document.Key, dateTimeOffset);
         }
-        
+
         Thread.Sleep(3000);
         return keys;
     }
-    
+
     private async Task CreateDecimalDocType()
     {
         var dataType = new DataTypeBuilder()
@@ -333,7 +333,7 @@ public class InvariantSortingTests : SearcherTestBase
             .WithAlias(Constants.PropertyEditors.Aliases.Decimal)
             .Done()
             .Build();
-        
+
         DataTypeService.Save(dataType);
         ContentType = new ContentTypeBuilder()
             .WithAlias("invariant")
@@ -345,7 +345,7 @@ public class InvariantSortingTests : SearcherTestBase
             .Build();
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
     }
-    
+
     private async Task<Dictionary<Guid, double>> CreateDecimalDocuments(double[] values)
     {
         var keys = new Dictionary<Guid, double>();
@@ -362,7 +362,7 @@ public class InvariantSortingTests : SearcherTestBase
                         decimalproperty = doubleValue
                     })
                 .Build();
-            
+
             ContentService.Save(document);
             ContentService.Publish(document, new []{ "*"});
             keys.Add(document.Key, doubleValue);
@@ -388,12 +388,12 @@ public class InvariantSortingTests : SearcherTestBase
                         count = countValue,
                     })
                 .Build();
-            
+
             ContentService.Save(document);
             ContentService.Publish(document, new []{ "*"});
             keys.Add(document.Key, countValue);
         }
-        
+
         Thread.Sleep(3000);
         return keys;
     }

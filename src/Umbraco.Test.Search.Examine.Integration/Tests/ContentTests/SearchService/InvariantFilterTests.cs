@@ -9,17 +9,17 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.SearchServi
 
 public class InvariantFilterTests : SearcherTestBase
 {
-    
+
     [TestCase("RootKey", 2, false)]
     [TestCase("ChildKey", 1, false)]
-    [TestCase("GrandchildKey", 0, false)]  
+    [TestCase("GrandchildKey", 0, false)]
     [TestCase("RootKey", 0, true)]
     [TestCase("ChildKey", 1, true)]
     [TestCase("GrandchildKey", 2, true)]
     public async Task CanFilterByPathIds(string keyName, int expectedCount, bool negate)
     {
         CreateInvariantDocumentTree(false);
-    
+
         var indexAlias = GetIndexAlias(false);
 
         // Resolve the keys, we cannot use them directly in TestCase, as they are not constant.. :(
@@ -40,18 +40,18 @@ public class InvariantFilterTests : SearcherTestBase
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
-        
+
+
     [TestCase("RootKey", 1, false)]
     [TestCase("ChildKey", 1, false)]
-    [TestCase("GrandchildKey", 0, false)]    
+    [TestCase("GrandchildKey", 0, false)]
     [TestCase("RootKey", 2, true)]
     [TestCase("ChildKey", 2, true)]
     [TestCase("GrandchildKey", 3, true)]
     public async Task CanFilterByParentId(string keyName, int count, bool negate)
     {
         CreateInvariantDocumentTree(false);
-    
+
         var indexAlias = GetIndexAlias(false);
 
         // Resolve the keys, we cannot use them directly in TestCase, as they are not constant.. :(
@@ -75,13 +75,13 @@ public class InvariantFilterTests : SearcherTestBase
             Assert.That(results.Documents.Count(), Is.EqualTo(count));
         });
     }
-    
+
     [TestCase(1, true)]
     [TestCase(2, false)]
     public async Task CanFilterByText(int expectedCount, bool negate)
     {
         CreateInvariantDocumentTree(false);
-    
+
         var indexAlias = GetIndexAlias(false);
 
         var results = await Searcher.SearchAsync(
@@ -93,67 +93,67 @@ public class InvariantFilterTests : SearcherTestBase
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
+
     [TestCase(0, true)]
     [TestCase(3, false)]
     public async Task CanFilterByIntegerRangeMinAndMaxNull(int expectedCount, bool negate)
     {
         CreateInvariantDocumentTree(false);
-    
+
         var indexAlias = GetIndexAlias(false);
 
         var results = await Searcher.SearchAsync(
             indexAlias,
             null,
-            new List<Filter> { new IntegerRangeFilter("count", [new FilterRange<int?>(null, null)], negate) },
+            new List<Filter> { new IntegerRangeFilter("count", [new IntegerRangeFilterRange(null, null)], negate) },
             null, null, null, null, null,
             0, 100);
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
+
     [TestCase(1, true)]
     [TestCase(2, false)]
     public async Task CanFilterByOneIntegerRange(int expectedCount, bool negate)
     {
         CreateInvariantDocumentTree(false);
-    
+
         var indexAlias = GetIndexAlias(false);
 
         var results = await Searcher.SearchAsync(
             indexAlias,
             null,
-            new List<Filter> { new IntegerRangeFilter("count", [new FilterRange<int?>(0, 50)], negate) },
+            new List<Filter> { new IntegerRangeFilter("count", [new IntegerRangeFilterRange(0, 50)], negate) },
             null, null, null, null, null,
             0, 100);
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
+
     [TestCase(0, true)]
     [TestCase(3, false)]
     public async Task CanFilterByMultipleIntegerRanges(int expectedCount, bool negate)
     {
         CreateInvariantDocumentTree(false);
-    
+
         var indexAlias = GetIndexAlias(false);
 
         var results = await Searcher.SearchAsync(
             indexAlias,
             null,
-            new List<Filter> { new IntegerRangeFilter("count", [new FilterRange<int?>(0, 50), new FilterRange<int?>(0, 1000)], negate) },
+            new List<Filter> { new IntegerRangeFilter("count", [new IntegerRangeFilterRange(0, 50), new IntegerRangeFilterRange(0, 1000)], negate) },
             null, null, null, null, null,
             0, 100);
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
+
     [TestCase(1, true)]
     [TestCase(2, false)]
     public async Task CanFilterByExactInteger(int expectedCount, bool negate)
     {
         CreateInvariantDocumentTree(false);
-    
+
         var indexAlias = GetIndexAlias(false);
 
         var results = await Searcher.SearchAsync(
@@ -165,67 +165,67 @@ public class InvariantFilterTests : SearcherTestBase
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
+
     [TestCase(1, true)]
     [TestCase(2, false)]
     public async Task CanFilterByOneDecimalRange(int expectedCount, bool negate)
     {
         CreateInvariantDocumentTree(false);
-    
+
         var indexAlias = GetIndexAlias(false);
 
         var results = await Searcher.SearchAsync(
             indexAlias,
             null,
-            new List<Filter> { new DecimalRangeFilter("decimalproperty", [new FilterRange<decimal?>(10m, 50m)], negate) },
+            new List<Filter> { new DecimalRangeFilter("decimalproperty", [new DecimalRangeFilterRange(10m, 50m)], negate) },
             null, null, null, null, null,
             0, 100);
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
+
     [TestCase(0, true)]
     [TestCase(3, false)]
     public async Task CanFilterByDecimalRangeWithMaxAndMinNull(int expectedCount, bool negate)
     {
         CreateInvariantDocumentTree(false);
-    
+
         var indexAlias = GetIndexAlias(false);
 
         var results = await Searcher.SearchAsync(
             indexAlias,
             null,
-            new List<Filter> { new DecimalRangeFilter("decimalproperty", [new FilterRange<decimal?>(null, null)], negate) },
+            new List<Filter> { new DecimalRangeFilter("decimalproperty", [new DecimalRangeFilterRange(null, null)], negate) },
             null, null, null, null, null,
             0, 100);
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
+
     [TestCase(0, true)]
     [TestCase(3, false)]
     public async Task CanFilterByMultipleDecimalRanges(int expectedCount, bool negate)
     {
         CreateInvariantDocumentTree(false);
-    
+
         var indexAlias = GetIndexAlias(false);
 
         var results = await Searcher.SearchAsync(
             indexAlias,
             null,
-            new List<Filter> { new DecimalRangeFilter("decimalproperty", [new FilterRange<decimal?>(0m, 2m), new FilterRange<decimal?>(5m, 200m)], negate) },
+            new List<Filter> { new DecimalRangeFilter("decimalproperty", [new DecimalRangeFilterRange(0m, 2m), new DecimalRangeFilterRange(5m, 200m)], negate) },
             null, null, null, null, null,
             0, 100);
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
+
     [TestCase(1, true)]
     [TestCase(2, false)]
     public async Task CanFilterByExactDecimal(int expectedCount, bool negate)
     {
         CreateInvariantDocumentTree(false);
-    
+
         var indexAlias = GetIndexAlias(false);
 
         var results = await Searcher.SearchAsync(
@@ -237,13 +237,13 @@ public class InvariantFilterTests : SearcherTestBase
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
+
     [TestCase(1, true)]
     [TestCase(2, false)]
     public async Task CanFilterByExactDatetimeOffset(int expectedCount, bool negate)
     {
         CreateInvariantDocumentTree(false);
-    
+
         var indexAlias = GetIndexAlias(false);
 
         var results = await Searcher.SearchAsync(
@@ -255,58 +255,58 @@ public class InvariantFilterTests : SearcherTestBase
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
+
     [TestCase(1, true)]
     [TestCase(2, false)]
     public async Task CanFilterByOneDatetimeOffsetRange(int expectedCount, bool negate)
     {
         CreateInvariantDocumentTree(false);
-    
+
         var indexAlias = GetIndexAlias(false);
 
         var results = await Searcher.SearchAsync(
             indexAlias,
             null,
-            new List<Filter> { new DateTimeOffsetRangeFilter("datetime", [new FilterRange<DateTimeOffset?>(new DateTimeOffset(new DateTime(2025, 01, 01)), new DateTimeOffset(new DateTime(2025, 12, 31)))], negate) },
+            new List<Filter> { new DateTimeOffsetRangeFilter("datetime", [new DateTimeOffsetRangeFilterRange(new DateTimeOffset(new DateTime(2025, 01, 01)), new DateTimeOffset(new DateTime(2025, 12, 31)))], negate) },
             null, null, null, null, null,
             0, 100);
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
+
     [TestCase(0, true)]
     [TestCase(3, false)]
     public async Task CanFilterByDatetimeOffsetRangeWithMaxAndMinNull(int expectedCount, bool negate)
     {
         CreateInvariantDocumentTree(false);
-    
+
         var indexAlias = GetIndexAlias(false);
 
         var results = await Searcher.SearchAsync(
             indexAlias,
             null,
-            new List<Filter> { new DateTimeOffsetRangeFilter("datetime", [new FilterRange<DateTimeOffset?>(null, null)], negate) },
+            new List<Filter> { new DateTimeOffsetRangeFilter("datetime", [new DateTimeOffsetRangeFilterRange(null, null)], negate) },
             null, null, null, null, null,
             0, 100);
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
+
     [TestCase(0, true)]
     [TestCase(3, false)]
     public async Task CanFilterByMultipleDatetimeOffsetRanges(int expectedCount, bool negate)
     {
         CreateInvariantDocumentTree(false);
-    
+
         var indexAlias = GetIndexAlias(false);
 
         var results = await Searcher.SearchAsync(
             indexAlias,
             null,
-            new List<Filter> { 
+            new List<Filter> {
                 new DateTimeOffsetRangeFilter("datetime", [
-                new FilterRange<DateTimeOffset?>(new DateTimeOffset(new DateTime(2023, 01, 01)), new DateTimeOffset(new DateTime(2024, 12, 31))),
-                new FilterRange<DateTimeOffset?>(new DateTimeOffset(new DateTime(2025, 01, 01)), new DateTimeOffset(new DateTime(2025, 12, 31)))
+                new DateTimeOffsetRangeFilterRange(new DateTimeOffset(new DateTime(2023, 01, 01)), new DateTimeOffset(new DateTime(2024, 12, 31))),
+                new DateTimeOffsetRangeFilterRange(new DateTimeOffset(new DateTime(2025, 01, 01)), new DateTimeOffset(new DateTime(2025, 12, 31)))
                 ],
                 negate)
             },
@@ -315,19 +315,19 @@ public class InvariantFilterTests : SearcherTestBase
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
+
     [TestCase(1, true)]
     [TestCase(2, false)]
     public async Task CanFilterByMultipleExactFilters(int expectedCount, bool negate)
     {
         CreateInvariantDocumentTree(false);
-    
+
         var indexAlias = GetIndexAlias(false);
 
         var results = await Searcher.SearchAsync(
             indexAlias,
             null,
-            new List<Filter> { 
+            new List<Filter> {
                 new DateTimeOffsetExactFilter("datetime", [ new DateTime(2025, 06, 06)], negate),
                 new DecimalExactFilter("decimalproperty", [DecimalValue], negate),
                 new IntegerExactFilter("count", [12], negate)
@@ -337,7 +337,7 @@ public class InvariantFilterTests : SearcherTestBase
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
-    
+
     private void CreateInvariantDocumentTree(bool publish)
     {
         var dataType = new DataTypeBuilder()
@@ -348,7 +348,7 @@ public class InvariantFilterTests : SearcherTestBase
             .WithAlias(Constants.PropertyEditors.Aliases.Decimal)
             .Done()
             .Build();
-        
+
         DataTypeService.Save(dataType);
         var contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
@@ -439,7 +439,7 @@ public class InvariantFilterTests : SearcherTestBase
                     decimalproperty = 1.11111m
                 })
             .Build();
-        
+
         if (publish)
         {
             SaveAndPublish(grandchild);

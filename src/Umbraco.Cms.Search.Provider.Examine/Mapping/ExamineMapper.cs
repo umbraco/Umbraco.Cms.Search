@@ -6,6 +6,7 @@ namespace Umbraco.Cms.Search.Provider.Examine.Mapping;
 
 public class ExamineMapper : IExamineMapper
 {
+    // TODO KJA: why do we have this? move to searcher?
     public IEnumerable<FacetResult> MapFacets(ISearchResults searchResults, IEnumerable<Facet> queryFacets)
     {
         foreach (var facet in queryFacets)
@@ -17,7 +18,7 @@ public class ExamineMapper : IExamineMapper
                     var integerRangeFacetResult = integerRangeFacet.Ranges.Select(x =>
                     {
                         int value = GetFacetCount($"Umb_{facet.FieldName}_integers", x.Key, searchResults);
-                        return new IntegerRangeFacetValue(x.Key, x.Min, x.Max, value);
+                        return new IntegerRangeFacetValue(x.Key, x.MinValue, x.MaxValue, value);
                     });
                     yield return new FacetResult(facet.FieldName, integerRangeFacetResult);
                     break;
@@ -39,14 +40,14 @@ public class ExamineMapper : IExamineMapper
                         }
                         integerExactFacetValues.Add(new IntegerExactFacetValue(labelValue, (int)integerExactFacetValue.Value));
                     }
-                    
+
                     yield return new FacetResult(facet.FieldName, integerExactFacetValues);
                     break;
                 case DecimalRangeFacet decimalRangeFacet:
                     var decimalRangeFacetResult = decimalRangeFacet.Ranges.Select(x =>
                     {
                         int value = GetFacetCount($"Umb_{facet.FieldName}_decimals", x.Key, searchResults);
-                        return new DecimalRangeFacetValue(x.Key, x.Min, x.Max, value);
+                        return new DecimalRangeFacetValue(x.Key, x.MinValue, x.MaxValue, value);
                     });
                     yield return new FacetResult(facet.FieldName, decimalRangeFacetResult);
                     break;
@@ -56,9 +57,9 @@ public class ExamineMapper : IExamineMapper
                     {
                         continue;
                     }
-                    
+
                     var decimalExactFacetValues = new List<DecimalExactFacetValue>();
-                    
+
                     foreach (var decimalExactFacetValue in examineDecimalFacets)
                     {
                         if (decimal.TryParse(decimalExactFacetValue.Label, out var labelValue) is false)
@@ -75,7 +76,7 @@ public class ExamineMapper : IExamineMapper
                     var dateTimeOffsetRangeFacetResult = dateTimeOffsetRangeFacet.Ranges.Select(x =>
                     {
                         int value = GetFacetCount($"Umb_{facet.FieldName}_datetimeoffsets", x.Key, searchResults);
-                        return new DateTimeOffsetRangeFacetValue(x.Key, x.Min, x.Max, value);
+                        return new DateTimeOffsetRangeFacetValue(x.Key, x.MinValue, x.MaxValue, value);
                     });
                     yield return new FacetResult(facet.FieldName, dateTimeOffsetRangeFacetResult);
                     break;
@@ -85,9 +86,9 @@ public class ExamineMapper : IExamineMapper
                     {
                         continue;
                     }
-                    
+
                     var datetimeOffsetExactFacetValues = new List<DateTimeOffsetExactFacetValue>();
-                    
+
                     foreach (var datetimeExactFacetValue in examineDatetimeFacets)
                     {
                         if (long.TryParse(datetimeExactFacetValue.Label, out var ticks) is false)
@@ -113,7 +114,7 @@ public class ExamineMapper : IExamineMapper
             }
         }
     }
-    
+
     private int GetFacetCount(string fieldName, string key, ISearchResults results)
     {
         return (int?)results.GetFacet(fieldName)?.Facet(key)?.Value ?? 0;
