@@ -68,9 +68,12 @@ public class Searcher : IExamineSearcher
             });
         }
 
+        // Examine will overwrite subsequent facets of the same field, so make sure there aren't any duplicates.
+        IEnumerable<Facet> deDuplicatedFacets = DeduplicateFacets(facets);
+
         // Add facets and filters
         AddFilters(searchQuery, filters);
-        AddFacets(searchQuery, facets);
+        AddFacets(searchQuery, deDuplicatedFacets);
         AddSorters(searchQuery, sorters);
         AddProtection(searchQuery, accessContext);
 
@@ -90,7 +93,7 @@ public class Searcher : IExamineSearcher
 
         return await Task.FromResult(new SearchResult(results.TotalItemCount,
             searchResults.Select(MapToDocument).WhereNotNull().ToArray(),
-            facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, facets)));
+            facets is null ? Array.Empty<FacetResult>() : _examineMapper.MapFacets(results, deDuplicatedFacets)));
     }
 
     private void AddProtection(IBooleanOperation searchQuery, AccessContext? accessContext)
@@ -301,9 +304,12 @@ public class Searcher : IExamineSearcher
                             .ToArray()));
                     break;
                 case KeywordFacet keywordFacet:
+                    var keywordFieldName = keywordFacet.FieldName.StartsWith(Constants.Fields.FieldPrefix)
+                        ? $"{keywordFacet.FieldName}_{Constants.Fields.Keywords}"
+                        : $"{Constants.Fields.FieldPrefix}{keywordFacet.FieldName}_{Constants.Fields.Keywords}";
                     searchQuery.WithFacets(facetOperations =>
                         facetOperations.FacetString(
-                            $"{Constants.Fields.FieldPrefix}{keywordFacet.FieldName}_{Constants.Fields.Keywords}"));
+                            keywordFieldName));
                     break;
                 case IntegerExactFacet integerExactFacet:
                     searchQuery.WithFacets(facetOperations =>
@@ -330,6 +336,40 @@ public class Searcher : IExamineSearcher
             }
         }
     }
+
+    private IEnumerable<Facet> DeduplicateFacets(IEnumerable<Facet>? facets)
+    {
+        if (facets is null)
+        {
+            return [];
+        }
+
+        return facets
+            .GroupBy(f => (f.FieldName, f.GetType())) // group by field + facet type
+            .Select(group =>
+            {
+                Facet first = group.First();
+
+                return first.GetType().IsSubclassOf(typeof(RangeFacet<>)) ? MergeRangeFacets(group) : first;
+            });
+    }
+
+    private Facet MergeRangeFacets(IEnumerable<Facet> facets)
+    {
+        var first = facets.First();
+        var type = first.GetType();
+
+        // Get the "Ranges" property via reflection
+        var rangesProperty = type.GetProperty("Ranges")!;
+        var allRanges = facets
+            .SelectMany(f => (IEnumerable<object>)rangesProperty.GetValue(f)!)
+            .Distinct() // records give value-based equality
+            .ToArray();
+
+        // Construct new facet with FieldName + merged ranges
+        return (Facet)Activator.CreateInstance(type, first.FieldName, allRanges)!;
+    }
+
 
     private static Document? MapToDocument(ISearchResult item)
     {

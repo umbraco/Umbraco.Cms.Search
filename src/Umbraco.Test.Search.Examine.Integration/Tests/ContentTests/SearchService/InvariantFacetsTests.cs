@@ -2,6 +2,7 @@
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
+using Umbraco.Cms.Search.Provider.Examine.Extensions;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
@@ -89,16 +90,13 @@ public class InvariantFacetsTests : SearcherTestBase
         await CreateTitleDocuments(["one", "one", "two"]);
 
         var indexAlias = GetIndexAlias(publish);
-        var facets = (await Searcher.SearchAsync(indexAlias, null, null, new List<Facet> { new KeywordFacet("title")}, null, null, null, null, 0, 100)).Facets;
-        var firstFacetValues = (KeywordFacetValue) facets.First().Values.First();
-        var secondFacetValues = (KeywordFacetValue) facets.First().Values.Last();
+        var facets = (await Searcher.SearchAsync(indexAlias, null, null, new List<Facet> { new KeywordFacet("ContentTypeId")}, null, null, null, null, 0, 100)).Facets;
+        var facetValues = (KeywordFacetValue) facets.First().Values.First();
         Assert.Multiple(() =>
         {
             Assert.That(facets, Is.Not.Empty);
-            Assert.That(firstFacetValues.Key, Is.EqualTo("one"));
-            Assert.That(firstFacetValues.Count, Is.EqualTo(2));
-            Assert.That(secondFacetValues.Key, Is.EqualTo("two"));
-            Assert.That(secondFacetValues.Count, Is.EqualTo(1));
+            Assert.That(facetValues.Count, Is.EqualTo(3));
+            Assert.That(facetValues.Key, Is.EqualTo(ContentType.Key.ToString().TransformDashes()));
         });
     }
 

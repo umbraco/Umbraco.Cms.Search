@@ -16,67 +16,67 @@ public class TestIndexConfigureOptions : IConfigureOptions<FacetOptions>
                 PropertyName = "fieldSingleValues",
                 Values = [Constants.Fields.Texts],
                 Type = FieldDefinitionTypes.FacetFullText,
-            },             
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldSingleValues",
                 Values = [Constants.Fields.TextsR1],
                 Type = FieldDefinitionTypes.FacetFullText,
-            },             
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldSingleValues",
                 Values = [Constants.Fields.TextsR2],
                 Type = FieldDefinitionTypes.FacetFullText,
-            },             
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldSingleValues",
                 Values = [Constants.Fields.TextsR3],
                 Type = FieldDefinitionTypes.FacetFullText,
-            }, 
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldSingleValues",
                 Values = [Constants.Fields.Integers],
                 Type = FieldDefinitionTypes.FacetInteger,
-            }, 
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldSingleValues",
                 Values = [Constants.Fields.Decimals],
                 Type = FieldDefinitionTypes.FacetDouble,
-            }, 
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldSingleValues",
                 Values = [Constants.Fields.DateTimeOffsets],
                 Type = FieldDefinitionTypes.FacetDateTime,
-            },            
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldMultipleValues",
                 Values = [Constants.Fields.Integers],
                 Type = FieldDefinitionTypes.Integer,
-            }, 
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldMultipleValues",
                 Values = [Constants.Fields.Decimals],
                 Type = FieldDefinitionTypes.Double,
-            }, 
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldMultipleValues",
                 Values = [Constants.Fields.DateTimeOffsets],
                 Type = FieldDefinitionTypes.DateTime,
-            }, 
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldone",
                 Values = [Constants.Fields.Integers],
                 Type = FieldDefinitionTypes.Integer,
-            },           
+            },
             new FacetOptions.Field
             {
                 PropertyName = "title",
@@ -85,10 +85,16 @@ public class TestIndexConfigureOptions : IConfigureOptions<FacetOptions>
             },
             new FacetOptions.Field
             {
+                PropertyName = "ContentTypeId",
+                Values = [Constants.Fields.Keywords],
+                Type = FieldDefinitionTypes.FacetFullText,
+            },
+            new FacetOptions.Field
+            {
                 PropertyName = "decimalproperty",
                 Values = [Constants.Fields.Decimals],
                 Type = FieldDefinitionTypes.FacetDouble,
-            },            
+            },
             new FacetOptions.Field
             {
                 PropertyName = "sortableTitle",
@@ -100,7 +106,7 @@ public class TestIndexConfigureOptions : IConfigureOptions<FacetOptions>
                 PropertyName = "datetime",
                 Values = [Constants.Fields.DateTimeOffsets],
                 Type = FieldDefinitionTypes.FacetDateTime,
-            },            
+            },
             new FacetOptions.Field
             {
                 PropertyName = "count",
