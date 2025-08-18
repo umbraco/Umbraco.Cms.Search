@@ -56,27 +56,6 @@ public class TestIndexConfigureOptions : IConfigureOptions<FacetOptions>
                 FieldValues = FieldValues.DateTimeOffsets,
                 Facetable = true,
             },
-            // TODO KJA: why are we registering these? shouldn't this work out of the box? something to do with multivalue, perhaps?
-            new FacetOptions.Field
-            {
-                PropertyName = "fieldMultipleValues",
-                FieldValues = FieldValues.Integers,
-            },
-            new FacetOptions.Field
-            {
-                PropertyName = "fieldMultipleValues",
-                FieldValues = FieldValues.Decimals,
-            },
-            new FacetOptions.Field
-            {
-                PropertyName = "fieldMultipleValues",
-                FieldValues = FieldValues.DateTimeOffsets,
-            },
-            new FacetOptions.Field
-            {
-                PropertyName = "fieldone",
-                FieldValues = FieldValues.Integers,
-            },
             new FacetOptions.Field
             {
                 PropertyName = "title",
@@ -112,6 +91,27 @@ public class TestIndexConfigureOptions : IConfigureOptions<FacetOptions>
                 PropertyName = "count",
                 FieldValues = FieldValues.Integers,
                 Facetable = true,
+            },
+            // for the time being, we need to register filterable, non-textual fields explicitly due to complications with multivalue fields
+            new FacetOptions.Field
+            {
+                PropertyName = "fieldMultipleValues",
+                FieldValues = FieldValues.Integers,
+            },
+            new FacetOptions.Field
+            {
+                PropertyName = "fieldMultipleValues",
+                FieldValues = FieldValues.Decimals,
+            },
+            new FacetOptions.Field
+            {
+                PropertyName = "fieldMultipleValues",
+                FieldValues = FieldValues.DateTimeOffsets,
+            },
+            new FacetOptions.Field
+            {
+                PropertyName = "fieldone",
+                FieldValues = FieldValues.Integers,
             },
         ];
 }
