@@ -6,10 +6,10 @@ namespace Umbraco.Cms.Search.Provider.Examine.Configuration;
 
 public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirectoryIndexOptions>
 {
-    private readonly IOptions<FacetOptions> _facetOptions;
+    private readonly FieldOptions _fieldOptions;
 
-    public ConfigureIndexOptions(IOptions<FacetOptions> facetOptions)
-        => _facetOptions = facetOptions;
+    public ConfigureIndexOptions(IOptions<FieldOptions> options)
+        => _fieldOptions = options.Value;
 
     public void Configure(string? name, LuceneDirectoryIndexOptions options)
         => AddOptions(options);
@@ -19,9 +19,9 @@ public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirecto
 
     private void AddOptions(LuceneDirectoryIndexOptions options)
     {
-        foreach (FacetOptions.Field facetEntry in _facetOptions.Value.Fields)
+        foreach (FieldOptions.Field field in _fieldOptions.Fields)
         {
-            var fieldPostfix = facetEntry.FieldValues switch
+            var fieldPostfix = field.FieldValues switch
             {
                 FieldValues.Texts => Constants.Fields.Texts,
                 FieldValues.TextsR1 => Constants.Fields.TextsR1,
@@ -31,32 +31,32 @@ public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirecto
                 FieldValues.Decimals => Constants.Fields.Decimals,
                 FieldValues.DateTimeOffsets => Constants.Fields.DateTimeOffsets,
                 FieldValues.Keywords => Constants.Fields.Keywords,
-                _ => throw new ArgumentOutOfRangeException(nameof(facetEntry.FieldValues))
+                _ => throw new ArgumentOutOfRangeException(nameof(field.FieldValues))
             };
 
-            var fieldDefinitionType = facetEntry.FieldValues switch
+            var fieldDefinitionType = field.FieldValues switch
             {
                 FieldValues.Texts or FieldValues.TextsR1 or FieldValues.TextsR2 or FieldValues.TextsR3 or FieldValues.Keywords
-                    => facetEntry is { Sortable: true, Facetable: true }
+                    => field is { Sortable: true, Facetable: true }
                         ? FieldDefinitionTypes.FacetFullTextSortable
-                        : facetEntry.Facetable
+                        : field.Facetable
                             ? FieldDefinitionTypes.FacetFullText
-                            : facetEntry.Sortable
+                            : field.Sortable
                                 ? FieldDefinitionTypes.FullTextSortable
                                 : FieldDefinitionTypes.FullText,
-                FieldValues.Integers => facetEntry.Facetable
+                FieldValues.Integers => field.Facetable
                     ? FieldDefinitionTypes.FacetInteger
                     : FieldDefinitionTypes.Integer,
-                FieldValues.Decimals => facetEntry.Facetable
+                FieldValues.Decimals => field.Facetable
                     ? FieldDefinitionTypes.FacetDouble
                     : FieldDefinitionTypes.Double,
-                FieldValues.DateTimeOffsets => facetEntry.Facetable
+                FieldValues.DateTimeOffsets => field.Facetable
                     ? FieldDefinitionTypes.FacetDateTime
                     : FieldDefinitionTypes.DateTime,
-                _ => throw new ArgumentOutOfRangeException(nameof(facetEntry.FieldValues))
+                _ => throw new ArgumentOutOfRangeException(nameof(field.FieldValues))
             };
 
-            var fieldName = $"{Constants.Fields.FieldPrefix}{facetEntry.PropertyName}_{fieldPostfix}";
+            var fieldName = $"{Constants.Fields.FieldPrefix}{field.PropertyName}_{fieldPostfix}";
             // options.FacetsConfig.SetMultiValued(fieldName, true);
             options.FieldDefinitions.AddOrUpdate(new FieldDefinition(fieldName, fieldDefinitionType));
         }
