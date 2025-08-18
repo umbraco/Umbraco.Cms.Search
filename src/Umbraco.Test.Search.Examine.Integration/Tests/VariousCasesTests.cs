@@ -273,11 +273,10 @@ public class VariousCasesTests : SearcherTestBase
     }
 
     [Test]
-    [Ignore("We have a max count of facets of 10 for now, until we can configure it.")]
     public async Task FilteringOneFieldLimitsFacetCountForAnotherField()
     {
         SearchResult result = await SearchAsync(
-            filters: [new IntegerExactFilter(FieldMultipleValues, [1, 10, 25, 50, 100], false)],
+            filters: [new IntegerExactFilter(FieldMultipleValues, [1, 10, 25, 51, 100], false)],
             facets: [new IntegerExactFacet(FieldSingleValue)]
         );
 
@@ -288,29 +287,20 @@ public class VariousCasesTests : SearcherTestBase
 
         var expectedFacets = new[]
         {
-            new { Key = 100, Count = 2 }, // 10, 100
-            new { Key = 50, Count = 1 }, // 50
-            new { Key = 25, Count = 1 }, // 25
-            new { Key = 10, Count = 1 }, // 1
-            new { Key = 1, Count = 1 }, // 1
+            new { Key = 100, Count = 1 },
+            new { Key = 51, Count = 1 },
+            new { Key = 25, Count = 1 },
+            new { Key = 10, Count = 1 },
+            new { Key = 1, Count = 1 },
         };
 
         IntegerExactFacetValue[] facetValues = facets[0].Values.OfType<IntegerExactFacetValue>().ToArray();
         foreach (var expectedFacet in expectedFacets)
         {
-            Assert.Multiple(
-                () =>
-                {
-                    // the integer values are mirrored around 0 (negative and positive values)
-                    Assert.That(
-                        facetValues.SingleOrDefault(v => v.Key == expectedFacet.Key)?.Count,
-                        Is.EqualTo(expectedFacet.Count)
-                    );
-                    Assert.That(
-                        facetValues.SingleOrDefault(v => v.Key == -1 * expectedFacet.Key)?.Count,
-                        Is.EqualTo(expectedFacet.Count)
-                    );
-                }
+            Assert.That(
+                facetValues.SingleOrDefault(v => v.Key == expectedFacet.Key)?.Count,
+                Is.EqualTo(expectedFacet.Count),
+                $"Expected facet {expectedFacet.Key} to have count {expectedFacet.Count}"
             );
         }
     }
