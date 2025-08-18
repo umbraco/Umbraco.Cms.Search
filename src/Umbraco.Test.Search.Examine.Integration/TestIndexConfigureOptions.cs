@@ -20,6 +20,12 @@ public class TestIndexConfigureOptions : IConfigureOptions<FacetOptions>
             new FacetOptions.Field
             {
                 PropertyName = "fieldSingleValues",
+                Values = [Constants.Fields.Keywords],
+                Type = FieldDefinitionTypes.FacetFullText,
+            },
+            new FacetOptions.Field
+            {
+                PropertyName = "fieldSingleValues",
                 Values = [Constants.Fields.TextsR1],
                 Type = FieldDefinitionTypes.FacetFullText,
             },

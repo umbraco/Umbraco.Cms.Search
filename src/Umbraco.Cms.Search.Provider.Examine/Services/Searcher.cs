@@ -1,4 +1,5 @@
-﻿using Examine;
+﻿using System.Globalization;
+using Examine;
 using Examine.Search;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
@@ -252,7 +253,7 @@ public class Searcher : IExamineSearcher
                 case DecimalExactFilter decimalExactFilter:
                     var decimalExactFieldName =
                         $"{Constants.Fields.FieldPrefix}{decimalExactFilter.FieldName}_{Constants.Fields.Decimals}";
-                    var doubleExactFilter = new DoubleExactFilter(filter.FieldName, decimalExactFilter.Values.Select(Convert.ToDouble).ToArray(), filter.Negate);
+                    var doubleExactFilter = new DoubleExactFilter(filter.FieldName, decimalExactFilter.Values.Select(xx => (double)xx).ToArray(), filter.Negate);
                     searchQuery.AddExactFilter(decimalExactFieldName, doubleExactFilter);
                     break;
                 case DateTimeOffsetRangeFilter dateTimeOffsetRangeFilter:
@@ -280,61 +281,65 @@ public class Searcher : IExamineSearcher
             return;
         }
 
-        foreach (var facet in facets)
+        searchQuery.WithFacets(facetOperations =>
         {
-            switch (facet)
+            foreach (Facet facet in facets)
             {
-                case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
-                    searchQuery.WithFacets(facetOperations => facetOperations.FacetLongRange(
-                        $"{Constants.Fields.FieldPrefix}{dateTimeOffsetRangeFacet.FieldName}_{Constants.Fields.DateTimeOffsets}",
-                        dateTimeOffsetRangeFacet.Ranges.Select(x => new Int64Range(x.Key,
-                            x.MinValue?.Ticks ?? DateTime.MinValue.Ticks, true, x.MaxValue?.Ticks ?? DateTime.MaxValue.Ticks,
-                            false)).ToArray()));
-                    break;
-                case DecimalExactFacet decimalExactFacet:
-                    searchQuery.WithFacets(facetOperations =>
-                        facetOperations.FacetString(
-                            $"{Constants.Fields.FieldPrefix}{decimalExactFacet.FieldName}_{Constants.Fields.Decimals}"));
-                    break;
-                case IntegerRangeFacet integerRangeFacet:
-                    searchQuery.WithFacets(facetOperations => facetOperations.FacetLongRange(
-                        $"{Constants.Fields.FieldPrefix}{integerRangeFacet.FieldName}_{Constants.Fields.Integers}",
-                        integerRangeFacet.Ranges
-                            .Select(x => new Int64Range(x.Key, x.MinValue ?? 0, true, x.MaxValue ?? int.MaxValue, false))
-                            .ToArray()));
-                    break;
-                case KeywordFacet keywordFacet:
-                    var keywordFieldName = keywordFacet.FieldName.StartsWith(Constants.Fields.FieldPrefix)
-                        ? $"{keywordFacet.FieldName}_{Constants.Fields.Keywords}"
-                        : $"{Constants.Fields.FieldPrefix}{keywordFacet.FieldName}_{Constants.Fields.Keywords}";
-                    searchQuery.WithFacets(facetOperations =>
-                        facetOperations.FacetString(
-                            keywordFieldName));
-                    break;
-                case IntegerExactFacet integerExactFacet:
-                    searchQuery.WithFacets(facetOperations =>
-                        facetOperations.FacetString(
-                            $"{Constants.Fields.FieldPrefix}{integerExactFacet.FieldName}_{Constants.Fields.Integers}"));
-                    break;
-                case DecimalRangeFacet decimalRangeFacet:
+                switch (facet)
                 {
-                    var doubleRanges = decimalRangeFacet.Ranges.Select(x =>
-                            new DoubleRange(x.Key, decimal.ToDouble(x.MinValue ?? 0), true, decimal.ToDouble(x.MaxValue ?? 0),
-                                false))
-                        .ToArray();
-                    searchQuery.WithFacets(facetOperations =>
+                    case IntegerExactFacet integerExactFacet:
+                        facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{integerExactFacet.FieldName}_{Constants.Fields.Integers}");
+                        break;
+                    case IntegerRangeFacet integerRangeFacet:
+                        facetOperations.FacetLongRange(
+                            $"{Constants.Fields.FieldPrefix}{integerRangeFacet.FieldName}_{Constants.Fields.Integers}",
+                            integerRangeFacet.Ranges
+                                .Select(x =>
+                                    new Int64Range(x.Key, x.MinValue ?? 0, true, x.MaxValue ?? int.MaxValue, false))
+                                .ToArray());
+                        break;
+                    case DecimalExactFacet decimalExactFacet:
+                        facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{decimalExactFacet.FieldName}_{Constants.Fields.Decimals}");
+                        break;
+                    case DecimalRangeFacet decimalRangeFacet:
+                    {
+                        DoubleRange[] doubleRanges = decimalRangeFacet.Ranges.Select(x =>
+                                new DoubleRange(
+                                    x.Key,
+                                    decimal.ToDouble(x.MinValue ?? 0),
+                                    true,
+                                    decimal.ToDouble(x.MaxValue ?? 0),
+                                    false))
+                            .ToArray();
                         facetOperations.FacetDoubleRange(
                             $"{Constants.Fields.FieldPrefix}{facet.FieldName}_{Constants.Fields.Decimals}",
-                            doubleRanges));
-                    break;
+                            doubleRanges);
+                        break;
+                    }
+                    case DateTimeOffsetExactFacet dateTimeOffsetExactFacet:
+                        facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{dateTimeOffsetExactFacet.FieldName}_{Constants.Fields.DateTimeOffsets}");
+                        break;
+                    case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
+                        facetOperations.FacetLongRange(
+                            $"{Constants.Fields.FieldPrefix}{dateTimeOffsetRangeFacet.FieldName}_{Constants.Fields.DateTimeOffsets}",
+                            dateTimeOffsetRangeFacet.Ranges.Select(x => new Int64Range(
+                                x.Key,
+                                x.MinValue?.Ticks ?? DateTime.MinValue.Ticks, true,
+                                x.MaxValue?.Ticks ?? DateTime.MaxValue.Ticks,
+                                false))
+                                .ToArray());
+                        break;
+                    case KeywordFacet keywordFacet:
+                        var keywordFieldName = keywordFacet.FieldName.StartsWith(Constants.Fields.FieldPrefix)
+                            ? $"{keywordFacet.FieldName}_{Constants.Fields.Keywords}"
+                            : $"{Constants.Fields.FieldPrefix}{keywordFacet.FieldName}_{Constants.Fields.Keywords}";
+
+                        facetOperations.FacetString(keywordFieldName);
+                        break;
+
                 }
-                case DateTimeOffsetExactFacet dateTimeOffsetExactFacet:
-                    searchQuery.WithFacets(facetOperations =>
-                        facetOperations.FacetString(
-                            $"{Constants.Fields.FieldPrefix}{dateTimeOffsetExactFacet.FieldName}_{Constants.Fields.DateTimeOffsets}"));
-                    break;
             }
-        }
+        });
     }
 
     private IEnumerable<Facet> DeduplicateFacets(IEnumerable<Facet>? facets)
