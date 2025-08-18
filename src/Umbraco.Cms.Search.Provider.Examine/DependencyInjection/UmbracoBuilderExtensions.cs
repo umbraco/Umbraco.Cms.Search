@@ -9,7 +9,6 @@ using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
-using Umbraco.Cms.Search.Provider.Examine.Mapping;
 using Umbraco.Cms.Search.Provider.Examine.Services;
 using IndexOptions = Umbraco.Cms.Search.Core.Configuration.IndexOptions;
 using ISearcher = Umbraco.Cms.Search.Core.Services.ISearcher;
@@ -21,19 +20,19 @@ public static class UmbracoBuilderExtensions
     public static IUmbracoBuilder AddExamineSearchProvider(this IUmbracoBuilder builder)
     {
         AddServices(builder);
-        
+
         builder.Services.AddExamineLuceneIndex(Search.Core.Constants.IndexAliases.DraftContent, configuration =>
         {
-        });     
-        
+        });
+
         builder.Services.AddExamineLuceneIndex(Search.Core.Constants.IndexAliases.PublishedContent, configuration =>
         {
-        });      
-        
+        });
+
         builder.Services.AddExamineLuceneIndex(Search.Core.Constants.IndexAliases.DraftMedia, configuration =>
         {
-        });     
-        
+        });
+
         builder.Services.AddExamineLuceneIndex(Search.Core.Constants.IndexAliases.DraftMembers, configuration =>
         {
         });
@@ -47,9 +46,9 @@ public static class UmbracoBuilderExtensions
         where TDirectoryFactory : class, IDirectoryFactory
     {
         AddServices(builder);
-        
+
         builder.Services.AddSingleton<TDirectoryFactory>();
-        
+
         // Register indexes with optional custom type and factory
         builder.Services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(
             Search.Core.Constants.IndexAliases.DraftContent,
@@ -66,7 +65,7 @@ public static class UmbracoBuilderExtensions
         builder.Services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(
             Search.Core.Constants.IndexAliases.DraftMembers,
             config => { });
-        
+
         return builder;
     }
 
@@ -74,15 +73,14 @@ public static class UmbracoBuilderExtensions
     {
         builder.Services.AddExamine();
         builder.Services.ConfigureOptions<ConfigureIndexOptions>();
-        
+
         // register the in-memory searcher and indexer so they can be used explicitly for index registrations
         builder.Services.AddTransient<IExamineIndexer, Indexer>();
         builder.Services.AddTransient<IExamineSearcher, Searcher>();
-        
+
         builder.Services.AddTransient<IIndexer, Indexer>();
         builder.Services.AddTransient<ISearcher, Searcher>();
-        builder.Services.AddTransient<IExamineMapper, ExamineMapper>();
-        
+
         builder.Services.Configure<IndexOptions>(options =>
         {
             options.RegisterIndex<IExamineIndexer, IExamineSearcher, IDraftContentChangeStrategy>(Search.Core.Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
@@ -90,8 +88,8 @@ public static class UmbracoBuilderExtensions
             options.RegisterIndex<IExamineIndexer, IExamineSearcher, IDraftContentChangeStrategy>(Search.Core.Constants.IndexAliases.DraftMedia, UmbracoObjectTypes.Media);
             options.RegisterIndex<IExamineIndexer, IExamineSearcher, IDraftContentChangeStrategy>(Search.Core.Constants.IndexAliases.DraftMembers, UmbracoObjectTypes.Member);
         });
-        
-                
+
+
         builder.AddNotificationHandler<ContentTreeChangeNotification, ContentTreeChangeDistributedCacheNotificationHandler>();
         builder.AddNotificationHandler<MediaTreeChangeNotification, MediaTreeChangeDistributedCacheNotificationHandler>();
         builder.AddNotificationHandler<MemberSavedNotification, MemberSavedDistributedCacheNotificationHandler>();
