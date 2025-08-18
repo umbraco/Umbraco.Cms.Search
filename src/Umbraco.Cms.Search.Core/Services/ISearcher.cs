@@ -9,13 +9,13 @@ public interface ISearcher
 {
     Task<SearchResult> SearchAsync(
         string indexAlias,
-        string? query,
-        IEnumerable<Filter>? filters,
-        IEnumerable<Facet>? facets,
-        IEnumerable<Sorter>? sorters,
-        string? culture,
-        string? segment,
-        AccessContext? accessContext,
-        int skip,
-        int take);
+        string? query = null,
+        IEnumerable<Filter>? filters = null,
+        IEnumerable<Facet>? facets = null,
+        IEnumerable<Sorter>? sorters = null,
+        string? culture = null,
+        string? segment = null,
+        AccessContext? accessContext = null,
+        int skip = 0,
+        int take = 10);
 }

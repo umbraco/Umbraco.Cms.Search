@@ -69,7 +69,7 @@ public class SearchController : RenderController
         ).ToArray();
 
         var direction = sortDirection == "asc" ? Direction.Ascending : Direction.Descending;
-        Sorter[] sorters = sortBy.IsNullOrWhiteSpace() || sortBy == Constants.FieldNames.Score
+        Sorter[] sorters = sortBy.IsNullOrWhiteSpace() || sortBy == "score"
             ? [new ScoreSorter(direction)]
             : sortBy.InvariantContains("integer") || sortBy == Constants.FieldNames.Level
                 ? [new IntegerSorter(sortBy, direction)]

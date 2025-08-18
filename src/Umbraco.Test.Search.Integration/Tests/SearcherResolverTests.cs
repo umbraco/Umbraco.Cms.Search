@@ -21,7 +21,7 @@ namespace Umbraco.Test.Search.Integration.Tests;
 public class SearcherResolverTests : UmbracoIntegrationTest
 {
     private ISearcherResolver SearcherResolver => GetRequiredService<ISearcherResolver>();
-    private Mock<ILogger<SearcherResolver>> _loggerMock;
+    private Mock<ILogger<SearcherResolver>>? _loggerMock;
 
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
@@ -76,7 +76,7 @@ public class SearcherResolverTests : UmbracoIntegrationTest
     }
 
     private void VerifyLogging(LogLevel logLevel, string startOfMessage)
-        => _loggerMock.Verify(logger =>
+        => _loggerMock!.Verify(logger =>
             logger.Log(
                 logLevel,
                 It.IsAny<EventId>(),
@@ -85,7 +85,7 @@ public class SearcherResolverTests : UmbracoIntegrationTest
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()
             )
         );
-    
+
     private class FirstSearcher : SearcherBase
     { 
     }
@@ -123,9 +123,10 @@ public class SearcherResolverTests : UmbracoIntegrationTest
 
     private abstract class SearcherBase : ISearcher
     {
-        public Task<SearchResult> SearchAsync(string indexAlias, string? query, IEnumerable<Filter>? filters,
-            IEnumerable<Facet>? facets, IEnumerable<Sorter>? sorters,
-            string? culture, string? segment, AccessContext? accessContext, int skip, int take)
+        public Task<SearchResult> SearchAsync(string indexAlias, string? query = null, IEnumerable<Filter>? filters = null,
+            IEnumerable<Facet>? facets = null, IEnumerable<Sorter>? sorters = null,
+            string? culture = null, string? segment = null, AccessContext? accessContext = null,
+            int skip = 0, int take = 10)
             => throw new NotImplementedException();
     }
 }

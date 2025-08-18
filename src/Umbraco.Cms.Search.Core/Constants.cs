@@ -21,8 +21,6 @@ public static class Constants
     {
         private const string FieldPrefix = "Umb_"; 
 
-        public const string Score = $"{FieldPrefix}Score";
-
         public const string Id = $"{FieldPrefix}Id";
 
         public const string ParentId = $"{FieldPrefix}ParentId";

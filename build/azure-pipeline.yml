@@ -1,0 +1,217 @@
+name: $(TeamProject)_$(Build.DefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
+
+parameters:
+  - name: cache_nuget
+    displayName: Cache NuGet packages
+    type: boolean
+    default: false
+
+variables:
+  solution: src/Umbraco.Cms.Search.sln
+  buildConfiguration: Release
+  DOTNET_NOLOGO: true
+  DOTNET_GENERATE_ASPNET_CERTIFICATE: false
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+stages:
+  - stage: Build
+    variables:
+      NUGET_PACKAGES: $(Pipeline.Workspace)/.nuget/packages
+    jobs:
+      - job: Build
+        pool:
+          vmImage: "windows-latest"
+        steps:
+          # Checkout source (avoid shallow clone to calculate version height)
+          - checkout: self
+            fetchDepth: 0
+
+          # Setup build environment
+          - task: NuGetAuthenticate@1
+            displayName: Authenticate NuGet
+
+          - task: UseDotNet@2
+            displayName: Use .NET SDK from global.json
+            inputs:
+              useGlobalJson: true
+
+          # Cache and restore NuGet packages
+          - task: Cache@2
+            condition: ${{ parameters.cache_nuget }}
+            displayName: Cache NuGet packages
+            inputs:
+              key: 'nuget | "$(Agent.OS)" | **/packages.lock.json, !**/bin/**, !**/obj/**'
+              restoreKeys: |
+                nuget | "$(Agent.OS)"
+                nuget
+              path: $(NUGET_PACKAGES)
+
+          - script: dotnet restore $(solution) --locked-mode
+            displayName: Restore NuGet packages
+
+          # Build
+          - script: dotnet build $(solution) --configuration $(buildConfiguration) --no-restore -p:ContinuousIntegrationBuild=true
+            displayName: Run dotnet build
+
+          # Pack
+          - script: dotnet pack $(solution) --configuration $(buildConfiguration) --no-restore --output $(Build.ArtifactStagingDirectory)/nupkg
+            displayName: Run dotnet pack
+
+          # Publish
+          - task: PublishPipelineArtifact@1
+            displayName: Publish NuGet packages
+            inputs:
+              targetPath: $(Build.ArtifactStagingDirectory)/nupkg
+              artifactName: nupkg
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish build output
+            inputs:
+              targetPath: $(Build.SourcesDirectory)
+              artifactName: build_output
+
+  - stage: UnitTests
+    displayName: Unit Tests
+    dependsOn: Build
+    jobs:
+      - job: UnitTests
+        displayName: Run Unit Tests
+        pool:
+          vmImage: 'windows-latest'
+        steps:
+          # Checkout source
+          - checkout: self
+
+          # Setup test environment
+          - task: DownloadPipelineArtifact@2
+            displayName: Download build artifacts
+            inputs:
+              artifact: build_output
+              path: $(Build.SourcesDirectory)
+
+          - task: UseDotNet@2
+            displayName: Use .NET SDK from global.json
+            inputs:
+              useGlobalJson: true
+
+          # Test
+          - task: DotNetCoreCLI@2
+            displayName: Run dotnet test
+            inputs:
+              command: test
+              projects: "src/Umbraco.Test.Search.Unit/Umbraco.Test.Search.Unit.csproj"
+              arguments: "--configuration $(buildConfiguration) --no-build"
+              testRunTitle: Unit Tests - $(Agent.OS)
+
+  - stage: IntegrationTests
+    displayName: Integration Tests
+    dependsOn: Build
+    jobs:
+
+      # Integration Tests (SQLite)
+      - job: IntegrationTestsSQLite
+        displayName: Run Integration Tests (SQLite)
+        pool:
+          vmImage: 'windows-latest'
+        timeoutInMinutes: 30
+        steps:
+          - checkout: self
+            submodules: false
+            lfs: false,
+            fetchDepth: 1
+            fetchFilter: tree:0
+
+          # Setup test environment
+          - task: DownloadPipelineArtifact@2
+            displayName: Download build artifacts
+            inputs:
+              artifact: build_output
+              path: $(Build.SourcesDirectory)
+
+          - task: UseDotNet@2
+            displayName: Use .NET SDK from global.json
+            inputs:
+              useGlobalJson: true
+
+          # Test
+          - task: DotNetCoreCLI@2
+            displayName: Run dotnet test
+            inputs:
+              command: test
+              projects: "src/Umbraco.Test.Search.Integration/Umbraco.Test.Search.Integration.csproj"
+              arguments: '--configuration $(buildConfiguration) --no-build'
+              testRunTitle: Integration Tests SQLite - $(Agent.OS)
+
+      # Integration Tests (SQL Server)
+      - job: IntegrationTestsSQLServer
+        displayName: Run Integration Tests (SQLite)
+        pool:
+          vmImage: 'windows-latest'
+        timeoutInMinutes: 30
+        steps:
+          # Setup test environment
+          - task: DownloadPipelineArtifact@2
+            displayName: Download build artifacts
+            inputs:
+              artifact: build_output
+              path: $(Build.SourcesDirectory)
+
+          - task: UseDotNet@2
+            displayName: Use .NET SDK from global.json
+            inputs:
+              useGlobalJson: true
+
+          # Start SQL Server
+          - powershell: docker run --name mssql -d -p 1433:1433 -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=$(SA_PASSWORD)" mcr.microsoft.com/mssql/server:2022-latest
+            displayName: Start SQL Server Docker image (Linux)
+            condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))
+
+          - powershell: |
+              $maxAttempts = 12
+              $attempt = 0
+              $status = ""
+
+              while (($status -ne 'running') -and ($attempt -lt $maxAttempts)) {
+                Start-Sleep -Seconds 5
+                # We use the docker inspect command to check the status of the container. If the container is not running, we wait 5 seconds and try again. And if reaches 12 attempts, we fail the build.
+                $status = docker inspect -f '{{.State.Status}}' mssql
+
+                if ($status -ne 'running') {
+                  Write-Host "Waiting for SQL Server to be ready... Attempt $($attempt + 1)"
+                  $attempt++
+                }
+              }
+
+              if ($status -eq 'running') {
+                Write-Host "SQL Server container is running"
+                docker ps -a
+              } else {
+                Write-Host "SQL Server did not become ready in time. Last known status: $status"
+                docker logs mssql
+                exit 1
+              }
+            displayName: Wait for SQL Server to be ready (Linux)
+            condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))
+
+          - pwsh: SqlLocalDB start MSSQLLocalDB
+            displayName: Start SQL Server LocalDB (Windows)
+            condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+
+          # Test
+          - task: DotNetCoreCLI@2
+            displayName: Run dotnet test
+            inputs:
+              command: test
+              projects: "src/Umbraco.Test.Search.Integration/Umbraco.Test.Search.Integration.csproj"
+              arguments: '--configuration $(buildConfiguration) --no-build'
+              testRunTitle: Integration Tests SQL Server - $(Agent.OS)
+
+          # Stop SQL Server
+          - pwsh: docker stop mssql
+            displayName: Stop SQL Server Docker image (Linux)
+            condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))
+
+          - pwsh: SqlLocalDB stop MSSQLLocalDB
+            displayName: Stop SQL Server LocalDB (Windows)
+            condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))

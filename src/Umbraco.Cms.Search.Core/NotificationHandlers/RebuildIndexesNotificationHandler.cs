@@ -3,9 +3,9 @@ using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
-namespace Umbraco.Cms.Search.Provider.InMemory.NotificationHandlers;
+namespace Umbraco.Cms.Search.Core.NotificationHandlers;
 
-public class RebuildIndexesNotificationHandler : INotificationHandler<UmbracoApplicationStartedNotification>
+internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<UmbracoApplicationStartedNotification>
 {
     private readonly IContentIndexingService _contentIndexingService;
     private readonly ILogger<RebuildIndexesNotificationHandler> _logger;
@@ -20,7 +20,7 @@ public class RebuildIndexesNotificationHandler : INotificationHandler<UmbracoApp
 
     public void Handle(UmbracoApplicationStartedNotification notification)
     {
-        _logger.LogInformation("Starting index rebuild...");
+        _logger.LogInformation("Rebuilding core search indexes...");
         _contentIndexingService.Rebuild(Core.Constants.IndexAliases.PublishedContent);
         _contentIndexingService.Rebuild(Core.Constants.IndexAliases.DraftContent);
         _contentIndexingService.Rebuild(Core.Constants.IndexAliases.DraftMedia);

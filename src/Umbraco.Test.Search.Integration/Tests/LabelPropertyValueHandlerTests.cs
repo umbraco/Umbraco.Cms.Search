@@ -118,7 +118,7 @@ public class LabelPropertyValueHandlerTests : ContentTestBase
     }
     
     [SetUp]
-    protected async Task CreateAllSimpleEditorsContentType()
+    protected async Task CreateAllLabelEditorsContentType()
     {
         _contentType = new ContentTypeBuilder()
             .WithAlias("allLabelEditors")

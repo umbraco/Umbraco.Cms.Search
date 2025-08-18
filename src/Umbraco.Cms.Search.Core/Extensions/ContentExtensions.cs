@@ -15,12 +15,12 @@ internal static class ContentExtensions
     public static string?[] PublishedCultures(this IContentBase content)
         => content is IContent c && c.VariesByCulture()
             ? c.PublishedCultures.ToArray()
-            : [null];
+            : new string?[] { null };
 
     public static string?[] AvailableCultures(this IContentBase content)
         => content is IContent && content.VariesByCulture()
             ? content.AvailableCultures.ToArray()
-            : [null];
+            : new string?[] { null };
 
     public static bool IsPublished(this IContentBase content)
         => content is IContent { Published: true };

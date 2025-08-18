@@ -21,10 +21,20 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Umbraco.Test.Search.Examine
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Umbraco.Cms.Search.Provider.Examine", "Umbraco.Cms.Search.Provider.Examine\Umbraco.Cms.Search.Provider.Examine.csproj", "{DB4C592E-C57E-424E-8E46-C0CBE77E35D0}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{13FAAAFF-BEC6-4892-9B35-8B1D7CAB5CBD}"
+	ProjectSection(SolutionItems) = preProject
+		..\.artifactignore = ..\.artifactignore
+		..\.editorconfig = ..\.editorconfig
+		..\.globalconfig = ..\.globalconfig
+		..\Directory.Build.props = ..\Directory.Build.props
+		..\global.json = ..\global.json
+		..\LICENSE = ..\LICENSE
+		..\README.md = ..\README.md
+		..\umbraco-marketplace.json = ..\umbraco-marketplace.json
+		..\version.json = ..\version.json
+	EndProjectSection
+EndProject
 Global
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|x64 = Debug|x64
@@ -142,5 +152,11 @@ Global
 		{DB4C592E-C57E-424E-8E46-C0CBE77E35D0}.Release|x64.Build.0 = Release|Any CPU
 		{DB4C592E-C57E-424E-8E46-C0CBE77E35D0}.Release|x86.ActiveCfg = Release|Any CPU
 		{DB4C592E-C57E-424E-8E46-C0CBE77E35D0}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7B070D1F-663B-40C6-93AC-674B4EF6B453}
 	EndGlobalSection
 EndGlobal
