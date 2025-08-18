@@ -22,7 +22,7 @@ public class Searcher : IExamineSearcher
     public Searcher(IExamineManager examineManager)
         => _examineManager = examineManager;
 
-    public async Task<SearchResult> SearchAsync(string indexAlias, string? query, IEnumerable<Filter>? filters,
+    public Task<SearchResult> SearchAsync(string indexAlias, string? query, IEnumerable<Filter>? filters,
         IEnumerable<Facet>? facets, IEnumerable<Sorter>? sorters,
         string? culture, string? segment, AccessContext? accessContext, int skip, int take)
     {
@@ -30,12 +30,12 @@ public class Searcher : IExamineSearcher
         if (query is null && filters is null && facets is null && sorters is null && culture is null &&
             segment is null && accessContext is null)
         {
-            return await Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
+            return Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
         }
 
         if (_examineManager.TryGetIndex(indexAlias, out var index) is false)
         {
-            return await Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
+            return Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
         }
 
         var searchQuery = index.Searcher
@@ -55,9 +55,12 @@ public class Searcher : IExamineSearcher
             searchQuery.And().Group(nestedQuery =>
             {
                 var transformedQuery = query.TransformDashes();
-                var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR1}", transformedQuery.Boost(4));
-                fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR2}", transformedQuery.Boost(3));
-                fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR3}", transformedQuery.Boost(2));
+                var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR1}",
+                    transformedQuery.Boost(4));
+                fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR2}",
+                    transformedQuery.Boost(3));
+                fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR3}",
+                    transformedQuery.Boost(2));
                 fieldQuery.Or().ManagedQuery(transformedQuery);
                 fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}aggregated_texts", transformedQuery.Escape());
 
@@ -66,31 +69,34 @@ public class Searcher : IExamineSearcher
         }
 
         // Examine will overwrite subsequent facets of the same field, so make sure there aren't any duplicates.
-        IEnumerable<Facet> deDuplicatedFacets = DeduplicateFacets(facets);
+        Facet[] deduplicateFacets = DeduplicateFacets(facets);
+
+        Sorter[]? sortersAsArray = sorters as Sorter[] ?? sorters?.ToArray();
 
         // Add facets and filters
         AddFilters(searchQuery, filters);
-        AddFacets(searchQuery, deDuplicatedFacets);
-        AddSorters(searchQuery, sorters);
+        AddFacets(searchQuery, deduplicateFacets);
+        AddSorters(searchQuery, sortersAsArray);
         AddProtection(searchQuery, accessContext);
 
-        var results = searchQuery.Execute(new QueryOptions(skip, take));
+        ISearchResults results = searchQuery.Execute(new QueryOptions(skip, take));
 
         IEnumerable<ISearchResult> searchResults;
 
-        var scoreSorters = sorters?.Select(x => x is ScoreSorter ? x : null).WhereNotNull();
-        if (scoreSorters is not null && scoreSorters.Any())
+        ScoreSorter? scoreSorter = sortersAsArray?.OfType<ScoreSorter>().FirstOrDefault();
+        if (scoreSorter is not null)
         {
-            searchResults = results.OrderBy(x => x.Score, scoreSorters.First().Direction);
+            searchResults = results.OrderBy(x => x.Score, scoreSorter.Direction);
         }
         else
         {
             searchResults = results;
         }
 
-        return await Task.FromResult(new SearchResult(results.TotalItemCount,
-            searchResults.Select(MapToDocument).WhereNotNull().ToArray(),
-            facets is null ? Array.Empty<FacetResult>() : MapFacets(results, deDuplicatedFacets)));
+        FacetResult[] facetResults = facets is null ? [] : MapFacets(results, deduplicateFacets).ToArray();
+        Document[] searchResultDocuments = searchResults.Select(MapToDocument).WhereNotNull().ToArray();
+
+        return Task.FromResult(new SearchResult(results.TotalItemCount, searchResultDocuments, facetResults));
     }
 
     private void AddProtection(IBooleanOperation searchQuery, AccessContext? accessContext)
@@ -338,7 +344,7 @@ public class Searcher : IExamineSearcher
         });
     }
 
-    private IEnumerable<Facet> DeduplicateFacets(IEnumerable<Facet>? facets)
+    private Facet[] DeduplicateFacets(IEnumerable<Facet>? facets)
     {
         if (facets is null)
         {
@@ -352,7 +358,8 @@ public class Searcher : IExamineSearcher
                 Facet first = group.First();
 
                 return first.GetType().IsSubclassOf(typeof(RangeFacet<>)) ? MergeRangeFacets(group) : first;
-            });
+            })
+            .ToArray();
     }
 
     private Facet MergeRangeFacets(IEnumerable<Facet> facets)
