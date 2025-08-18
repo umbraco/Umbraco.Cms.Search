@@ -194,19 +194,17 @@ public class DecimalTests : SearcherTestBase
 
     [TestCase(true)]
     [TestCase(false)]
-    // TODO: Look into solution for this.
-    [Ignore("Ignore as there is an arbitrary limit of 10 facets at the moment.")]
     public async Task CanFacetDocumentsByDecimalExact(bool filtered)
     {
         SearchResult result = await SearchAsync(
             facets: [new DecimalExactFacet(FieldSingleValue)],
-            filters: filtered ? [new DecimalExactFilter(FieldSingleValue, [1m, 2m, 3m], false)] : []
+            filters: filtered ? [new DecimalExactFilter(FieldSingleValue, [1, 2, 3], false)] : []
         );
 
         // expecting the same facets whether filtering is enabled or not, because
         // both faceting and filtering is applied to the same field
         var expectedFacetValues = Enumerable
-            .Range(1, 100)
+            .Range(1, filtered ? 3 : 100)
             .SelectMany(i => new[] { i })
             .GroupBy(i => i)
             .Select(group => new { Key = group.Key, Count = group.Count() })
