@@ -86,10 +86,10 @@ public class InvariantFacetsTests : SearcherTestBase
     [TestCase(false)]
     public async Task CanSearchKeywordFacet(bool publish)
     {
-        await CreateTitleDocuments(["one", "one", "two"]);
+        await CreateDropDownDocuments(["one", "one", "two"]);
 
         var indexAlias = GetIndexAlias(publish);
-        var facets = (await Searcher.SearchAsync(indexAlias, null, null, new List<Facet> { new KeywordFacet("title")}, null, null, null, null, 0, 100)).Facets;
+        var facets = (await Searcher.SearchAsync(indexAlias, null, null, new List<Facet> { new KeywordFacet("dropDown")}, null, null, null, null, 0, 100)).Facets;
         var firstFacetValues = (KeywordFacetValue) facets.First().Values.First();
         var secondFacetValues = (KeywordFacetValue) facets.First().Values.Last();
         Assert.Multiple(() =>
@@ -275,6 +275,39 @@ public class InvariantFacetsTests : SearcherTestBase
                     new
                     {
                         count = countValue,
+                    })
+                .Build();
+
+            SaveAndPublish(document);
+        }
+    }
+
+    private async Task CreateDropDownDocType()
+    {
+        ContentType = new ContentTypeBuilder()
+            .WithAlias("invariant")
+            .AddPropertyType()
+            .WithAlias("dropDown")
+            .WithDataTypeId(Constants.DataTypes.DropDownSingle)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.DropDownListFlexible)
+            .Done()
+            .Build();
+        await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
+    }
+
+    private async Task CreateDropDownDocuments(string[] values)
+    {
+        await CreateDropDownDocType();
+
+        foreach (var stringValue in values)
+        {
+            var document = new ContentBuilder()
+                .WithContentType(ContentType)
+                .WithName($"document-{stringValue}")
+                .WithPropertyValues(
+                    new
+                    {
+                        dropDown = $"[\"{stringValue}\"]"
                     })
                 .Build();
 

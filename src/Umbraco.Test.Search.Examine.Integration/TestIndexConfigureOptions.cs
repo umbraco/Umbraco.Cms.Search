@@ -1,6 +1,4 @@
-﻿using Examine;
-using Microsoft.Extensions.Options;
-using Umbraco.Cms.Search.Provider.Examine;
+﻿using Microsoft.Extensions.Options;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
 
 namespace Umbraco.Test.Search.Examine.Integration;
@@ -8,105 +6,106 @@ namespace Umbraco.Test.Search.Examine.Integration;
 public class TestIndexConfigureOptions : IConfigureOptions<FacetOptions>
 {
     public void Configure(FacetOptions facetOptions)
-    {
-        facetOptions.Fields =
+        => facetOptions.Fields =
         [
             new FacetOptions.Field
             {
                 PropertyName = "fieldSingleValues",
-                Values = [Constants.Fields.Texts],
-                Type = FieldDefinitionTypes.FacetFullText,
-            },             
+                FieldValues = FieldValues.Texts,
+                Facetable = true,
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldSingleValues",
-                Values = [Constants.Fields.TextsR1],
-                Type = FieldDefinitionTypes.FacetFullText,
-            },             
+                FieldValues = FieldValues.TextsR1,
+                Facetable = true,
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldSingleValues",
-                Values = [Constants.Fields.TextsR2],
-                Type = FieldDefinitionTypes.FacetFullText,
-            },             
+                FieldValues = FieldValues.TextsR2,
+                Facetable = true,
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldSingleValues",
-                Values = [Constants.Fields.TextsR3],
-                Type = FieldDefinitionTypes.FacetFullText,
-            }, 
+                FieldValues = FieldValues.TextsR3,
+                Facetable = true,
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldSingleValues",
-                Values = [Constants.Fields.Integers],
-                Type = FieldDefinitionTypes.FacetInteger,
-            }, 
+                FieldValues = FieldValues.Integers,
+                Facetable = true,
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldSingleValues",
-                Values = [Constants.Fields.Decimals],
-                Type = FieldDefinitionTypes.FacetDouble,
-            }, 
+                FieldValues = FieldValues.Decimals,
+                Facetable = true,
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldSingleValues",
-                Values = [Constants.Fields.DateTimeOffsets],
-                Type = FieldDefinitionTypes.FacetDateTime,
-            },            
+                FieldValues = FieldValues.DateTimeOffsets,
+                Facetable = true,
+            },
+            // TODO KJA: why are we registering these? shouldn't this work out of the box? something to do with multivalue, perhaps?
             new FacetOptions.Field
             {
                 PropertyName = "fieldMultipleValues",
-                Values = [Constants.Fields.Integers],
-                Type = FieldDefinitionTypes.Integer,
-            }, 
+                FieldValues = FieldValues.Integers,
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldMultipleValues",
-                Values = [Constants.Fields.Decimals],
-                Type = FieldDefinitionTypes.Double,
-            }, 
+                FieldValues = FieldValues.Decimals,
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldMultipleValues",
-                Values = [Constants.Fields.DateTimeOffsets],
-                Type = FieldDefinitionTypes.DateTime,
-            }, 
+                FieldValues = FieldValues.DateTimeOffsets,
+            },
             new FacetOptions.Field
             {
                 PropertyName = "fieldone",
-                Values = [Constants.Fields.Integers],
-                Type = FieldDefinitionTypes.Integer,
-            },           
+                FieldValues = FieldValues.Integers,
+            },
             new FacetOptions.Field
             {
                 PropertyName = "title",
-                Values = [Constants.Fields.Texts, Constants.Fields.Keywords],
-                Type = FieldDefinitionTypes.FacetFullText,
+                FieldValues = FieldValues.Texts,
+                Facetable = true,
+            },
+            new FacetOptions.Field
+            {
+                PropertyName = "dropDown",
+                FieldValues = FieldValues.Keywords,
+                Facetable = true,
             },
             new FacetOptions.Field
             {
                 PropertyName = "decimalproperty",
-                Values = [Constants.Fields.Decimals],
-                Type = FieldDefinitionTypes.FacetDouble,
-            },            
+                FieldValues = FieldValues.Decimals,
+                Facetable = true,
+            },
             new FacetOptions.Field
             {
                 PropertyName = "sortableTitle",
-                Values = [Constants.Fields.Texts],
-                Type = FieldDefinitionTypes.FullTextSortable,
+                FieldValues = FieldValues.Texts,
+                Sortable = true,
             },
             new FacetOptions.Field
             {
                 PropertyName = "datetime",
-                Values = [Constants.Fields.DateTimeOffsets],
-                Type = FieldDefinitionTypes.FacetDateTime,
-            },            
+                FieldValues = FieldValues.DateTimeOffsets,
+                Facetable = true,
+            },
             new FacetOptions.Field
             {
                 PropertyName = "count",
-                Values = [Constants.Fields.Integers],
-                Type = FieldDefinitionTypes.FacetInteger,
+                FieldValues = FieldValues.Integers,
+                Facetable = true,
             },
         ];
-    }
 }
