@@ -17,6 +17,12 @@ public class TestIndexConfigureOptions : IConfigureOptions<FacetOptions>
             new FacetOptions.Field
             {
                 PropertyName = "fieldSingleValues",
+                FieldValues = FieldValues.Keywords,
+                Facetable = true,
+            },
+            new FacetOptions.Field
+            {
+                PropertyName = "fieldSingleValues",
                 FieldValues = FieldValues.TextsR1,
                 Facetable = true,
             },

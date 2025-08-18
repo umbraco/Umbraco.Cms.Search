@@ -41,7 +41,7 @@ public class ExamineMapper : IExamineMapper
                         integerExactFacetValues.Add(new IntegerExactFacetValue(labelValue, (int)integerExactFacetValue.Value));
                     }
 
-                    yield return new FacetResult(facet.FieldName, integerExactFacetValues);
+                    yield return new FacetResult(facet.FieldName, integerExactFacetValues.OrderBy(x => x.Key));
                     break;
                 case DecimalRangeFacet decimalRangeFacet:
                     var decimalRangeFacetResult = decimalRangeFacet.Ranges.Select(x =>
@@ -70,7 +70,7 @@ public class ExamineMapper : IExamineMapper
                         decimalExactFacetValues.Add(new DecimalExactFacetValue(labelValue, (int)decimalExactFacetValue.Value));
                     }
 
-                    yield return new FacetResult(facet.FieldName, decimalExactFacetValues);
+                    yield return new FacetResult(facet.FieldName, decimalExactFacetValues.OrderBy(x => x.Key));
                     break;
                  case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
                     var dateTimeOffsetRangeFacetResult = dateTimeOffsetRangeFacet.Ranges.Select(x =>
@@ -99,7 +99,7 @@ public class ExamineMapper : IExamineMapper
                         var offSet = new DateTimeOffset().AddTicks(ticks);
                         datetimeOffsetExactFacetValues.Add(new DateTimeOffsetExactFacetValue(offSet, (int)datetimeExactFacetValue.Value));
                     }
-                    yield return new FacetResult(facet.FieldName, datetimeOffsetExactFacetValues);
+                    yield return new FacetResult(facet.FieldName, datetimeOffsetExactFacetValues.OrderBy(x => x.Key));
                     break;
                 case KeywordFacet keywordFacet:
                     var examineKeywordFacets = searchResults.GetFacet($"Umb_{keywordFacet.FieldName}_keywords");
