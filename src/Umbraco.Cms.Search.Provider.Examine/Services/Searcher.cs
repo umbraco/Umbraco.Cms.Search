@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using Examine;
+﻿using Examine;
 using Examine.Search;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
@@ -9,6 +8,7 @@ using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
 using Umbraco.Cms.Search.Provider.Examine.Extensions;
 using Umbraco.Cms.Search.Provider.Examine.Mapping;
+using Umbraco.Cms.Search.Provider.Examine.Models.Searching.Filtering;
 using Umbraco.Extensions;
 using FacetResult = Umbraco.Cms.Search.Core.Models.Searching.Faceting.FacetResult;
 using SearchResult = Umbraco.Cms.Search.Core.Models.Searching.SearchResult;

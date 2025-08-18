@@ -1,5 +1,6 @@
 ﻿using Examine.Search;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
+using Umbraco.Cms.Search.Provider.Examine.Models.Searching.Filtering;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Extensions;
 
@@ -59,10 +60,4 @@ internal static class QueryExtensions
 
         }
     }
-}
-
-// TODO KJA: move somewhere else
-internal record FilterRange<T>(T MinValue, T MaxValue)
-    where T : struct
-{
 }
