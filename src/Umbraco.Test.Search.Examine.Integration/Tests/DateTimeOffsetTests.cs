@@ -178,8 +178,6 @@ public class DateTimeOffsetTests : SearcherTestBase
 
     [TestCase(true)]
     [TestCase(false)]
-    // TODO: Look into solution for this.
-    [Ignore("Ignore as there is an arbitrary limit of 10 facets at the moment.")]
     public async Task CanFacetDocumentsByDateTimeOffsetExact(bool filtered)
     {
         SearchResult result = await SearchAsync(
@@ -199,7 +197,7 @@ public class DateTimeOffsetTests : SearcherTestBase
         // expecting the same facets whether filtering is enabled or not, because
         // both faceting and filtering is applied to the same field
         var expectedFacetValues = Enumerable
-            .Range(1, 100)
+            .Range(1, filtered ? 3 : 100)
             .SelectMany(i => new[] { i }.Select(i2 => StartDate().AddDays(i2)))
             .GroupBy(i => i)
             .Select(group => new { Key = group.Key, Count = group.Count() })

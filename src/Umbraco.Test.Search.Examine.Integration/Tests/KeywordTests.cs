@@ -83,21 +83,19 @@ public  class KeywordTests : SearcherTestBase
 
     [TestCase(true)]
     [TestCase(false)]
-    // TODO: Look into solution for this.
-    [Ignore("Ignore as there is an arbitrary limit of 10 facets at the moment.")]
     public async Task CanFacetDocumentsByKeyword(bool filtered)
     {
         SearchResult result = await SearchAsync(
             facets: [new KeywordFacet(FieldSingleValue)],
             filters: filtered
-                ? [new KeywordFilter(FieldSingleValue, ["single10", "single20", "single30"], false)]
+                ? [new KeywordFilter(FieldSingleValue, ["single1", "single2", "single3"], false)]
                 : []
         );
 
         // expecting the same facets whether filtering is enabled or not, because
         // both faceting and filtering is applied to the same field
         var expectedFacetValues = Enumerable
-            .Range(1, 100)
+            .Range(1, filtered ? 3 : 100)
             .SelectMany(i => new[] { $"single{i}" })
             .GroupBy(i => i)
             .Select(group => new { Key = group.Key, Count = group.Count() })
