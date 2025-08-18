@@ -102,7 +102,7 @@ public class ExamineMapper : IExamineMapper
                     yield return new FacetResult(facet.FieldName, datetimeOffsetExactFacetValues);
                     break;
                 case KeywordFacet keywordFacet:
-                    var examineKeywordFacets = searchResults.GetFacet($"Umb_{keywordFacet.FieldName}_texts");
+                    var examineKeywordFacets = searchResults.GetFacet($"Umb_{keywordFacet.FieldName}_keywords");
                     if (examineKeywordFacets is null)
                     {
                         continue;

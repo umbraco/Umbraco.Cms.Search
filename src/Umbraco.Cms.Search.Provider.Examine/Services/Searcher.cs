@@ -303,7 +303,7 @@ public class Searcher : IExamineSearcher
                 case KeywordFacet keywordFacet:
                     searchQuery.WithFacets(facetOperations =>
                         facetOperations.FacetString(
-                            $"{Constants.Fields.FieldPrefix}{keywordFacet.FieldName}_{Constants.Fields.Texts}"));
+                            $"{Constants.Fields.FieldPrefix}{keywordFacet.FieldName}_{Constants.Fields.Keywords}"));
                     break;
                 case IntegerExactFacet integerExactFacet:
                     searchQuery.WithFacets(facetOperations =>
