@@ -134,10 +134,10 @@ public class InvariantFacetsTests : SearcherTestBase
         Assert.Multiple(() =>
         {
             Assert.That(result.Facets, Is.Not.Empty);
-            Assert.That(firstFacetValues.Count, Is.EqualTo(2));
-            Assert.That(firstFacetValues.Key.DateTime, Is.EqualTo(firstDateTime));
-            Assert.That(secondFacetValues.Count, Is.EqualTo(1));
-            Assert.That(secondFacetValues.Key.DateTime, Is.EqualTo(thirdDateTime));
+            Assert.That(firstFacetValues.Count, Is.EqualTo(1));
+            Assert.That(firstFacetValues.Key.DateTime, Is.EqualTo(thirdDateTime));
+            Assert.That(secondFacetValues.Count, Is.EqualTo(2));
+            Assert.That(secondFacetValues.Key.DateTime, Is.EqualTo(firstDateTime));
         });
     }
 
