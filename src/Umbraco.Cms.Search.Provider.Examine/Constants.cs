@@ -5,7 +5,6 @@ internal static class Constants
     public static class Fields
     {
         public const string FieldPrefix = "Umb_";
-
         public const string Integers = "integers";
         public const string Decimals = "decimals";
         public const string DateTimeOffsets = "datetimeoffsets";
@@ -17,5 +16,12 @@ internal static class Constants
         public const string Protection = "protection";
         public const string Culture = "culture";
         public const string Segment = "segment";
+        public const string AggregatedTexts = "aggregated_texts";
+
+        public static class SystemFields
+        {
+            public const string Id = "Id";
+            public const string PathIds = "PathIds";
+        }
     }
 }

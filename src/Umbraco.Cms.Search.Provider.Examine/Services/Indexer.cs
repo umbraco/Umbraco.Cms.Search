@@ -1,13 +1,11 @@
 ﻿using Examine;
-using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Models;
-using Umbraco.Cms.Core.PublishedCache;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Provider.Examine.Extensions;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
-public class Indexer(IExamineManager examineManager, IDefaultCultureAccessor defaultCultureAccessor, ILogger<Indexer> logger) : IExamineIndexer
+public class Indexer(IExamineManager examineManager) : IExamineIndexer
 {
     public Task AddOrUpdateAsync(string indexAlias, Guid key, UmbracoObjectTypes objectType, IEnumerable<Variation> variations,
         IEnumerable<IndexField> fields, ContentProtection? protection)
@@ -33,7 +31,7 @@ public class Indexer(IExamineManager examineManager, IDefaultCultureAccessor def
         return Task.CompletedTask;
     }
 
-    IEnumerable<IndexField> GetMappableFields(IEnumerable<IndexField> fields, Variation variation)
+    private IEnumerable<IndexField> GetMappableFields(IEnumerable<IndexField> fields, Variation variation)
     {
         var results = new Dictionary<string, IndexField>();
         foreach (IndexField field in fields)
@@ -58,11 +56,11 @@ public class Indexer(IExamineManager examineManager, IDefaultCultureAccessor def
 
     public Task ResetAsync(string indexAlias)
     {
-        if (examineManager.TryGetIndex(indexAlias, out var index) is false)
+        if (examineManager.TryGetIndex(indexAlias, out IIndex? index) is false)
         {
             return Task.CompletedTask;
         }
-        index?.CreateIndex();
+        index.CreateIndex();
         return Task.CompletedTask;
     }
 
@@ -84,11 +82,11 @@ public class Indexer(IExamineManager examineManager, IDefaultCultureAccessor def
 
     private void DeleteSingleDoc(IIndex index, Guid key)
     {
-        var documents = index.Searcher.CreateQuery().Field("Umb_Id_keywords", key.ToString().TransformDashes()).Execute();
+        ISearchResults documents = index.Searcher.CreateQuery().Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.SystemFields.Id}_{Constants.Fields.Keywords}", key.ToString().TransformDashes()).Execute();
 
         var idsToDelete = new HashSet<string>();
 
-        foreach (var document in documents)
+        foreach (ISearchResult document in documents)
         {
             idsToDelete.Add(document.Id);
         }
@@ -101,20 +99,20 @@ public class Indexer(IExamineManager examineManager, IDefaultCultureAccessor def
 
     public async Task DeleteAsync(string indexAlias, IEnumerable<Guid> keys)
     {
-        var index = GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
         var idsToDelete = new HashSet<string>();
 
-        foreach (var key in keys)
+        foreach (Guid key in keys)
         {
-            var documents = index.Searcher.Search(key.ToString());
-            foreach (var document in documents)
+            ISearchResults documents = index.Searcher.Search(key.ToString());
+            foreach (ISearchResult document in documents)
             {
                 idsToDelete.Add(document.Id);
             }
 
-            var descendants = index.Searcher.CreateQuery().Field("Umb_PathIds_keywords", key.ToString()).Execute();
+            ISearchResults descendants = index.Searcher.CreateQuery().Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.SystemFields.PathIds}_{Constants.Fields.Keywords}", key.ToString()).Execute();
 
-            foreach (var descendant in descendants)
+            foreach (ISearchResult descendant in descendants)
             {
                 idsToDelete.Add(descendant.Id);
             }
@@ -131,11 +129,11 @@ public class Indexer(IExamineManager examineManager, IDefaultCultureAccessor def
         List<string> aggregatedR1Texts = [];
         List<string> aggregatedR2Texts = [];
         List<string> aggregatedR3Texts = [];
-        foreach (var field in fields)
+        foreach (IndexField field in fields)
         {
             if (field.Value.Integers?.Any() ?? false)
             {
-                List<object> integers = field.Value.Integers.Cast<object>().ToList();
+                var integers = field.Value.Integers.Cast<object>().ToList();
                 result.Add(CalculateFieldName(field, Constants.Fields.Integers),  integers);
             }
 
@@ -147,14 +145,14 @@ public class Indexer(IExamineManager examineManager, IDefaultCultureAccessor def
 
             if (field.Value.Decimals?.Any() ?? false)
             {
-                List<object> decimals = field.Value.Decimals.Cast<object>().ToList();
+                var decimals = field.Value.Decimals.Cast<object>().ToList();
                 result.Add(CalculateFieldName(field, Constants.Fields.Decimals), decimals);
             }
 
             if (field.Value.DateTimeOffsets?.Any() ?? false)
             {
                 // We have to use DateTime here, as examine facets does not play nice with DatetimeOffsets for now.
-                List<object> dates = field.Value.DateTimeOffsets.Select(x => x.DateTime).Cast<object>().ToList();
+                var dates = field.Value.DateTimeOffsets.Select(x => x.DateTime).Cast<object>().ToList();
                 result.Add(CalculateFieldName(field, Constants.Fields.DateTimeOffsets), dates);
             }
             if (field.Value.Texts?.Any() ?? false)
@@ -187,7 +185,7 @@ public class Indexer(IExamineManager examineManager, IDefaultCultureAccessor def
 
         if (aggregatedTexts.Any())
         {
-            result.Add($"{Constants.Fields.FieldPrefix}aggregated_texts", aggregatedTexts.ToArray());
+            result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.AggregatedTexts}", aggregatedTexts.ToArray());
         }
 
         if (aggregatedR1Texts.Any())
@@ -207,7 +205,7 @@ public class Indexer(IExamineManager examineManager, IDefaultCultureAccessor def
         // Cannot add null values, so we have to just say "none" here, so we can filter on variant / invariant content
         result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}", [culture?.TransformDashes() ?? "none"]);
         result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}", [segment?.TransformDashes() ?? "none"]);
-        var protectionIds = protection?.AccessIds ?? new List<Guid> {Guid.Empty};
+        IEnumerable<Guid> protectionIds = protection?.AccessIds ?? new List<Guid> {Guid.Empty};
         result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}", protectionIds.Select(x => x.ToString().TransformDashes()));
 
         return result;
@@ -225,7 +223,7 @@ public class Indexer(IExamineManager examineManager, IDefaultCultureAccessor def
 
     private IIndex GetIndex(string indexName)
     {
-        if (examineManager.TryGetIndex(indexName, out var index) is false)
+        if (examineManager.TryGetIndex(indexName, out IIndex? index) is false)
         {
             throw new Exception($"The index {indexName} could not be found.");
         }
