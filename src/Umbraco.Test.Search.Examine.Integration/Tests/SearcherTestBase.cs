@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using Microsoft.Extensions.DependencyInjection;
+using NUnit.Framework;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Extensions;
@@ -8,11 +9,16 @@ using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
 using Umbraco.Cms.Search.Core.Services;
+using Umbraco.Test.Search.Examine.Integration.Extensions;
+using Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests;
 
-public abstract class SearcherTestBase : TestBase
+[TestFixture]
+public abstract class SearcherTestBase
 {
+    private ServiceProvider _serviceProvider;
+
     private const string IndexAlias = Constants.IndexAliases.PublishedContent;
     protected const string FieldMultipleValues = "fieldMultipleValues";
     protected const string FieldSingleValue = "fieldSingleValues";
@@ -21,12 +27,19 @@ public abstract class SearcherTestBase : TestBase
 
     protected readonly Dictionary<int, Guid> _documentIds = [];
 
-    [SetUp]
+    [OneTimeSetUp]
     protected async Task PerformOneTimeSetUpAsync()
     {
+        var serviceCollection = new ServiceCollection();
+        serviceCollection
+            .AddExamineSearchProviderServicesForTest<TestIndex, TestInMemoryDirectoryFactory>()
+            .AddLogging();
+
+        _serviceProvider = serviceCollection.BuildServiceProvider();
+
         await EnsureIndex();
 
-        var indexer = GetRequiredService<IIndexer>();
+        IIndexer indexer = GetRequiredService<IIndexer>();
 
         for (var i = 1; i <= 100; i++)
         {
@@ -46,7 +59,7 @@ public abstract class SearcherTestBase : TestBase
                 [new Variation(Culture: null, Segment: null)],
                 [
                     new IndexField(
-                        Umbraco.Cms.Search.Core.Constants.FieldNames.PathIds,
+                        Constants.FieldNames.PathIds,
                         new IndexValue { Keywords = [id.AsKeyword()], },
                         Culture: null,
                         Segment: null
@@ -114,9 +127,16 @@ public abstract class SearcherTestBase : TestBase
         await Task.Delay(3000);
     }
 
-    [TearDown]
+    [OneTimeTearDown]
     protected async Task PerformOneTimeTearDownAsync()
-        => await DeleteIndex();
+    {
+        await DeleteIndex();
+
+        if (_serviceProvider is IDisposable disposableServiceProvider)
+        {
+            disposableServiceProvider.Dispose();
+        }
+    }
 
     protected async Task<SearchResult> SearchAsync(
         string? query = null,
@@ -169,4 +189,7 @@ public abstract class SearcherTestBase : TestBase
             .Select(i => i * 2)
             .Select(i => even ? i : i - 1)
             .ToArray();
+
+    protected T GetRequiredService<T>() where T : notnull
+        => _serviceProvider.GetRequiredService<T>();
 }

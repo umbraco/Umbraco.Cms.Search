@@ -1,5 +1,4 @@
-﻿using Examine;
-using Umbraco.Cms.Core.Models;
+﻿using Umbraco.Cms.Core.Models;
 using ISearcher = Umbraco.Cms.Search.Core.Services.ISearcher;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.SearchService;
@@ -7,14 +6,12 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.SearchServi
 public abstract class SearcherTestBase : TestBase
 {
     protected ISearcher Searcher => GetRequiredService<ISearcher>();
-    
-    protected IExamineManager ExamineManager => GetRequiredService<IExamineManager>();
-    
+
     protected string GetIndexAlias(bool publish)
     {
         return publish ? Cms.Search.Core.Constants.IndexAliases.PublishedContent : Cms.Search.Core.Constants.IndexAliases.DraftContent;
     }
-    
+
     protected void SaveAndPublish(IContent content)
     {
         ContentService.Save(content);
