@@ -158,24 +158,24 @@ internal sealed class Searcher : IExamineSearcher
         // TODO: Handling of multiple sorters, does this hold up?
         foreach (Sorter sorter in sorters)
         {
-            SortableField? sortableField = MapSorter(sorter);
-            if (sortableField is null)
+            SortableField[] sortableFields = MapSorter(sorter);
+            if (sortableFields.Length == 0)
             {
                 continue;
             }
 
             if (sorter.Direction is Direction.Ascending)
             {
-                searchQuery.OrderBy(sortableField.Value);
+                searchQuery.OrderBy(sortableFields);
             }
             else
             {
-                searchQuery.OrderByDescending(sortableField.Value);
+                searchQuery.OrderByDescending(sortableFields);
             }
         }
     }
 
-    private SortableField? MapSorter(Sorter sorter)
+    private SortableField[] MapSorter(Sorter sorter)
     {
         var fieldNamePrefix = sorter.FieldName.StartsWith(Constants.Fields.FieldPrefix)
             ? $"{sorter.FieldName}"
@@ -183,14 +183,18 @@ internal sealed class Searcher : IExamineSearcher
 
         return sorter switch
         {
-            IntegerSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Integers}", SortType.Int),
-            DecimalSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Decimals}", SortType.Double),
-            DateTimeOffsetSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.DateTimeOffsets}",
-                SortType.Long),
-            KeywordSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Keywords}", SortType.String),
-            TextSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Texts}", SortType.String),
-            ScoreSorter => null,
-            _ => throw new NotSupportedException()
+            IntegerSorter => [new SortableField($"{fieldNamePrefix}_{Constants.Fields.Integers}", SortType.Int)],
+            DecimalSorter => [new SortableField($"{fieldNamePrefix}_{Constants.Fields.Decimals}", SortType.Double)],
+            DateTimeOffsetSorter => [new SortableField($"{fieldNamePrefix}_{Constants.Fields.DateTimeOffsets}", SortType.Long)],
+            KeywordSorter => [new SortableField($"{fieldNamePrefix}_{Constants.Fields.Keywords}", SortType.String)],
+            TextSorter => [
+                new SortableField($"{fieldNamePrefix}_{Constants.Fields.TextsR1}", SortType.String),
+                new SortableField($"{fieldNamePrefix}_{Constants.Fields.TextsR2}", SortType.String),
+                new SortableField($"{fieldNamePrefix}_{Constants.Fields.TextsR3}", SortType.String),
+                new SortableField($"{fieldNamePrefix}_{Constants.Fields.Texts}", SortType.String),
+            ],
+            ScoreSorter => [],
+            _ => throw new ArgumentOutOfRangeException(nameof(sorter))
         };
     }
 
