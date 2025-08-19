@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
 using Umbraco.Cms.Tests.Common.Builders;
@@ -163,6 +164,40 @@ public class InvariantSortingTests : SearcherTestBase
             var documents = result.Documents.ToArray();
             Assert.That(documents, Is.Not.Empty);
             for (int i = 0; i < keys.Length; i++)
+            {
+                Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
+            }
+        });
+    }
+
+    [TestCase(true, Direction.Descending)]
+    [TestCase(false, Direction.Ascending)]
+    public async Task CanSortByDocumentName(bool publish, Direction direction)
+    {
+        string[] titles = ["xxx", "zzz", "yyy", "www"];
+
+        KeyValuePair<Guid, string>[] keys = (await CreateTitleDocuments(titles))
+            .OrderBy(x => x.Value, direction)
+            .ToArray();
+
+        var indexAlias = GetIndexAlias(publish);
+        SearchResult result = await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            null,
+            null,
+            [new TextSorter(Cms.Search.Core.Constants.FieldNames.Name, direction)],
+            null,
+            null,
+            null,
+            0,
+            100);
+
+        Assert.Multiple(() =>
+        {
+            Document[] documents = result.Documents.ToArray();
+            Assert.That(documents, Is.Not.Empty);
+            for (var i = 0; i < keys.Length; i++)
             {
                 Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
             }
