@@ -3,6 +3,7 @@ using Examine;
 using Examine.Lucene;
 using Examine.Search;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Exceptions;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
@@ -34,7 +35,7 @@ public class Searcher : IExamineSearcher
             return Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
         }
 
-        if (_examineManager.TryGetIndex(indexAlias, out var index) is false)
+        if (_examineManager.TryGetIndex(indexAlias, out IIndex? index) is false)
         {
             return Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
         }
@@ -80,7 +81,25 @@ public class Searcher : IExamineSearcher
         AddSorters(searchQuery, sortersAsArray);
         AddProtection(searchQuery, accessContext);
 
-        ISearchResults results = searchQuery.Execute(new QueryOptions(skip, take));
+        ISearchResults results;
+        try
+        {
+            results = searchQuery.Execute(new QueryOptions(skip, take));
+        }
+        catch (ArgumentException e)
+        {
+            if (e.Message.Contains("field \"$facets\" was not indexed with SortedSetDocValues"))
+            {
+                throw new ConfigurationException("Tried querying a facet that did not exist, please configure your facets with FieldOptions.", e);
+            }
+
+            if (e.Message.Contains("dimension \"") && e.Message.Contains("\" was not indexed"))
+            {
+                throw new ConfigurationException("Tried querying a facet that did not exist, but the field did exist, please configure your facets with FieldOptions and set Facetable to true.", e);
+            }
+
+            throw;
+        }
 
         IEnumerable<ISearchResult> searchResults;
 
@@ -237,7 +256,7 @@ public class Searcher : IExamineSearcher
                     FilterRange<int>[] integerRanges = integerRangeFilter.Ranges
                         .Select(r => new FilterRange<int>(r.MinValue ?? int.MinValue, r.MaxValue ?? int.MaxValue))
                         .ToArray();
-                    searchQuery.AddRangeFilter<int>(integerRangeFieldName, integerRangeFilter.Negate, integerRanges);
+                    searchQuery.AddRangeFilter(integerRangeFieldName, integerRangeFilter.Negate, integerRanges);
                     break;
                 case IntegerExactFilter integerExactFilter:
                     var integerExactFieldName =
