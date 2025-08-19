@@ -17,8 +17,23 @@ public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirecto
     public void Configure(LuceneDirectoryIndexOptions options)
         => Configure(string.Empty, options);
 
+    private void AddSystemFields(LuceneDirectoryIndexOptions options)
+    {
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.Id}", FieldDefinitionTypes.FullText));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.ParentId}", FieldDefinitionTypes.FullText));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.PathIds}", FieldDefinitionTypes.FullText));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.ContentTypeId}", FieldDefinitionTypes.FullText));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.CreateDate}", FieldDefinitionTypes.DateTime));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.UpdateDate}", FieldDefinitionTypes.DateTime));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.Level}", FieldDefinitionTypes.Integer));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.ObjectType}", FieldDefinitionTypes.Integer));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.SortOrder}", FieldDefinitionTypes.FullText));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.Name}", FieldDefinitionTypes.FullTextSortable));
+    }
+
     private void AddOptions(LuceneDirectoryIndexOptions options)
     {
+        AddSystemFields(options);
         foreach (FieldOptions.Field field in _fieldOptions.Fields)
         {
             var fieldPostfix = field.FieldValues switch
