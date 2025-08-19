@@ -2,6 +2,7 @@
 using Examine;
 using Examine.Lucene;
 using Examine.Search;
+using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Exceptions;
 using Umbraco.Cms.Core.Models;
@@ -9,6 +10,7 @@ using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
+using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Search.Provider.Examine.Extensions;
 using Umbraco.Cms.Search.Provider.Examine.Models.Searching.Filtering;
 using Umbraco.Extensions;
@@ -17,12 +19,16 @@ using SearchResult = Umbraco.Cms.Search.Core.Models.Searching.SearchResult;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
-public class Searcher : IExamineSearcher
+internal sealed class Searcher : IExamineSearcher
 {
     private readonly IExamineManager _examineManager;
+    private readonly FieldOptions _fieldOptions;
 
-    public Searcher(IExamineManager examineManager)
-        => _examineManager = examineManager;
+    public Searcher(IExamineManager examineManager, IOptions<FieldOptions> fieldOptions)
+    {
+        _examineManager = examineManager;
+        _fieldOptions = fieldOptions.Value;
+    }
 
     public Task<SearchResult> SearchAsync(string indexAlias, string? query, IEnumerable<Filter>? filters,
         IEnumerable<Facet>? facets, IEnumerable<Sorter>? sorters,
@@ -200,17 +206,29 @@ public class Searcher : IExamineSearcher
             switch (filter)
             {
                 case KeywordFilter keywordFilter:
-                    var keywordFilterValue = string.Join(" ", keywordFilter.Values).TransformDashes();
+                    var keywordFilterValues = keywordFilter.Values;
                     var keywordFieldName = keywordFilter.FieldName.StartsWith(Constants.Fields.FieldPrefix)
                         ? $"{keywordFilter.FieldName}_{Constants.Fields.Keywords}"
                         : $"{Constants.Fields.FieldPrefix}{keywordFilter.FieldName}_{Constants.Fields.Keywords}";
-                    if (keywordFilter.Negate)
+
+                    if (_fieldOptions.HasKeywordField(keywordFilter.FieldName))
                     {
-                        searchQuery.Not().Field(keywordFieldName, keywordFilterValue);
+                        // if there is a keyword field registered, search that (as explicit/RAW values)
+                        keywordFieldName = keywordFieldName.KeywordFieldName();
                     }
                     else
                     {
-                        searchQuery.And().Field(keywordFieldName, string.Join(" ", keywordFilterValue));
+                        // ...otherwise escape the value for fulltext search (default field type in Examine)
+                        keywordFilterValues = keywordFilterValues.Select(value => value.TransformDashes()).ToArray();
+                    }
+
+                    if (keywordFilter.Negate)
+                    {
+                        searchQuery.Not().GroupedOr([keywordFieldName], keywordFilterValues);
+                    }
+                    else
+                    {
+                        searchQuery.And().GroupedOr([keywordFieldName], keywordFilterValues);
                     }
 
                     break;

@@ -57,7 +57,7 @@ public abstract class SearcherTestBase : TestBase
                         {
                             Decimals = [i, i * 1.5m, i * -1m, i * -1.5m],
                             Integers = [i, i * 10, i * -1],
-                            Keywords = ["all", i % 2 == 0 ? "even" : "odd", $"single{i}"],
+                            Keywords = ["all", i % 2 == 0 ? "even" : "odd", $"single{i}", $"common single{i}"],
                             DateTimeOffsets =
                             [
                                 Date(2025, 01, 01),

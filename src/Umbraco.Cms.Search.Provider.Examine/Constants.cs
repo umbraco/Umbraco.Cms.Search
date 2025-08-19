@@ -6,6 +6,8 @@ internal static class Constants
     {
         public const string FieldPrefix = "Umb_";
         public const string SystemFieldPrefix = "Umb_";
+        public const string KeywordFieldPostfix = "_raw";
+
         public const string Integers = "integers";
         public const string Decimals = "decimals";
         public const string DateTimeOffsets = "datetimeoffsets";

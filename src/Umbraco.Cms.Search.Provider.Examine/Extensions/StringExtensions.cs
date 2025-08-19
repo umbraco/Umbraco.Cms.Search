@@ -3,7 +3,8 @@
 internal static class StringExtensions
 {
     internal static string TransformDashes(this string value)
-    {
-        return value.Replace('-', '_');
-    }
+        => value.Replace('-', '_');
+
+    internal static string KeywordFieldName(this string fieldName)
+        => $"{fieldName}{Constants.Fields.KeywordFieldPostfix}";
 }

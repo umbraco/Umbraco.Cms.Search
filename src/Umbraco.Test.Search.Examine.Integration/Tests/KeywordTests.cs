@@ -81,6 +81,33 @@ public  class KeywordTests : SearcherTestBase
         );
     }
 
+    [Test]
+    public async Task CannotFilterMultipleDocumentByPartialKeyword()
+    {
+        SearchResult result = await SearchAsync(
+            filters: [new KeywordFilter(FieldMultipleValues, ["common"], false)]
+        );
+
+        Assert.That(result.Total, Is.EqualTo(0));
+    }
+
+
+    [Test]
+    public async Task CanFilterSingleDocumentByKeywordWithSpace()
+    {
+        SearchResult result = await SearchAsync(
+            filters: [new KeywordFilter(FieldMultipleValues, ["common single1"], false)]
+        );
+
+        Assert.Multiple(
+            () =>
+            {
+                Assert.That(result.Total, Is.EqualTo(1));
+                Assert.That(result.Documents.First().Id, Is.EqualTo(_documentIds[1]));
+            }
+        );
+    }
+
     [TestCase(true)]
     [TestCase(false)]
     public async Task CanFacetDocumentsByKeyword(bool filtered)

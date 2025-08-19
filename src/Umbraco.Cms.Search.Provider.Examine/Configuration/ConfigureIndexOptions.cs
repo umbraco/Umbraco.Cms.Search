@@ -1,6 +1,7 @@
 ﻿using Examine;
 using Examine.Lucene;
 using Microsoft.Extensions.Options;
+using Umbraco.Cms.Search.Provider.Examine.Extensions;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Configuration;
 
@@ -74,6 +75,12 @@ public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirecto
             var fieldName = $"{Constants.Fields.FieldPrefix}{field.PropertyName}_{fieldPostfix}";
             // options.FacetsConfig.SetMultiValued(fieldName, true);
             options.FieldDefinitions.AddOrUpdate(new FieldDefinition(fieldName, fieldDefinitionType));
+
+            if (field.FieldValues is FieldValues.Keywords && _fieldOptions.HasKeywordField(field.PropertyName))
+            {
+                // add RAW field for keyword filtering
+                options.FieldDefinitions.AddOrUpdate(new FieldDefinition(fieldName.KeywordFieldName(), FieldDefinitionTypes.Raw));
+            }
         }
     }
 }

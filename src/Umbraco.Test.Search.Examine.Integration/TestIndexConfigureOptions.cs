@@ -110,6 +110,11 @@ public class TestIndexConfigureOptions : IConfigureOptions<FieldOptions>
             },
             new FieldOptions.Field
             {
+                PropertyName = "fieldMultipleValues",
+                FieldValues = FieldValues.Keywords,
+            },
+            new FieldOptions.Field
+            {
                 PropertyName = "fieldone",
                 FieldValues = FieldValues.Integers,
             },

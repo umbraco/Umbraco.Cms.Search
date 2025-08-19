@@ -1,14 +1,30 @@
 ﻿using Examine;
+using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Indexing;
+using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Search.Provider.Examine.Extensions;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
-public class Indexer(IExamineManager examineManager) : IExamineIndexer
+internal sealed class Indexer : IExamineIndexer
 {
-    public Task AddOrUpdateAsync(string indexAlias, Guid key, UmbracoObjectTypes objectType, IEnumerable<Variation> variations,
-        IEnumerable<IndexField> fields, ContentProtection? protection)
+    private readonly IExamineManager _examineManager;
+    private readonly FieldOptions _fieldOptions;
+
+    public Indexer(IExamineManager examineManager, IOptions<FieldOptions> fieldOptions)
+    {
+        _examineManager = examineManager;
+        _fieldOptions = fieldOptions.Value;
+    }
+
+    public Task AddOrUpdateAsync(
+        string indexAlias,
+        Guid key,
+        UmbracoObjectTypes objectType,
+        IEnumerable<Variation> variations,
+        IEnumerable<IndexField> fields,
+        ContentProtection? protection)
     {
         IIndex index = GetIndex(indexAlias);
 
@@ -56,7 +72,7 @@ public class Indexer(IExamineManager examineManager) : IExamineIndexer
 
     public Task ResetAsync(string indexAlias)
     {
-        if (examineManager.TryGetIndex(indexAlias, out IIndex? index) is false)
+        if (_examineManager.TryGetIndex(indexAlias, out IIndex? index) is false)
         {
             return Task.CompletedTask;
         }
@@ -97,30 +113,24 @@ public class Indexer(IExamineManager examineManager) : IExamineIndexer
         }
     }
 
-    public async Task DeleteAsync(string indexAlias, IEnumerable<Guid> keys)
+    public Task DeleteAsync(string indexAlias, IEnumerable<Guid> keys)
     {
         IIndex index = GetIndex(indexAlias);
         var idsToDelete = new HashSet<string>();
 
         foreach (Guid key in keys)
         {
-            ISearchResults documents = index.Searcher.Search(key.ToString());
+            ISearchResults documents = index.Searcher.CreateQuery().Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.SystemFields.PathIds}_{Constants.Fields.Keywords}", key.ToString().TransformDashes()).Execute();
             foreach (ISearchResult document in documents)
             {
                 idsToDelete.Add(document.Id);
             }
 
-            ISearchResults descendants = index.Searcher.CreateQuery().Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.SystemFields.PathIds}_{Constants.Fields.Keywords}", key.ToString()).Execute();
-
-            foreach (ISearchResult descendant in descendants)
-            {
-                idsToDelete.Add(descendant.Id);
-            }
-
             index.DeleteFromIndex(idsToDelete);
         }
-    }
 
+        return Task.CompletedTask;
+    }
 
     private Dictionary<string, IEnumerable<object>> MapToDictionary(IEnumerable<IndexField> fields, string? culture, string? segment, ContentProtection? protection)
     {
@@ -139,8 +149,14 @@ public class Indexer(IExamineManager examineManager) : IExamineIndexer
 
             if (field.Value.Keywords?.Any() ?? false)
             {
-                result.Add(CalculateFieldName(field, Constants.Fields.Keywords), field.Value.Keywords.Select(x => x.TransformDashes()));
-                aggregatedTexts.AddRange(field.Value.Keywords);
+                // add field for sorting and/or faceting (will be indexed according to configuration)
+                var fieldName = CalculateFieldName(field, Constants.Fields.Keywords);
+                result.Add(fieldName, field.Value.Keywords.Select(x => x.TransformDashes()));
+                if (_fieldOptions.HasKeywordField(field.FieldName))
+                {
+                    // add explicit field for filtering (will be indexed as RAW)
+                    result.Add(fieldName.KeywordFieldName(), field.Value.Keywords);
+                }
             }
 
             if (field.Value.Decimals?.Any() ?? false)
@@ -222,11 +238,7 @@ public class Indexer(IExamineManager examineManager) : IExamineIndexer
     }
 
     private IIndex GetIndex(string indexName)
-    {
-        if (examineManager.TryGetIndex(indexName, out IIndex? index) is false)
-        {
-            throw new Exception($"The index {indexName} could not be found.");
-        }
-        return index;
-    }
+        => _examineManager.TryGetIndex(indexName, out IIndex? index)
+            ? index
+            : throw new ArgumentException($"The index {indexName} could not be found.", nameof(indexName));
 }
