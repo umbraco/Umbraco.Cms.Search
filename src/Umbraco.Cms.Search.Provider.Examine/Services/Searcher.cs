@@ -1,4 +1,5 @@
-﻿using Examine;
+﻿using System.Reflection;
+using Examine;
 using Examine.Lucene;
 using Examine.Search;
 using Umbraco.Cms.Core;
@@ -38,7 +39,7 @@ public class Searcher : IExamineSearcher
             return Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
         }
 
-        var searchQuery = index.Searcher
+        IBooleanOperation searchQuery = index.Searcher
             .CreateQuery()
             .Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}",
                 $"{culture ?? "none"}".TransformDashes())
@@ -55,14 +56,14 @@ public class Searcher : IExamineSearcher
             searchQuery.And().Group(nestedQuery =>
             {
                 var transformedQuery = query.TransformDashes();
-                var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR1}",
+                INestedBooleanOperation fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR1}",
                     transformedQuery.Boost(4));
                 fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR2}",
                     transformedQuery.Boost(3));
                 fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR3}",
                     transformedQuery.Boost(2));
                 fieldQuery.Or().ManagedQuery(transformedQuery);
-                fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}aggregated_texts", transformedQuery.Escape());
+                fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.AggregatedTexts}", transformedQuery.Escape());
 
                 return fieldQuery;
             });
@@ -108,12 +109,11 @@ public class Searcher : IExamineSearcher
         }
         else
         {
-            var keys =
-                $"{Guid.Empty.ToString().TransformDashes()} {accessContext.PrincipalId.ToString().TransformDashes()}";
+            var keys = $"{Guid.Empty.ToString().TransformDashes()} {accessContext.PrincipalId.ToString().TransformDashes()}";
 
             if (accessContext.GroupIds is not null)
             {
-                foreach (var id in accessContext.GroupIds)
+                foreach (Guid id in accessContext.GroupIds)
                 {
                     keys += $" {id.ToString().TransformDashes()}";
                 }
@@ -131,9 +131,9 @@ public class Searcher : IExamineSearcher
         }
 
         // TODO: Handling of multiple sorters, does this hold up?
-        foreach (var sorter in sorters)
+        foreach (Sorter sorter in sorters)
         {
-            var sortableField = MapSorter(sorter);
+            SortableField? sortableField = MapSorter(sorter);
             if (sortableField is null)
             {
                 continue;
@@ -176,7 +176,7 @@ public class Searcher : IExamineSearcher
             return;
         }
 
-        foreach (var filter in filters)
+        foreach (Filter filter in filters)
         {
             switch (filter)
             {
@@ -212,7 +212,7 @@ public class Searcher : IExamineSearcher
                         searchQuery.And().Group(nestedQuery =>
                         {
                             var textFilterValue = string.Join(" ", textFilter.Values).TransformDashes();
-                            var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", textFilterValue.MultipleCharacterWildcard());
+                            INestedBooleanOperation fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", textFilterValue.MultipleCharacterWildcard());
                             fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR1}", textFilterValue.MultipleCharacterWildcard());
                             fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR2}", textFilterValue.MultipleCharacterWildcard());
                             return fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR3}", textFilterValue.MultipleCharacterWildcard());
@@ -223,7 +223,7 @@ public class Searcher : IExamineSearcher
                         searchQuery.And().Group(nestedQuery =>
                         {
                             var textFilterValue = string.Join(" ", textFilter.Values).TransformDashes();
-                            var fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", textFilterValue);
+                            INestedBooleanOperation fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", textFilterValue);
                             fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR1}", textFilterValue);
                             fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR2}", textFilterValue);
                             return fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR3}", textFilterValue);
@@ -364,14 +364,13 @@ public class Searcher : IExamineSearcher
 
     private Facet MergeRangeFacets(IEnumerable<Facet> facets)
     {
-        var first = facets.First();
-        var type = first.GetType();
+        Facet first = facets.First();
+        Type type = first.GetType();
 
-        // Get the "Ranges" property via reflection
-        var rangesProperty = type.GetProperty("Ranges")!;
+        PropertyInfo rangesProperty = type.GetProperty("Ranges")!;
         var allRanges = facets
             .SelectMany(f => (IEnumerable<object>)rangesProperty.GetValue(f)!)
-            .Distinct() // records give value-based equality
+            .Distinct()
             .ToArray();
 
         // Construct new facet with FieldName + merged ranges
@@ -381,11 +380,11 @@ public class Searcher : IExamineSearcher
 
     private static Document? MapToDocument(ISearchResult item)
     {
-        var objectTypeString = item.Values.GetValueOrDefault("__IndexType");
+        var objectTypeString = item.Values.GetValueOrDefault($"__{Constants.Fields.IndexType}");
 
         Enum.TryParse(objectTypeString, out UmbracoObjectTypes umbracoObjectType);
 
-        if (Guid.TryParse(item.Id, out var guidId))
+        if (Guid.TryParse(item.Id, out Guid guidId))
         {
             return new Document(guidId, umbracoObjectType);
         }
@@ -393,36 +392,36 @@ public class Searcher : IExamineSearcher
         // The id of an item may be appended with _{culture_{segment}, so strip those and map to guid.
         var indexofUnderscore = item.Id.IndexOf('_');
         var idWithOutCulture = item.Id.Remove(indexofUnderscore);
-        return Guid.TryParse(idWithOutCulture, out var idWithoutCultureGuid)
+        return Guid.TryParse(idWithOutCulture, out Guid idWithoutCultureGuid)
             ? new Document(idWithoutCultureGuid, umbracoObjectType)
             : null;
     }
 
     private IEnumerable<FacetResult> MapFacets(ISearchResults searchResults, IEnumerable<Facet> queryFacets)
     {
-        foreach (var facet in queryFacets)
+        foreach (Facet facet in queryFacets)
         {
             switch (facet)
             {
                 case IntegerRangeFacet integerRangeFacet:
                 {
-                    var integerRangeFacetResult = integerRangeFacet.Ranges.Select(x =>
+                    IEnumerable<IntegerRangeFacetValue> integerRangeFacetResult = integerRangeFacet.Ranges.Select(x =>
                     {
-                        int value = GetFacetCount($"Umb_{facet.FieldName}_integers", x.Key, searchResults);
+                        int value = GetFacetCount($"{Constants.Fields.FieldPrefix}{facet.FieldName}_{Constants.Fields.Integers}", x.Key, searchResults);
                         return new IntegerRangeFacetValue(x.Key, x.MinValue, x.MaxValue, value);
                     });
                     yield return new FacetResult(facet.FieldName, integerRangeFacetResult);
                     break;
                 }
                 case IntegerExactFacet integerExactFacet:
-                    var examineIntegerFacets = searchResults.GetFacet($"Umb_{integerExactFacet.FieldName}_integers");
+                    IFacetResult? examineIntegerFacets = searchResults.GetFacet($"{Constants.Fields.FieldPrefix}{integerExactFacet.FieldName}_{Constants.Fields.Integers}");
                     if (examineIntegerFacets is null)
                     {
                         continue;
                     }
 
                     var integerExactFacetValues = new List<IntegerExactFacetValue>();
-                    foreach (var integerExactFacetValue in examineIntegerFacets)
+                    foreach (IFacetValue integerExactFacetValue in examineIntegerFacets)
                     {
                         if (int.TryParse(integerExactFacetValue.Label, out var labelValue) is false)
                         {
@@ -435,15 +434,15 @@ public class Searcher : IExamineSearcher
                     yield return new FacetResult(facet.FieldName, integerExactFacetValues.OrderBy(x => x.Key));
                     break;
                 case DecimalRangeFacet decimalRangeFacet:
-                    var decimalRangeFacetResult = decimalRangeFacet.Ranges.Select(x =>
+                    IEnumerable<DecimalRangeFacetValue> decimalRangeFacetResult = decimalRangeFacet.Ranges.Select(x =>
                     {
-                        int value = GetFacetCount($"Umb_{facet.FieldName}_decimals", x.Key, searchResults);
+                        int value = GetFacetCount($"{Constants.Fields.FieldPrefix}{facet.FieldName}_{Constants.Fields.Decimals}", x.Key, searchResults);
                         return new DecimalRangeFacetValue(x.Key, x.MinValue, x.MaxValue, value);
                     });
                     yield return new FacetResult(facet.FieldName, decimalRangeFacetResult);
                     break;
                 case DecimalExactFacet decimalExactFacet:
-                    var examineDecimalFacets = searchResults.GetFacet($"Umb_{decimalExactFacet.FieldName}_decimals");
+                    IFacetResult? examineDecimalFacets = searchResults.GetFacet($"{Constants.Fields.FieldPrefix}{decimalExactFacet.FieldName}_{Constants.Fields.Decimals}");
                     if (examineDecimalFacets is null)
                     {
                         continue;
@@ -451,7 +450,7 @@ public class Searcher : IExamineSearcher
 
                     var decimalExactFacetValues = new List<DecimalExactFacetValue>();
 
-                    foreach (var decimalExactFacetValue in examineDecimalFacets)
+                    foreach (IFacetValue decimalExactFacetValue in examineDecimalFacets)
                     {
                         if (decimal.TryParse(decimalExactFacetValue.Label, out var labelValue) is false)
                         {
@@ -464,7 +463,7 @@ public class Searcher : IExamineSearcher
                     yield return new FacetResult(facet.FieldName, decimalExactFacetValues.OrderBy(x => x.Key));
                     break;
                  case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
-                    var dateTimeOffsetRangeFacetResult = dateTimeOffsetRangeFacet.Ranges.Select(x =>
+                    IEnumerable<DateTimeOffsetRangeFacetValue> dateTimeOffsetRangeFacetResult = dateTimeOffsetRangeFacet.Ranges.Select(x =>
                     {
                         int value = GetFacetCount($"Umb_{facet.FieldName}_datetimeoffsets", x.Key, searchResults);
                         return new DateTimeOffsetRangeFacetValue(x.Key, x.MinValue, x.MaxValue, value);
@@ -472,7 +471,7 @@ public class Searcher : IExamineSearcher
                     yield return new FacetResult(facet.FieldName, dateTimeOffsetRangeFacetResult);
                     break;
                  case DateTimeOffsetExactFacet dateTimeOffsetExactFacet:
-                    var examineDatetimeFacets = searchResults.GetFacet($"Umb_{dateTimeOffsetExactFacet.FieldName}_datetimeoffsets");
+                    IFacetResult? examineDatetimeFacets = searchResults.GetFacet($"{Constants.Fields.FieldPrefix}{dateTimeOffsetExactFacet.FieldName}_{Constants.Fields.DateTimeOffsets}");
                     if (examineDatetimeFacets is null)
                     {
                         continue;
@@ -480,20 +479,20 @@ public class Searcher : IExamineSearcher
 
                     var datetimeOffsetExactFacetValues = new List<DateTimeOffsetExactFacetValue>();
 
-                    foreach (var datetimeExactFacetValue in examineDatetimeFacets)
+                    foreach (IFacetValue datetimeExactFacetValue in examineDatetimeFacets)
                     {
                         if (long.TryParse(datetimeExactFacetValue.Label, out var ticks) is false)
                         {
                             // Cannot convert the label to ticks (long), skipping.
                             continue;
                         }
-                        var offSet = new DateTimeOffset().AddTicks(ticks);
+                        DateTimeOffset offSet = new DateTimeOffset().AddTicks(ticks);
                         datetimeOffsetExactFacetValues.Add(new DateTimeOffsetExactFacetValue(offSet, (int)datetimeExactFacetValue.Value));
                     }
                     yield return new FacetResult(facet.FieldName, datetimeOffsetExactFacetValues.OrderBy(x => x.Key));
                     break;
                 case KeywordFacet keywordFacet:
-                    var examineKeywordFacets = searchResults.GetFacet($"Umb_{keywordFacet.FieldName}_keywords");
+                    IFacetResult? examineKeywordFacets = searchResults.GetFacet($"{Constants.Fields.FieldPrefix}{keywordFacet.FieldName}_{Constants.Fields.Keywords}");
                     if (examineKeywordFacets is null)
                     {
                         continue;

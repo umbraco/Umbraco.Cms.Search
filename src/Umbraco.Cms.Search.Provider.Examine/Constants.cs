@@ -17,6 +17,7 @@ internal static class Constants
         public const string Culture = "culture";
         public const string Segment = "segment";
         public const string AggregatedTexts = "aggregated_texts";
+        public const string IndexType = "IndexType";
 
         public static class SystemFields
         {
