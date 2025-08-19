@@ -30,13 +30,20 @@ internal sealed class Searcher : IExamineSearcher
         _fieldOptions = fieldOptions.Value;
     }
 
-    public Task<SearchResult> SearchAsync(string indexAlias, string? query, IEnumerable<Filter>? filters,
-        IEnumerable<Facet>? facets, IEnumerable<Sorter>? sorters,
-        string? culture, string? segment, AccessContext? accessContext, int skip, int take)
+    public Task<SearchResult> SearchAsync(
+        string indexAlias,
+        string? query,
+        IEnumerable<Filter>? filters,
+        IEnumerable<Facet>? facets,
+        IEnumerable<Sorter>? sorters,
+        string? culture,
+        string? segment,
+        AccessContext? accessContext,
+        int skip,
+        int take)
     {
         // Special case if no parameters are provided, return an empty list.
-        if (query is null && filters is null && facets is null && sorters is null && culture is null &&
-            segment is null && accessContext is null)
+        if (query is null && filters is null && facets is null && sorters is null && culture is null && segment is null && accessContext is null)
         {
             return Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
         }
@@ -48,11 +55,9 @@ internal sealed class Searcher : IExamineSearcher
 
         IBooleanOperation searchQuery = index.Searcher
             .CreateQuery()
-            .Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}",
-                $"{culture ?? "none"}".TransformDashes())
+            .Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}", $"{culture ?? "none"}".TransformDashes())
             .And()
-            .Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}",
-                $"{segment ?? "none"}".TransformDashes());
+            .Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}", $"{segment ?? "none"}".TransformDashes());
 
 
         if (query is not null)
@@ -62,13 +67,11 @@ internal sealed class Searcher : IExamineSearcher
             // We luckily can also query on the aggregated text field, to assure that these cases also gets included.
             searchQuery.And().Group(nestedQuery =>
             {
-                var transformedQuery = query.TransformDashes();
-                INestedBooleanOperation fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR1}",
-                    transformedQuery.Boost(4));
-                fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR2}",
-                    transformedQuery.Boost(3));
-                fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR3}",
-                    transformedQuery.Boost(2));
+                var paddedQuery = PadQuery(query);
+                var transformedQuery = paddedQuery.TransformDashes();
+                INestedBooleanOperation fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR1}", transformedQuery.Boost(4));
+                fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR2}", transformedQuery.Boost(3));
+                fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR3}", transformedQuery.Boost(2));
                 fieldQuery.Or().ManagedQuery(transformedQuery);
                 fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.AggregatedTexts}", transformedQuery.Escape());
 
@@ -123,6 +126,22 @@ internal sealed class Searcher : IExamineSearcher
         Document[] searchResultDocuments = searchResults.Select(MapToDocument).WhereNotNull().ToArray();
 
         return Task.FromResult(new SearchResult(results.TotalItemCount, searchResultDocuments, facetResults));
+    }
+
+    private string PadQuery(string query)
+    {
+        if (query.Length > 3)
+        {
+            return query;
+        }
+
+        var padding = string.Empty;
+        for (var i = query.Length; i < 4; i++)
+        {
+            padding += " ";
+        }
+
+        return query + padding;
     }
 
     private void AddProtection(IBooleanOperation searchQuery, AccessContext? accessContext)
@@ -185,8 +204,7 @@ internal sealed class Searcher : IExamineSearcher
         {
             IntegerSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Integers}", SortType.Int),
             DecimalSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Decimals}", SortType.Double),
-            DateTimeOffsetSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.DateTimeOffsets}",
-                SortType.Long),
+            DateTimeOffsetSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.DateTimeOffsets}", SortType.Long),
             KeywordSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Keywords}", SortType.String),
             TextSorter => new SortableField($"{fieldNamePrefix}_{Constants.Fields.Texts}", SortType.String),
             ScoreSorter => null,
@@ -363,7 +381,8 @@ internal sealed class Searcher : IExamineSearcher
                             $"{Constants.Fields.FieldPrefix}{dateTimeOffsetRangeFacet.FieldName}_{Constants.Fields.DateTimeOffsets}",
                             dateTimeOffsetRangeFacet.Ranges.Select(x => new Int64Range(
                                 x.Key,
-                                x.MinValue?.Ticks ?? DateTime.MinValue.Ticks, true,
+                                x.MinValue?.Ticks ?? DateTime.MinValue.Ticks,
+                                true,
                                 x.MaxValue?.Ticks ?? DateTime.MaxValue.Ticks,
                                 false))
                                 .ToArray());
