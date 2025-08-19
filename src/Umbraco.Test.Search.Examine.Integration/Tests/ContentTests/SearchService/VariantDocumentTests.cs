@@ -54,8 +54,8 @@ public class VariantDocumentTests : SearcherTestBase
 
     [TestCase(true, "en-US", "Root")]
     [TestCase(false, "en-US", "Root")]
-    [TestCase(true, "da-DK", "Rod")]
-    [TestCase(false, "da-DK", "Rod")]
+    [TestCase(true, "da-DK", "Roden")]
+    [TestCase(false, "da-DK", "Roden")]
     [TestCase(true, "ja-JP", "ル-ト")]
     [TestCase(false, "ja-JP", "ル-ト")]
     public async Task CanSearchVariantTextByCulture(bool publish, string culture, string expectedValue)

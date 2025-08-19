@@ -67,8 +67,7 @@ internal sealed class Searcher : IExamineSearcher
             // We luckily can also query on the aggregated text field, to assure that these cases also gets included.
             searchQuery.And().Group(nestedQuery =>
             {
-                var paddedQuery = PadQuery(query);
-                var transformedQuery = paddedQuery.TransformDashes();
+                var transformedQuery = query.TransformDashes();
                 INestedBooleanOperation fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR1}", transformedQuery.Boost(4));
                 fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR2}", transformedQuery.Boost(3));
                 fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR3}", transformedQuery.Boost(2));
@@ -126,22 +125,6 @@ internal sealed class Searcher : IExamineSearcher
         Document[] searchResultDocuments = searchResults.Select(MapToDocument).WhereNotNull().ToArray();
 
         return Task.FromResult(new SearchResult(results.TotalItemCount, searchResultDocuments, facetResults));
-    }
-
-    private string PadQuery(string query)
-    {
-        if (query.Length > 3)
-        {
-            return query;
-        }
-
-        var padding = string.Empty;
-        for (var i = query.Length; i < 4; i++)
-        {
-            padding += " ";
-        }
-
-        return query + padding;
     }
 
     private void AddProtection(IBooleanOperation searchQuery, AccessContext? accessContext)
