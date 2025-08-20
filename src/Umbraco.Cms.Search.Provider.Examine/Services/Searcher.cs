@@ -179,7 +179,7 @@ internal sealed class Searcher : IExamineSearcher
 
     private SortableField[] MapSorter(Sorter sorter)
     {
-        var fieldNamePrefix = sorter.FieldName.StartsWith(Constants.Fields.FieldPrefix)
+        var fieldNamePrefix = sorter.FieldName.StartsWith(Constants.Fields.FieldPrefix) || sorter.FieldName.StartsWith(Constants.Fields.SystemFieldPrefix)
             ? $"{sorter.FieldName}"
             : $"{Constants.Fields.FieldPrefix}{sorter.FieldName}";
 
@@ -213,7 +213,7 @@ internal sealed class Searcher : IExamineSearcher
             {
                 case KeywordFilter keywordFilter:
                     var keywordFilterValues = keywordFilter.Values;
-                    var keywordFieldName = keywordFilter.FieldName.StartsWith(Constants.Fields.FieldPrefix)
+                    var keywordFieldName = keywordFilter.FieldName.StartsWith(Constants.Fields.FieldPrefix) || keywordFilter.FieldName.StartsWith(Constants.Fields.SystemFieldPrefix)
                         ? $"{keywordFilter.FieldName}_{Constants.Fields.Keywords}"
                         : $"{Constants.Fields.FieldPrefix}{keywordFilter.FieldName}_{Constants.Fields.Keywords}";
 
@@ -490,15 +490,15 @@ internal sealed class Searcher : IExamineSearcher
 
                     yield return new FacetResult(facet.FieldName, decimalExactFacetValues.OrderBy(x => x.Key));
                     break;
-                 case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
+                case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
                     IEnumerable<DateTimeOffsetRangeFacetValue> dateTimeOffsetRangeFacetResult = dateTimeOffsetRangeFacet.Ranges.Select(x =>
                     {
-                        int value = GetFacetCount($"Umb_{facet.FieldName}_datetimeoffsets", x.Key, searchResults);
+                        int value = GetFacetCount($"{Constants.Fields.FieldPrefix}{facet.FieldName}_{Constants.Fields.DateTimeOffsets}", x.Key, searchResults);
                         return new DateTimeOffsetRangeFacetValue(x.Key, x.MinValue, x.MaxValue, value);
                     });
                     yield return new FacetResult(facet.FieldName, dateTimeOffsetRangeFacetResult);
                     break;
-                 case DateTimeOffsetExactFacet dateTimeOffsetExactFacet:
+                case DateTimeOffsetExactFacet dateTimeOffsetExactFacet:
                     IFacetResult? examineDatetimeFacets = searchResults.GetFacet($"{Constants.Fields.FieldPrefix}{dateTimeOffsetExactFacet.FieldName}_{Constants.Fields.DateTimeOffsets}");
                     if (examineDatetimeFacets is null)
                     {
@@ -514,9 +514,11 @@ internal sealed class Searcher : IExamineSearcher
                             // Cannot convert the label to ticks (long), skipping.
                             continue;
                         }
+
                         DateTimeOffset offSet = new DateTimeOffset().AddTicks(ticks);
                         datetimeOffsetExactFacetValues.Add(new DateTimeOffsetExactFacetValue(offSet, (int)datetimeExactFacetValue.Value));
                     }
+
                     yield return new FacetResult(facet.FieldName, datetimeOffsetExactFacetValues.OrderBy(x => x.Key));
                     break;
                 case KeywordFacet keywordFacet:

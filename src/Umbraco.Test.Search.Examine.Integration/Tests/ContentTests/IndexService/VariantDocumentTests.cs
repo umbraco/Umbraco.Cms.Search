@@ -1,10 +1,11 @@
 ﻿using Examine;
+using Examine.Search;
 using NUnit.Framework;
-using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Provider.Examine.Extensions;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
+using Constants = Umbraco.Cms.Search.Provider.Examine.Constants;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
 
@@ -14,11 +15,11 @@ public class VariantDocumentTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexAnyDocument(bool publish)
     {
-        var index = ExamineManager.GetIndex(publish
+        IIndex index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
-        var results = index.Searcher.CreateQuery().All().Execute();
+        ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results, Is.Not.Empty);
     }
 
@@ -26,16 +27,16 @@ public class VariantDocumentTests : IndexTestBase
     [TestCase(false)]
     public void CanRemoveAnyDocument(bool publish)
     {
-        var content = ContentService.GetById(RootKey)!;
+        IContent content = ContentService.GetById(RootKey)!;
         ContentService.Delete(content);
 
-        var index = ExamineManager.GetIndex(publish
+        IIndex index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         // TODO: We need to await that the index deleting has completed, for now this is our only option
         Thread.Sleep(3000);
-        var results = index.Searcher.CreateQuery().All().Execute();
+        ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results, Is.Empty);
     }
 
@@ -47,13 +48,13 @@ public class VariantDocumentTests : IndexTestBase
     [TestCase(false, "ja-JP", "名前")]
     public void CanIndexVariantName(bool publish, string culture, string expectedValue)
     {
-        var index = ExamineManager.GetIndex(publish
+        IIndex index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
-        var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField("Umb_Name_textsr1");
-        var results = queryBuilder.Execute();
+        IOrdering queryBuilder = index.Searcher.CreateQuery().All();
+        queryBuilder.SelectField($"{Constants.Fields.SystemFieldPrefix}Name_{Constants.Fields.TextsR1}");
+        ISearchResults results = queryBuilder.Execute();
         var result = results
             .SelectMany(x => x.Values.Values)
             .First(x => x == expectedValue);
@@ -61,22 +62,22 @@ public class VariantDocumentTests : IndexTestBase
         Assert.That(result, Is.EqualTo(expectedValue));
     }
 
-    [TestCase("Umb_invarianttitle_texts", "Invariant", "en-US")]
-    [TestCase("Umb_invarianttitle_texts", "Invariant", "da-DK")]
-    [TestCase("Umb_invarianttitle_texts", "Invariant", "ja-JP")]
-    [TestCase("Umb_invariantcount_integers", 12, "en-US")]
-    [TestCase("Umb_invariantcount_integers", 12, "da-DK")]
-    [TestCase("Umb_invariantcount_integers", 12, "ja-JP")]
-    [TestCase("Umb_invariantdecimalproperty_decimals", 12.4552, "en-US")]
-    [TestCase("Umb_invariantdecimalproperty_decimals", 12.4552, "da-DK")]
-    [TestCase("Umb_invariantdecimalproperty_decimals", 12.4552, "ja-JP")]
+    [TestCase($"{Constants.Fields.FieldPrefix}invarianttitle_{Constants.Fields.Texts}", "Invariant", "en-US")]
+    [TestCase($"{Constants.Fields.FieldPrefix}invarianttitle_{Constants.Fields.Texts}", "Invariant", "da-DK")]
+    [TestCase($"{Constants.Fields.FieldPrefix}invarianttitle_{Constants.Fields.Texts}", "Invariant", "ja-JP")]
+    [TestCase($"{Constants.Fields.FieldPrefix}invariantcount_{Constants.Fields.Integers}", 12, "en-US")]
+    [TestCase($"{Constants.Fields.FieldPrefix}invariantcount_{Constants.Fields.Integers}", 12, "da-DK")]
+    [TestCase($"{Constants.Fields.FieldPrefix}invariantcount_{Constants.Fields.Integers}", 12, "ja-JP")]
+    [TestCase($"{Constants.Fields.FieldPrefix}invariantdecimalproperty_{Constants.Fields.Decimals}", 12.4552, "en-US")]
+    [TestCase($"{Constants.Fields.FieldPrefix}invariantdecimalproperty_{Constants.Fields.Decimals}", 12.4552, "da-DK")]
+    [TestCase($"{Constants.Fields.FieldPrefix}invariantdecimalproperty_{Constants.Fields.Decimals}", 12.4552, "ja-JP")]
     public void CanIndexInvariantProperty(string field, object value, string culture)
     {
-        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
-        var queryBuilder = index.Searcher.CreateQuery().All();
+        IOrdering queryBuilder = index.Searcher.CreateQuery().All();
         queryBuilder.SelectField(field);
-        var results = queryBuilder.Execute();
+        ISearchResults results = queryBuilder.Execute();
         var result = results
             .SelectMany(x => x.Values.Values)
             .First(x => x == value.ToString());
@@ -91,11 +92,11 @@ public class VariantDocumentTests : IndexTestBase
     {
         UpdateProperty(propertyName, updatedValue, culture);
 
-        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
-        var results = index.Searcher.Search(updatedValue);
+        ISearchResults results = index.Searcher.Search(updatedValue);
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == $"Umb_{propertyName}_texts").Value, Is.EqualTo(updatedValue));
+        Assert.That(results.First().Values.First(x => x.Key == $"{Constants.Fields.FieldPrefix}{propertyName}_{Constants.Fields.Texts}").Value, Is.EqualTo(updatedValue));
     }
 
     [TestCase(true, "en-US", "Root")]
@@ -106,13 +107,13 @@ public class VariantDocumentTests : IndexTestBase
     [TestCase(false, "ja-JP", "ル-ト")]
     public void CanIndexVariantTextByCulture(bool publish, string culture, string expectedValue)
     {
-        var index = ExamineManager.GetIndex(publish
+        IIndex index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
-        var queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField("Umb_title_texts");
-        var results = queryBuilder.Execute();
+        IOrdering queryBuilder = index.Searcher.CreateQuery().All();
+        queryBuilder.SelectField($"{Constants.Fields.FieldPrefix}title_{Constants.Fields.Texts}");
+        ISearchResults results = queryBuilder.Execute();
 
         var result = results
             .SelectMany(x => x.Values.Values)
@@ -129,78 +130,78 @@ public class VariantDocumentTests : IndexTestBase
     [TestCase(false, "ja-JP", "segment-2", "ボディ-segment-2")]
     public void CanIndexVariantTextBySegment(bool publish, string culture, string segment, string expectedValue)
     {
-        var index = ExamineManager.GetIndex(publish
+        IIndex index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
-        var results = index.Searcher.Search(expectedValue);
+        ISearchResults results = index.Searcher.Search(expectedValue);
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == "Umb_body_texts").Value, Is.EqualTo(expectedValue.TransformDashes()));
+        Assert.That(results.First().Values.First(x => x.Key == $"{Constants.Fields.FieldPrefix}body_{Constants.Fields.Texts}").Value, Is.EqualTo(expectedValue.TransformDashes()));
     }
 
     [SetUp]
     public void CreateVariantDocument()
     {
 
-        var dataType = new DataTypeBuilder()
+        DataType dataType = new DataTypeBuilder()
             .WithId(0)
             .WithoutIdentity()
             .WithDatabaseType(ValueStorageType.Decimal)
             .AddEditor()
-            .WithAlias(Constants.PropertyEditors.Aliases.Decimal)
+            .WithAlias(Cms.Core.Constants.PropertyEditors.Aliases.Decimal)
             .Done()
             .Build();
 
         DataTypeService.Save(dataType);
 
-        var langDk = new LanguageBuilder()
+        ILanguage langDk = new LanguageBuilder()
             .WithCultureInfo("da-DK")
             .WithIsDefault(true)
             .Build();
-        var langJp = new LanguageBuilder()
+        ILanguage langJp = new LanguageBuilder()
             .WithCultureInfo("ja-JP")
             .Build();
 
         LocalizationService.Save(langDk);
         LocalizationService.Save(langJp);
 
-        var contentType = new ContentTypeBuilder()
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("variant")
             .WithContentVariation(ContentVariation.CultureAndSegment)
             .AddPropertyType()
             .WithAlias("title")
             .WithVariations(ContentVariation.Culture)
-            .WithDataTypeId(Constants.DataTypes.Textbox)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .WithDataTypeId(Cms.Core.Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Cms.Core.Constants.PropertyEditors.Aliases.TextBox)
             .Done()
             .AddPropertyType()
             .WithAlias("invarianttitle")
             .WithVariations(ContentVariation.Nothing)
-            .WithDataTypeId(Constants.DataTypes.Textbox)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .WithDataTypeId(Cms.Core.Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Cms.Core.Constants.PropertyEditors.Aliases.TextBox)
             .Done()
             .AddPropertyType()
             .WithAlias("invariantcount")
             .WithVariations(ContentVariation.Nothing)
             .WithDataTypeId(-51)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
+            .WithPropertyEditorAlias(Cms.Core.Constants.PropertyEditors.Aliases.Integer)
             .Done()
             .AddPropertyType()
             .WithAlias("invariantdecimalproperty")
             .WithVariations(ContentVariation.Nothing)
             .WithDataTypeId(dataType.Id)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Decimal)
+            .WithPropertyEditorAlias(Cms.Core.Constants.PropertyEditors.Aliases.Decimal)
             .Done()
             .AddPropertyType()
             .WithAlias("body")
             .WithVariations(ContentVariation.CultureAndSegment)
-            .WithDataTypeId(Constants.DataTypes.Textbox)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .WithDataTypeId(Cms.Core.Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Cms.Core.Constants.PropertyEditors.Aliases.TextBox)
             .Done()
             .Build();
         ContentTypeService.Save(contentType);
 
-        var root = new ContentBuilder()
+        Content root = new ContentBuilder()
             .WithKey(RootKey)
             .WithContentType(contentType)
             .WithCultureName("en-US", "Name")
@@ -226,14 +227,14 @@ public class VariantDocumentTests : IndexTestBase
         ContentService.Publish(root, new []{ "*"});
         Thread.Sleep(3000);
 
-        var content = ContentService.GetById(RootKey);
+        IContent? content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);
     }
 
 
     private void UpdateProperty(string propertyName, object value, string culture)
     {
-        var content = ContentService.GetById(RootKey)!;
+        IContent content = ContentService.GetById(RootKey)!;
         content.SetValue(propertyName, value, culture);
 
         ContentService.Save(content);

@@ -3,35 +3,38 @@ using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Services.OperationStatus;
 using Umbraco.Cms.Search.Provider.Examine.Extensions;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
+using Constants = Umbraco.Cms.Search.Provider.Examine.Constants;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
 
 public class InvariantDocumentProtectionIndexTests : IndexTestBase
 {
     private IPublicAccessService PublicAccessService => GetRequiredService<IPublicAccessService>();
+
     private IMemberGroupService MemberGroupService => GetRequiredService<IMemberGroupService>();
 
     [Test]
     public async Task CanIndexContentProtection()
     {
-        var result = await MemberGroupService.CreateAsync(new MemberGroup() {Name = "testGroup"});
+        Attempt<IMemberGroup?, MemberGroupOperationStatus> result = await MemberGroupService.CreateAsync(new MemberGroup { Name = "testGroup" });
         await PublicAccessService.CreateAsync(
             new PublicAccessEntrySlim
             {
                 ErrorPageId = RootKey,
                 LoginPageId = RootKey,
                 ContentId = RootKey,
-                MemberGroupNames = ["testGroup"]
+                MemberGroupNames = ["testGroup"],
             });
         Thread.Sleep(3000);
 
-        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
-        var results = index.Searcher.CreateQuery().All().Execute();
-        var indexedAccessKeys = results.First().AllValues.First(x => x.Key == "Umb_protection").Value;
+        ISearchResults results = index.Searcher.CreateQuery().All().Execute();
+        IReadOnlyList<string> indexedAccessKeys = results.First().AllValues.First(x => x.Key == $"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}").Value;
         Assert.That(indexedAccessKeys, Has.Count.EqualTo(1));
         Assert.That(indexedAccessKeys, Has.Member(result.Result!.Key.ToString().TransformDashes()));
     }
@@ -39,11 +42,11 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
     [Test]
     public async Task CanIndexMultipleContentProtection()
     {
-        var group = await MemberGroupService.CreateAsync(new MemberGroup {Name = "testGroup"});
-        var group2 = await MemberGroupService.CreateAsync(new MemberGroup {Name = "testGroup 2"});
-        var group3 = await MemberGroupService.CreateAsync(new MemberGroup {Name = "testGroup 3"});
-        var group4 = await MemberGroupService.CreateAsync(new MemberGroup {Name = "testGroup 4"});
-        var group5 = await MemberGroupService.CreateAsync(new MemberGroup {Name = "testGroup 5"});
+        Attempt<IMemberGroup?, MemberGroupOperationStatus> group = await MemberGroupService.CreateAsync(new MemberGroup { Name = "testGroup" });
+        Attempt<IMemberGroup?, MemberGroupOperationStatus> group2 = await MemberGroupService.CreateAsync(new MemberGroup { Name = "testGroup 2" });
+        Attempt<IMemberGroup?, MemberGroupOperationStatus> group3 = await MemberGroupService.CreateAsync(new MemberGroup { Name = "testGroup 3" });
+        Attempt<IMemberGroup?, MemberGroupOperationStatus> group4 = await MemberGroupService.CreateAsync(new MemberGroup { Name = "testGroup 4" });
+        Attempt<IMemberGroup?, MemberGroupOperationStatus> group5 = await MemberGroupService.CreateAsync(new MemberGroup { Name = "testGroup 5" });
         await PublicAccessService.CreateAsync(
             new PublicAccessEntrySlim
             {
@@ -54,10 +57,10 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
             });
         Thread.Sleep(3000);
 
-        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
-        var results = index.Searcher.CreateQuery().All().Execute();
-        var indexedAccessKeys = results.First().AllValues.First(x => x.Key == "Umb_protection").Value;
+        ISearchResults results = index.Searcher.CreateQuery().All().Execute();
+        IReadOnlyList<string> indexedAccessKeys = results.First().AllValues.First(x => x.Key == $"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}").Value;
         Assert.That(indexedAccessKeys, Has.Count.EqualTo(5));
         Assert.That(indexedAccessKeys, Has.Member(group.Result!.Key.ToString().TransformDashes()));
         Assert.That(indexedAccessKeys, Has.Member(group2.Result!.Key.ToString().TransformDashes()));
@@ -69,26 +72,26 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
     [Test]
     public void DoesNotIndexContentProtectionIfNoneExists()
     {
-        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
-        var results = index.Searcher.CreateQuery().All().Execute();
-        Assert.That(results.First().AllValues.SelectMany(x => x.Value), Does.Not.Contain("umb_protection"));
+        ISearchResults results = index.Searcher.CreateQuery().All().Execute();
+        Assert.That(results.First().AllValues.SelectMany(x => x.Value), Does.Not.Contain($"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}"));
     }
 
     [SetUp]
     public void CreateInvariantDocument()
     {
-        var contentType = new ContentTypeBuilder()
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
             .AddPropertyType()
             .WithAlias("title")
-            .WithDataTypeId(Constants.DataTypes.Textbox)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .WithDataTypeId(Umbraco.Cms.Core.Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Umbraco.Cms.Core.Constants.PropertyEditors.Aliases.TextBox)
             .Done()
             .Build();
         ContentTypeService.Save(contentType);
 
-        var root = new ContentBuilder()
+        Content root = new ContentBuilder()
             .WithKey(RootKey)
             .WithContentType(contentType)
             .WithName("Root")
@@ -101,7 +104,7 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
 
         SaveAndPublish(root);
 
-        var content = ContentService.GetById(RootKey);
+        IContent? content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);
     }
 }

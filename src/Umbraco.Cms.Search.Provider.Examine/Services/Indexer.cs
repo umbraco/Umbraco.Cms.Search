@@ -98,7 +98,7 @@ internal sealed class Indexer : IExamineIndexer
 
     private void DeleteSingleDoc(IIndex index, Guid key)
     {
-        ISearchResults documents = index.Searcher.CreateQuery().Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.SystemFields.Id}_{Constants.Fields.Keywords}", key.ToString().TransformDashes()).Execute();
+        ISearchResults documents = index.Searcher.CreateQuery().Field($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.Id}_{Constants.Fields.Keywords}", key.ToString().TransformDashes()).Execute();
 
         var idsToDelete = new HashSet<string>();
 
@@ -120,7 +120,7 @@ internal sealed class Indexer : IExamineIndexer
 
         foreach (Guid key in keys)
         {
-            ISearchResults documents = index.Searcher.CreateQuery().Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.SystemFields.PathIds}_{Constants.Fields.Keywords}", key.ToString().TransformDashes()).Execute();
+            ISearchResults documents = index.Searcher.CreateQuery().Field($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.PathIds}_{Constants.Fields.Keywords}", key.ToString().TransformDashes()).Execute();
             foreach (ISearchResult document in documents)
             {
                 idsToDelete.Add(document.Id);
@@ -230,10 +230,11 @@ internal sealed class Indexer : IExamineIndexer
     private string CalculateFieldName(IndexField field, string property)
     {
         var result = $"{field.FieldName}";
-        if (result.StartsWith(Constants.Fields.FieldPrefix) is false)
+        if (result.StartsWith(Constants.Fields.FieldPrefix) is false && result.StartsWith(Constants.Fields.SystemFieldPrefix) is false)
         {
             result = Constants.Fields.FieldPrefix + result;
         }
+
         return result + $"_{property}";
     }
 

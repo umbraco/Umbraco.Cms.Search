@@ -4,7 +4,7 @@ internal static class Constants
 {
     public static class Fields
     {
-        public const string FieldPrefix = "Umb_";
+        public const string FieldPrefix = "ExaminePrefix_";
         public const string SystemFieldPrefix = "Umb_";
         public const string KeywordFieldPostfix = "_raw";
 

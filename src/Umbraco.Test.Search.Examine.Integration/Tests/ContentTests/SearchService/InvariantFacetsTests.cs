@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 using Umbraco.Cms.Search.Provider.Examine.Extensions;
 using Umbraco.Cms.Tests.Common.Builders;
@@ -110,7 +111,8 @@ public class InvariantFacetsTests : SearcherTestBase
         await CreateDatetimeDocuments([new DateTime(2025, 06, 06), new DateTime(2025, 02, 01), new DateTime(2024, 01, 01)]);
 
         var indexAlias = GetIndexAlias(publish);
-        var result = await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new DateTimeOffsetRangeFacet("datetime", new []{ new DateTimeOffsetRangeFacetRange("Below 100", new DateTime(2025, 01, 01), null)})}, null, null, null, null, 0, 100);
+        SearchResult result = await Searcher.SearchAsync(indexAlias, null, null, new List<Facet>(){ new DateTimeOffsetRangeFacet("datetime",
+            [new DateTimeOffsetRangeFacetRange("Below 100", new DateTime(2025, 01, 01), null)])}, null, null, null, null, 0, 100);
         Assert.Multiple(() =>
         {
             Assert.That(result.Facets, Is.Not.Empty);
@@ -204,9 +206,9 @@ public class InvariantFacetsTests : SearcherTestBase
     {
         await CreateDatetimeDocType();
 
-        foreach (var dateTimeOffset in values)
+        foreach (DateTimeOffset dateTimeOffset in values)
         {
-            var document = new ContentBuilder()
+            Content document = new ContentBuilder()
                 .WithContentType(ContentType)
                 .WithName($"document-{dateTimeOffset.ToString()}")
                 .WithPropertyValues(

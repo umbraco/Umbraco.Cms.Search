@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
@@ -21,10 +22,10 @@ public class VariantFilterTest : SearcherTestBase
     {
         var indexAlias = GetIndexAlias(false);
 
-        var results = await Searcher.SearchAsync(
+        SearchResult results = await Searcher.SearchAsync(
             indexAlias,
             null,
-            new List<Filter> { new KeywordFilter("Id", [RootKey.ToString()], negate)},
+            new List<Filter> { new KeywordFilter("Umb_Id", [RootKey.ToString()], negate)},
             null,
             null,
             culture,

@@ -1,16 +1,16 @@
 ﻿using Examine;
 using Examine.Search;
 using NUnit.Framework;
-using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
+using Constants = Umbraco.Cms.Search.Provider.Examine.Constants;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
 
 public class InvariantSortableIndexTests : IndexTestBase
 {
-    public IContentType ContentType { get; set; } = null!;
+    private IContentType ContentType { get; set; } = null!;
 
     [TestCase(true)]
     [TestCase(false)]
@@ -18,13 +18,12 @@ public class InvariantSortableIndexTests : IndexTestBase
     {
         await CreateTitleDocuments(["C Title", "A Title", "B Title"]);
 
-        var index = ExamineManager.GetIndex(publish
+        IIndex index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
-        var results = index.Searcher.CreateQuery().All().OrderBy(new SortableField("Umb_sortableTitle_texts", SortType.String)).Execute();
-        var values = results
-            .SelectMany(x => x.Values.Where(x => x.Key == "Umb_sortableTitle_texts")).Select(x => x.Value);
+        ISearchResults results = index.Searcher.CreateQuery().All().OrderBy(new SortableField($"{Constants.Fields.FieldPrefix}sortableTitle_{Constants.Fields.Texts}", SortType.String)).Execute();
+        var values = results.SelectMany(x => x.Values.Where(value => value.Key == $"{Constants.Fields.FieldPrefix}sortableTitle_{Constants.Fields.Texts}")).Select(x => x.Value).ToArray();
 
         Assert.Multiple(() =>
         {
@@ -41,13 +40,13 @@ public class InvariantSortableIndexTests : IndexTestBase
     {
         await CreateTitleDocuments(["C Title", "A Title", "B Title"]);
 
-        var index = ExamineManager.GetIndex(publish
+        IIndex index = ExamineManager.GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
-        var results = index.Searcher.CreateQuery().All().OrderBy(new SortableField("Umb_title_texts", SortType.String)).Execute();
+        ISearchResults results = index.Searcher.CreateQuery().All().OrderBy(new SortableField($"{Constants.Fields.FieldPrefix}title_{Constants.Fields.Texts}", SortType.String)).Execute();
         var values = results
-            .SelectMany(x => x.Values.Where(x => x.Key == "Umb_title_texts")).Select(x => x.Value);
+            .SelectMany(x => x.Values.Where(value => value.Key == $"{Constants.Fields.FieldPrefix}title_{Constants.Fields.Texts}")).Select(x => x.Value).ToArray();
 
         Assert.Multiple(() =>
         {
@@ -65,16 +64,16 @@ public class InvariantSortableIndexTests : IndexTestBase
             .WithAlias("invariant")
             .AddPropertyType()
             .WithAlias("sortableTitle")
-            .WithDataTypeId(Constants.DataTypes.Textbox)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .WithDataTypeId(Cms.Core.Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Cms.Core.Constants.PropertyEditors.Aliases.TextBox)
             .Done()
             .AddPropertyType()
             .WithAlias("title")
-            .WithDataTypeId(Constants.DataTypes.Textbox)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .WithDataTypeId(Cms.Core.Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Cms.Core.Constants.PropertyEditors.Aliases.TextBox)
             .Done()
             .Build();
-        await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
+        await ContentTypeService.CreateAsync(ContentType, Cms.Core.Constants.Security.SuperUserKey);
     }
 
     private async Task CreateTitleDocuments(string[] values)
@@ -83,7 +82,7 @@ public class InvariantSortableIndexTests : IndexTestBase
 
         foreach (var stringValue in values)
         {
-            var document = new ContentBuilder()
+            Content document = new ContentBuilder()
                 .WithContentType(ContentType)
                 .WithName($"document-{stringValue}")
                 .WithPropertyValues(
