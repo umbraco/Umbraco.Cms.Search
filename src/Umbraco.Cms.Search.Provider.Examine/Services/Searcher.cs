@@ -239,38 +239,22 @@ internal sealed class Searcher : IExamineSearcher
 
                     break;
                 case TextFilter textFilter:
+                    IExamineValue[] textFilterValue = textFilter.Values.Select(value => value.TransformDashes().MultipleCharacterWildcard()).ToArray();
+                    string[] textFields =
+                    [
+                        $"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}",
+                        $"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR1}",
+                        $"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR2}",
+                        $"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR3}",
+                    ];
+
                     if (textFilter.Negate)
                     {
-                        var negatedValue = string.Join(" ", textFilter.Values).TransformDashes();
-                        searchQuery.Not().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", negatedValue);
-                        searchQuery.Not().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR1}", negatedValue);
-                        searchQuery.Not().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR2}", negatedValue);
-                        searchQuery.Not().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR3}", negatedValue);
-                        continue;
-                    }
-
-                    // We only want to do wildcard searches IF there is just one word for now, as we can't do wildcards when joining.
-                    if (textFilter.Values.Length == 1)
-                    {
-                        searchQuery.And().Group(nestedQuery =>
-                        {
-                            var textFilterValue = string.Join(" ", textFilter.Values).TransformDashes();
-                            INestedBooleanOperation fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", textFilterValue.MultipleCharacterWildcard());
-                            fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR1}", textFilterValue.MultipleCharacterWildcard());
-                            fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR2}", textFilterValue.MultipleCharacterWildcard());
-                            return fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR3}", textFilterValue.MultipleCharacterWildcard());
-                        });
+                        searchQuery.Not().GroupedOr(textFields, textFilterValue);
                     }
                     else
                     {
-                        searchQuery.And().Group(nestedQuery =>
-                        {
-                            var textFilterValue = string.Join(" ", textFilter.Values).TransformDashes();
-                            INestedBooleanOperation fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}", textFilterValue);
-                            fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR1}", textFilterValue);
-                            fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR2}", textFilterValue);
-                            return fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR3}", textFilterValue);
-                        });
+                        searchQuery.And().GroupedOr(textFields, textFilterValue);
                     }
 
                     break;
