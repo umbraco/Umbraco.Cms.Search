@@ -10,8 +10,6 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.SearchServi
 
 public class VariantFilterTest : SearcherTestBase
 {
-
-
     [TestCase("en-US", true, 0)]
     [TestCase("en-US", false, 1)]
     [TestCase("da-DK", true, 0)]
@@ -23,16 +21,9 @@ public class VariantFilterTest : SearcherTestBase
         var indexAlias = GetIndexAlias(false);
 
         SearchResult results = await Searcher.SearchAsync(
-            indexAlias,
-            null,
-            new List<Filter> { new KeywordFilter("Umb_Id", [RootKey.ToString()], negate)},
-            null,
-            null,
-            culture,
-            null,
-            null,
-            0,
-            100);
+            indexAlias: indexAlias,
+            filters: new List<Filter> { new KeywordFilter("Umb_Id", [RootKey.ToString()], negate) },
+            culture: culture);
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
@@ -47,12 +38,10 @@ public class VariantFilterTest : SearcherTestBase
     {
         var indexAlias = GetIndexAlias(false);
 
-        var results = await Searcher.SearchAsync(
-            indexAlias,
-            null,
-            new List<Filter> { new TextFilter("title", [text], negate) },
-            null, null, culture, null, null,
-            0, 100);
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias: indexAlias,
+            filters: new List<Filter> { new TextFilter("title", [text], negate) },
+            culture: culture);
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
@@ -67,17 +56,11 @@ public class VariantFilterTest : SearcherTestBase
     {
         var indexAlias = GetIndexAlias(false);
 
-        var results = await Searcher.SearchAsync(
-            indexAlias,
-            null,
-            new List<Filter> { new TextFilter("body", [text], negate) },
-            null,
-            null,
-            culture,
-            segment,
-            null,
-            0,
-            100);
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias: indexAlias,
+            filters: new List<Filter> { new TextFilter("body", [text], negate) },
+            culture: culture,
+            segment: segment);
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
@@ -92,30 +75,28 @@ public class VariantFilterTest : SearcherTestBase
     {
         var indexAlias = GetIndexAlias(false);
 
-        var results = await Searcher.SearchAsync(
-            indexAlias,
-            null,
-            new List<Filter> { new TextFilter("invariantTitle", [text], negate) },
-            null, null, culture, null, null,
-            0, 100);
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias: indexAlias,
+            filters: new List<Filter> { new TextFilter("invariantTitle", [text], negate) },
+            culture: culture);
 
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
 
     [SetUp]
-    public void CreateVariantDocument()
+    public async Task CreateVariantDocument()
     {
-        var langDk = new LanguageBuilder()
+        ILanguage langDk = new LanguageBuilder()
             .WithCultureInfo("da-DK")
             .Build();
-        var langJp = new LanguageBuilder()
+        ILanguage langJp = new LanguageBuilder()
             .WithCultureInfo("ja-JP")
             .Build();
 
         LocalizationService.Save(langDk);
         LocalizationService.Save(langJp);
 
-        var contentType = new ContentTypeBuilder()
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("variant")
             .WithContentVariation(ContentVariation.CultureAndSegment)
             .AddPropertyType()
@@ -139,7 +120,7 @@ public class VariantFilterTest : SearcherTestBase
             .Build();
         ContentTypeService.Save(contentType);
 
-        var root = new ContentBuilder()
+        Content root = new ContentBuilder()
             .WithKey(RootKey)
             .WithContentType(contentType)
             .WithCultureName("en-US", "Name")
@@ -159,11 +140,15 @@ public class VariantFilterTest : SearcherTestBase
         root.SetValue("body", "ボディ-segment-1", "ja-JP", "segment-1");
         root.SetValue("body", "ボディ-segment-2", "ja-JP", "segment-2");
 
-        ContentService.Save(root);
-        ContentService.Publish(root, new []{ "*"});
-        Thread.Sleep(3000);
+        await WaitForIndexing(GetIndexAlias(true), () =>
+        {
+            ContentService.Save(root);
+            ContentService.Publish(root, ["*"]);
 
-        var content = ContentService.GetById(RootKey);
+            return Task.CompletedTask;
+        });
+
+        IContent? content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);
     }
 }

@@ -104,7 +104,7 @@ public class InvariantDocumentTests : IndexTestBase
             .Values
             .First(x => x.Key == $"{Constants.Fields.FieldPrefix}decimalproperty_{Constants.Fields.Decimals}")
             .Value,
-            Is.EqualTo(((double)DecimalValue).ToString(CultureInfo.InvariantCulture)));
+            Is.EqualTo(((double)DecimalValue).ToString()));
     }
 
     [TestCase(true)]
@@ -159,7 +159,7 @@ public class InvariantDocumentTests : IndexTestBase
 
 
     [SetUp]
-    public void CreateInvariantDocument()
+    public async Task CreateInvariantDocument()
     {
         DataType dataType = new DataTypeBuilder()
             .WithId(0)
@@ -212,9 +212,12 @@ public class InvariantDocumentTests : IndexTestBase
                 })
             .Build();
 
-        ContentService.Save(root);
-        ContentService.Publish(root, ["*"]);
-        Thread.Sleep(3000);
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, () =>
+        {
+            ContentService.Save(root);
+            ContentService.Publish(root, ["*"]);
+            return Task.CompletedTask;
+        });
 
         IContent? content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);

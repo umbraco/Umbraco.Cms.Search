@@ -2,6 +2,7 @@
 using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
@@ -20,36 +21,37 @@ public class VariantContentTreeTests : IndexTestBase
     private const string JapaneseGrandChildTitle = "孫タイタル";
 
     [Test]
-    public void VariantStructure_YieldsAllDocuments()
+    public async Task VariantStructure_YieldsAllDocuments()
     {
-        PublishEntireStructure();
-        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        await PublishEntireStructure();
+        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
-        var results = index.Searcher.CreateQuery().All().Execute();
+        ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         // 3 roots with 3 children with 3 grandchildren
         Assert.That(results.Count(), Is.EqualTo(3 * 3 * 3));
     }
 
     [Test]
-    public void VariantStructure_WithRootUnpublished_YieldsNoDocuments()
+    public async Task VariantStructure_WithRootUnpublished_YieldsNoDocuments()
     {
-        PublishEntireStructure();
-        var root = ContentService.GetById(RootKey)!;
-        ContentService.Unpublish(root);
+        await PublishEntireStructure();
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, () =>
+        {
+            IContent root = ContentService.GetById(RootKey)!;
+            ContentService.Unpublish(root);
+            return Task.CompletedTask;
+        });
 
-        // TODO: We need to await that the index deleting has completed, for now this is our only option
-        Thread.Sleep(3000);
-
-        var publishedIndex = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
-        var publishedResultsRootEnglish = publishedIndex.Searcher.Search(EnglishRootTitle);
-        var publishedResultsRootDanish = publishedIndex.Searcher.Search(DanishRootTitle);
-        var publishedResultsRootJapanese = publishedIndex.Searcher.Search(JapaneseRootTitle);
-        var publishedResultsChildEnglish = publishedIndex.Searcher.Search(EnglishChildTitle);
-        var publishedResultsChildDanish = publishedIndex.Searcher.Search(DanishChildTitle);
-        var publishedResultsChildJapanese = publishedIndex.Searcher.Search(JapaneseChildTitle);
-        var publishedResultsGrandChildEnglish = publishedIndex.Searcher.Search(EnglishGrandChildTitle);
-        var publishedResultsGrandChildDanish = publishedIndex.Searcher.Search(DanishGrandChildTitle);
-        var publishedResultsGrandChildJapanese = publishedIndex.Searcher.Search(JapaneseGrandChildTitle);
+        IIndex publishedIndex = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        ISearchResults publishedResultsRootEnglish = publishedIndex.Searcher.Search(EnglishRootTitle);
+        ISearchResults publishedResultsRootDanish = publishedIndex.Searcher.Search(DanishRootTitle);
+        ISearchResults publishedResultsRootJapanese = publishedIndex.Searcher.Search(JapaneseRootTitle);
+        ISearchResults publishedResultsChildEnglish = publishedIndex.Searcher.Search(EnglishChildTitle);
+        ISearchResults publishedResultsChildDanish = publishedIndex.Searcher.Search(DanishChildTitle);
+        ISearchResults publishedResultsChildJapanese = publishedIndex.Searcher.Search(JapaneseChildTitle);
+        ISearchResults publishedResultsGrandChildEnglish = publishedIndex.Searcher.Search(EnglishGrandChildTitle);
+        ISearchResults publishedResultsGrandChildDanish = publishedIndex.Searcher.Search(DanishGrandChildTitle);
+        ISearchResults publishedResultsGrandChildJapanese = publishedIndex.Searcher.Search(JapaneseGrandChildTitle);
         Assert.Multiple(() =>
         {
             Assert.That(publishedResultsRootEnglish, Is.Empty);
@@ -65,25 +67,26 @@ public class VariantContentTreeTests : IndexTestBase
     }
 
     [Test]
-    public void VariantStructure_WithChildUnpublished_YieldsNoDocumentsBelowRoot()
+    public async Task VariantStructure_WithChildUnpublished_YieldsNoDocumentsBelowRoot()
     {
-        PublishEntireStructure();
-        var child = ContentService.GetById(ChildKey)!;
-        ContentService.Unpublish(child);
+        await PublishEntireStructure();
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, () =>
+        {
+            IContent child = ContentService.GetById(ChildKey)!;
+            ContentService.Unpublish(child);
+            return Task.CompletedTask;
+        });
 
-        // TODO: We need to await that the index deleting has completed, for now this is our only option
-        Thread.Sleep(3000);
-
-        var publishedIndex = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
-        var publishedResultsRootEnglish = publishedIndex.Searcher.Search(EnglishRootTitle);
-        var publishedResultsRootDanish = publishedIndex.Searcher.Search(DanishRootTitle);
-        var publishedResultsRootJapanese = publishedIndex.Searcher.Search(JapaneseRootTitle);
-        var publishedResultsChildEnglish = publishedIndex.Searcher.Search(EnglishChildTitle);
-        var publishedResultsChildDanish = publishedIndex.Searcher.Search(DanishChildTitle);
-        var publishedResultsChildJapanese = publishedIndex.Searcher.Search(JapaneseChildTitle);
-        var publishedResultsGrandChildEnglish = publishedIndex.Searcher.Search(EnglishGrandChildTitle);
-        var publishedResultsGrandChildDanish = publishedIndex.Searcher.Search(DanishGrandChildTitle);
-        var publishedResultsGrandChildJapanese = publishedIndex.Searcher.Search(JapaneseGrandChildTitle);
+        IIndex publishedIndex = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        ISearchResults publishedResultsRootEnglish = publishedIndex.Searcher.Search(EnglishRootTitle);
+        ISearchResults publishedResultsRootDanish = publishedIndex.Searcher.Search(DanishRootTitle);
+        ISearchResults publishedResultsRootJapanese = publishedIndex.Searcher.Search(JapaneseRootTitle);
+        ISearchResults publishedResultsChildEnglish = publishedIndex.Searcher.Search(EnglishChildTitle);
+        ISearchResults publishedResultsChildDanish = publishedIndex.Searcher.Search(DanishChildTitle);
+        ISearchResults publishedResultsChildJapanese = publishedIndex.Searcher.Search(JapaneseChildTitle);
+        ISearchResults publishedResultsGrandChildEnglish = publishedIndex.Searcher.Search(EnglishGrandChildTitle);
+        ISearchResults publishedResultsGrandChildDanish = publishedIndex.Searcher.Search(DanishGrandChildTitle);
+        ISearchResults publishedResultsGrandChildJapanese = publishedIndex.Searcher.Search(JapaneseGrandChildTitle);
         Assert.Multiple(() =>
         {
             Assert.That(publishedResultsRootEnglish, Is.Not.Empty);
@@ -99,25 +102,26 @@ public class VariantContentTreeTests : IndexTestBase
     }
 
     [Test]
-    public void VariantStructure_WithGrandChildUnpublished_YieldsNoDocumentsBelowChild()
+    public async Task VariantStructure_WithGrandChildUnpublished_YieldsNoDocumentsBelowChild()
     {
-        PublishEntireStructure();
-        var grandChild = ContentService.GetById(GrandchildKey)!;
-        ContentService.Unpublish(grandChild);
+        await PublishEntireStructure();
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, () =>
+        {
+            IContent grandChild = ContentService.GetById(GrandchildKey)!;
+            ContentService.Unpublish(grandChild);
+            return Task.CompletedTask;
+        });
 
-        // TODO: We need to await that the index deleting has completed, for now this is our only option
-        Thread.Sleep(3000);
-
-        var publishedIndex = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
-        var publishedResultsRootEnglish = publishedIndex.Searcher.Search(EnglishRootTitle);
-        var publishedResultsRootDanish = publishedIndex.Searcher.Search(DanishRootTitle);
-        var publishedResultsRootJapanese = publishedIndex.Searcher.Search(JapaneseRootTitle);
-        var publishedResultsChildEnglish = publishedIndex.Searcher.Search(EnglishChildTitle);
-        var publishedResultsChildDanish = publishedIndex.Searcher.Search(DanishChildTitle);
-        var publishedResultsChildJapanese = publishedIndex.Searcher.Search(JapaneseChildTitle);
-        var publishedResultsGrandChildEnglish = publishedIndex.Searcher.Search(EnglishGrandChildTitle);
-        var publishedResultsGrandChildDanish = publishedIndex.Searcher.Search(DanishGrandChildTitle);
-        var publishedResultsGrandChildJapanese = publishedIndex.Searcher.Search(JapaneseGrandChildTitle);
+        IIndex publishedIndex = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        ISearchResults publishedResultsRootEnglish = publishedIndex.Searcher.Search(EnglishRootTitle);
+        ISearchResults publishedResultsRootDanish = publishedIndex.Searcher.Search(DanishRootTitle);
+        ISearchResults publishedResultsRootJapanese = publishedIndex.Searcher.Search(JapaneseRootTitle);
+        ISearchResults publishedResultsChildEnglish = publishedIndex.Searcher.Search(EnglishChildTitle);
+        ISearchResults publishedResultsChildDanish = publishedIndex.Searcher.Search(DanishChildTitle);
+        ISearchResults publishedResultsChildJapanese = publishedIndex.Searcher.Search(JapaneseChildTitle);
+        ISearchResults publishedResultsGrandChildEnglish = publishedIndex.Searcher.Search(EnglishGrandChildTitle);
+        ISearchResults publishedResultsGrandChildDanish = publishedIndex.Searcher.Search(DanishGrandChildTitle);
+        ISearchResults publishedResultsGrandChildJapanese = publishedIndex.Searcher.Search(JapaneseGrandChildTitle);
         Assert.Multiple(() =>
         {
             Assert.That(publishedResultsRootEnglish, Is.Not.Empty);
@@ -135,11 +139,15 @@ public class VariantContentTreeTests : IndexTestBase
     [TestCase("en-US")]
     [TestCase("da-DK")]
     [TestCase("ja-JP")]
-    public void PublishedStructureSingleCulture_YieldsAllPublishedDocumentsInOneCultures(string culture)
+    public async Task PublishedStructureSingleCulture_YieldsAllPublishedDocumentsInOneCultures(string culture)
     {
-        var root = ContentService.GetById(RootKey)!;
-        ContentService.PublishBranch(root, PublishBranchFilter.IncludeUnpublished, [culture]);
-        Thread.Sleep(3000);
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, () =>
+        {
+            IContent root = ContentService.GetById(RootKey)!;
+            ContentService.PublishBranch(root, PublishBranchFilter.IncludeUnpublished, [culture]);
+            return Task.CompletedTask;
+        });
+
         VerifyVariance([culture]);
     }
 
@@ -147,16 +155,16 @@ public class VariantContentTreeTests : IndexTestBase
     [TestCase("en-US", "da-DK", "ja-JP")]
     [TestCase("da-DK", "en-US", "ja-JP")]
     [TestCase("ja-JP", "en-US", "da-DK")]
-    public void PublishedStructureInAllCultures_WithUnpublishedRootInSingleCulture_YieldsAllDocumentInPublishedRootCulture(string cultureToUnpublish, string expectedCulture, string otherExpectedCulture)
+    public async Task PublishedStructureInAllCultures_WithUnpublishedRootInSingleCulture_YieldsAllDocumentInPublishedRootCulture(string cultureToUnpublish, string expectedCulture, string otherExpectedCulture)
     {
-        PublishEntireStructure();
-        var root = ContentService.GetById(RootKey)!;
-
-        var result = ContentService.Unpublish(root, cultureToUnpublish);
-        Assert.That(result.Success, Is.True);
-
-        // TODO: We need to await that the index deleting has completed, for now this is our only option
-        Thread.Sleep(3000);
+        await PublishEntireStructure();
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, () =>
+        {
+            IContent root = ContentService.GetById(RootKey)!;
+            PublishResult result = ContentService.Unpublish(root, cultureToUnpublish);
+            Assert.That(result.Success, Is.True);
+            return Task.CompletedTask;
+        });
 
         VerifyVariance([expectedCulture, otherExpectedCulture]);
     }
@@ -166,37 +174,31 @@ public class VariantContentTreeTests : IndexTestBase
         // Dictionary to map culture to expected root and child titles
         var rootTitles = new Dictionary<string, string>
         {
-            { "en-US", EnglishRootTitle },
-            { "da-DK", DanishRootTitle },
-            { "ja-JP", JapaneseRootTitle }
+            { "en-US", EnglishRootTitle }, { "da-DK", DanishRootTitle }, { "ja-JP", JapaneseRootTitle },
         };
 
         var childTitles = new Dictionary<string, string>
         {
-            { "en-US", EnglishChildTitle },
-            { "da-DK", DanishChildTitle },
-            { "ja-JP", JapaneseChildTitle }
+            { "en-US", EnglishChildTitle }, { "da-DK", DanishChildTitle }, { "ja-JP", JapaneseChildTitle },
         };
 
         var grandChildTitles = new Dictionary<string, string>
         {
-            { "en-US", EnglishGrandChildTitle },
-            { "da-DK", DanishGrandChildTitle },
-            { "ja-JP", JapaneseGrandChildTitle }
+            { "en-US", EnglishGrandChildTitle }, { "da-DK", DanishGrandChildTitle }, { "ja-JP", JapaneseGrandChildTitle }
         };
 
         var allCultures = new[] { "en-US", "da-DK", "ja-JP" };
         var expectedSet = new HashSet<string>(expectedExistingCultures);
 
-        var publishedIndex = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex publishedIndex = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
         Assert.Multiple(() =>
         {
             foreach (var currentCulture in allCultures)
             {
-                var rootResults = publishedIndex.Searcher.Search(rootTitles[currentCulture]);
-                var childResults = publishedIndex.Searcher.Search(childTitles[currentCulture]);
-                var grandChildResults = publishedIndex.Searcher.Search(grandChildTitles[currentCulture]);
+                ISearchResults rootResults = publishedIndex.Searcher.Search(rootTitles[currentCulture]);
+                ISearchResults childResults = publishedIndex.Searcher.Search(childTitles[currentCulture]);
+                ISearchResults grandChildResults = publishedIndex.Searcher.Search(grandChildTitles[currentCulture]);
 
                 if (expectedSet.Contains(currentCulture))
                 {
@@ -215,111 +217,113 @@ public class VariantContentTreeTests : IndexTestBase
     }
 
     [SetUp]
-    public void CreateVariantDocumentTree()
-    {
-        var langDk = new LanguageBuilder()
-            .WithCultureInfo("da-DK")
-            .WithIsDefault(true)
-            .Build();
-        var langJp = new LanguageBuilder()
-            .WithCultureInfo("ja-JP")
-            .Build();
+    public async Task CreateVariantDocumentTree() =>
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.DraftContent, () =>
+        {
+            ILanguage langDk = new LanguageBuilder()
+                .WithCultureInfo("da-DK")
+                .WithIsDefault(true)
+                .Build();
+            ILanguage langJp = new LanguageBuilder()
+                .WithCultureInfo("ja-JP")
+                .Build();
 
-        LocalizationService.Save(langDk);
-        LocalizationService.Save(langJp);
+            LocalizationService.Save(langDk);
+            LocalizationService.Save(langJp);
 
-        var contentType = new ContentTypeBuilder()
-            .WithAlias("variant")
-            .WithContentVariation(ContentVariation.CultureAndSegment)
-            .AddPropertyType()
-            .WithAlias("title")
-            .WithVariations(ContentVariation.Culture)
-            .WithDataTypeId(Constants.DataTypes.Textbox)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
-            .Done()
-            .AddPropertyType()
-            .WithAlias("body")
-            .WithVariations(ContentVariation.CultureAndSegment)
-            .WithDataTypeId(Constants.DataTypes.Textbox)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
-            .Done()
-            .Build();
+            IContentType contentType = new ContentTypeBuilder()
+                .WithAlias("variant")
+                .WithContentVariation(ContentVariation.CultureAndSegment)
+                .AddPropertyType()
+                .WithAlias("title")
+                .WithVariations(ContentVariation.Culture)
+                .WithDataTypeId(Constants.DataTypes.Textbox)
+                .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+                .Done()
+                .AddPropertyType()
+                .WithAlias("body")
+                .WithVariations(ContentVariation.CultureAndSegment)
+                .WithDataTypeId(Constants.DataTypes.Textbox)
+                .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+                .Done()
+                .Build();
 
-        ContentTypeService.Save(contentType);
-        contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
-        ContentTypeService.Save(contentType);
+            ContentTypeService.Save(contentType);
+            contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
+            ContentTypeService.Save(contentType);
 
-        var root = new ContentBuilder()
-            .WithKey(RootKey)
-            .WithContentType(contentType)
-            .WithCultureName("en-US", "Root")
-            .WithCultureName("da-DK", "Rod")
-            .WithCultureName("ja-JP", "ル-ト")
-            .Build();
+            Content root = new ContentBuilder()
+                .WithKey(RootKey)
+                .WithContentType(contentType)
+                .WithCultureName("en-US", "Root")
+                .WithCultureName("da-DK", "Rod")
+                .WithCultureName("ja-JP", "ル-ト")
+                .Build();
 
-        root.SetValue("title", EnglishRootTitle, "en-US");
-        root.SetValue("title", DanishRootTitle, "da-DK");
-        root.SetValue("title", JapaneseRootTitle, "ja-JP");
+            root.SetValue("title", EnglishRootTitle, "en-US");
+            root.SetValue("title", DanishRootTitle, "da-DK");
+            root.SetValue("title", JapaneseRootTitle, "ja-JP");
 
-        root.SetValue("body", "root-body-segment-1", "en-US", "segment-1");
-        root.SetValue("body", "root-body-segment-2", "en-US", "segment-2");
-        root.SetValue("body", "rod-krop-segment-1", "da-DK", "segment-1");
-        root.SetValue("body", "rod-krop-segment-2", "da-DK", "segment-2");
-        root.SetValue("body", "ル-ト-ボディ-segment-1", "ja-JP", "segment-1");
-        root.SetValue("body", "ル-ト-ボディ-segment-2", "ja-JP", "segment-2");
+            root.SetValue("body", "root-body-segment-1", "en-US", "segment-1");
+            root.SetValue("body", "root-body-segment-2", "en-US", "segment-2");
+            root.SetValue("body", "rod-krop-segment-1", "da-DK", "segment-1");
+            root.SetValue("body", "rod-krop-segment-2", "da-DK", "segment-2");
+            root.SetValue("body", "ル-ト-ボディ-segment-1", "ja-JP", "segment-1");
+            root.SetValue("body", "ル-ト-ボディ-segment-2", "ja-JP", "segment-2");
 
-        ContentService.Save(root);
+            ContentService.Save(root);
 
-        var child = new ContentBuilder()
-            .WithKey(ChildKey)
-            .WithContentType(contentType)
-            .WithCultureName("en-US", "Child")
-            .WithCultureName("da-DK", "Barn")
-            .WithCultureName("ja-JP", "子供")
-            .WithParent(root)
-            .Build();
+            Content child = new ContentBuilder()
+                .WithKey(ChildKey)
+                .WithContentType(contentType)
+                .WithCultureName("en-US", "Child")
+                .WithCultureName("da-DK", "Barn")
+                .WithCultureName("ja-JP", "子供")
+                .WithParent(root)
+                .Build();
 
-        child.SetValue("title", EnglishChildTitle, "en-US");
-        child.SetValue("title", DanishChildTitle, "da-DK");
-        child.SetValue("title", JapaneseChildTitle, "ja-JP");
+            child.SetValue("title", EnglishChildTitle, "en-US");
+            child.SetValue("title", DanishChildTitle, "da-DK");
+            child.SetValue("title", JapaneseChildTitle, "ja-JP");
 
-        child.SetValue("body", "child-body-segment-1", "en-US", "segment-1");
-        child.SetValue("body", "child-body-segment-2", "en-US", "segment-2");
-        child.SetValue("body", "barn-krop-segment-1", "da-DK", "segment-1");
-        child.SetValue("body", "barn-krop-segment-2", "da-DK", "segment-2");
-        child.SetValue("body", "子供-ボディ-segment-1", "ja-JP", "segment-1");
-        child.SetValue("body", "子供-ボディ-segment-2", "ja-JP", "segment-2");
+            child.SetValue("body", "child-body-segment-1", "en-US", "segment-1");
+            child.SetValue("body", "child-body-segment-2", "en-US", "segment-2");
+            child.SetValue("body", "barn-krop-segment-1", "da-DK", "segment-1");
+            child.SetValue("body", "barn-krop-segment-2", "da-DK", "segment-2");
+            child.SetValue("body", "子供-ボディ-segment-1", "ja-JP", "segment-1");
+            child.SetValue("body", "子供-ボディ-segment-2", "ja-JP", "segment-2");
 
-        ContentService.Save(child);
+            ContentService.Save(child);
 
-        var grandchild = new ContentBuilder()
-            .WithKey(GrandchildKey)
-            .WithContentType(contentType)
-            .WithCultureName("en-US", "Grandchild")
-            .WithCultureName("da-DK", "Barn")
-            .WithCultureName("ja-JP", "孫")
-            .WithParent(child)
-            .Build();
+            Content grandchild = new ContentBuilder()
+                .WithKey(GrandchildKey)
+                .WithContentType(contentType)
+                .WithCultureName("en-US", "Grandchild")
+                .WithCultureName("da-DK", "Barn")
+                .WithCultureName("ja-JP", "孫")
+                .WithParent(child)
+                .Build();
 
-        grandchild.SetValue("title", EnglishGrandChildTitle, "en-US");
-        grandchild.SetValue("title", DanishGrandChildTitle, "da-DK");
-        grandchild.SetValue("title", JapaneseGrandChildTitle, "ja-JP");
+            grandchild.SetValue("title", EnglishGrandChildTitle, "en-US");
+            grandchild.SetValue("title", DanishGrandChildTitle, "da-DK");
+            grandchild.SetValue("title", JapaneseGrandChildTitle, "ja-JP");
 
-        grandchild.SetValue("body", "grandchild-body-segment-1", "en-US", "segment-1");
-        grandchild.SetValue("body", "grandchild-body-segment-2", "en-US", "segment-2");
-        grandchild.SetValue("body", "barnebarn-krop-segment-1", "da-DK", "segment-1");
-        grandchild.SetValue("body", "barnebarn-krop-segment-2", "da-DK", "segment-2");
-        grandchild.SetValue("body", "孫-ボディ-segment-1", "ja-JP", "segment-1");
-        grandchild.SetValue("body", "孫-ボディ-segment-2", "ja-JP", "segment-2");
+            grandchild.SetValue("body", "grandchild-body-segment-1", "en-US", "segment-1");
+            grandchild.SetValue("body", "grandchild-body-segment-2", "en-US", "segment-2");
+            grandchild.SetValue("body", "barnebarn-krop-segment-1", "da-DK", "segment-1");
+            grandchild.SetValue("body", "barnebarn-krop-segment-2", "da-DK", "segment-2");
+            grandchild.SetValue("body", "孫-ボディ-segment-1", "ja-JP", "segment-1");
+            grandchild.SetValue("body", "孫-ボディ-segment-2", "ja-JP", "segment-2");
 
-        ContentService.Save(grandchild);
-    }
+            ContentService.Save(grandchild);
+            return Task.CompletedTask;
+        });
 
-    private void PublishEntireStructure()
-    {
-        var root = ContentService.GetById(RootKey)!;
-        ContentService.PublishBranch(root, PublishBranchFilter.IncludeUnpublished, ["*"]);
-        Thread.Sleep(3000);
-    }
-
+    private async Task PublishEntireStructure() =>
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, () =>
+        {
+            IContent root = ContentService.GetById(RootKey)!;
+            ContentService.PublishBranch(root, PublishBranchFilter.IncludeUnpublished, ["*"]);
+            return Task.CompletedTask;
+        });
 }

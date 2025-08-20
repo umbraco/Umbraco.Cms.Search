@@ -1,6 +1,8 @@
 ﻿using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
@@ -11,15 +13,18 @@ public partial class InvariantContentTreeTests : SearcherTestBase
     [Test]
     public async Task DraftStructure_WithRootInRecycleBin_YieldsAllDocuments()
     {
-        CreateInvariantDocumentTree(false);
-        var root = ContentService.GetById(RootKey)!;
-        var result = ContentService.MoveToRecycleBin(root);
-        Thread.Sleep(3000);
+        await WaitForIndexing(GetIndexAlias(false), () =>
+        {
+            CreateInvariantDocumentTree(false);
+            IContent root = ContentService.GetById(RootKey)!;
+            ContentService.MoveToRecycleBin(root);
+            return Task.CompletedTask;
+        });
 
         var indexAlias = GetIndexAlias(false);
-        var rootResult = await Searcher.SearchAsync(indexAlias, "Root", null, null, null, null, null, null, 0, 100);
-        var childResult = await Searcher.SearchAsync(indexAlias, "Child", null, null, null, null, null, null, 0, 100);
-        var grandChildResult = await Searcher.SearchAsync(indexAlias, "Grandchild", null, null, null, null, null, null, 0, 100);
+        SearchResult rootResult = await Searcher.SearchAsync(indexAlias, "Root", null, null, null, null, null, null, 0, 100);
+        SearchResult childResult = await Searcher.SearchAsync(indexAlias, "Child", null, null, null, null, null, null, 0, 100);
+        SearchResult grandChildResult = await Searcher.SearchAsync(indexAlias, "Grandchild", null, null, null, null, null, null, 0, 100);
 
         Assert.Multiple(() =>
         {
@@ -36,17 +41,23 @@ public partial class InvariantContentTreeTests : SearcherTestBase
     [Test]
     public async Task DraftStructure_WithChildDeleted_YieldsNothingBelowRoot()
     {
-        CreateInvariantDocumentTree(false);
-        var child = ContentService.GetById(ChildKey)!;
-        ContentService.Delete(child);
-
-        // TODO: We need to await that the index deleting has completed, for now this is our only option
-        Thread.Sleep(3000);
-
         var indexAlias = GetIndexAlias(false);
-        var rootResult = await Searcher.SearchAsync(indexAlias, "Root", null, null, null, null, null, null, 0, 100);
-        var childResult = await Searcher.SearchAsync(indexAlias, "Child", null, null, null, null, null, null, 0, 100);
-        var grandChildResult = await Searcher.SearchAsync(indexAlias, "Grandchild", null, null, null, null, null, null, 0, 100);
+        await WaitForIndexing(indexAlias, () =>
+        {
+            CreateInvariantDocumentTree(false);
+            return Task.CompletedTask;
+        });
+
+        await WaitForIndexing(indexAlias, () =>
+        {
+            IContent child = ContentService.GetById(ChildKey)!;
+            ContentService.Delete(child);
+            return Task.CompletedTask;
+        });
+
+        SearchResult rootResult = await Searcher.SearchAsync(indexAlias, "Root", null, null, null, null, null, null, 0, 100);
+        SearchResult childResult = await Searcher.SearchAsync(indexAlias, "Child", null, null, null, null, null, null, 0, 100);
+        SearchResult grandChildResult = await Searcher.SearchAsync(indexAlias, "Grandchild", null, null, null, null, null, null, 0, 100);
 
         Assert.Multiple(() =>
         {
@@ -60,17 +71,23 @@ public partial class InvariantContentTreeTests : SearcherTestBase
     [Test]
     public async Task DraftStructure_WithGrandchildDeleted_YieldsNothingBelowChild()
     {
-        CreateInvariantDocumentTree(false);
-        var grandchild = ContentService.GetById(GrandchildKey)!;
-        ContentService.Delete(grandchild);
-
-        // TODO: We need to await that the index deleting has completed, for now this is our only option
-        Thread.Sleep(3000);
-
         var indexAlias = GetIndexAlias(false);
-        var rootResult = await Searcher.SearchAsync(indexAlias, "Root", null, null, null, null, null, null, 0, 100);
-        var childResult = await Searcher.SearchAsync(indexAlias, "Child", null, null, null, null, null, null, 0, 100);
-        var grandChildResult = await Searcher.SearchAsync(indexAlias, "Grandchild", null, null, null, null, null, null, 0, 100);
+        await WaitForIndexing(indexAlias, () =>
+        {
+            CreateInvariantDocumentTree(false);
+            return Task.CompletedTask;
+        });
+
+        await WaitForIndexing(indexAlias, () =>
+        {
+            IContent grandchild = ContentService.GetById(GrandchildKey)!;
+            ContentService.Delete(grandchild);
+            return Task.CompletedTask;
+        });
+
+        SearchResult rootResult = await Searcher.SearchAsync(indexAlias, "Root", null, null, null, null, null, null, 0, 100);
+        SearchResult childResult = await Searcher.SearchAsync(indexAlias, "Child", null, null, null, null, null, null, 0, 100);
+        SearchResult grandChildResult = await Searcher.SearchAsync(indexAlias, "Grandchild", null, null, null, null, null, null, 0, 100);
 
         Assert.Multiple(() =>
         {
@@ -84,7 +101,7 @@ public partial class InvariantContentTreeTests : SearcherTestBase
 
     private void CreateInvariantDocumentTree(bool publish)
     {
-        var dataType = new DataTypeBuilder()
+        DataType dataType = new DataTypeBuilder()
             .WithId(0)
             .WithoutIdentity()
             .WithDatabaseType(ValueStorageType.Decimal)
@@ -94,7 +111,7 @@ public partial class InvariantContentTreeTests : SearcherTestBase
             .Build();
 
         DataTypeService.Save(dataType);
-        var contentType = new ContentTypeBuilder()
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
             .AddPropertyType()
             .WithAlias("title")
@@ -121,7 +138,7 @@ public partial class InvariantContentTreeTests : SearcherTestBase
         contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
         ContentTypeService.Save(contentType);
 
-        var root = new ContentBuilder()
+        Content root = new ContentBuilder()
             .WithKey(RootKey)
             .WithContentType(contentType)
             .WithName("Root")
@@ -145,7 +162,7 @@ public partial class InvariantContentTreeTests : SearcherTestBase
         }
 
 
-        var child = new ContentBuilder()
+        Content child = new ContentBuilder()
             .WithKey(ChildKey)
             .WithContentType(contentType)
             .WithName("Child")
@@ -169,7 +186,7 @@ public partial class InvariantContentTreeTests : SearcherTestBase
             ContentService.Save(child);
         }
 
-        var grandchild = new ContentBuilder()
+        Content grandchild = new ContentBuilder()
             .WithKey(GrandchildKey)
             .WithContentType(contentType)
             .WithName("Grandchild")
@@ -192,7 +209,5 @@ public partial class InvariantContentTreeTests : SearcherTestBase
         {
             ContentService.Save(grandchild);
         }
-
-        Thread.Sleep(3000);
     }
 }

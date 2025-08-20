@@ -6,11 +6,4 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexServic
 public abstract class IndexTestBase : TestBase
 {
     protected IExamineManager ExamineManager => GetRequiredService<IExamineManager>();
-
-    protected void SaveAndPublish(IContent content)
-    {
-        ContentService.Save(content);
-        ContentService.Publish(content, new []{ "*"});
-        Thread.Sleep(3000);
-    }
 }

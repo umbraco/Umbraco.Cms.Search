@@ -80,20 +80,20 @@ public class InvariantSortableIndexTests : IndexTestBase
     {
         await CreateTitleDocType();
 
-        foreach (var stringValue in values)
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, () =>
         {
-            Content document = new ContentBuilder()
-                .WithContentType(ContentType)
-                .WithName($"document-{stringValue}")
-                .WithPropertyValues(
-                    new
-                    {
-                        sortableTitle = stringValue,
-                        title = stringValue
-                    })
-                .Build();
+            foreach (var stringValue in values)
+            {
+                Content document = new ContentBuilder()
+                    .WithContentType(ContentType)
+                    .WithName($"document-{stringValue}")
+                    .WithPropertyValues(new { sortableTitle = stringValue, title = stringValue })
+                    .Build();
 
-            SaveAndPublish(document);
-        }
+                SaveAndPublish(document);
+            }
+
+            return Task.CompletedTask;
+        });
     }
 }

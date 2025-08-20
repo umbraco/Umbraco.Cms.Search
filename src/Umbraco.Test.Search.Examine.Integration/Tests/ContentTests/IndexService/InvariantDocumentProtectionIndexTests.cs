@@ -21,18 +21,20 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
     public async Task CanIndexContentProtection()
     {
         Attempt<IMemberGroup?, MemberGroupOperationStatus> result = await MemberGroupService.CreateAsync(new MemberGroup { Name = "testGroup" });
-        await PublicAccessService.CreateAsync(
-            new PublicAccessEntrySlim
-            {
-                ErrorPageId = RootKey,
-                LoginPageId = RootKey,
-                ContentId = RootKey,
-                MemberGroupNames = ["testGroup"],
-            });
-        Thread.Sleep(3000);
+
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, async () =>
+        {
+            await PublicAccessService.CreateAsync(
+                new PublicAccessEntrySlim
+                {
+                    ErrorPageId = RootKey,
+                    LoginPageId = RootKey,
+                    ContentId = RootKey,
+                    MemberGroupNames = ["testGroup"],
+                });
+        });
 
         IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
-
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         IReadOnlyList<string> indexedAccessKeys = results.First().AllValues.First(x => x.Key == $"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}").Value;
         Assert.That(indexedAccessKeys, Has.Count.EqualTo(1));
@@ -47,18 +49,20 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
         Attempt<IMemberGroup?, MemberGroupOperationStatus> group3 = await MemberGroupService.CreateAsync(new MemberGroup { Name = "testGroup 3" });
         Attempt<IMemberGroup?, MemberGroupOperationStatus> group4 = await MemberGroupService.CreateAsync(new MemberGroup { Name = "testGroup 4" });
         Attempt<IMemberGroup?, MemberGroupOperationStatus> group5 = await MemberGroupService.CreateAsync(new MemberGroup { Name = "testGroup 5" });
-        await PublicAccessService.CreateAsync(
-            new PublicAccessEntrySlim
-            {
-                ErrorPageId = RootKey,
-                LoginPageId = RootKey,
-                ContentId = RootKey,
-                MemberGroupNames = ["testGroup", "testGroup 2", "testGroup 3", "testGroup 4", "testGroup 5"]
-            });
-        Thread.Sleep(3000);
+
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, async () =>
+        {
+            await PublicAccessService.CreateAsync(
+                new PublicAccessEntrySlim
+                {
+                    ErrorPageId = RootKey,
+                    LoginPageId = RootKey,
+                    ContentId = RootKey,
+                    MemberGroupNames = ["testGroup", "testGroup 2", "testGroup 3", "testGroup 4", "testGroup 5"],
+                });
+        });
 
         IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
-
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         IReadOnlyList<string> indexedAccessKeys = results.First().AllValues.First(x => x.Key == $"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}").Value;
         Assert.That(indexedAccessKeys, Has.Count.EqualTo(5));
@@ -73,13 +77,12 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
     public void DoesNotIndexContentProtectionIfNoneExists()
     {
         IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
-
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results.First().AllValues.SelectMany(x => x.Value), Does.Not.Contain($"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}"));
     }
 
     [SetUp]
-    public void CreateInvariantDocument()
+    public async Task CreateInvariantDocument()
     {
         IContentType contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
@@ -102,7 +105,11 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
                 })
             .Build();
 
-        SaveAndPublish(root);
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, () =>
+        {
+            SaveAndPublish(root);
+            return Task.CompletedTask;
+        });
 
         IContent? content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);

@@ -143,20 +143,25 @@ public class InvariantFacetsIndexTests : IndexTestBase
     {
         await CreateTitleDocType();
 
-        foreach (var stringValue in values)
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, () =>
         {
-            Content document = new ContentBuilder()
-                .WithContentType(ContentType)
-                .WithName($"document-{stringValue}")
-                .WithPropertyValues(
-                    new
-                    {
-                        title = stringValue
-                    })
-                .Build();
+            foreach (var stringValue in values)
+            {
+                Content document = new ContentBuilder()
+                    .WithContentType(ContentType)
+                    .WithName($"document-{stringValue}")
+                    .WithPropertyValues(
+                        new
+                        {
+                            title = stringValue
+                        })
+                    .Build();
 
-            SaveAndPublish(document);
-        }
+                SaveAndPublish(document);
+            }
+
+            return Task.CompletedTask;
+        });
     }
 
     private async Task CreateDecimalDocType()
@@ -186,39 +191,49 @@ public class InvariantFacetsIndexTests : IndexTestBase
     {
         await CreateDecimalDocType();
 
-        foreach (var doubleValue in values)
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, () =>
         {
-            Content document = new ContentBuilder()
-                .WithContentType(ContentType)
-                .WithName($"document-{doubleValue.ToString(CultureInfo.InvariantCulture)}")
-                .WithPropertyValues(
-                    new
-                    {
-                        decimalproperty = doubleValue
-                    })
-                .Build();
+            foreach (var doubleValue in values)
+            {
+                Content document = new ContentBuilder()
+                    .WithContentType(ContentType)
+                    .WithName($"document-{doubleValue.ToString(CultureInfo.InvariantCulture)}")
+                    .WithPropertyValues(
+                        new
+                        {
+                            decimalproperty = doubleValue
+                        })
+                    .Build();
 
-            SaveAndPublish(document);
-        }
+                SaveAndPublish(document);
+            }
+
+            return Task.CompletedTask;
+        });
     }
 
     private async Task CreateCountDocuments(int[] values)
     {
         await CreateCountDocType();
 
-        foreach (var countValue in values)
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, () =>
         {
-            Content document = new ContentBuilder()
-                .WithContentType(ContentType)
-                .WithName($"document-{countValue}")
-                .WithPropertyValues(
-                    new
-                    {
-                        otherName = countValue,
-                    })
-                .Build();
+            foreach (var countValue in values)
+            {
+                Content document = new ContentBuilder()
+                    .WithContentType(ContentType)
+                    .WithName($"document-{countValue}")
+                    .WithPropertyValues(
+                        new
+                        {
+                            otherName = countValue,
+                        })
+                    .Build();
 
-            SaveAndPublish(document);
-        }
+                SaveAndPublish(document);
+            }
+
+            return Task.CompletedTask;
+        });
     }
 }

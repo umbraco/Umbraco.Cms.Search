@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
@@ -19,7 +20,7 @@ public class VariantDocumentTests : SearcherTestBase
     {
         var indexAlias = GetIndexAlias(publish);
 
-        var results = await Searcher.SearchAsync(indexAlias, expectedValue, null, null, null, culture, null, null, 0, 100);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, expectedValue, null, null, null, culture, null, null, 0, 100);
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
@@ -34,7 +35,7 @@ public class VariantDocumentTests : SearcherTestBase
     {
         var indexAlias = GetIndexAlias(publish);
 
-        var results = await Searcher.SearchAsync(indexAlias, expectedValue, null, null, null, null, null, null, 0, 100);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, expectedValue, null, null, null, null, null, null, 0, 100);
         Assert.That(results.Total, Is.EqualTo(0));
     }
 
@@ -43,11 +44,11 @@ public class VariantDocumentTests : SearcherTestBase
     [TestCase("title", "updatedTitle", "ja-JP")]
     public async Task CanSearchUpdatedProperties(string propertyName, string updatedValue, string culture)
     {
-        UpdateProperty(propertyName, updatedValue, culture);
+        await UpdateProperty(propertyName, updatedValue, culture);
 
         var indexAlias = GetIndexAlias(true);
 
-        var results = await Searcher.SearchAsync(indexAlias, updatedValue, null, null, null, culture, null, null, 0, 100);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, updatedValue, null, null, null, culture, null, null, 0, 100);
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
@@ -62,7 +63,7 @@ public class VariantDocumentTests : SearcherTestBase
     {
         var indexAlias = GetIndexAlias(publish);
 
-        var results = await Searcher.SearchAsync(indexAlias, expectedValue, null, null, null, culture, null, null, 0, 100);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, expectedValue, null, null, null, culture, null, null, 0, 100);
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
@@ -77,27 +78,27 @@ public class VariantDocumentTests : SearcherTestBase
     {
         var indexAlias = GetIndexAlias(publish);
 
-        var results = await Searcher.SearchAsync(indexAlias, expectedValue, null, null, null, culture, segment, null, 0, 100);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, expectedValue, null, null, null, culture, segment, null, 0, 100);
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
 
     [SetUp]
-    public void CreateVariantDocument()
+    public async Task CreateVariantDocument()
     {
 
-        var langDk = new LanguageBuilder()
+        ILanguage langDk = new LanguageBuilder()
             .WithCultureInfo("da-DK")
             .WithIsDefault(true)
             .Build();
-        var langJp = new LanguageBuilder()
+        ILanguage langJp = new LanguageBuilder()
             .WithCultureInfo("ja-JP")
             .Build();
 
         LocalizationService.Save(langDk);
         LocalizationService.Save(langJp);
 
-        var contentType = new ContentTypeBuilder()
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("variant")
             .WithContentVariation(ContentVariation.CultureAndSegment)
             .AddPropertyType()
@@ -115,7 +116,7 @@ public class VariantDocumentTests : SearcherTestBase
             .Build();
         ContentTypeService.Save(contentType);
 
-        var root = new ContentBuilder()
+        Content root = new ContentBuilder()
             .WithKey(RootKey)
             .WithContentType(contentType)
             .WithCultureName("en-US", "Name")
@@ -134,22 +135,28 @@ public class VariantDocumentTests : SearcherTestBase
         root.SetValue("body", "ボディ-segment-1", "ja-JP", "segment-1");
         root.SetValue("body", "ボディ-segment-2", "ja-JP", "segment-2");
 
-        ContentService.Save(root);
-        ContentService.Publish(root, new []{ "*"});
-        Thread.Sleep(3000);
+        await WaitForIndexing(GetIndexAlias(true), () =>
+        {
+            ContentService.Save(root);
+            ContentService.Publish(root, ["*"]);
+            return Task.CompletedTask;
+        });
 
-        var content = ContentService.GetById(RootKey);
+        IContent? content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);
     }
 
 
-    private void UpdateProperty(string propertyName, object value, string culture)
+    private async Task UpdateProperty(string propertyName, object value, string culture)
     {
-        var content = ContentService.GetById(RootKey)!;
+        IContent content = ContentService.GetById(RootKey)!;
         content.SetValue(propertyName, value, culture);
 
-        ContentService.Save(content);
-        ContentService.Publish(content, ["*"]);
-        Thread.Sleep(3000);
+        await WaitForIndexing(GetIndexAlias(true), () =>
+        {
+            ContentService.Save(content);
+            ContentService.Publish(content, ["*"]);
+            return Task.CompletedTask;
+        });
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Examine;
 using NUnit.Framework;
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
@@ -14,15 +15,15 @@ public class MediaIndexServiceTests : IndexTestBase
     {
         await CreateMediaAsync();
 
-        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftMedia);
+        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftMedia);
 
-        var results = index.Searcher.CreateQuery().All().Execute();
+        ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results.TotalItemCount, Is.EqualTo(1));
     }
-    
+
     private async Task CreateMediaAsync()
     {
-        var mediaType = new MediaTypeBuilder()
+        IMediaType mediaType = new MediaTypeBuilder()
             .WithAlias("theMediaType")
             .AddPropertyGroup()
             .AddPropertyType()
@@ -34,18 +35,15 @@ public class MediaIndexServiceTests : IndexTestBase
             .Build();
         await GetRequiredService<IMediaTypeService>().CreateAsync(mediaType, Constants.Security.SuperUserKey);
 
-        GetRequiredService<IMediaService>().Save(
-            new MediaBuilder()
-                .WithMediaType(mediaType)
-                .WithName("The Media")
-                .WithPropertyValues(
-                    new
-                    {
-                        altText = "The media alt text"
-                    })
-                .Build()
-        );
-        
-        Thread.Sleep(3000);
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.DraftMedia, () =>
+        {
+            GetRequiredService<IMediaService>().Save(
+                new MediaBuilder()
+                    .WithMediaType(mediaType)
+                    .WithName("The Media")
+                    .WithPropertyValues(new { altText = "The media alt text" })
+                    .Build());
+            return Task.CompletedTask;
+        });
     }
 }

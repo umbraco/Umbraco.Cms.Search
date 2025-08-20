@@ -25,17 +25,17 @@ public class VariantDocumentTests : IndexTestBase
 
     [TestCase(true)]
     [TestCase(false)]
-    public void CanRemoveAnyDocument(bool publish)
+    public async Task CanRemoveAnyDocument(bool publish)
     {
-        IContent content = ContentService.GetById(RootKey)!;
-        ContentService.Delete(content);
+        var indexAlias = GetIndexAlias(publish);
+        await WaitForIndexing(indexAlias, () =>
+        {
+            IContent content = ContentService.GetById(RootKey)!;
+            ContentService.Delete(content);
+            return Task.CompletedTask;
+        });
 
-        IIndex index = ExamineManager.GetIndex(publish
-            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
-            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
-
-        // TODO: We need to await that the index deleting has completed, for now this is our only option
-        Thread.Sleep(3000);
+        IIndex index = ExamineManager.GetIndex(indexAlias);
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results, Is.Empty);
     }
@@ -88,9 +88,9 @@ public class VariantDocumentTests : IndexTestBase
     [TestCase("title", "updatedTitle", "en-US")]
     [TestCase("title", "updatedTitle", "da-DK")]
     [TestCase("title", "updatedTitle", "ja-JP")]
-    public void CanIndexUpdatedProperties(string propertyName, string updatedValue, string culture)
+    public async Task CanIndexUpdatedProperties(string propertyName, string updatedValue, string culture)
     {
-        UpdateProperty(propertyName, updatedValue, culture);
+        await UpdateProperty(propertyName, updatedValue, culture);
 
         IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
@@ -140,9 +140,8 @@ public class VariantDocumentTests : IndexTestBase
     }
 
     [SetUp]
-    public void CreateVariantDocument()
+    public async Task CreateVariantDocument()
     {
-
         DataType dataType = new DataTypeBuilder()
             .WithId(0)
             .WithoutIdentity()
@@ -223,22 +222,28 @@ public class VariantDocumentTests : IndexTestBase
         root.SetValue("body", "ボディ-segment-1", "ja-JP", "segment-1");
         root.SetValue("body", "ボディ-segment-2", "ja-JP", "segment-2");
 
-        ContentService.Save(root);
-        ContentService.Publish(root, new []{ "*"});
-        Thread.Sleep(3000);
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, () =>
+        {
+            ContentService.Save(root);
+            ContentService.Publish(root, ["*"]);
+            return Task.CompletedTask;
+        });
 
         IContent? content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);
     }
 
 
-    private void UpdateProperty(string propertyName, object value, string culture)
+    private async Task UpdateProperty(string propertyName, object value, string culture)
     {
         IContent content = ContentService.GetById(RootKey)!;
         content.SetValue(propertyName, value, culture);
 
-        ContentService.Save(content);
-        ContentService.Publish(content, ["*"]);
-        Thread.Sleep(3000);
+        await WaitForIndexing(GetIndexAlias(true), () =>
+        {
+            ContentService.Save(content);
+            ContentService.Publish(content, ["*"]);
+            return Task.CompletedTask;
+        });
     }
 }

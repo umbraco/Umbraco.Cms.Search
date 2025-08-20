@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using System.Globalization;
+using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Searching;
@@ -19,10 +20,10 @@ public class InvariantSortingTests : SearcherTestBase
     public async Task CanSortIntegers(Direction direction)
     {
         int[] integers = [9, 3, 4, 2, 5, 7, 1, 11, 10];
-        var keys = (await CreateCountDocuments(integers)).OrderBy(x => x.Value, direction).ToArray();
+        KeyValuePair<Guid, int>[] keys = (await CreateCountDocuments(integers)).OrderBy(x => x.Value, direction).ToArray();
 
         var indexAlias = GetIndexAlias(true);
-        var result = await Searcher.SearchAsync(
+        SearchResult result = await Searcher.SearchAsync(
             indexAlias,
             null,
             [new IntegerRangeFilter("count", [new IntegerRangeFilterRange(null, null)], false)],
@@ -36,7 +37,7 @@ public class InvariantSortingTests : SearcherTestBase
 
         Assert.Multiple(() =>
         {
-            var documents = result.Documents.ToArray();
+            Document[] documents = result.Documents.ToArray();
             Assert.That(documents, Is.Not.Empty);
             for (int i = 0; i < keys.Length; i++)
             {
@@ -50,10 +51,10 @@ public class InvariantSortingTests : SearcherTestBase
     public async Task CanSortDecimals(bool publish, Direction direction)
     {
         double[] doubles = [5,12412d, 0,51251d, 1.15215d, 3.251d, 2.2515125d, 125.5215d, 142.214124d];
-        var keys = (await CreateDecimalDocuments(doubles)).OrderBy(x => x.Value, direction).ToArray();
+        KeyValuePair<Guid, double>[] keys = (await CreateDecimalDocuments(doubles)).OrderBy(x => x.Value, direction).ToArray();
 
         var indexAlias = GetIndexAlias(publish);
-        var result = await Searcher.SearchAsync(
+        SearchResult result = await Searcher.SearchAsync(
             indexAlias,
             null,
             [new DecimalRangeFilter("decimalproperty", [new DecimalRangeFilterRange(null, null)], false)],
@@ -67,7 +68,7 @@ public class InvariantSortingTests : SearcherTestBase
 
         Assert.Multiple(() =>
         {
-            var documents = result.Documents.ToArray();
+            Document[] documents = result.Documents.ToArray();
             Assert.That(documents, Is.Not.Empty);
             for (int i = 0; i < keys.Length; i++)
             {
@@ -82,10 +83,10 @@ public class InvariantSortingTests : SearcherTestBase
     {
         DateTime[] dateTimes = [new(2025, 06, 06), new(2025, 02, 01), new(2024, 01, 01), new(2019, 01, 01), new(2000, 01, 01), new(2003, 01, 01)];
 
-        var keys = (await CreateDatetimeDocuments(dateTimes)).OrderBy(x => x.Value, direction).ToArray();
+        KeyValuePair<Guid, DateTime>[] keys = (await CreateDatetimeDocuments(dateTimes)).OrderBy(x => x.Value, direction).ToArray();
 
         var indexAlias = GetIndexAlias(publish);
-        var result = await Searcher.SearchAsync(
+        SearchResult result = await Searcher.SearchAsync(
             indexAlias,
             null,
             [new DateTimeOffsetRangeFilter("datetime", [new DateTimeOffsetRangeFilterRange(null, null)], false)],
@@ -99,7 +100,7 @@ public class InvariantSortingTests : SearcherTestBase
 
         Assert.Multiple(() =>
         {
-            var documents = result.Documents.ToArray();
+            Document[] documents = result.Documents.ToArray();
             Assert.That(documents, Is.Not.Empty);
             for (int i = 0; i < keys.Length; i++)
             {
@@ -115,7 +116,7 @@ public class InvariantSortingTests : SearcherTestBase
         var keys = (await CreateDocuments(5)).OrderBy(x => x, direction).Select(x => x.ToString()).ToArray();
 
         var indexAlias = GetIndexAlias(publish);
-        var result = await Searcher.SearchAsync(
+        SearchResult result = await Searcher.SearchAsync(
             indexAlias,
             null,
             [new KeywordFilter("Umb_Id", keys.ToArray(), false)],
@@ -129,7 +130,7 @@ public class InvariantSortingTests : SearcherTestBase
 
         Assert.Multiple(() =>
         {
-            var documents = result.Documents.ToArray();
+            Document[] documents = result.Documents.ToArray();
             Assert.That(documents, Is.Not.Empty);
             for (int i = 0; i < keys.Length; i++)
             {
@@ -144,10 +145,10 @@ public class InvariantSortingTests : SearcherTestBase
     {
         string[] titles = ["aa", "ccc", "bbb", "ddd", "zzz", "xxx"];
 
-        var keys = (await CreateTitleDocuments(titles)).OrderBy(x => x.Value, direction).ToArray();
+        KeyValuePair<Guid, string>[] keys = (await CreateTitleDocuments(titles)).OrderBy(x => x.Value, direction).ToArray();
 
         var indexAlias = GetIndexAlias(publish);
-        var result = await Searcher.SearchAsync(
+        SearchResult result = await Searcher.SearchAsync(
             indexAlias,
             null,
             [new TextFilter("title", titles, false)],
@@ -161,7 +162,7 @@ public class InvariantSortingTests : SearcherTestBase
 
         Assert.Multiple(() =>
         {
-            var documents = result.Documents.ToArray();
+            Document[] documents = result.Documents.ToArray();
             Assert.That(documents, Is.Not.Empty);
             for (int i = 0; i < keys.Length; i++)
             {
@@ -264,19 +265,23 @@ public class InvariantSortingTests : SearcherTestBase
         var keys = new List<Guid>();
         await CreateDocType();
 
-        for (int i = 0; i < numberOfDocuments; i++)
+        await WaitForIndexing(GetIndexAlias(true), () =>
         {
-            var document = new ContentBuilder()
-                .WithContentType(ContentType)
-                .WithName($"document-{i}")
-                .Build();
+            for (int i = 0; i < numberOfDocuments; i++)
+            {
+                Content document = new ContentBuilder()
+                    .WithContentType(ContentType)
+                    .WithName($"document-{i}")
+                    .Build();
 
-            ContentService.Save(document);
-            ContentService.Publish(document, new []{ "*"});
-            keys.Add(document.Key);
-        }
+                ContentService.Save(document);
+                ContentService.Publish(document, new []{ "*"});
+                keys.Add(document.Key);
+            }
 
-        Thread.Sleep(3000);
+            return Task.CompletedTask;
+        });
+
         return keys;
     }
 
@@ -298,24 +303,25 @@ public class InvariantSortingTests : SearcherTestBase
         var keys = new Dictionary<Guid, string>();
         await CreateTitleDocType();
 
-        foreach (var stringValue in values)
+        await WaitForIndexing(GetIndexAlias(true), () =>
         {
-            var document = new ContentBuilder()
-                .WithContentType(ContentType)
-                .WithName($"document-{stringValue}")
-                .WithPropertyValues(
-                    new
-                    {
-                        title = stringValue
-                    })
-                .Build();
+            foreach (var stringValue in values)
+            {
+                Content document = new ContentBuilder()
+                    .WithContentType(ContentType)
+                    .WithName($"document-{stringValue}")
+                    .WithPropertyValues(
+                        new {title = stringValue})
+                    .Build();
 
-            ContentService.Save(document);
-            ContentService.Publish(document, new []{ "*"});
-            keys.Add(document.Key, stringValue);
-        }
+                ContentService.Save(document);
+                ContentService.Publish(document, new[] {"*"});
+                keys.Add(document.Key, stringValue);
+            }
 
-        Thread.Sleep(3000);
+            return Task.CompletedTask;
+        });
+
         return keys;
     }
 
@@ -337,30 +343,34 @@ public class InvariantSortingTests : SearcherTestBase
         var keys = new Dictionary<Guid, DateTime>();
         await CreateDatetimeDocType();
 
-        foreach (var dateTimeOffset in values)
+        await WaitForIndexing(GetIndexAlias(true), () =>
         {
-            var document = new ContentBuilder()
-                .WithContentType(ContentType)
-                .WithName($"document-{dateTimeOffset.ToString()}")
-                .WithPropertyValues(
-                    new
-                    {
-                        datetime = dateTimeOffset
-                    })
-                .Build();
+            foreach (DateTime dateTimeOffset in values)
+            {
+                Content document = new ContentBuilder()
+                    .WithContentType(ContentType)
+                    .WithName($"document-{dateTimeOffset.ToString(CultureInfo.InvariantCulture)}")
+                    .WithPropertyValues(
+                        new
+                        {
+                            datetime = dateTimeOffset
+                        })
+                    .Build();
 
-            ContentService.Save(document);
-            ContentService.Publish(document, new []{ "*"});
-            keys.Add(document.Key, dateTimeOffset);
-        }
+                ContentService.Save(document);
+                ContentService.Publish(document, new []{ "*"});
+                keys.Add(document.Key, dateTimeOffset);
+            }
 
-        Thread.Sleep(3000);
+            return Task.CompletedTask;
+        });
+
         return keys;
     }
 
     private async Task CreateDecimalDocType()
     {
-        var dataType = new DataTypeBuilder()
+        DataType dataType = new DataTypeBuilder()
             .WithId(0)
             .WithoutIdentity()
             .WithDatabaseType(ValueStorageType.Decimal)
@@ -386,24 +396,28 @@ public class InvariantSortingTests : SearcherTestBase
         var keys = new Dictionary<Guid, double>();
         await CreateDecimalDocType();
 
-        foreach (var doubleValue in values)
+        await WaitForIndexing(GetIndexAlias(true), () =>
         {
-            var document = new ContentBuilder()
-                .WithContentType(ContentType)
-                .WithName($"document-{doubleValue.ToString()}")
-                .WithPropertyValues(
-                    new
-                    {
-                        decimalproperty = doubleValue
-                    })
-                .Build();
+            foreach (var doubleValue in values)
+            {
+                Content document = new ContentBuilder()
+                    .WithContentType(ContentType)
+                    .WithName($"document-{doubleValue.ToString(CultureInfo.InvariantCulture)}")
+                    .WithPropertyValues(
+                        new
+                        {
+                            decimalproperty = doubleValue
+                        })
+                    .Build();
 
-            ContentService.Save(document);
-            ContentService.Publish(document, new []{ "*"});
-            keys.Add(document.Key, doubleValue);
-        }
+                ContentService.Save(document);
+                ContentService.Publish(document, new []{ "*"});
+                keys.Add(document.Key, doubleValue);
+            }
 
-        Thread.Sleep(3000);
+            return Task.CompletedTask;
+        });
+
         return keys;
     }
 
@@ -412,24 +426,28 @@ public class InvariantSortingTests : SearcherTestBase
         var keys = new Dictionary<Guid, int>();
         await CreateCountDocType();
 
-        foreach (var countValue in values)
+        await WaitForIndexing(GetIndexAlias(true), () =>
         {
-            var document = new ContentBuilder()
-                .WithContentType(ContentType)
-                .WithName($"document-{countValue}")
-                .WithPropertyValues(
-                    new
-                    {
-                        count = countValue,
-                    })
-                .Build();
+            foreach (var countValue in values)
+            {
+                Content document = new ContentBuilder()
+                    .WithContentType(ContentType)
+                    .WithName($"document-{countValue}")
+                    .WithPropertyValues(
+                        new
+                        {
+                            count = countValue,
+                        })
+                    .Build();
 
-            ContentService.Save(document);
-            ContentService.Publish(document, new []{ "*"});
-            keys.Add(document.Key, countValue);
-        }
+                ContentService.Save(document);
+                ContentService.Publish(document, new []{ "*"});
+                keys.Add(document.Key, countValue);
+            }
 
-        Thread.Sleep(3000);
+            return Task.CompletedTask;
+        });
+
         return keys;
     }
 }

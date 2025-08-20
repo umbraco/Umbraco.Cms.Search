@@ -2,17 +2,22 @@
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Services.OperationStatus;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
+using SearchResult = Umbraco.Cms.Search.Core.Models.Searching.SearchResult;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.SearchService;
 
 public class InvariantContentProtectionTests : SearcherTestBase
 {
     public IPublicAccessService PublicAccessService => GetRequiredService<IPublicAccessService>();
+
     public IMemberGroupService MemberGroupService => GetRequiredService<IMemberGroupService>();
+
     public IMemberService MemberService => GetRequiredService<IMemberService>();
+
     public IMemberTypeService MemberTypeService => GetRequiredService<IMemberTypeService>();
 
     [TestCase(true)]
@@ -20,18 +25,22 @@ public class InvariantContentProtectionTests : SearcherTestBase
     public async Task CannotGetProtectedContent_Group(bool publish)
     {
         await MemberGroupService.CreateAsync(new MemberGroup() {Name = "testGroup"});
-        await PublicAccessService.CreateAsync(
-            new PublicAccessEntrySlim
-            {
-                ErrorPageId = RootKey,
-                LoginPageId = RootKey,
-                ContentId = RootKey,
-                MemberGroupNames = ["testGroup"]
-            });
-        Thread.Sleep(3000);
+
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, async () =>
+        {
+            await PublicAccessService.CreateAsync(
+                new PublicAccessEntrySlim
+                {
+                    ErrorPageId = RootKey,
+                    LoginPageId = RootKey,
+                    ContentId = RootKey,
+                    MemberGroupNames = ["testGroup"],
+                });
+        });
+
 
         var indexAlias = GetIndexAlias(publish);
-        var results = await Searcher.SearchAsync(indexAlias, "The root title", null, null, null, null, null, null, 0, 100);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "The root title", null, null, null, null, null, null, 0, 100);
 
         Assert.That(results.Total, Is.EqualTo(publish ? 0 : 1));
     }
@@ -42,20 +51,23 @@ public class InvariantContentProtectionTests : SearcherTestBase
     {
         IMemberType memberType = MemberTypeBuilder.CreateSimpleMemberType();
         MemberTypeService.Save(memberType);
-        var customMember = MemberBuilder.CreateSimpleMember(memberType, "hello", "hello@test.com", "hello", "hello");
+        Member customMember = MemberBuilder.CreateSimpleMember(memberType, "hello", "hello@test.com", "hello", "hello");
         MemberService.Save(customMember);
-        await PublicAccessService.CreateAsync(
-            new PublicAccessEntrySlim
-            {
-                ErrorPageId = RootKey,
-                LoginPageId = RootKey,
-                ContentId = RootKey,
-                MemberUserNames = [customMember.Username]
-            });
-        Thread.Sleep(3000);
+
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, async () =>
+        {
+            await PublicAccessService.CreateAsync(
+                new PublicAccessEntrySlim
+                {
+                    ErrorPageId = RootKey,
+                    LoginPageId = RootKey,
+                    ContentId = RootKey,
+                    MemberUserNames = [customMember.Username],
+                });
+        });
 
         var indexAlias = GetIndexAlias(publish);
-        var results = await Searcher.SearchAsync(indexAlias, "The root title", null, null, null, null, null, null, 0, 100);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "The root title", null, null, null, null, null, null, 0, 100);
 
         Assert.That(results.Total, Is.EqualTo(publish ? 0 : 1));
     }
@@ -64,26 +76,29 @@ public class InvariantContentProtectionTests : SearcherTestBase
     [TestCase(false)]
     public async Task CanGetProtectedContent_Group(bool publish)
     {
-        var result = await MemberGroupService.CreateAsync(new MemberGroup() {Name = "testGroup"});
-        await PublicAccessService.CreateAsync(
-            new PublicAccessEntrySlim
-            {
-                ErrorPageId = RootKey,
-                LoginPageId = RootKey,
-                ContentId = RootKey,
-                MemberGroupNames = ["testGroup"]
-            });
-        Thread.Sleep(3000);
+        Attempt<IMemberGroup?, MemberGroupOperationStatus> result = await MemberGroupService.CreateAsync(new MemberGroup { Name = "testGroup" });
+
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, async () =>
+        {
+            await PublicAccessService.CreateAsync(
+                new PublicAccessEntrySlim
+                {
+                    ErrorPageId = RootKey,
+                    LoginPageId = RootKey,
+                    ContentId = RootKey,
+                    MemberGroupNames = ["testGroup"]
+                });
+        });
 
         IMemberType memberType = MemberTypeBuilder.CreateSimpleMemberType();
         MemberTypeService.Save(memberType);
 
-        var customMember = MemberBuilder.CreateSimpleMember(memberType, "hello", "hello@test.com", "hello", "hello");
+        Member customMember = MemberBuilder.CreateSimpleMember(memberType, "hello", "hello@test.com", "hello", "hello");
         MemberService.Save(customMember);
 
         var accessContext = new AccessContext(customMember.Key, [result.Result!.Key]);
         var indexAlias = GetIndexAlias(publish);
-        var results = await Searcher.SearchAsync(indexAlias, "The root title", null, null, null, null, null, accessContext, 0, 100);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "The root title", null, null, null, null, null, accessContext, 0, 100);
 
         // We should still be able to get draft content, as it is not protected
         Assert.That(results.Total, Is.EqualTo(1));
@@ -96,24 +111,24 @@ public class InvariantContentProtectionTests : SearcherTestBase
         IMemberType memberType = MemberTypeBuilder.CreateSimpleMemberType();
         MemberTypeService.Save(memberType);
 
-        var customMember = MemberBuilder.CreateSimpleMember(memberType, "hello", "hello@test.com", "hello", "hello");
+        Member customMember = MemberBuilder.CreateSimpleMember(memberType, "hello", "hello@test.com", "hello", "hello");
         MemberService.Save(customMember);
 
-        await PublicAccessService.CreateAsync(
-            new PublicAccessEntrySlim
-            {
-                ErrorPageId = RootKey,
-                LoginPageId = RootKey,
-                ContentId = RootKey,
-                MemberUserNames = [customMember.Username]
-            });
-        Thread.Sleep(3000);
-
-
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, async () =>
+        {
+            await PublicAccessService.CreateAsync(
+                new PublicAccessEntrySlim
+                {
+                    ErrorPageId = RootKey,
+                    LoginPageId = RootKey,
+                    ContentId = RootKey,
+                    MemberUserNames = [customMember.Username],
+                });
+        });
 
         var accessContext = new AccessContext(customMember.Key, []);
         var indexAlias = GetIndexAlias(publish);
-        var results = await Searcher.SearchAsync(indexAlias, "The root title", null, null, null, null, null, accessContext, 0, 100);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "The root title", null, null, null, null, null, accessContext, 0, 100);
 
         // We should still be able to get draft content, as it is not protected
         Assert.That(results.Total, Is.EqualTo(1));
@@ -123,36 +138,40 @@ public class InvariantContentProtectionTests : SearcherTestBase
     [TestCase(false)]
     public async Task CanGetProtectedContent_IfAuthenticatedToWrongGroup(bool publish)
     {
-        var rightGroupAttempt = await MemberGroupService.CreateAsync(new MemberGroup() {Name = "rightGroup"});
-        var wrongGroupAttempt = await MemberGroupService.CreateAsync(new MemberGroup() {Name = "wrongGroup"});
-        await PublicAccessService.CreateAsync(
-            new PublicAccessEntrySlim
-            {
-                ErrorPageId = RootKey,
-                LoginPageId = RootKey,
-                ContentId = RootKey,
-                MemberGroupNames = ["rightGroup"]
-            });
-        Thread.Sleep(5000);
+        await MemberGroupService.CreateAsync(new MemberGroup { Name = "rightGroup" });
+        Attempt<IMemberGroup?, MemberGroupOperationStatus> wrongGroupAttempt = await MemberGroupService.CreateAsync(new MemberGroup { Name = "wrongGroup" });
+
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, async () =>
+        {
+            await PublicAccessService.CreateAsync(
+                new PublicAccessEntrySlim
+                {
+                    ErrorPageId = RootKey,
+                    LoginPageId = RootKey,
+                    ContentId = RootKey,
+                    MemberGroupNames = ["rightGroup"],
+                });
+        });
+
 
         IMemberType memberType = MemberTypeBuilder.CreateSimpleMemberType();
         MemberTypeService.Save(memberType);
 
-        var customMember = MemberBuilder.CreateSimpleMember(memberType, "hello", "hello@test.com", "hello", "hello");
+        Member customMember = MemberBuilder.CreateSimpleMember(memberType, "hello", "hello@test.com", "hello", "hello");
         MemberService.Save(customMember);
 
         var accessContext = new AccessContext(customMember.Key, [wrongGroupAttempt.Result!.Key]);
         var indexAlias = GetIndexAlias(publish);
-        var results = await Searcher.SearchAsync(indexAlias, "The root title", null, null, null, null, null, accessContext, 0, 100);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "The root title", null, null, null, null, null, accessContext, 0, 100);
 
         // We should still be able to get draft content, as it is not protected
         Assert.That(results.Total, Is.EqualTo(publish ? 0 : 1));
     }
 
     [SetUp]
-    public void CreateInvariantDocument()
+    public async Task CreateInvariantDocument()
     {
-        var contentType = new ContentTypeBuilder()
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
             .AddPropertyType()
             .WithAlias("title")
@@ -162,21 +181,22 @@ public class InvariantContentProtectionTests : SearcherTestBase
             .Build();
         ContentTypeService.Save(contentType);
 
-        var root = new ContentBuilder()
+        Content root = new ContentBuilder()
             .WithKey(RootKey)
             .WithContentType(contentType)
             .WithName("Root")
             .WithPropertyValues(
-                new
-                {
-                    title = "The root title",
-                })
+                new {title = "The root title",})
             .Build();
 
-        ContentService.Save(root);
-        ContentService.Publish(root, ["*"]);
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, () =>
+        {
+            ContentService.Save(root);
+            ContentService.Publish(root, ["*"]);
+            return Task.CompletedTask;
+        });
 
-        var content = ContentService.GetById(RootKey);
+        IContent? content = ContentService.GetById(RootKey);
         Assert.That(content, Is.Not.Null);
     }
 }

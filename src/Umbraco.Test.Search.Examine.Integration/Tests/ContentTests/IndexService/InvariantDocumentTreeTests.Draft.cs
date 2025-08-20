@@ -10,12 +10,12 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexServic
 public partial class InvariantDocumentTreeTests
 {
     [Test]
-    public void DraftStructure_YieldsAllDocuments()
+    public async Task DraftStructure_YieldsAllDocuments()
     {
-        CreateInvariantDocumentTree(false);
-        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        await CreateInvariantDocumentTree(false);
+        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
-        var results = index.Searcher.CreateQuery().All().Execute().ToArray();
+        ISearchResult[] results = index.Searcher.CreateQuery().All().Execute().ToArray();
 
         Assert.Multiple(() =>
         {
@@ -27,24 +27,29 @@ public partial class InvariantDocumentTreeTests
     }
 
     [Test]
-    public void DraftStructure_YieldsNoPublishedDocuments()
+    public async Task DraftStructure_YieldsNoPublishedDocuments()
     {
-        CreateInvariantDocumentTree(false);
-        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        await CreateInvariantDocumentTree(false);
+        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
-        var results = index.Searcher.CreateQuery().All().Execute();
+        ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results.Count(), Is.EqualTo(0));
     }
 
     [Test]
-    public void DraftStructure_WithRootInRecycleBin_YieldsAllDocuments()
+    public async Task DraftStructure_WithRootInRecycleBin_YieldsAllDocuments()
     {
-        CreateInvariantDocumentTree(false);
-        var root = ContentService.GetById(RootKey)!;
-        var result = ContentService.MoveToRecycleBin(root);
-        Thread.Sleep(3000);
-        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
-        var results = index.Searcher.CreateQuery().All().Execute().ToArray();
+        await CreateInvariantDocumentTree(false);
+
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.DraftContent, () =>
+        {
+            IContent root = ContentService.GetById(RootKey)!;
+            ContentService.MoveToRecycleBin(root);
+            return Task.CompletedTask;
+        });
+
+        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        ISearchResult[] results = index.Searcher.CreateQuery().All().Execute().ToArray();
 
         Assert.Multiple(() =>
         {
@@ -57,17 +62,18 @@ public partial class InvariantDocumentTreeTests
 
 
     [Test]
-    public void DraftStructure_WithChildDeleted_YieldsNothingBelowRoot()
+    public async Task DraftStructure_WithChildDeleted_YieldsNothingBelowRoot()
     {
-        CreateInvariantDocumentTree(false);
-        var child = ContentService.GetById(ChildKey)!;
-        ContentService.Delete(child);
+        await CreateInvariantDocumentTree(false);
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.DraftContent, () =>
+        {
+            IContent child = ContentService.GetById(ChildKey)!;
+            ContentService.Delete(child);
+            return Task.CompletedTask;
+        });
 
-        // TODO: We need to await that the index deleting has completed, for now this is our only option
-        Thread.Sleep(3000);
-
-        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
-        var results = index.Searcher.CreateQuery().All().Execute().ToArray();
+        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        ISearchResult[] results = index.Searcher.CreateQuery().All().Execute().ToArray();
 
         Assert.Multiple(() =>
         {
@@ -77,17 +83,19 @@ public partial class InvariantDocumentTreeTests
     }
 
     [Test]
-    public void DraftStructure_WithGrandchildDeleted_YieldsNothingBelowChild()
+    public async Task DraftStructure_WithGrandchildDeleted_YieldsNothingBelowChild()
     {
-        CreateInvariantDocumentTree(false);
-        var grandchild = ContentService.GetById(GrandchildKey)!;
-        ContentService.Delete(grandchild);
+        await CreateInvariantDocumentTree(false);
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.DraftContent, () =>
+        {
+            IContent grandchild = ContentService.GetById(GrandchildKey)!;
+            ContentService.Delete(grandchild);
+            return Task.CompletedTask;
+        });
 
-        // TODO: We need to await that the index deleting has completed, for now this is our only option
-        Thread.Sleep(3000);
 
-        var index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
-        var results = index.Searcher.CreateQuery().All().Execute().ToArray();
+        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        ISearchResult[] results = index.Searcher.CreateQuery().All().Execute().ToArray();
 
         Assert.Multiple(() =>
         {
@@ -97,9 +105,9 @@ public partial class InvariantDocumentTreeTests
         });
     }
 
-    private void CreateInvariantDocumentTree(bool publish)
+    private async Task CreateInvariantDocumentTree(bool publish)
     {
-        var dataType = new DataTypeBuilder()
+        DataType dataType = new DataTypeBuilder()
             .WithId(0)
             .WithoutIdentity()
             .WithDatabaseType(ValueStorageType.Decimal)
@@ -109,7 +117,7 @@ public partial class InvariantDocumentTreeTests
             .Build();
 
         DataTypeService.Save(dataType);
-        var contentType = new ContentTypeBuilder()
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
             .AddPropertyType()
             .WithAlias("title")
@@ -136,7 +144,7 @@ public partial class InvariantDocumentTreeTests
         contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
         ContentTypeService.Save(contentType);
 
-        var root = new ContentBuilder()
+        Content root = new ContentBuilder()
             .WithKey(RootKey)
             .WithContentType(contentType)
             .WithName("Root")
@@ -146,68 +154,73 @@ public partial class InvariantDocumentTreeTests
                     title = "The root title",
                     count = 12,
                     datetime = CurrentDateTimeOffset.DateTime,
-                    decimalproperty = DecimalValue
+                    decimalproperty = DecimalValue,
                 })
             .Build();
 
-        if (publish)
+        await WaitForIndexing(publish ? Cms.Search.Core.Constants.IndexAliases.PublishedContent : Cms.Search.Core.Constants.IndexAliases.DraftContent, () =>
         {
-            SaveAndPublish(root);
-        }
-        else
-        {
-            ContentService.Save(root);
-        }
+            if (publish)
+            {
+                SaveAndPublish(root);
+            }
+            else
+            {
+                ContentService.Save(root);
+            }
 
 
-        var child = new ContentBuilder()
-            .WithKey(ChildKey)
-            .WithContentType(contentType)
-            .WithName("Child")
-            .WithParent(root)
-            .WithPropertyValues(
-                new
-                {
-                    title = "The child title",
-                    count = 12,
-                    datetime = CurrentDateTimeOffset.DateTime,
-                    decimalproperty = DecimalValue
-                })
-            .Build();
+            Content child = new ContentBuilder()
+                .WithKey(ChildKey)
+                .WithContentType(contentType)
+                .WithName("Child")
+                .WithParent(root)
+                .WithPropertyValues(
+                    new
+                    {
+                        title = "The child title",
+                        count = 12,
+                        datetime = CurrentDateTimeOffset.DateTime,
+                        decimalproperty = DecimalValue,
+                    })
+                .Build();
 
-        if (publish)
-        {
-            SaveAndPublish(child);
-        }
-        else
-        {
-            ContentService.Save(child);
-        }
+            if (publish)
+            {
+                SaveAndPublish(child);
+            }
+            else
+            {
+                ContentService.Save(child);
+            }
 
-        var grandchild = new ContentBuilder()
-            .WithKey(GrandchildKey)
-            .WithContentType(contentType)
-            .WithName("Grandchild")
-            .WithParent(child)
-            .WithPropertyValues(
-                new
-                {
-                    title = "The grandchild title",
-                    count = 12,
-                    datetime = CurrentDateTimeOffset.DateTime,
-                    decimalproperty = DecimalValue
-                })
-            .Build();
+            Content grandchild = new ContentBuilder()
+                .WithKey(GrandchildKey)
+                .WithContentType(contentType)
+                .WithName("Grandchild")
+                .WithParent(child)
+                .WithPropertyValues(
+                    new
+                    {
+                        title = "The grandchild title",
+                        count = 12,
+                        datetime = CurrentDateTimeOffset.DateTime,
+                        decimalproperty = DecimalValue,
+                    })
+                .Build();
 
-        if (publish)
-        {
-            SaveAndPublish(grandchild);
-        }
-        else
-        {
-            ContentService.Save(grandchild);
-        }
+            if (publish)
+            {
+                SaveAndPublish(grandchild);
+            }
+            else
+            {
+                ContentService.Save(grandchild);
+            }
 
-        Thread.Sleep(3000);
+            return Task.CompletedTask;
+        });
+
+
     }
 }
