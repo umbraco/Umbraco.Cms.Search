@@ -4,6 +4,8 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Search.Provider.Examine.Extensions;
+using Umbraco.Cms.Search.Provider.Examine.Helpers;
+using CoreConstants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
@@ -98,7 +100,7 @@ internal sealed class Indexer : IExamineIndexer
 
     private void DeleteSingleDoc(IIndex index, Guid key)
     {
-        ISearchResults documents = index.Searcher.CreateQuery().Field($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.Id}_{Constants.Fields.Keywords}", key.ToString().TransformDashes()).Execute();
+        ISearchResults documents = index.Searcher.CreateQuery().Field(FieldNameHelper.FieldName(CoreConstants.FieldNames.Id, Constants.FieldValues.Keywords), key.ToString().TransformDashes()).Execute();
 
         var idsToDelete = new HashSet<string>();
 
@@ -120,7 +122,7 @@ internal sealed class Indexer : IExamineIndexer
 
         foreach (Guid key in keys)
         {
-            ISearchResults documents = index.Searcher.CreateQuery().Field($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.PathIds}_{Constants.Fields.Keywords}", key.ToString().TransformDashes()).Execute();
+            ISearchResults documents = index.Searcher.CreateQuery().Field(FieldNameHelper.FieldName(CoreConstants.FieldNames.PathIds, Constants.FieldValues.Keywords), key.ToString().TransformDashes()).Execute();
             foreach (ISearchResult document in documents)
             {
                 idsToDelete.Add(document.Id);
@@ -144,13 +146,13 @@ internal sealed class Indexer : IExamineIndexer
             if (field.Value.Integers?.Any() ?? false)
             {
                 var integers = field.Value.Integers.Cast<object>().ToList();
-                result.Add(CalculateFieldName(field, Constants.Fields.Integers),  integers);
+                result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.Integers),  integers);
             }
 
             if (field.Value.Keywords?.Any() ?? false)
             {
                 // add field for sorting and/or faceting (will be indexed according to configuration)
-                var fieldName = CalculateFieldName(field, Constants.Fields.Keywords);
+                var fieldName = FieldNameHelper.FieldName(field, Constants.FieldValues.Keywords);
                 result.Add(fieldName, field.Value.Keywords.Select(x => x.TransformDashes()));
                 if (_fieldOptions.HasKeywordField(field.FieldName))
                 {
@@ -162,80 +164,71 @@ internal sealed class Indexer : IExamineIndexer
             if (field.Value.Decimals?.Any() ?? false)
             {
                 var decimals = field.Value.Decimals.Cast<object>().ToList();
-                result.Add(CalculateFieldName(field, Constants.Fields.Decimals), decimals);
+                result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.Decimals), decimals);
             }
 
             if (field.Value.DateTimeOffsets?.Any() ?? false)
             {
                 // We have to use DateTime here, as examine facets does not play nice with DatetimeOffsets for now.
                 var dates = field.Value.DateTimeOffsets.Select(x => x.DateTime).Cast<object>().ToList();
-                result.Add(CalculateFieldName(field, Constants.Fields.DateTimeOffsets), dates);
+                result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.DateTimeOffsets), dates);
             }
+
             if (field.Value.Texts?.Any() ?? false)
             {
-                result.Add(CalculateFieldName(field, Constants.Fields.Texts), field.Value.Texts.Select(x => x.TransformDashes()));
+                result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.Texts), field.Value.Texts.Select(x => x.TransformDashes()));
                 aggregatedTexts.AddRange(field.Value.Texts);
             }
 
             if (field.Value.TextsR1?.Any() ?? false)
             {
                 aggregatedR1Texts.AddRange(field.Value.TextsR1);
-                result.Add(CalculateFieldName(field, Constants.Fields.TextsR1), field.Value.TextsR1.Select(x => x.TransformDashes()));
-                aggregatedTexts.AddRange(field.Value.TextsR1);
+                result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.TextsR1), field.Value.TextsR1.Select(x => x.TransformDashes()));
+                aggregatedR1Texts.AddRange(field.Value.TextsR1);
             }
 
             if (field.Value.TextsR2?.Any() ?? false)
             {
                 aggregatedR2Texts.AddRange(field.Value.TextsR2);
-                result.Add(CalculateFieldName(field, Constants.Fields.TextsR2), field.Value.TextsR2.Select(x => x.TransformDashes()));
-                aggregatedTexts.AddRange(field.Value.TextsR2);
+                result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.TextsR2), field.Value.TextsR2.Select(x => x.TransformDashes()));
+                aggregatedR2Texts.AddRange(field.Value.TextsR2);
             }
 
             if (field.Value.TextsR3?.Any() ?? false)
             {
                 aggregatedR3Texts.AddRange(field.Value.TextsR3);
-                result.Add(CalculateFieldName(field, Constants.Fields.TextsR3), field.Value.TextsR3.Select(x => x.TransformDashes()));
-                aggregatedTexts.AddRange(field.Value.TextsR3);
+                result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.TextsR3), field.Value.TextsR3.Select(x => x.TransformDashes()));
+                aggregatedR3Texts.AddRange(field.Value.TextsR3);
             }
         }
 
         if (aggregatedTexts.Any())
         {
-            result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.AggregatedTexts}", aggregatedTexts.ToArray());
+            result.Add(Constants.SystemFields.AggregatedTexts, aggregatedTexts.ToArray());
         }
 
         if (aggregatedR1Texts.Any())
         {
-            result.Add($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR1}", aggregatedR1Texts.ToArray());
+            result.Add(Constants.SystemFields.AggregatedTextsR1, aggregatedR1Texts.ToArray());
         }
+
         if (aggregatedR2Texts.Any())
         {
-            result.Add($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR2}", aggregatedR2Texts.ToArray());
+            result.Add(Constants.SystemFields.AggregatedTextsR2, aggregatedR2Texts.ToArray());
         }
+
         if (aggregatedR3Texts.Any())
         {
-            result.Add($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR3}", aggregatedR3Texts.ToArray());
+            result.Add(Constants.SystemFields.AggregatedTextsR3, aggregatedR3Texts.ToArray());
         }
-
 
         // Cannot add null values, so we have to just say "none" here, so we can filter on variant / invariant content
-        result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}", [culture?.TransformDashes() ?? "none"]);
-        result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}", [segment?.TransformDashes() ?? "none"]);
+        result.Add(Constants.SystemFields.Culture, [culture?.TransformDashes() ?? "none"]);
+        result.Add(Constants.SystemFields.Segment, [segment?.TransformDashes() ?? "none"]);
         IEnumerable<Guid> protectionIds = protection?.AccessIds ?? new List<Guid> {Guid.Empty};
-        result.Add($"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}", protectionIds.Select(x => x.ToString().TransformDashes()));
+        result.Add(Constants.SystemFields.Protection, protectionIds.Select(x => x.ToString().TransformDashes()));
 
         return result;
-    }
-
-    private string CalculateFieldName(IndexField field, string property)
-    {
-        var result = $"{field.FieldName}";
-        if (result.StartsWith(Constants.Fields.FieldPrefix) is false && result.StartsWith(Constants.Fields.SystemFieldPrefix) is false)
-        {
-            result = Constants.Fields.FieldPrefix + result;
-        }
-
-        return result + $"_{property}";
     }
 
     private IIndex GetIndex(string indexName)

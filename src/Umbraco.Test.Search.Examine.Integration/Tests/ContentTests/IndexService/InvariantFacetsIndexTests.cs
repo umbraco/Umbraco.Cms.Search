@@ -4,6 +4,7 @@ using Examine.Lucene;
 using Examine.Search;
 using NUnit.Framework;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 using Constants = Umbraco.Cms.Search.Provider.Examine.Constants;
@@ -24,9 +25,10 @@ public class InvariantFacetsIndexTests : IndexTestBase
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
+        var fieldName = FieldNameHelper.FieldName("otherName", Constants.FieldValues.Integers);
         ISearchResults results = index.Searcher.CreateQuery()
             .All()
-            .WithFacets(facets => facets.FacetLongRange($"{Constants.Fields.FieldPrefix}otherName_{Constants.Fields.Integers}", new Int64Range("0-9", 0, true, 9, true)))
+            .WithFacets(facets => facets.FacetLongRange(fieldName, new Int64Range("0-9", 0, true, 9, true)))
             .Execute();
 
         IFacetResult[] facets = results.GetFacets().ToArray();
@@ -48,9 +50,10 @@ public class InvariantFacetsIndexTests : IndexTestBase
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
+        var fieldName = FieldNameHelper.FieldName("decimalproperty", Constants.FieldValues.Decimals);
         ISearchResults results = index.Searcher.CreateQuery()
             .All()
-            .WithFacets(facets => facets.FacetDoubleRange($"{Constants.Fields.FieldPrefix}decimalproperty_{Constants.Fields.Decimals}", new DoubleRange("values", 3.5, true, 654.9, true)))
+            .WithFacets(facets => facets.FacetDoubleRange(fieldName, new DoubleRange("values", 3.5, true, 654.9, true)))
             .Execute();
 
         IFacetResult[] facets = results.GetFacets().ToArray();
@@ -72,9 +75,10 @@ public class InvariantFacetsIndexTests : IndexTestBase
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
+        var fieldName = FieldNameHelper.FieldName("title", Constants.FieldValues.Texts);
         ISearchResults results = index.Searcher.CreateQuery()
             .All()
-            .WithFacets(facets => facets.FacetString($"{Constants.Fields.FieldPrefix}title_{Constants.Fields.Texts}"))
+            .WithFacets(facets => facets.FacetString(fieldName))
             .Execute();
 
         IFacetResult[] facets = results.GetFacets().ToArray();
@@ -97,9 +101,10 @@ public class InvariantFacetsIndexTests : IndexTestBase
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
+        var fieldName = FieldNameHelper.FieldName("otherName", Constants.FieldValues.Integers);
         ISearchResults results = index.Searcher.CreateQuery()
             .All()
-            .WithFacets(facets => facets.FacetLongRange($"{Constants.Fields.FieldPrefix}otherName_{Constants.Fields.Integers}", new Int64Range("0-9", 0, true, 9, true),  new Int64Range("100-199", 100, true, 199, true)))
+            .WithFacets(facets => facets.FacetLongRange(fieldName, new Int64Range("0-9", 0, true, 9, true),  new Int64Range("100-199", 100, true, 199, true)))
             .Execute();
 
         IFacetResult[] facets = results.GetFacets().ToArray();

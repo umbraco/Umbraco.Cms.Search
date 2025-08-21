@@ -36,7 +36,7 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
 
         IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
-        IReadOnlyList<string> indexedAccessKeys = results.First().AllValues.First(x => x.Key == $"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}").Value;
+        IReadOnlyList<string> indexedAccessKeys = results.First().AllValues.First(x => x.Key == Constants.SystemFields.Protection).Value;
         Assert.That(indexedAccessKeys, Has.Count.EqualTo(1));
         Assert.That(indexedAccessKeys, Has.Member(result.Result!.Key.ToString().TransformDashes()));
     }
@@ -64,7 +64,7 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
 
         IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
-        IReadOnlyList<string> indexedAccessKeys = results.First().AllValues.First(x => x.Key == $"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}").Value;
+        IReadOnlyList<string> indexedAccessKeys = results.First().AllValues.First(x => x.Key == Constants.SystemFields.Protection).Value;
         Assert.That(indexedAccessKeys, Has.Count.EqualTo(5));
         Assert.That(indexedAccessKeys, Has.Member(group.Result!.Key.ToString().TransformDashes()));
         Assert.That(indexedAccessKeys, Has.Member(group2.Result!.Key.ToString().TransformDashes()));
@@ -78,7 +78,7 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
     {
         IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
-        Assert.That(results.First().AllValues.SelectMany(x => x.Value), Does.Not.Contain($"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}"));
+        Assert.That(results.First().AllValues.SelectMany(x => x.Value), Does.Not.Contain(Constants.SystemFields.Protection));
     }
 
     [SetUp]

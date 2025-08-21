@@ -143,7 +143,7 @@ public class InvariantSortingTests : SearcherTestBase
     [TestCase(false, Direction.Ascending)]
     public async Task CanSortTexts(bool publish, Direction direction)
     {
-        string[] titles = ["aa", "ccc", "bbb", "ddd", "zzz", "xxx"];
+        string[] titles = ["abc", "ccc", "bbb", "ddd", "zzz", "xxx"];
 
         KeyValuePair<Guid, string>[] keys = (await CreateTitleDocuments(titles)).OrderBy(x => x.Value, direction).ToArray();
 

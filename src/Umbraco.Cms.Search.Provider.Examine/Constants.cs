@@ -4,10 +4,11 @@ internal static class Constants
 {
     public static class Fields
     {
-        public const string FieldPrefix = "ExaminePrefix_";
-        public const string SystemFieldPrefix = "Umb_";
         public const string KeywordFieldPostfix = "_raw";
+    }
 
+    public static class FieldValues
+    {
         public const string Integers = "integers";
         public const string Decimals = "decimals";
         public const string DateTimeOffsets = "datetimeoffsets";
@@ -16,24 +17,20 @@ internal static class Constants
         public const string TextsR1 = "textsr1";
         public const string TextsR2 = "textsr2";
         public const string TextsR3 = "textsr3";
-        public const string Protection = "protection";
-        public const string Culture = "culture";
-        public const string Segment = "segment";
-        public const string AggregatedTexts = "aggregated_texts";
-        public const string IndexType = "IndexType";
+    }
 
-        public static class SystemFields
-        {
-            public const string Id = "Id";
-            public const string PathIds = "PathIds";
-            public const string ParentId = "ParentId";
-            public const string ContentTypeId = "ContentTypeId";
-            public const string CreateDate = "CreateDate";
-            public const string UpdateDate = "UpdateDate";
-            public const string Level = "Level";
-            public const string ObjectType = "ObjectType";
-            public const string SortOrder = "SortOrder";
-            public const string Name = "Name";
-        }
+    public static class SystemFields
+    {
+        private const string Prefix = "Sys_";
+
+        public const string Protection = $"{Prefix}Protection";
+        public const string Culture = $"{Prefix}Culture";
+        public const string Segment = $"{Prefix}Segment";
+
+        public const string AggregatedTexts = $"{Prefix}aggregated_texts";
+        public const string AggregatedTextsR1 = $"{Prefix}aggregated_textsr1";
+        public const string AggregatedTextsR2 = $"{Prefix}aggregated_textsr2";
+        public const string AggregatedTextsR3 = $"{Prefix}aggregated_textsr3";
+        public const string IndexType = "IndexType";
     }
 }

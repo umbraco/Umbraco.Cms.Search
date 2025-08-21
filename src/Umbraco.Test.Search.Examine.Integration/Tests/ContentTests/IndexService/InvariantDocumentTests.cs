@@ -4,6 +4,7 @@ using Examine.Search;
 using NUnit.Framework;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Provider.Examine;
+using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
@@ -65,10 +66,11 @@ public class InvariantDocumentTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField($"{Constants.Fields.FieldPrefix}title_{Constants.Fields.Texts}");
+        var fieldName = FieldNameHelper.FieldName("title", Constants.FieldValues.Texts);
+        queryBuilder.SelectField(fieldName);
         ISearchResults results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == $"{Constants.Fields.FieldPrefix}title_{Constants.Fields.Texts}").Value, Is.EqualTo("The root title"));
+        Assert.That(results.First().Values.First(x => x.Key == fieldName).Value, Is.EqualTo("The root title"));
     }
 
     [TestCase(true)]
@@ -80,10 +82,11 @@ public class InvariantDocumentTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField($"{Constants.Fields.FieldPrefix}count_{Constants.Fields.Integers}");
+        var fieldName = FieldNameHelper.FieldName("count", Constants.FieldValues.Integers);
+        queryBuilder.SelectField(fieldName);
         ISearchResults results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == $"{Constants.Fields.FieldPrefix}count_{Constants.Fields.Integers}").Value, Is.EqualTo("12"));
+        Assert.That(results.First().Values.First(x => x.Key == fieldName).Value, Is.EqualTo("12"));
     }
 
     [TestCase(true)]
@@ -95,16 +98,14 @@ public class InvariantDocumentTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField($"{Constants.Fields.FieldPrefix}decimalproperty_{Constants.Fields.Decimals}");
+        var fieldName = FieldNameHelper.FieldName("decimalproperty", Constants.FieldValues.Decimals);
+        queryBuilder.SelectField(fieldName);
         ISearchResults results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
         Assert.That(
-            results
-            .First()
-            .Values
-            .First(x => x.Key == $"{Constants.Fields.FieldPrefix}decimalproperty_{Constants.Fields.Decimals}")
-            .Value,
-            Is.EqualTo(((double)DecimalValue).ToString()));
+            double.Parse(results.First().Values.First(x => x.Key == fieldName).Value),
+            Is.EqualTo((double)DecimalValue)
+        );
     }
 
     [TestCase(true)]
@@ -116,7 +117,8 @@ public class InvariantDocumentTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField($"{Constants.Fields.FieldPrefix}datetime_{Constants.Fields.DateTimeOffsets}");
+        var fieldName = FieldNameHelper.FieldName("datetime", Constants.FieldValues.DateTimeOffsets);
+        queryBuilder.SelectField(fieldName);
         ISearchResults results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
         Assert.That(results.First().Values.First().Value, Is.EqualTo(CurrentDateTime.Ticks.ToString()));
@@ -151,10 +153,10 @@ public class InvariantDocumentTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField($"{Constants.Fields.FieldPrefix}{Constants.Fields.AggregatedTexts}");
+        queryBuilder.SelectField(Constants.SystemFields.AggregatedTexts);
         ISearchResults results = queryBuilder.Execute();
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().AllValues.First(x => x.Key == $"{Constants.Fields.FieldPrefix}{Constants.Fields.AggregatedTexts}").Value.Contains("The root title"), Is.True);
+        Assert.That(results.First().AllValues.First(x => x.Key == Constants.SystemFields.AggregatedTexts).Value.Contains("The root title"), Is.True);
     }
 
 

@@ -3,6 +3,7 @@ using Examine.Search;
 using NUnit.Framework;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Provider.Examine.Extensions;
+using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 using Constants = Umbraco.Cms.Search.Provider.Examine.Constants;
@@ -53,7 +54,7 @@ public class VariantDocumentTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField($"{Constants.Fields.SystemFieldPrefix}Name_{Constants.Fields.TextsR1}");
+        queryBuilder.SelectField(Constants.SystemFields.AggregatedTextsR1);
         ISearchResults results = queryBuilder.Execute();
         var result = results
             .SelectMany(x => x.Values.Values)
@@ -62,17 +63,18 @@ public class VariantDocumentTests : IndexTestBase
         Assert.That(result, Is.EqualTo(expectedValue));
     }
 
-    [TestCase($"{Constants.Fields.FieldPrefix}invarianttitle_{Constants.Fields.Texts}", "Invariant", "en-US")]
-    [TestCase($"{Constants.Fields.FieldPrefix}invarianttitle_{Constants.Fields.Texts}", "Invariant", "da-DK")]
-    [TestCase($"{Constants.Fields.FieldPrefix}invarianttitle_{Constants.Fields.Texts}", "Invariant", "ja-JP")]
-    [TestCase($"{Constants.Fields.FieldPrefix}invariantcount_{Constants.Fields.Integers}", 12, "en-US")]
-    [TestCase($"{Constants.Fields.FieldPrefix}invariantcount_{Constants.Fields.Integers}", 12, "da-DK")]
-    [TestCase($"{Constants.Fields.FieldPrefix}invariantcount_{Constants.Fields.Integers}", 12, "ja-JP")]
-    [TestCase($"{Constants.Fields.FieldPrefix}invariantdecimalproperty_{Constants.Fields.Decimals}", 12.4552, "en-US")]
-    [TestCase($"{Constants.Fields.FieldPrefix}invariantdecimalproperty_{Constants.Fields.Decimals}", 12.4552, "da-DK")]
-    [TestCase($"{Constants.Fields.FieldPrefix}invariantdecimalproperty_{Constants.Fields.Decimals}", 12.4552, "ja-JP")]
-    public void CanIndexInvariantProperty(string field, object value, string culture)
+    [TestCase("invarianttitle", Constants.FieldValues.Texts, "Invariant", "en-US")]
+    [TestCase("invarianttitle", Constants.FieldValues.Texts, "Invariant", "da-DK")]
+    [TestCase("invarianttitle", Constants.FieldValues.Texts, "Invariant", "ja-JP")]
+    [TestCase("invariantcount", Constants.FieldValues.Integers, 12, "en-US")]
+    [TestCase("invariantcount", Constants.FieldValues.Integers, 12, "da-DK")]
+    [TestCase("invariantcount", Constants.FieldValues.Integers, 12, "ja-JP")]
+    [TestCase("invariantdecimalproperty", Constants.FieldValues.Decimals, 12.4552, "en-US")]
+    [TestCase("invariantdecimalproperty", Constants.FieldValues.Decimals, 12.4552, "da-DK")]
+    [TestCase("invariantdecimalproperty", Constants.FieldValues.Decimals, 12.4552, "ja-JP")]
+    public void CanIndexInvariantProperty(string property, string fieldValues, object value, string culture)
     {
+        var field = FieldNameHelper.FieldName(property, fieldValues);
         IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
@@ -96,7 +98,8 @@ public class VariantDocumentTests : IndexTestBase
 
         ISearchResults results = index.Searcher.Search(updatedValue);
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == $"{Constants.Fields.FieldPrefix}{propertyName}_{Constants.Fields.Texts}").Value, Is.EqualTo(updatedValue));
+        var fieldName = FieldNameHelper.FieldName(propertyName, Constants.FieldValues.Texts);
+        Assert.That(results.First().Values.First(x => x.Key == fieldName).Value, Is.EqualTo(updatedValue));
     }
 
     [TestCase(true, "en-US", "Root")]
@@ -112,7 +115,8 @@ public class VariantDocumentTests : IndexTestBase
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
-        queryBuilder.SelectField($"{Constants.Fields.FieldPrefix}title_{Constants.Fields.Texts}");
+        var fieldName = FieldNameHelper.FieldName("title", Constants.FieldValues.Texts);
+        queryBuilder.SelectField(fieldName);
         ISearchResults results = queryBuilder.Execute();
 
         var result = results
@@ -136,7 +140,8 @@ public class VariantDocumentTests : IndexTestBase
 
         ISearchResults results = index.Searcher.Search(expectedValue);
         Assert.That(results, Is.Not.Empty);
-        Assert.That(results.First().Values.First(x => x.Key == $"{Constants.Fields.FieldPrefix}body_{Constants.Fields.Texts}").Value, Is.EqualTo(expectedValue.TransformDashes()));
+        var fieldName = FieldNameHelper.FieldName("body", Constants.FieldValues.Texts);
+        Assert.That(results.First().Values.First(x => x.Key == fieldName).Value, Is.EqualTo(expectedValue.TransformDashes()));
     }
 
     [SetUp]

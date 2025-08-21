@@ -12,6 +12,7 @@ using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Search.Provider.Examine.Extensions;
+using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using Umbraco.Cms.Search.Provider.Examine.Models.Searching.Filtering;
 using Umbraco.Extensions;
 using FacetResult = Umbraco.Cms.Search.Core.Models.Searching.Faceting.FacetResult;
@@ -55,9 +56,9 @@ internal sealed class Searcher : IExamineSearcher
 
         IBooleanOperation searchQuery = index.Searcher
             .CreateQuery()
-            .Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.Culture}", $"{culture ?? "none"}".TransformDashes())
+            .Field(Constants.SystemFields.Culture, $"{culture ?? "none"}".TransformDashes())
             .And()
-            .Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.Segment}", $"{segment ?? "none"}".TransformDashes());
+            .Field(Constants.SystemFields.Segment, $"{segment ?? "none"}".TransformDashes());
 
 
         if (query is not null)
@@ -68,11 +69,11 @@ internal sealed class Searcher : IExamineSearcher
             searchQuery.And().Group(nestedQuery =>
             {
                 var transformedQuery = query.TransformDashes();
-                INestedBooleanOperation fieldQuery = nestedQuery.Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR1}", transformedQuery.Boost(4));
-                fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR2}", transformedQuery.Boost(3));
-                fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}_{Constants.Fields.TextsR3}", transformedQuery.Boost(2));
+                INestedBooleanOperation fieldQuery = nestedQuery.Field(Constants.SystemFields.AggregatedTextsR1, transformedQuery.Boost(4));
+                fieldQuery.Or().Field(Constants.SystemFields.AggregatedTextsR2, transformedQuery.Boost(3));
+                fieldQuery.Or().Field(Constants.SystemFields.AggregatedTextsR3, transformedQuery.Boost(2));
                 fieldQuery.Or().ManagedQuery(transformedQuery);
-                fieldQuery.Or().Field($"{Constants.Fields.FieldPrefix}{Constants.Fields.AggregatedTexts}", transformedQuery.Escape());
+                fieldQuery.Or().Field(Constants.SystemFields.AggregatedTexts, transformedQuery.Escape());
 
                 return fieldQuery;
             });
@@ -129,10 +130,9 @@ internal sealed class Searcher : IExamineSearcher
 
     private void AddProtection(IBooleanOperation searchQuery, AccessContext? accessContext)
     {
-        string protectionFieldName = $"{Constants.Fields.FieldPrefix}{Constants.Fields.Protection}";
         if (accessContext is null)
         {
-            searchQuery.And().Field(protectionFieldName, Guid.Empty.ToString().TransformDashes());
+            searchQuery.And().Field(Constants.SystemFields.Protection, Guid.Empty.ToString().TransformDashes());
         }
         else
         {
@@ -146,7 +146,7 @@ internal sealed class Searcher : IExamineSearcher
                 }
             }
 
-            searchQuery.And().Field(protectionFieldName, keys);
+            searchQuery.And().Field(Constants.SystemFields.Protection, keys);
         }
     }
 
@@ -178,27 +178,22 @@ internal sealed class Searcher : IExamineSearcher
     }
 
     private SortableField[] MapSorter(Sorter sorter)
-    {
-        var fieldNamePrefix = sorter.FieldName.StartsWith(Constants.Fields.FieldPrefix) || sorter.FieldName.StartsWith(Constants.Fields.SystemFieldPrefix)
-            ? $"{sorter.FieldName}"
-            : $"{Constants.Fields.FieldPrefix}{sorter.FieldName}";
-
-        return sorter switch
+        => sorter switch
         {
-            IntegerSorter => [new SortableField($"{fieldNamePrefix}_{Constants.Fields.Integers}", SortType.Int)],
-            DecimalSorter => [new SortableField($"{fieldNamePrefix}_{Constants.Fields.Decimals}", SortType.Double)],
-            DateTimeOffsetSorter => [new SortableField($"{fieldNamePrefix}_{Constants.Fields.DateTimeOffsets}", SortType.Long)],
-            KeywordSorter => [new SortableField($"{fieldNamePrefix}_{Constants.Fields.Keywords}", SortType.String)],
-                TextSorter => [
-                    new SortableField($"{fieldNamePrefix}_{Constants.Fields.TextsR1}", SortType.String),
-                    new SortableField($"{fieldNamePrefix}_{Constants.Fields.TextsR2}", SortType.String),
-                    new SortableField($"{fieldNamePrefix}_{Constants.Fields.TextsR3}", SortType.String),
-                    new SortableField($"{fieldNamePrefix}_{Constants.Fields.Texts}", SortType.String),
-                ],
+            IntegerSorter => [new SortableField(FieldNameHelper.FieldName(sorter.FieldName, Constants.FieldValues.Integers), SortType.Int)],
+            DecimalSorter => [new SortableField(FieldNameHelper.FieldName(sorter.FieldName, Constants.FieldValues.Decimals), SortType.Double)],
+            DateTimeOffsetSorter => [new SortableField(FieldNameHelper.FieldName(sorter.FieldName, Constants.FieldValues.DateTimeOffsets), SortType.Long)],
+            KeywordSorter => [new SortableField(FieldNameHelper.FieldName(sorter.FieldName, Constants.FieldValues.Keywords), SortType.String)],
+            TextSorter =>
+            [
+                new SortableField(FieldNameHelper.FieldName(sorter.FieldName, Constants.FieldValues.TextsR1), SortType.String),
+                new SortableField(FieldNameHelper.FieldName(sorter.FieldName, Constants.FieldValues.TextsR2), SortType.String),
+                new SortableField(FieldNameHelper.FieldName(sorter.FieldName, Constants.FieldValues.TextsR3), SortType.String),
+                new SortableField(FieldNameHelper.FieldName(sorter.FieldName, Constants.FieldValues.Texts), SortType.String),
+            ],
             ScoreSorter => [],
             _ => throw new ArgumentOutOfRangeException(nameof(sorter))
         };
-    }
 
     private void AddFilters(IBooleanOperation searchQuery, IEnumerable<Filter>? filters)
     {
@@ -213,9 +208,7 @@ internal sealed class Searcher : IExamineSearcher
             {
                 case KeywordFilter keywordFilter:
                     var keywordFilterValues = keywordFilter.Values;
-                    var keywordFieldName = keywordFilter.FieldName.StartsWith(Constants.Fields.FieldPrefix) || keywordFilter.FieldName.StartsWith(Constants.Fields.SystemFieldPrefix)
-                        ? $"{keywordFilter.FieldName}_{Constants.Fields.Keywords}"
-                        : $"{Constants.Fields.FieldPrefix}{keywordFilter.FieldName}_{Constants.Fields.Keywords}";
+                    var keywordFieldName = FieldNameHelper.FieldName(filter.FieldName, Constants.FieldValues.Keywords);
 
                     if (_fieldOptions.HasKeywordField(keywordFilter.FieldName))
                     {
@@ -242,10 +235,10 @@ internal sealed class Searcher : IExamineSearcher
                     IExamineValue[] textFilterValue = textFilter.Values.Select(value => value.TransformDashes().MultipleCharacterWildcard()).ToArray();
                     string[] textFields =
                     [
-                        $"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.Texts}",
-                        $"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR1}",
-                        $"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR2}",
-                        $"{Constants.Fields.FieldPrefix}{textFilter.FieldName}_{Constants.Fields.TextsR3}",
+                        FieldNameHelper.FieldName(filter.FieldName, Constants.FieldValues.Texts),
+                        FieldNameHelper.FieldName(filter.FieldName, Constants.FieldValues.TextsR1),
+                        FieldNameHelper.FieldName(filter.FieldName, Constants.FieldValues.TextsR2),
+                        FieldNameHelper.FieldName(filter.FieldName, Constants.FieldValues.TextsR3)
                     ];
 
                     if (textFilter.Negate)
@@ -259,43 +252,37 @@ internal sealed class Searcher : IExamineSearcher
 
                     break;
                 case IntegerRangeFilter integerRangeFilter:
-                    var integerRangeFieldName =
-                        $"{Constants.Fields.FieldPrefix}{integerRangeFilter.FieldName}_{Constants.Fields.Integers}";
+                    var integerRangeFieldName = FieldNameHelper.FieldName(integerRangeFilter.FieldName, Constants.FieldValues.Integers);
                     FilterRange<int>[] integerRanges = integerRangeFilter.Ranges
                         .Select(r => new FilterRange<int>(r.MinValue ?? int.MinValue, r.MaxValue ?? int.MaxValue))
                         .ToArray();
                     searchQuery.AddRangeFilter(integerRangeFieldName, integerRangeFilter.Negate, integerRanges);
                     break;
                 case IntegerExactFilter integerExactFilter:
-                    var integerExactFieldName =
-                        $"{Constants.Fields.FieldPrefix}{integerExactFilter.FieldName}_{Constants.Fields.Integers}";
+                    var integerExactFieldName = FieldNameHelper.FieldName(integerExactFilter.FieldName, Constants.FieldValues.Integers);
                     searchQuery.AddExactFilter(integerExactFieldName, integerExactFilter);
                     break;
                 case DecimalRangeFilter decimalRangeFilter:
-                    var decimalRangeFieldName =
-                        $"{Constants.Fields.FieldPrefix}{decimalRangeFilter.FieldName}_{Constants.Fields.Decimals}";
+                    var decimalRangeFieldName = FieldNameHelper.FieldName(decimalRangeFilter.FieldName, Constants.FieldValues.Decimals);
                     FilterRange<double>[] doubleRanges = decimalRangeFilter.Ranges
                         .Select(r => new FilterRange<double>(Convert.ToDouble(r.MinValue ?? decimal.MinValue), Convert.ToDouble(r.MaxValue ?? decimal.MaxValue)))
                         .ToArray();
                     searchQuery.AddRangeFilter(decimalRangeFieldName, decimalRangeFilter.Negate, doubleRanges);
                     break;
                 case DecimalExactFilter decimalExactFilter:
-                    var decimalExactFieldName =
-                        $"{Constants.Fields.FieldPrefix}{decimalExactFilter.FieldName}_{Constants.Fields.Decimals}";
+                    var decimalExactFieldName = FieldNameHelper.FieldName(decimalExactFilter.FieldName, Constants.FieldValues.Decimals);
                     var doubleExactFilter = new DoubleExactFilter(filter.FieldName, decimalExactFilter.Values.Select(xx => (double)xx).ToArray(), filter.Negate);
                     searchQuery.AddExactFilter(decimalExactFieldName, doubleExactFilter);
                     break;
                 case DateTimeOffsetRangeFilter dateTimeOffsetRangeFilter:
-                    var dateTimeOffsetRangeFieldName =
-                        $"{Constants.Fields.FieldPrefix}{dateTimeOffsetRangeFilter.FieldName}_{Constants.Fields.DateTimeOffsets}";
+                    var dateTimeOffsetRangeFieldName = FieldNameHelper.FieldName(dateTimeOffsetRangeFilter.FieldName, Constants.FieldValues.DateTimeOffsets);
                     FilterRange<DateTime>[] dateTimeRanges = dateTimeOffsetRangeFilter.Ranges
                         .Select(r => new FilterRange<DateTime>(r.MinValue?.DateTime ?? DateTime.MinValue, r.MaxValue?.DateTime ?? DateTime.MaxValue))
                         .ToArray();
                     searchQuery.AddRangeFilter(dateTimeOffsetRangeFieldName, dateTimeOffsetRangeFilter.Negate, dateTimeRanges);
                     break;
                 case DateTimeOffsetExactFilter dateTimeOffsetExactFilter:
-                    var dateTimeOffsetExactFieldName =
-                        $"{Constants.Fields.FieldPrefix}{dateTimeOffsetExactFilter.FieldName}_{Constants.Fields.DateTimeOffsets}";
+                    var dateTimeOffsetExactFieldName = FieldNameHelper.FieldName(dateTimeOffsetExactFilter.FieldName, Constants.FieldValues.DateTimeOffsets);
                     var datetimeExactFilter = new DateTimeExactFilter(filter.FieldName, dateTimeOffsetExactFilter.Values.Select(value => value.DateTime).ToArray(), filter.Negate);
                     searchQuery.AddExactFilter(dateTimeOffsetExactFieldName, datetimeExactFilter);
                     break;
@@ -317,18 +304,18 @@ internal sealed class Searcher : IExamineSearcher
                 switch (facet)
                 {
                     case IntegerExactFacet integerExactFacet:
-                        facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{integerExactFacet.FieldName}_{Constants.Fields.Integers}", config => config.MaxCount(100));
+                        facetOperations.FacetString(FieldNameHelper.FieldName(integerExactFacet.FieldName, Constants.FieldValues.Integers), config => config.MaxCount(100));
                         break;
                     case IntegerRangeFacet integerRangeFacet:
                         facetOperations.FacetLongRange(
-                            $"{Constants.Fields.FieldPrefix}{integerRangeFacet.FieldName}_{Constants.Fields.Integers}",
+                            FieldNameHelper.FieldName(integerRangeFacet.FieldName, Constants.FieldValues.Integers),
                             integerRangeFacet.Ranges
                                 .Select(x =>
                                     new Int64Range(x.Key, x.MinValue ?? 0, true, x.MaxValue ?? int.MaxValue, false))
                                 .ToArray());
                         break;
                     case DecimalExactFacet decimalExactFacet:
-                        facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{decimalExactFacet.FieldName}_{Constants.Fields.Decimals}", config => config.MaxCount(100));
+                        facetOperations.FacetString(FieldNameHelper.FieldName(decimalExactFacet.FieldName, Constants.FieldValues.Decimals), config => config.MaxCount(100));
                         break;
                     case DecimalRangeFacet decimalRangeFacet:
                     {
@@ -341,16 +328,16 @@ internal sealed class Searcher : IExamineSearcher
                                     false))
                             .ToArray();
                         facetOperations.FacetDoubleRange(
-                            $"{Constants.Fields.FieldPrefix}{facet.FieldName}_{Constants.Fields.Decimals}",
+                            FieldNameHelper.FieldName(decimalRangeFacet.FieldName, Constants.FieldValues.Decimals),
                             doubleRanges);
                         break;
                     }
                     case DateTimeOffsetExactFacet dateTimeOffsetExactFacet:
-                        facetOperations.FacetString($"{Constants.Fields.FieldPrefix}{dateTimeOffsetExactFacet.FieldName}_{Constants.Fields.DateTimeOffsets}", config => config.MaxCount(100));
+                        facetOperations.FacetString(FieldNameHelper.FieldName(dateTimeOffsetExactFacet.FieldName, Constants.FieldValues.DateTimeOffsets), config => config.MaxCount(100));
                         break;
                     case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
                         facetOperations.FacetLongRange(
-                            $"{Constants.Fields.FieldPrefix}{dateTimeOffsetRangeFacet.FieldName}_{Constants.Fields.DateTimeOffsets}",
+                            FieldNameHelper.FieldName(dateTimeOffsetRangeFacet.FieldName, Constants.FieldValues.DateTimeOffsets),
                             dateTimeOffsetRangeFacet.Ranges.Select(x => new Int64Range(
                                 x.Key,
                                 x.MinValue?.Ticks ?? DateTime.MinValue.Ticks,
@@ -360,10 +347,7 @@ internal sealed class Searcher : IExamineSearcher
                                 .ToArray());
                         break;
                     case KeywordFacet keywordFacet:
-                        var keywordFieldName = keywordFacet.FieldName.StartsWith(Constants.Fields.FieldPrefix)
-                            ? $"{keywordFacet.FieldName}_{Constants.Fields.Keywords}"
-                            : $"{Constants.Fields.FieldPrefix}{keywordFacet.FieldName}_{Constants.Fields.Keywords}";
-
+                        var keywordFieldName = FieldNameHelper.FieldName(keywordFacet.FieldName, Constants.FieldValues.Keywords);
                         facetOperations.FacetString(keywordFieldName, config => config.MaxCount(100));
                         break;
 
@@ -408,7 +392,7 @@ internal sealed class Searcher : IExamineSearcher
 
     private static Document? MapToDocument(ISearchResult item)
     {
-        var objectTypeString = item.Values.GetValueOrDefault($"__{Constants.Fields.IndexType}");
+        var objectTypeString = item.Values.GetValueOrDefault($"__{Constants.SystemFields.IndexType}");
 
         Enum.TryParse(objectTypeString, out UmbracoObjectTypes umbracoObjectType);
 
@@ -435,14 +419,14 @@ internal sealed class Searcher : IExamineSearcher
                 {
                     IEnumerable<IntegerRangeFacetValue> integerRangeFacetResult = integerRangeFacet.Ranges.Select(x =>
                     {
-                        int value = GetFacetCount($"{Constants.Fields.FieldPrefix}{facet.FieldName}_{Constants.Fields.Integers}", x.Key, searchResults);
+                        int value = GetFacetCount(FieldNameHelper.FieldName(integerRangeFacet.FieldName, Constants.FieldValues.Integers), x.Key, searchResults);
                         return new IntegerRangeFacetValue(x.Key, x.MinValue, x.MaxValue, value);
                     });
                     yield return new FacetResult(facet.FieldName, integerRangeFacetResult);
                     break;
                 }
                 case IntegerExactFacet integerExactFacet:
-                    IFacetResult? examineIntegerFacets = searchResults.GetFacet($"{Constants.Fields.FieldPrefix}{integerExactFacet.FieldName}_{Constants.Fields.Integers}");
+                    IFacetResult? examineIntegerFacets = searchResults.GetFacet(FieldNameHelper.FieldName(integerExactFacet.FieldName, Constants.FieldValues.Integers));
                     if (examineIntegerFacets is null)
                     {
                         continue;
@@ -464,13 +448,13 @@ internal sealed class Searcher : IExamineSearcher
                 case DecimalRangeFacet decimalRangeFacet:
                     IEnumerable<DecimalRangeFacetValue> decimalRangeFacetResult = decimalRangeFacet.Ranges.Select(x =>
                     {
-                        int value = GetFacetCount($"{Constants.Fields.FieldPrefix}{facet.FieldName}_{Constants.Fields.Decimals}", x.Key, searchResults);
+                        int value = GetFacetCount(FieldNameHelper.FieldName(decimalRangeFacet.FieldName, Constants.FieldValues.Decimals), x.Key, searchResults);
                         return new DecimalRangeFacetValue(x.Key, x.MinValue, x.MaxValue, value);
                     });
                     yield return new FacetResult(facet.FieldName, decimalRangeFacetResult);
                     break;
                 case DecimalExactFacet decimalExactFacet:
-                    IFacetResult? examineDecimalFacets = searchResults.GetFacet($"{Constants.Fields.FieldPrefix}{decimalExactFacet.FieldName}_{Constants.Fields.Decimals}");
+                    IFacetResult? examineDecimalFacets = searchResults.GetFacet(FieldNameHelper.FieldName(decimalExactFacet.FieldName, Constants.FieldValues.Decimals));
                     if (examineDecimalFacets is null)
                     {
                         continue;
@@ -493,13 +477,13 @@ internal sealed class Searcher : IExamineSearcher
                 case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
                     IEnumerable<DateTimeOffsetRangeFacetValue> dateTimeOffsetRangeFacetResult = dateTimeOffsetRangeFacet.Ranges.Select(x =>
                     {
-                        int value = GetFacetCount($"{Constants.Fields.FieldPrefix}{facet.FieldName}_{Constants.Fields.DateTimeOffsets}", x.Key, searchResults);
+                        int value = GetFacetCount(FieldNameHelper.FieldName(dateTimeOffsetRangeFacet.FieldName, Constants.FieldValues.DateTimeOffsets), x.Key, searchResults);
                         return new DateTimeOffsetRangeFacetValue(x.Key, x.MinValue, x.MaxValue, value);
                     });
                     yield return new FacetResult(facet.FieldName, dateTimeOffsetRangeFacetResult);
                     break;
                 case DateTimeOffsetExactFacet dateTimeOffsetExactFacet:
-                    IFacetResult? examineDatetimeFacets = searchResults.GetFacet($"{Constants.Fields.FieldPrefix}{dateTimeOffsetExactFacet.FieldName}_{Constants.Fields.DateTimeOffsets}");
+                    IFacetResult? examineDatetimeFacets = searchResults.GetFacet(FieldNameHelper.FieldName(dateTimeOffsetExactFacet.FieldName, Constants.FieldValues.DateTimeOffsets));
                     if (examineDatetimeFacets is null)
                     {
                         continue;
@@ -522,7 +506,7 @@ internal sealed class Searcher : IExamineSearcher
                     yield return new FacetResult(facet.FieldName, datetimeOffsetExactFacetValues.OrderBy(x => x.Key));
                     break;
                 case KeywordFacet keywordFacet:
-                    IFacetResult? examineKeywordFacets = searchResults.GetFacet($"{Constants.Fields.FieldPrefix}{keywordFacet.FieldName}_{Constants.Fields.Keywords}");
+                    IFacetResult? examineKeywordFacets = searchResults.GetFacet(FieldNameHelper.FieldName(keywordFacet.FieldName, Constants.FieldValues.Keywords));
                     if (examineKeywordFacets is null)
                     {
                         continue;

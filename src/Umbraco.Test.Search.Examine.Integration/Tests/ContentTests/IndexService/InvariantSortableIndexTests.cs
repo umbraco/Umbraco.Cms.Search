@@ -2,6 +2,7 @@
 using Examine.Search;
 using NUnit.Framework;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 using Constants = Umbraco.Cms.Search.Provider.Examine.Constants;
@@ -22,8 +23,9 @@ public class InvariantSortableIndexTests : IndexTestBase
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
-        ISearchResults results = index.Searcher.CreateQuery().All().OrderBy(new SortableField($"{Constants.Fields.FieldPrefix}sortableTitle_{Constants.Fields.Texts}", SortType.String)).Execute();
-        var values = results.SelectMany(x => x.Values.Where(value => value.Key == $"{Constants.Fields.FieldPrefix}sortableTitle_{Constants.Fields.Texts}")).Select(x => x.Value).ToArray();
+        var fieldName = FieldNameHelper.FieldName("sortableTitle", Constants.FieldValues.Texts);
+        ISearchResults results = index.Searcher.CreateQuery().All().OrderBy(new SortableField(fieldName, SortType.String)).Execute();
+        var values = results.SelectMany(x => x.Values.Where(value => value.Key == fieldName)).Select(x => x.Value).ToArray();
 
         Assert.Multiple(() =>
         {
@@ -44,9 +46,10 @@ public class InvariantSortableIndexTests : IndexTestBase
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
-        ISearchResults results = index.Searcher.CreateQuery().All().OrderBy(new SortableField($"{Constants.Fields.FieldPrefix}title_{Constants.Fields.Texts}", SortType.String)).Execute();
+        var fieldName = FieldNameHelper.FieldName("title", Constants.FieldValues.Texts);
+        ISearchResults results = index.Searcher.CreateQuery().All().OrderBy(new SortableField(fieldName, SortType.String)).Execute();
         var values = results
-            .SelectMany(x => x.Values.Where(value => value.Key == $"{Constants.Fields.FieldPrefix}title_{Constants.Fields.Texts}")).Select(x => x.Value).ToArray();
+            .SelectMany(x => x.Values.Where(value => value.Key == fieldName)).Select(x => x.Value).ToArray();
 
         Assert.Multiple(() =>
         {

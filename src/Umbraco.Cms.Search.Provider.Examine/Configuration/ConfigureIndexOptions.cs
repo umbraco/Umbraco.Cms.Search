@@ -2,6 +2,8 @@
 using Examine.Lucene;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Search.Provider.Examine.Extensions;
+using Umbraco.Cms.Search.Provider.Examine.Helpers;
+using CoreConstants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Configuration;
 
@@ -20,16 +22,16 @@ public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirecto
 
     private void AddSystemFields(LuceneDirectoryIndexOptions options)
     {
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.Id}", FieldDefinitionTypes.FullText));
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.ParentId}", FieldDefinitionTypes.FullText));
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.PathIds}", FieldDefinitionTypes.FullText));
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.ContentTypeId}", FieldDefinitionTypes.FullText));
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.CreateDate}", FieldDefinitionTypes.DateTime));
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.UpdateDate}", FieldDefinitionTypes.DateTime));
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.Level}", FieldDefinitionTypes.Integer));
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.ObjectType}", FieldDefinitionTypes.Integer));
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.SortOrder}", FieldDefinitionTypes.FullText));
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition($"{Constants.Fields.SystemFieldPrefix}{Constants.Fields.SystemFields.Name}", FieldDefinitionTypes.FullTextSortable));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.Id, Constants.FieldValues.Keywords), FieldDefinitionTypes.FullText));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.ParentId, Constants.FieldValues.Keywords), FieldDefinitionTypes.FullText));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.PathIds, Constants.FieldValues.Keywords), FieldDefinitionTypes.FullText));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.ContentTypeId, Constants.FieldValues.Keywords), FieldDefinitionTypes.FullText));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.CreateDate, Constants.FieldValues.DateTimeOffsets), FieldDefinitionTypes.DateTime));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.UpdateDate, Constants.FieldValues.DateTimeOffsets), FieldDefinitionTypes.DateTime));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.Level, Constants.FieldValues.Integers), FieldDefinitionTypes.Integer));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.ObjectType, Constants.FieldValues.Integers), FieldDefinitionTypes.Integer));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.SortOrder, Constants.FieldValues.Integers), FieldDefinitionTypes.FullText));
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.Name, Constants.FieldValues.TextsR1), FieldDefinitionTypes.FullTextSortable));
     }
 
     private void AddOptions(LuceneDirectoryIndexOptions options)
@@ -37,16 +39,16 @@ public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirecto
         AddSystemFields(options);
         foreach (FieldOptions.Field field in _fieldOptions.Fields)
         {
-            var fieldPostfix = field.FieldValues switch
+            var fieldValues = field.FieldValues switch
             {
-                FieldValues.Texts => Constants.Fields.Texts,
-                FieldValues.TextsR1 => Constants.Fields.TextsR1,
-                FieldValues.TextsR2 => Constants.Fields.TextsR2,
-                FieldValues.TextsR3 => Constants.Fields.TextsR3,
-                FieldValues.Integers => Constants.Fields.Integers,
-                FieldValues.Decimals => Constants.Fields.Decimals,
-                FieldValues.DateTimeOffsets => Constants.Fields.DateTimeOffsets,
-                FieldValues.Keywords => Constants.Fields.Keywords,
+                FieldValues.Texts => Constants.FieldValues.Texts,
+                FieldValues.TextsR1 => Constants.FieldValues.TextsR1,
+                FieldValues.TextsR2 => Constants.FieldValues.TextsR2,
+                FieldValues.TextsR3 => Constants.FieldValues.TextsR3,
+                FieldValues.Integers => Constants.FieldValues.Integers,
+                FieldValues.Decimals => Constants.FieldValues.Decimals,
+                FieldValues.DateTimeOffsets => Constants.FieldValues.DateTimeOffsets,
+                FieldValues.Keywords => Constants.FieldValues.Keywords,
                 _ => throw new ArgumentOutOfRangeException(nameof(field.FieldValues))
             };
 
@@ -72,7 +74,7 @@ public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirecto
                 _ => throw new ArgumentOutOfRangeException(nameof(field.FieldValues))
             };
 
-            var fieldName = $"{Constants.Fields.FieldPrefix}{field.PropertyName}_{fieldPostfix}";
+            var fieldName = FieldNameHelper.FieldName(field.PropertyName, fieldValues);
             // options.FacetsConfig.SetMultiValued(fieldName, true);
             options.FieldDefinitions.AddOrUpdate(new FieldDefinition(fieldName, fieldDefinitionType));
 
