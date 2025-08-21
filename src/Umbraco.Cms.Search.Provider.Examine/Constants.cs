@@ -2,9 +2,9 @@
 
 internal static class Constants
 {
-    public static class Fields
+    public static class Variance
     {
-        public const string KeywordFieldPostfix = "_raw";
+        public const string Invariant = "none";
     }
 
     public static class FieldValues
@@ -31,6 +31,7 @@ internal static class Constants
         public const string AggregatedTextsR1 = $"{Prefix}aggregated_textsr1";
         public const string AggregatedTextsR2 = $"{Prefix}aggregated_textsr2";
         public const string AggregatedTextsR3 = $"{Prefix}aggregated_textsr3";
-        public const string IndexType = "IndexType";
+
+        public const string IndexType = "__IndexType";
     }
 }

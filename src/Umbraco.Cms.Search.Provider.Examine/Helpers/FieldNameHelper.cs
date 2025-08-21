@@ -9,4 +9,7 @@ internal static class FieldNameHelper
 
     public static string FieldName(string fieldName, string fieldValues)
         => $"Field_{fieldName}_{fieldValues}";
+
+    public static string QueryableKeywordFieldName(string fieldName)
+        => $"__Query_{fieldName}";
 }

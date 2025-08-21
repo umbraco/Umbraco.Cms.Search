@@ -2,15 +2,14 @@
 using Examine;
 using Examine.Lucene;
 using Examine.Search;
-using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Exceptions;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
-using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Search.Provider.Examine.Extensions;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using Umbraco.Cms.Search.Provider.Examine.Models.Searching.Filtering;
@@ -23,13 +22,9 @@ namespace Umbraco.Cms.Search.Provider.Examine.Services;
 internal sealed class Searcher : IExamineSearcher
 {
     private readonly IExamineManager _examineManager;
-    private readonly FieldOptions _fieldOptions;
 
-    public Searcher(IExamineManager examineManager, IOptions<FieldOptions> fieldOptions)
-    {
-        _examineManager = examineManager;
-        _fieldOptions = fieldOptions.Value;
-    }
+    public Searcher(IExamineManager examineManager)
+        => _examineManager = examineManager;
 
     public Task<SearchResult> SearchAsync(
         string indexAlias,
@@ -56,9 +51,9 @@ internal sealed class Searcher : IExamineSearcher
 
         IBooleanOperation searchQuery = index.Searcher
             .CreateQuery()
-            .Field(Constants.SystemFields.Culture, $"{culture ?? "none"}".TransformDashes())
+            .Field(Constants.SystemFields.Culture, culture ?? Constants.Variance.Invariant)
             .And()
-            .Field(Constants.SystemFields.Segment, $"{segment ?? "none"}".TransformDashes());
+            .Field(Constants.SystemFields.Segment, segment ?? Constants.Variance.Invariant);
 
 
         if (query is not null)
@@ -132,21 +127,18 @@ internal sealed class Searcher : IExamineSearcher
     {
         if (accessContext is null)
         {
-            searchQuery.And().Field(Constants.SystemFields.Protection, Guid.Empty.ToString().TransformDashes());
+            searchQuery.And().Field(Constants.SystemFields.Protection, Guid.Empty.AsKeyword());
         }
         else
         {
-            var keys = $"{Guid.Empty.ToString().TransformDashes()} {accessContext.PrincipalId.ToString().TransformDashes()}";
+            List<string> keys = [Guid.Empty.AsKeyword(), accessContext.PrincipalId.AsKeyword()];
 
             if (accessContext.GroupIds is not null)
             {
-                foreach (Guid id in accessContext.GroupIds)
-                {
-                    keys += $" {id.ToString().TransformDashes()}";
-                }
+                keys.AddRange(accessContext.GroupIds.Select(groupId => groupId.AsKeyword()));
             }
 
-            searchQuery.And().Field(Constants.SystemFields.Protection, keys);
+            searchQuery.And().GroupedOr([Constants.SystemFields.Protection], keys.ToArray());
         }
     }
 
@@ -183,7 +175,7 @@ internal sealed class Searcher : IExamineSearcher
             IntegerSorter => [new SortableField(FieldNameHelper.FieldName(sorter.FieldName, Constants.FieldValues.Integers), SortType.Int)],
             DecimalSorter => [new SortableField(FieldNameHelper.FieldName(sorter.FieldName, Constants.FieldValues.Decimals), SortType.Double)],
             DateTimeOffsetSorter => [new SortableField(FieldNameHelper.FieldName(sorter.FieldName, Constants.FieldValues.DateTimeOffsets), SortType.Long)],
-            KeywordSorter => [new SortableField(FieldNameHelper.FieldName(sorter.FieldName, Constants.FieldValues.Keywords), SortType.String)],
+            KeywordSorter => [new SortableField(FieldNameHelper.QueryableKeywordFieldName(FieldNameHelper.FieldName(sorter.FieldName, Constants.FieldValues.Keywords)), SortType.String)],
             TextSorter =>
             [
                 new SortableField(FieldNameHelper.FieldName(sorter.FieldName, Constants.FieldValues.TextsR1), SortType.String),
@@ -207,27 +199,15 @@ internal sealed class Searcher : IExamineSearcher
             switch (filter)
             {
                 case KeywordFilter keywordFilter:
-                    var keywordFilterValues = keywordFilter.Values;
                     var keywordFieldName = FieldNameHelper.FieldName(filter.FieldName, Constants.FieldValues.Keywords);
-
-                    if (_fieldOptions.HasKeywordField(keywordFilter.FieldName))
-                    {
-                        // if there is a keyword field registered, search that (as explicit/RAW values)
-                        keywordFieldName = keywordFieldName.KeywordFieldName();
-                    }
-                    else
-                    {
-                        // ...otherwise escape the value for fulltext search (default field type in Examine)
-                        keywordFilterValues = keywordFilterValues.Select(value => value.TransformDashes()).ToArray();
-                    }
 
                     if (keywordFilter.Negate)
                     {
-                        searchQuery.Not().GroupedOr([keywordFieldName], keywordFilterValues);
+                        searchQuery.Not().GroupedOr([keywordFieldName], keywordFilter.Values);
                     }
                     else
                     {
-                        searchQuery.And().GroupedOr([keywordFieldName], keywordFilterValues);
+                        searchQuery.And().GroupedOr([keywordFieldName], keywordFilter.Values);
                     }
 
                     break;
@@ -347,10 +327,9 @@ internal sealed class Searcher : IExamineSearcher
                                 .ToArray());
                         break;
                     case KeywordFacet keywordFacet:
-                        var keywordFieldName = FieldNameHelper.FieldName(keywordFacet.FieldName, Constants.FieldValues.Keywords);
+                        var keywordFieldName = FieldNameHelper.QueryableKeywordFieldName(FieldNameHelper.FieldName(keywordFacet.FieldName, Constants.FieldValues.Keywords));
                         facetOperations.FacetString(keywordFieldName, config => config.MaxCount(100));
                         break;
-
                 }
             }
         });
@@ -392,7 +371,7 @@ internal sealed class Searcher : IExamineSearcher
 
     private static Document? MapToDocument(ISearchResult item)
     {
-        var objectTypeString = item.Values.GetValueOrDefault($"__{Constants.SystemFields.IndexType}");
+        var objectTypeString = item.Values.GetValueOrDefault(Constants.SystemFields.IndexType);
 
         Enum.TryParse(objectTypeString, out UmbracoObjectTypes umbracoObjectType);
 
@@ -506,7 +485,7 @@ internal sealed class Searcher : IExamineSearcher
                     yield return new FacetResult(facet.FieldName, datetimeOffsetExactFacetValues.OrderBy(x => x.Key));
                     break;
                 case KeywordFacet keywordFacet:
-                    IFacetResult? examineKeywordFacets = searchResults.GetFacet(FieldNameHelper.FieldName(keywordFacet.FieldName, Constants.FieldValues.Keywords));
+                    IFacetResult? examineKeywordFacets = searchResults.GetFacet(FieldNameHelper.QueryableKeywordFieldName(FieldNameHelper.FieldName(keywordFacet.FieldName, Constants.FieldValues.Keywords)));
                     if (examineKeywordFacets is null)
                     {
                         continue;

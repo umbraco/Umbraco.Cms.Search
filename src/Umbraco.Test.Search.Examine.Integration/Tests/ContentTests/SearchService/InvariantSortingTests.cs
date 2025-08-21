@@ -2,6 +2,7 @@
 using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
@@ -113,15 +114,15 @@ public class InvariantSortingTests : SearcherTestBase
     [TestCase(false, Direction.Ascending)]
     public async Task CanSortKeywords(bool publish, Direction direction)
     {
-        var keys = (await CreateDocuments(5)).OrderBy(x => x, direction).Select(x => x.ToString()).ToArray();
+        KeyValuePair<Guid, string>[] keysAndValues = (await CreateDropDownDocuments(["r", "f", "a", "m", "x"])).ToArray();
 
         var indexAlias = GetIndexAlias(publish);
         SearchResult result = await Searcher.SearchAsync(
             indexAlias,
             null,
-            [new KeywordFilter("Umb_Id", keys.ToArray(), false)],
+            [new KeywordFilter("Umb_Id", keysAndValues.Select(kvp => kvp.Key.AsKeyword()).ToArray(), false)],
             null,
-            [new KeywordSorter("Umb_Id", direction)],
+            [new KeywordSorter("dropDown", direction)],
             null,
             null,
             null,
@@ -132,9 +133,15 @@ public class InvariantSortingTests : SearcherTestBase
         {
             Document[] documents = result.Documents.ToArray();
             Assert.That(documents, Is.Not.Empty);
-            for (int i = 0; i < keys.Length; i++)
+            Guid[] orderedKeys = (direction == Direction.Ascending
+                    ? keysAndValues.OrderBy(kvp => kvp.Value)
+                    : keysAndValues.OrderByDescending(kvp => kvp.Value))
+                .Select(kvp => kvp.Key)
+                .ToArray();
+
+            for (var i = 0; i < orderedKeys.Length; i++)
             {
-                Assert.That(documents[i].Id.ToString(), Is.EqualTo(keys[i]));
+                Assert.That(documents[i].Id, Is.EqualTo(orderedKeys[i]));
             }
         });
     }
@@ -252,37 +259,43 @@ public class InvariantSortingTests : SearcherTestBase
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
     }
 
-    private async Task CreateDocType()
+    private async Task CreateDropDownDocType()
     {
         ContentType = new ContentTypeBuilder()
             .WithAlias("invariant")
+            .AddPropertyType()
+            .WithAlias("dropDown")
+            .WithDataTypeId(Constants.DataTypes.DropDownSingle)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.DropDownListFlexible)
+            .Done()
             .Build();
         await ContentTypeService.CreateAsync(ContentType, Constants.Security.SuperUserKey);
     }
 
-    private async Task<IEnumerable<Guid>> CreateDocuments(int numberOfDocuments)
+    private async Task<IEnumerable<KeyValuePair<Guid, string>>> CreateDropDownDocuments(string[] values)
     {
-        var keys = new List<Guid>();
-        await CreateDocType();
+        var keysAndValues = new List<KeyValuePair<Guid, string>>();
+        await CreateDropDownDocType();
 
         await WaitForIndexing(GetIndexAlias(true), () =>
         {
-            for (int i = 0; i < numberOfDocuments; i++)
+            foreach (var stringValue in values)
             {
                 Content document = new ContentBuilder()
                     .WithContentType(ContentType)
-                    .WithName($"document-{i}")
+                    .WithName($"document-{stringValue}")
+                    .WithPropertyValues(
+                        new {dropDown = $"[\"{stringValue}\"]"})
                     .Build();
 
-                ContentService.Save(document);
-                ContentService.Publish(document, new []{ "*"});
-                keys.Add(document.Key);
+                SaveAndPublish(document);
+                keysAndValues.Add(new KeyValuePair<Guid, string>(document.Key, stringValue));
             }
 
             return Task.CompletedTask;
         });
 
-        return keys;
+        return keysAndValues;
     }
 
     private async Task CreateTitleDocType()

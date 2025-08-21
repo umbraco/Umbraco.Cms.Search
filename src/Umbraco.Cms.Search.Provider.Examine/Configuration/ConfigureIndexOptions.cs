@@ -1,7 +1,6 @@
 ﻿using Examine;
 using Examine.Lucene;
 using Microsoft.Extensions.Options;
-using Umbraco.Cms.Search.Provider.Examine.Extensions;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using CoreConstants = Umbraco.Cms.Search.Core.Constants;
 
@@ -20,24 +19,16 @@ public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirecto
     public void Configure(LuceneDirectoryIndexOptions options)
         => Configure(string.Empty, options);
 
-    private void AddSystemFields(LuceneDirectoryIndexOptions options)
-    {
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.Id, Constants.FieldValues.Keywords), FieldDefinitionTypes.FullText));
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.ParentId, Constants.FieldValues.Keywords), FieldDefinitionTypes.FullText));
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.PathIds, Constants.FieldValues.Keywords), FieldDefinitionTypes.FullText));
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.ContentTypeId, Constants.FieldValues.Keywords), FieldDefinitionTypes.FullText));
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.CreateDate, Constants.FieldValues.DateTimeOffsets), FieldDefinitionTypes.DateTime));
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.UpdateDate, Constants.FieldValues.DateTimeOffsets), FieldDefinitionTypes.DateTime));
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.Level, Constants.FieldValues.Integers), FieldDefinitionTypes.Integer));
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.ObjectType, Constants.FieldValues.Integers), FieldDefinitionTypes.Integer));
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.SortOrder, Constants.FieldValues.Integers), FieldDefinitionTypes.FullText));
-        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(FieldNameHelper.FieldName(CoreConstants.FieldNames.Name, Constants.FieldValues.TextsR1), FieldDefinitionTypes.FullTextSortable));
-    }
-
     private void AddOptions(LuceneDirectoryIndexOptions options)
     {
-        AddSystemFields(options);
-        foreach (FieldOptions.Field field in _fieldOptions.Fields)
+        AddFields(options, ExamineSystemFieldsOptions(), (field, _) => field.PropertyName);
+        AddFields(options, CoreSystemFieldsOptions(), (field, fieldValues) => FieldNameHelper.FieldName(field.PropertyName, fieldValues));
+        AddFields(options, _fieldOptions.Fields, (field, fieldValues) => FieldNameHelper.FieldName(field.PropertyName, fieldValues));
+    }
+
+    private void AddFields(LuceneDirectoryIndexOptions options, FieldOptions.Field[] fields, Func<FieldOptions.Field, string, string> getFieldName)
+    {
+        foreach (FieldOptions.Field field in fields)
         {
             var fieldValues = field.FieldValues switch
             {
@@ -54,14 +45,9 @@ public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirecto
 
             var fieldDefinitionType = field.FieldValues switch
             {
-                FieldValues.Texts or FieldValues.TextsR1 or FieldValues.TextsR2 or FieldValues.TextsR3 or FieldValues.Keywords
-                    => field is { Sortable: true, Facetable: true }
-                        ? FieldDefinitionTypes.FacetFullTextSortable
-                        : field.Facetable
-                            ? FieldDefinitionTypes.FacetFullText
-                            : field.Sortable
-                                ? FieldDefinitionTypes.FullTextSortable
-                                : FieldDefinitionTypes.FullText,
+                FieldValues.Keywords => FieldDefinitionTypes.Raw,
+                FieldValues.Texts or FieldValues.TextsR1 or FieldValues.TextsR2 or FieldValues.TextsR3
+                    => FullTextDefinition(field),
                 FieldValues.Integers => field.Facetable
                     ? FieldDefinitionTypes.FacetInteger
                     : FieldDefinitionTypes.Integer,
@@ -74,15 +60,51 @@ public sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirecto
                 _ => throw new ArgumentOutOfRangeException(nameof(field.FieldValues))
             };
 
-            var fieldName = FieldNameHelper.FieldName(field.PropertyName, fieldValues);
-            // options.FacetsConfig.SetMultiValued(fieldName, true);
+            var fieldName = getFieldName(field, fieldValues);
             options.FieldDefinitions.AddOrUpdate(new FieldDefinition(fieldName, fieldDefinitionType));
 
-            if (field.FieldValues is FieldValues.Keywords && _fieldOptions.HasKeywordField(field.PropertyName))
+            if (field.FieldValues is FieldValues.Keywords && (field.Sortable || field.Facetable))
             {
-                // add RAW field for keyword filtering
-                options.FieldDefinitions.AddOrUpdate(new FieldDefinition(fieldName.KeywordFieldName(), FieldDefinitionTypes.Raw));
+                // add extra field for keyword field sorting and/or faceting
+                options.FieldDefinitions.AddOrUpdate(new FieldDefinition( FieldNameHelper.QueryableKeywordFieldName(fieldName), FullTextDefinition(field)));
             }
         }
     }
+
+    private string FullTextDefinition(FieldOptions.Field field)
+        => field is { Sortable: true, Facetable: true }
+                ? FieldDefinitionTypes.FacetFullTextSortable
+                : field.Facetable
+                    ? FieldDefinitionTypes.FacetFullText
+                    : field.Sortable
+                        ? FieldDefinitionTypes.FullTextSortable
+                        : FieldDefinitionTypes.FullText;
+
+    private FieldOptions.Field[] CoreSystemFieldsOptions()
+        =>
+        [
+            new() { PropertyName = CoreConstants.FieldNames.Id, FieldValues = FieldValues.Keywords },
+            new() { PropertyName = CoreConstants.FieldNames.ParentId, FieldValues = FieldValues.Keywords },
+            new() { PropertyName = CoreConstants.FieldNames.PathIds, FieldValues = FieldValues.Keywords },
+            new() { PropertyName = CoreConstants.FieldNames.ContentTypeId, FieldValues = FieldValues.Keywords },
+            new() { PropertyName = CoreConstants.FieldNames.CreateDate, FieldValues = FieldValues.DateTimeOffsets },
+            new() { PropertyName = CoreConstants.FieldNames.UpdateDate, FieldValues = FieldValues.DateTimeOffsets },
+            new() { PropertyName = CoreConstants.FieldNames.Level, FieldValues = FieldValues.Integers },
+            new() { PropertyName = CoreConstants.FieldNames.ObjectType, FieldValues = FieldValues.Keywords },
+            new() { PropertyName = CoreConstants.FieldNames.SortOrder, FieldValues = FieldValues.Integers },
+            new() { PropertyName = CoreConstants.FieldNames.Name, FieldValues = FieldValues.TextsR1, Sortable = true },
+            new() { PropertyName = CoreConstants.FieldNames.Tags, FieldValues = FieldValues.Keywords },
+        ];
+
+    private FieldOptions.Field[] ExamineSystemFieldsOptions()
+        =>
+        [
+            new() { PropertyName = Constants.SystemFields.Protection, FieldValues = FieldValues.Keywords },
+            new() { PropertyName = Constants.SystemFields.Culture, FieldValues = FieldValues.Keywords },
+            new() { PropertyName = Constants.SystemFields.Segment, FieldValues = FieldValues.Keywords },
+            new() { PropertyName = Constants.SystemFields.AggregatedTexts, FieldValues = FieldValues.Texts },
+            new() { PropertyName = Constants.SystemFields.AggregatedTextsR1, FieldValues = FieldValues.Texts },
+            new() { PropertyName = Constants.SystemFields.AggregatedTextsR2, FieldValues = FieldValues.Texts },
+            new() { PropertyName = Constants.SystemFields.AggregatedTextsR3, FieldValues = FieldValues.Texts },
+        ];
 }

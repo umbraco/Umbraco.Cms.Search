@@ -67,6 +67,7 @@ public class TestIndexConfigureOptions : IConfigureOptions<FieldOptions>
                 PropertyName = "dropDown",
                 FieldValues = FieldValues.Keywords,
                 Facetable = true,
+                Sortable = true
             },
             new FieldOptions.Field
             {
@@ -91,6 +92,12 @@ public class TestIndexConfigureOptions : IConfigureOptions<FieldOptions>
                 PropertyName = "count",
                 FieldValues = FieldValues.Integers,
                 Facetable = true,
+            },
+            new FieldOptions.Field
+            {
+                PropertyName = "FieldThree",
+                FieldValues = FieldValues.Keywords,
+                Sortable = true
             },
             // for the time being, we need to register filterable, non-textual fields explicitly due to complications with multivalue fields
             new FieldOptions.Field

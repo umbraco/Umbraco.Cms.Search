@@ -1,6 +1,7 @@
 ﻿using Examine;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Search.Provider.Examine.Extensions;
@@ -100,7 +101,7 @@ internal sealed class Indexer : IExamineIndexer
 
     private void DeleteSingleDoc(IIndex index, Guid key)
     {
-        ISearchResults documents = index.Searcher.CreateQuery().Field(FieldNameHelper.FieldName(CoreConstants.FieldNames.Id, Constants.FieldValues.Keywords), key.ToString().TransformDashes()).Execute();
+        ISearchResults documents = index.Searcher.CreateQuery().Field(FieldNameHelper.FieldName(CoreConstants.FieldNames.Id, Constants.FieldValues.Keywords), key.AsKeyword()).Execute();
 
         var idsToDelete = new HashSet<string>();
 
@@ -122,7 +123,7 @@ internal sealed class Indexer : IExamineIndexer
 
         foreach (Guid key in keys)
         {
-            ISearchResults documents = index.Searcher.CreateQuery().Field(FieldNameHelper.FieldName(CoreConstants.FieldNames.PathIds, Constants.FieldValues.Keywords), key.ToString().TransformDashes()).Execute();
+            ISearchResults documents = index.Searcher.CreateQuery().Field(FieldNameHelper.FieldName(CoreConstants.FieldNames.PathIds, Constants.FieldValues.Keywords), key.AsKeyword()).Execute();
             foreach (ISearchResult document in documents)
             {
                 idsToDelete.Add(document.Id);
@@ -151,13 +152,14 @@ internal sealed class Indexer : IExamineIndexer
 
             if (field.Value.Keywords?.Any() ?? false)
             {
-                // add field for sorting and/or faceting (will be indexed according to configuration)
+                // add field for keyword filtering (will be indexed as RAW)
                 var fieldName = FieldNameHelper.FieldName(field, Constants.FieldValues.Keywords);
-                result.Add(fieldName, field.Value.Keywords.Select(x => x.TransformDashes()));
-                if (_fieldOptions.HasKeywordField(field.FieldName))
+                result.Add(fieldName, field.Value.Keywords);
+                FieldOptions.Field? fieldConfiguration = _fieldOptions.Fields.FirstOrDefault(f => f.PropertyName == field.FieldName);
+                if (fieldConfiguration?.Sortable is true || fieldConfiguration?.Facetable is true)
                 {
-                    // add explicit field for filtering (will be indexed as RAW)
-                    result.Add(fieldName.KeywordFieldName(), field.Value.Keywords);
+                    // add extra field for sorting and/or faceting (will be indexed according to configuration)
+                    result.Add(FieldNameHelper.QueryableKeywordFieldName(fieldName), field.Value.Keywords);
                 }
             }
 
@@ -223,10 +225,10 @@ internal sealed class Indexer : IExamineIndexer
         }
 
         // Cannot add null values, so we have to just say "none" here, so we can filter on variant / invariant content
-        result.Add(Constants.SystemFields.Culture, [culture?.TransformDashes() ?? "none"]);
-        result.Add(Constants.SystemFields.Segment, [segment?.TransformDashes() ?? "none"]);
+        result.Add(Constants.SystemFields.Culture, [culture ?? Constants.Variance.Invariant]);
+        result.Add(Constants.SystemFields.Segment, [segment ?? Constants.Variance.Invariant]);
         IEnumerable<Guid> protectionIds = protection?.AccessIds ?? new List<Guid> {Guid.Empty};
-        result.Add(Constants.SystemFields.Protection, protectionIds.Select(x => x.ToString().TransformDashes()));
+        result.Add(Constants.SystemFields.Protection, protectionIds.Select(x => x.AsKeyword()));
 
         return result;
     }

@@ -4,7 +4,7 @@ using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.OperationStatus;
-using Umbraco.Cms.Search.Provider.Examine.Extensions;
+using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 using Constants = Umbraco.Cms.Search.Provider.Examine.Constants;
@@ -38,7 +38,7 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         IReadOnlyList<string> indexedAccessKeys = results.First().AllValues.First(x => x.Key == Constants.SystemFields.Protection).Value;
         Assert.That(indexedAccessKeys, Has.Count.EqualTo(1));
-        Assert.That(indexedAccessKeys, Has.Member(result.Result!.Key.ToString().TransformDashes()));
+        Assert.That(indexedAccessKeys, Has.Member(result.Result!.Key.AsKeyword()));
     }
 
     [Test]
@@ -66,11 +66,11 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         IReadOnlyList<string> indexedAccessKeys = results.First().AllValues.First(x => x.Key == Constants.SystemFields.Protection).Value;
         Assert.That(indexedAccessKeys, Has.Count.EqualTo(5));
-        Assert.That(indexedAccessKeys, Has.Member(group.Result!.Key.ToString().TransformDashes()));
-        Assert.That(indexedAccessKeys, Has.Member(group2.Result!.Key.ToString().TransformDashes()));
-        Assert.That(indexedAccessKeys, Has.Member(group3.Result!.Key.ToString().TransformDashes()));
-        Assert.That(indexedAccessKeys, Has.Member(group4.Result!.Key.ToString().TransformDashes()));
-        Assert.That(indexedAccessKeys, Has.Member(group5.Result!.Key.ToString().TransformDashes()));
+        Assert.That(indexedAccessKeys, Has.Member(group.Result!.Key.AsKeyword()));
+        Assert.That(indexedAccessKeys, Has.Member(group2.Result!.Key.AsKeyword()));
+        Assert.That(indexedAccessKeys, Has.Member(group3.Result!.Key.AsKeyword()));
+        Assert.That(indexedAccessKeys, Has.Member(group4.Result!.Key.AsKeyword()));
+        Assert.That(indexedAccessKeys, Has.Member(group5.Result!.Key.AsKeyword()));
     }
 
     [Test]

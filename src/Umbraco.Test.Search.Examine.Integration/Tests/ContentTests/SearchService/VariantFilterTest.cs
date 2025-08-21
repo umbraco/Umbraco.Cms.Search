@@ -18,6 +18,8 @@ public class VariantFilterTest : SearcherTestBase
     [TestCase("ja-JP", false, 1)]
     public async Task ByCulture_CanFilterByPathIds(string culture, bool negate, int expectedCount)
     {
+        await CreateVariantDocument();
+
         var indexAlias = GetIndexAlias(false);
 
         SearchResult results = await Searcher.SearchAsync(
@@ -36,6 +38,8 @@ public class VariantFilterTest : SearcherTestBase
     [TestCase("ル-ト", "ja-JP", false, 1)]
     public async Task CanFilterByTextByCulture(string text, string culture, bool negate, int expectedCount)
     {
+        await CreateVariantDocument();
+
         var indexAlias = GetIndexAlias(false);
 
         SearchResult results = await Searcher.SearchAsync(
@@ -54,6 +58,8 @@ public class VariantFilterTest : SearcherTestBase
     [TestCase("ボディ-segment-2", "ja-JP", "segment-2", false, 1)]
     public async Task CanFilterByTextByCultureAndSegment(string text, string culture, string segment, bool negate, int expectedCount)
     {
+        await CreateVariantDocument();
+
         var indexAlias = GetIndexAlias(false);
 
         SearchResult results = await Searcher.SearchAsync(
@@ -73,6 +79,8 @@ public class VariantFilterTest : SearcherTestBase
     [TestCase("Root", "ja-JP", false, 1)]
     public async Task CanSearchInvariantTextByCulture(string text, string culture, bool negate, int expectedCount)
     {
+        await CreateVariantDocument();
+
         var indexAlias = GetIndexAlias(false);
 
         SearchResult results = await Searcher.SearchAsync(
@@ -83,7 +91,6 @@ public class VariantFilterTest : SearcherTestBase
         Assert.That(results.Total, Is.EqualTo(expectedCount));
     }
 
-    [SetUp]
     public async Task CreateVariantDocument()
     {
         ILanguage langDk = new LanguageBuilder()
