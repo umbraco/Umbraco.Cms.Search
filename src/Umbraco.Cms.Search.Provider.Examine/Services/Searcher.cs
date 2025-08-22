@@ -2,6 +2,7 @@
 using Examine;
 using Examine.Lucene;
 using Examine.Search;
+using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Exceptions;
 using Umbraco.Cms.Core.Models;
@@ -10,6 +11,7 @@ using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
+using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Search.Provider.Examine.Extensions;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using Umbraco.Cms.Search.Provider.Examine.Models.Searching.Filtering;
@@ -22,9 +24,13 @@ namespace Umbraco.Cms.Search.Provider.Examine.Services;
 internal sealed class Searcher : IExamineSearcher
 {
     private readonly IExamineManager _examineManager;
+    private readonly SearcherOptions _searcherOptions;
 
-    public Searcher(IExamineManager examineManager)
-        => _examineManager = examineManager;
+    public Searcher(IExamineManager examineManager, IOptions<SearcherOptions> searcherOptions)
+    {
+        _examineManager = examineManager;
+        _searcherOptions = searcherOptions.Value;
+    }
 
     public Task<SearchResult> SearchAsync(
         string indexAlias,
@@ -64,9 +70,9 @@ internal sealed class Searcher : IExamineSearcher
             searchQuery.And().Group(nestedQuery =>
             {
                 var transformedQuery = query.TransformDashes();
-                INestedBooleanOperation fieldQuery = nestedQuery.Field(Constants.SystemFields.AggregatedTextsR1, transformedQuery.Boost(4));
-                fieldQuery.Or().Field(Constants.SystemFields.AggregatedTextsR2, transformedQuery.Boost(3));
-                fieldQuery.Or().Field(Constants.SystemFields.AggregatedTextsR3, transformedQuery.Boost(2));
+                INestedBooleanOperation fieldQuery = nestedQuery.Field(Constants.SystemFields.AggregatedTextsR1, transformedQuery.Boost(_searcherOptions.BoostFactorTextR1));
+                fieldQuery.Or().Field(Constants.SystemFields.AggregatedTextsR2, transformedQuery.Boost(_searcherOptions.BoostFactorTextR2));
+                fieldQuery.Or().Field(Constants.SystemFields.AggregatedTextsR3, transformedQuery.Boost(_searcherOptions.BoostFactorTextR3));
                 fieldQuery.Or().ManagedQuery(transformedQuery);
                 fieldQuery.Or().Field(Constants.SystemFields.AggregatedTexts, transformedQuery.Escape());
 
@@ -284,7 +290,7 @@ internal sealed class Searcher : IExamineSearcher
                 switch (facet)
                 {
                     case IntegerExactFacet integerExactFacet:
-                        facetOperations.FacetString(FieldNameHelper.FieldName(integerExactFacet.FieldName, Constants.FieldValues.Integers), config => config.MaxCount(100));
+                        facetOperations.FacetString(FieldNameHelper.FieldName(integerExactFacet.FieldName, Constants.FieldValues.Integers), config => config.MaxCount(_searcherOptions.MaxFacetValues));
                         break;
                     case IntegerRangeFacet integerRangeFacet:
                         facetOperations.FacetLongRange(
@@ -295,7 +301,7 @@ internal sealed class Searcher : IExamineSearcher
                                 .ToArray());
                         break;
                     case DecimalExactFacet decimalExactFacet:
-                        facetOperations.FacetString(FieldNameHelper.FieldName(decimalExactFacet.FieldName, Constants.FieldValues.Decimals), config => config.MaxCount(100));
+                        facetOperations.FacetString(FieldNameHelper.FieldName(decimalExactFacet.FieldName, Constants.FieldValues.Decimals), config => config.MaxCount(_searcherOptions.MaxFacetValues));
                         break;
                     case DecimalRangeFacet decimalRangeFacet:
                     {
@@ -313,7 +319,7 @@ internal sealed class Searcher : IExamineSearcher
                         break;
                     }
                     case DateTimeOffsetExactFacet dateTimeOffsetExactFacet:
-                        facetOperations.FacetString(FieldNameHelper.FieldName(dateTimeOffsetExactFacet.FieldName, Constants.FieldValues.DateTimeOffsets), config => config.MaxCount(100));
+                        facetOperations.FacetString(FieldNameHelper.FieldName(dateTimeOffsetExactFacet.FieldName, Constants.FieldValues.DateTimeOffsets), config => config.MaxCount(_searcherOptions.MaxFacetValues));
                         break;
                     case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
                         facetOperations.FacetLongRange(
@@ -328,7 +334,7 @@ internal sealed class Searcher : IExamineSearcher
                         break;
                     case KeywordFacet keywordFacet:
                         var keywordFieldName = FieldNameHelper.QueryableKeywordFieldName(FieldNameHelper.FieldName(keywordFacet.FieldName, Constants.FieldValues.Keywords));
-                        facetOperations.FacetString(keywordFieldName, config => config.MaxCount(100));
+                        facetOperations.FacetString(keywordFieldName, config => config.MaxCount(_searcherOptions.MaxFacetValues));
                         break;
                 }
             }
