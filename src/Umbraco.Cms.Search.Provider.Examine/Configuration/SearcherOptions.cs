@@ -9,4 +9,6 @@ public class SearcherOptions
     public float BoostFactorTextR2 { get; set; } = 4.0f;
 
     public float BoostFactorTextR3 { get; set; } = 2.0f;
+
+    public bool ExpandFacetValues { get; set; } = false;
 }

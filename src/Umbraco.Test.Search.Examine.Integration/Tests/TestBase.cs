@@ -1,4 +1,5 @@
-﻿using Examine;
+﻿using System.Reflection;
+using Examine;
 using Examine.Lucene.Providers;
 using NUnit.Framework;
 using Umbraco.Cms.Core.HostedServices;
@@ -8,6 +9,7 @@ using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
+using Umbraco.Test.Search.Examine.Integration.Attributes;
 using Umbraco.Test.Search.Examine.Integration.Extensions;
 using Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
 
@@ -49,6 +51,20 @@ public abstract class TestBase : UmbracoIntegrationTest
 
         builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
+
+        // the core ConfigureBuilderAttribute won't execute from other assemblies at the moment, so this is a workaround
+        var testType = Type.GetType(TestContext.CurrentContext.Test.ClassName!);
+        if (testType is not null)
+        {
+            MethodInfo? methodInfo = testType.GetMethod(TestContext.CurrentContext.Test.Name);
+            if (methodInfo is not null)
+            {
+                foreach (ConfigureUmbracoBuilderAttribute attribute in methodInfo.GetCustomAttributes(typeof(ConfigureUmbracoBuilderAttribute), true).OfType<ConfigureUmbracoBuilderAttribute>())
+                {
+                    attribute.Execute(builder, testType);
+                }
+            }
+        }
     }
 
     protected async Task WaitForIndexing(string indexAlias, Func<Task> indexUpdatingAction)

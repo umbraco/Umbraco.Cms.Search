@@ -55,31 +55,78 @@ internal sealed class Searcher : IExamineSearcher
             return Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
         }
 
-        IBooleanOperation searchQuery = index.Searcher
-            .CreateQuery()
-            .Field(Constants.SystemFields.Culture, culture ?? Constants.Variance.Invariant)
-            .And()
-            .Field(Constants.SystemFields.Segment, segment ?? Constants.Variance.Invariant);
+        SearchResult? searchResult;
 
-
-        if (query is not null)
+        if (_searcherOptions.ExpandFacetValues)
         {
-            // This looks a little hacky, but managed query alone cannot handle some multicultural words, as the analyser is english based.
-            // For example any japanese letters will not get a hit in the managed query.
-            // We luckily can also query on the aggregated text field, to assure that these cases also gets included.
-            searchQuery.And().Group(nestedQuery =>
-            {
-                var transformedQuery = query.TransformDashes();
-                INestedBooleanOperation fieldQuery = nestedQuery.Field(Constants.SystemFields.AggregatedTextsR1, transformedQuery.Boost(_searcherOptions.BoostFactorTextR1));
-                fieldQuery.Or().Field(Constants.SystemFields.AggregatedTextsR2, transformedQuery.Boost(_searcherOptions.BoostFactorTextR2));
-                fieldQuery.Or().Field(Constants.SystemFields.AggregatedTextsR3, transformedQuery.Boost(_searcherOptions.BoostFactorTextR3));
-                fieldQuery.Or().ManagedQuery(transformedQuery);
-                fieldQuery.Or().Field(Constants.SystemFields.AggregatedTexts, transformedQuery.Escape());
+            Filter[]? filtersAsArray = filters as Filter[] ?? filters?.ToArray();
+            Facet[]? facetsAsArray = facets as Facet[] ?? facets?.ToArray();
+            Facet[] filterFacets = filtersAsArray is not null && facetsAsArray is not null
+                ? facetsAsArray.Where(facet => filtersAsArray.Any(filter => filter.FieldName == facet.FieldName)).ToArray()
+                : [];
 
-                return fieldQuery;
-            });
+            var facetFilterResults = new List<FacetResult>();
+            foreach (Facet facet in filterFacets)
+            {
+                IBooleanOperation facetSearchQuery = CreateBaseQuery();
+                Filter[] effectiveFilters = filtersAsArray!.Where(filter => filter.FieldName != facet.FieldName).ToArray();
+                facetFilterResults.AddRange(Search(facetSearchQuery, effectiveFilters, [facet], null, 0, 0).Facets);
+            }
+
+            SearchResult documentsSearchResult = Search(CreateBaseQuery(), filtersAsArray, facetsAsArray?.Except(filterFacets), sorters, skip, take);
+            searchResult = documentsSearchResult with
+            {
+                Facets = facetFilterResults.Union(documentsSearchResult.Facets)
+            };
+        }
+        else
+        {
+            searchResult = Search(CreateBaseQuery(), filters, facets, sorters, skip, take);
         }
 
+        return Task.FromResult(searchResult);
+
+        IBooleanOperation CreateBaseQuery()
+        {
+            IBooleanOperation searchQuery = index.Searcher
+                .CreateQuery()
+                .Field(Constants.SystemFields.Culture, culture ?? Constants.Variance.Invariant)
+                .And()
+                .Field(Constants.SystemFields.Segment, segment ?? Constants.Variance.Invariant);
+
+            if (query is not null)
+            {
+                // This looks a little hacky, but managed query alone cannot handle some multicultural words, as the analyser is english based.
+                // For example any japanese letters will not get a hit in the managed query.
+                // We luckily can also query on the aggregated text field, to assure that these cases also gets included.
+                searchQuery.And().Group(nestedQuery =>
+                {
+                    var transformedQuery = query.TransformDashes();
+                    INestedBooleanOperation fieldQuery = nestedQuery.Field(Constants.SystemFields.AggregatedTextsR1, transformedQuery.Boost(_searcherOptions.BoostFactorTextR1));
+                    fieldQuery.Or().Field(Constants.SystemFields.AggregatedTextsR2, transformedQuery.Boost(_searcherOptions.BoostFactorTextR2));
+                    fieldQuery.Or().Field(Constants.SystemFields.AggregatedTextsR3, transformedQuery.Boost(_searcherOptions.BoostFactorTextR3));
+                    fieldQuery.Or().ManagedQuery(transformedQuery);
+                    fieldQuery.Or().Field(Constants.SystemFields.AggregatedTexts, transformedQuery.Escape());
+
+                    return fieldQuery;
+                });
+            }
+
+            AddProtection(searchQuery, accessContext);
+
+            return searchQuery;
+        }
+
+    }
+
+    private SearchResult Search(
+        IBooleanOperation searchQuery,
+        IEnumerable<Filter>? filters,
+        IEnumerable<Facet>? facets,
+        IEnumerable<Sorter>? sorters,
+        int skip,
+        int take)
+    {
         // Examine will overwrite subsequent facets of the same field, so make sure there aren't any duplicates.
         Facet[] deduplicateFacets = DeduplicateFacets(facets);
 
@@ -89,7 +136,6 @@ internal sealed class Searcher : IExamineSearcher
         AddFilters(searchQuery, filters);
         AddFacets(searchQuery, deduplicateFacets);
         AddSorters(searchQuery, sortersAsArray);
-        AddProtection(searchQuery, accessContext);
 
         ISearchResults results;
         try
@@ -124,9 +170,9 @@ internal sealed class Searcher : IExamineSearcher
         }
 
         FacetResult[] facetResults = facets is null ? [] : MapFacets(results, deduplicateFacets).ToArray();
-        Document[] searchResultDocuments = searchResults.Select(MapToDocument).WhereNotNull().ToArray();
+        Document[] searchResultDocuments = take > 0 ? searchResults.Select(MapToDocument).WhereNotNull().ToArray() : [];
 
-        return Task.FromResult(new SearchResult(results.TotalItemCount, searchResultDocuments, facetResults));
+        return new SearchResult(results.TotalItemCount, searchResultDocuments, facetResults);
     }
 
     private void AddProtection(IBooleanOperation searchQuery, AccessContext? accessContext)

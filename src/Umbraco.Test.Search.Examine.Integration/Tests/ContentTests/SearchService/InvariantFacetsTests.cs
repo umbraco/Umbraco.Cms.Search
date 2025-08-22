@@ -1,11 +1,15 @@
 ﻿using System.Globalization;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
+using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
+using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
+using Umbraco.Test.Search.Examine.Integration.Attributes;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.SearchService;
 
@@ -13,6 +17,8 @@ public class InvariantFacetsTests : SearcherTestBase
 {
     private IContentType ContentType { get; set; } = null!;
 
+    public static void ConfigureExpandFacetValues(IUmbracoBuilder builder)
+        => builder.Services.Configure<SearcherOptions>(options => options.ExpandFacetValues = true);
 
     [TestCase(true)]
     [TestCase(false)]
@@ -46,6 +52,85 @@ public class InvariantFacetsTests : SearcherTestBase
             Assert.That(firstFacetValues.Count, Is.EqualTo(2));
             Assert.That(secondFacetValues.Key, Is.EqualTo(2));
             Assert.That(secondFacetValues.Count, Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public async Task CanSearchIntegerExactFacetWithFilter()
+    {
+        await CreateCountDocuments([1, 1, 2, 3, 3]);
+
+        var indexAlias = GetIndexAlias(true);
+        IEnumerable<FacetResult> facets = (await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            [new IntegerExactFilter("count", [1], false)],
+            [new IntegerExactFacet("count")],
+            null,
+            null,
+            null,
+            null,
+            0,
+            100)).Facets;
+        Assert.That(facets.Count(), Is.EqualTo(1));
+
+        FacetResult facet = facets.First();
+        Assert.Multiple(() =>
+        {
+            Assert.That(facet.FieldName, Is.EqualTo("count"));
+            Assert.That(facet.Values.Count(), Is.EqualTo(1));
+        });
+
+        var facetValue = facet.Values.Single() as IntegerExactFacetValue;
+        Assert.That(facetValue, Is.Not.Null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(facetValue.Key, Is.EqualTo(1));
+            Assert.That(facetValue.Count, Is.EqualTo(2));
+        });
+    }
+
+    [Test]
+    [ConfigureUmbracoBuilder(ActionName = nameof(ConfigureExpandFacetValues))]
+    public async Task CanSearchIntegerExactFacetExpandedWithFilter()
+    {
+        await CreateCountDocuments([1, 1, 2, 3, 3]);
+
+        var indexAlias = GetIndexAlias(true);
+        IEnumerable<FacetResult> facets = (await Searcher.SearchAsync(
+            indexAlias,
+            null,
+            [new IntegerExactFilter("count", [1], false)],
+            [new IntegerExactFacet("count")],
+            null,
+            null,
+            null,
+            null,
+            0,
+            100)).Facets;
+        Assert.That(facets.Count(), Is.EqualTo(1));
+
+        FacetResult facet = facets.First();
+        Assert.Multiple(() =>
+        {
+            Assert.That(facet.FieldName, Is.EqualTo("count"));
+            Assert.That(facet.Values.Count(), Is.EqualTo(3));
+        });
+
+        IntegerExactFacetValue[] facetValues = facet.Values.OfType<IntegerExactFacetValue>().ToArray();
+        Assert.That(facetValues, Has.Length.EqualTo(3));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(facetValues[0].Key, Is.EqualTo(1));
+            Assert.That(facetValues[0].Count, Is.EqualTo(2));
+
+            Assert.That(facetValues[1].Key, Is.EqualTo(2));
+            Assert.That(facetValues[1].Count, Is.EqualTo(1));
+
+            Assert.That(facetValues[2].Key, Is.EqualTo(3));
+            Assert.That(facetValues[2].Count, Is.EqualTo(2));
         });
     }
 
