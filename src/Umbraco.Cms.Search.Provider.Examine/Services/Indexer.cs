@@ -75,6 +75,7 @@ internal sealed class Indexer : IExamineIndexer
 
     public Task ResetAsync(string indexAlias)
     {
+        // NOTE: the index might not exist at this point, so don't use GetIndex (it's throws an exception for non-existing indexes)
         if (_examineManager.TryGetIndex(indexAlias, out IIndex? index) is false)
         {
             return Task.CompletedTask;
