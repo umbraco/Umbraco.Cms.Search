@@ -96,27 +96,61 @@ internal sealed class Searcher : IExamineSearcher
 
             if (query is not null)
             {
-                // This looks a little hacky, but managed query alone cannot handle some multicultural words, as the analyser is english based.
-                // For example any japanese letters will not get a hit in the managed query.
-                // We luckily can also query on the aggregated text field, to assure that these cases also gets included.
-                searchQuery.And().Group(nestedQuery =>
+                // when performing wildcard search on phrase queries, the results can be somewhat surprising. for example:
+                // 1. wildcard search for "something whatever" yields all documents with either "something" or "whatever".
+                // 2. wildcard searching for "some what" does not yield documents with "something", but it does yield
+                //    documents with "whatever" because the wildcard is applied at the end of the query.
+                // to counter for these cases, we split the query into multiple terms and apply wildcard search to each
+                // term with AND grouping.
+                var terms = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                foreach (var term in terms)
                 {
-                    var transformedQuery = query.TransformDashes();
-                    INestedBooleanOperation fieldQuery = nestedQuery.Field(Constants.SystemFields.AggregatedTextsR1, transformedQuery.Boost(_searcherOptions.BoostFactorTextR1));
-                    fieldQuery.Or().Field(Constants.SystemFields.AggregatedTextsR2, transformedQuery.Boost(_searcherOptions.BoostFactorTextR2));
-                    fieldQuery.Or().Field(Constants.SystemFields.AggregatedTextsR3, transformedQuery.Boost(_searcherOptions.BoostFactorTextR3));
-                    fieldQuery.Or().ManagedQuery(transformedQuery);
-                    fieldQuery.Or().Field(Constants.SystemFields.AggregatedTexts, transformedQuery.Escape());
-
-                    return fieldQuery;
-                });
+                    // NOTE: for some reason, no results are being produced when combining boost and wildcard in one query,
+                    //       so for now we need to do it the hard way (first boost, then wildcard).
+                    //       this does not necessarily produce the correct sort order, as boosting is explicitly left out
+                    //       for wildcard queries, but it's the best option right now.
+                    // TODO: figure out a way to combine these into one query - i.e. something like:
+                    //       IExamineValue BoostedWildcardValue(string q, float boost)
+                    //          => new ExamineValue(Examineness.ComplexWildcard, q, boost);
+                    searchQuery.And().Group(nestedQuery => nestedQuery
+                        .Field(
+                            Constants.SystemFields.AggregatedTextsR1,
+                            term.Boost(_searcherOptions.BoostFactorTextR1))
+                        .Or()
+                        .Field(
+                            Constants.SystemFields.AggregatedTextsR1,
+                            term.MultipleCharacterWildcard())
+                        .Or()
+                        .Field(
+                            Constants.SystemFields.AggregatedTextsR2,
+                            term.Boost(_searcherOptions.BoostFactorTextR2))
+                        .Or()
+                        .Field(
+                            Constants.SystemFields.AggregatedTextsR2,
+                            term.MultipleCharacterWildcard())
+                        .Or()
+                        .Field(
+                            Constants.SystemFields.AggregatedTextsR3,
+                            term.Boost(_searcherOptions.BoostFactorTextR3))
+                        .Or()
+                        .Field(
+                            Constants.SystemFields.AggregatedTextsR3,
+                            term.MultipleCharacterWildcard())
+                        .Or()
+                        .Field(
+                            Constants.SystemFields.AggregatedTexts,
+                            term.Boost(1.0f))
+                        .Or()
+                        .Field(
+                            Constants.SystemFields.AggregatedTexts,
+                            term.MultipleCharacterWildcard()));
+                }
             }
 
             AddProtection(searchQuery, accessContext);
 
             return searchQuery;
         }
-
     }
 
     private SearchResult Search(
@@ -157,17 +191,7 @@ internal sealed class Searcher : IExamineSearcher
             throw;
         }
 
-        IEnumerable<ISearchResult> searchResults;
-
-        ScoreSorter? scoreSorter = sortersAsArray?.OfType<ScoreSorter>().FirstOrDefault();
-        if (scoreSorter is not null)
-        {
-            searchResults = results.OrderBy(x => x.Score, scoreSorter.Direction);
-        }
-        else
-        {
-            searchResults = results;
-        }
+        IEnumerable<ISearchResult> searchResults = results.ToArray();
 
         FacetResult[] facetResults = facets is null ? [] : MapFacets(results, deduplicateFacets).ToArray();
         Document[] searchResultDocuments = take > 0 ? searchResults.Select(MapToDocument).WhereNotNull().ToArray() : [];

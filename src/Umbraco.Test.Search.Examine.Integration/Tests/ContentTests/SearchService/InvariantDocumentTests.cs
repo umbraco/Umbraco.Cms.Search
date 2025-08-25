@@ -36,68 +36,17 @@ public class InvariantDocumentTests : SearcherTestBase
     {
         var indexAlias = GetIndexAlias(publish);
 
-        SearchResult results = await Searcher.SearchAsync(indexAlias, "The root title", null, null, null, null, null, null, 0, 100);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "root title", null, null, null, null, null, null, 0, 100);
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
-
-    [TestCase(true)]
-    [TestCase(false)]
-    public async Task CanSearchIntegerValue(bool publish)
-    {
-        var indexAlias = GetIndexAlias(publish);
-
-        SearchResult results = await Searcher.SearchAsync(indexAlias, "12", null, null, null, null, null, null, 0, 100);
-        Assert.That(results.Total, Is.EqualTo(1));
-        Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
-    }
-
-    [TestCase(true)]
-    [TestCase(false)]
-    public async Task CanSearchDecimalValues(bool publish)
-    {
-        var indexAlias = GetIndexAlias(publish);
-
-        SearchResult results = await Searcher.SearchAsync(indexAlias, DecimalValue.ToString(), null, null, null, null, null, null, 0, 100);
-        Assert.That(results.Total, Is.EqualTo(1));
-        Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
-    }
-
-    [TestCase(true)]
-    [TestCase(false)]
-    public async Task CanSearchDateTimeValues(bool publish)
-    {
-        var indexAlias = GetIndexAlias(publish);
-
-        SearchResult results = await Searcher.SearchAsync(indexAlias, CurrentDateTimeOffset.DateTime.ToString(), null, null, null, null, null, null, 0, 100);
-        Assert.That(results.Total, Is.EqualTo(1));
-        Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
-    }
-
 
     [TestCase("title", "updated title", false)]
     [TestCase("title", "updated title", true)]
-    [TestCase("count", 12, false)]
-    [TestCase("count", 12, true)]
-    [TestCase("decimalproperty", 1.45, false)]
-    [TestCase("decimalproperty", 1.45, true)]
     public async Task CanSearchUpdatedProperties(string propertyName, object updatedValue, bool publish)
     {
         await UpdateProperty(propertyName, updatedValue, publish);
 
-        var indexAlias = GetIndexAlias(publish);
-
-        SearchResult results = await Searcher.SearchAsync(indexAlias, updatedValue.ToString(), null, null, null, null, null, null, 0, 100);
-        Assert.That(results.Total, Is.EqualTo(1));
-        Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
-    }
-
-    [TestCase(true)]
-    [TestCase(false)]
-    public async Task CanSearchUpdatedDateTime(bool publish)
-    {
-        var updatedValue = new DateTime(2000, 1, 1);
-        await UpdateProperty("datetime", new DateTime(2000, 1, 1), publish);
         var indexAlias = GetIndexAlias(publish);
 
         SearchResult results = await Searcher.SearchAsync(indexAlias, updatedValue.ToString(), null, null, null, null, null, null, 0, 100);

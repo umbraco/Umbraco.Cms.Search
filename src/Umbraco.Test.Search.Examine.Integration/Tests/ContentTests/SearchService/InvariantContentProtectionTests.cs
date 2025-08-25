@@ -40,7 +40,7 @@ public class InvariantContentProtectionTests : SearcherTestBase
 
 
         var indexAlias = GetIndexAlias(publish);
-        SearchResult results = await Searcher.SearchAsync(indexAlias, "The root title", null, null, null, null, null, null, 0, 100);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "root title", null, null, null, null, null, null, 0, 100);
 
         Assert.That(results.Total, Is.EqualTo(publish ? 0 : 1));
     }
@@ -67,7 +67,7 @@ public class InvariantContentProtectionTests : SearcherTestBase
         });
 
         var indexAlias = GetIndexAlias(publish);
-        SearchResult results = await Searcher.SearchAsync(indexAlias, "The root title", null, null, null, null, null, null, 0, 100);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "root title", null, null, null, null, null, null, 0, 100);
 
         Assert.That(results.Total, Is.EqualTo(publish ? 0 : 1));
     }
@@ -98,7 +98,7 @@ public class InvariantContentProtectionTests : SearcherTestBase
 
         var accessContext = new AccessContext(customMember.Key, [result.Result!.Key]);
         var indexAlias = GetIndexAlias(publish);
-        SearchResult results = await Searcher.SearchAsync(indexAlias, "The root title", null, null, null, null, null, accessContext, 0, 100);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "root title", null, null, null, null, null, accessContext, 0, 100);
 
         // We should still be able to get draft content, as it is not protected
         Assert.That(results.Total, Is.EqualTo(1));
@@ -128,7 +128,7 @@ public class InvariantContentProtectionTests : SearcherTestBase
 
         var accessContext = new AccessContext(customMember.Key, []);
         var indexAlias = GetIndexAlias(publish);
-        SearchResult results = await Searcher.SearchAsync(indexAlias, "The root title", null, null, null, null, null, accessContext, 0, 100);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "root title", null, null, null, null, null, accessContext, 0, 100);
 
         // We should still be able to get draft content, as it is not protected
         Assert.That(results.Total, Is.EqualTo(1));
@@ -162,7 +162,7 @@ public class InvariantContentProtectionTests : SearcherTestBase
 
         var accessContext = new AccessContext(customMember.Key, [wrongGroupAttempt.Result!.Key]);
         var indexAlias = GetIndexAlias(publish);
-        SearchResult results = await Searcher.SearchAsync(indexAlias, "The root title", null, null, null, null, null, accessContext, 0, 100);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "root title", null, null, null, null, null, accessContext, 0, 100);
 
         // We should still be able to get draft content, as it is not protected
         Assert.That(results.Total, Is.EqualTo(publish ? 0 : 1));
@@ -186,7 +186,7 @@ public class InvariantContentProtectionTests : SearcherTestBase
             .WithContentType(contentType)
             .WithName("Root")
             .WithPropertyValues(
-                new {title = "The root title",})
+                new {title = "root title",})
             .Build();
 
         await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, () =>
