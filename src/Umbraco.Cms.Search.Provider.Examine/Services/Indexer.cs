@@ -185,21 +185,18 @@ internal sealed class Indexer : IExamineIndexer
 
             if (field.Value.TextsR1?.Any() ?? false)
             {
-                aggregatedR1Texts.AddRange(field.Value.TextsR1);
                 result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.TextsR1), field.Value.TextsR1.Select(x => x.TransformDashes()));
                 aggregatedR1Texts.AddRange(field.Value.TextsR1);
             }
 
             if (field.Value.TextsR2?.Any() ?? false)
             {
-                aggregatedR2Texts.AddRange(field.Value.TextsR2);
                 result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.TextsR2), field.Value.TextsR2.Select(x => x.TransformDashes()));
                 aggregatedR2Texts.AddRange(field.Value.TextsR2);
             }
 
             if (field.Value.TextsR3?.Any() ?? false)
             {
-                aggregatedR3Texts.AddRange(field.Value.TextsR3);
                 result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.TextsR3), field.Value.TextsR3.Select(x => x.TransformDashes()));
                 aggregatedR3Texts.AddRange(field.Value.TextsR3);
             }
