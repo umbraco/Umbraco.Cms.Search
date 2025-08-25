@@ -16,9 +16,7 @@ public class InvariantDocumentTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexAnyDocument(bool publish)
     {
-        IIndex index = ExamineManager.GetIndex(publish
-            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
-            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
 
         ISearchResult[] results = index.Searcher.CreateQuery().All().Execute().ToArray();
         Assert.That(results.Length, Is.EqualTo(1));
@@ -27,32 +25,33 @@ public class InvariantDocumentTests : IndexTestBase
 
     [TestCase(true)]
     [TestCase(false)]
-    public void CanRemoveAnyDocument(bool publish)
+    public async Task CanRemoveAnyDocument(bool publish)
     {
-        IContent content = ContentService.GetById(RootKey)!;
-        ContentService.Delete(content);
+        var indexAlias = GetIndexAlias(publish);
+        await WaitForIndexing(indexAlias, () =>
+        {
+            IContent content = ContentService.GetById(RootKey)!;
+            ContentService.Delete(content);
+            return Task.CompletedTask;
+        });
 
-        IIndex index = ExamineManager.GetIndex(publish
-            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
-            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
-
-        // TODO: We need to await that the index deleting has completed, for now this is our only option
-        Thread.Sleep(3000);
-
+        IIndex index = ExamineManager.GetIndex(indexAlias);
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results, Is.Empty);
     }
 
     [Test]
-    public void CanRemoveUnpublishedDocument()
+    public async Task CanRemoveUnpublishedDocument()
     {
-        IContent content = ContentService.GetById(RootKey)!;
-        ContentService.Unpublish(content);
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, () =>
+        {
+            IContent content = ContentService.GetById(RootKey)!;
+            ContentService.Unpublish(content);
+            return Task.CompletedTask;
+        });
+
 
         IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
-
-        // TODO: We need to await that the index deleting has completed, for now this is our only option
-        Thread.Sleep(3000);
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results, Is.Empty);
     }
@@ -61,9 +60,7 @@ public class InvariantDocumentTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexTextProperty(bool publish)
     {
-        IIndex index = ExamineManager.GetIndex(publish
-            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
-            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
         var fieldName = FieldNameHelper.FieldName("title", Constants.FieldValues.Texts);
@@ -77,9 +74,7 @@ public class InvariantDocumentTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexIntegerValues(bool publish)
     {
-        IIndex index = ExamineManager.GetIndex(publish
-            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
-            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
         var fieldName = FieldNameHelper.FieldName("count", Constants.FieldValues.Integers);
@@ -93,9 +88,7 @@ public class InvariantDocumentTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexDecimalValues(bool publish)
     {
-        IIndex index = ExamineManager.GetIndex(publish
-            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
-            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
         var fieldName = FieldNameHelper.FieldName("decimalproperty", Constants.FieldValues.Decimals);
@@ -112,9 +105,7 @@ public class InvariantDocumentTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexDateTimeValues(bool publish)
     {
-        IIndex index = ExamineManager.GetIndex(publish
-            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
-            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
         var fieldName = FieldNameHelper.FieldName("datetime", Constants.FieldValues.DateTimeOffsets);
@@ -131,13 +122,11 @@ public class InvariantDocumentTests : IndexTestBase
     [TestCase("count", 12, true)]
     [TestCase("decimalproperty", 1.45, false)]
     [TestCase("decimalproperty", 1.45, true)]
-    public void CanIndexUpdatedProperties(string propertyName, object updatedValue, bool publish)
+    public async Task CanIndexUpdatedProperties(string propertyName, object updatedValue, bool publish)
     {
-        UpdateProperty(propertyName, updatedValue, publish);
+        await UpdateProperty(propertyName, updatedValue, publish);
 
-        IIndex index = ExamineManager.GetIndex(publish
-            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
-            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
 
         ISearchResults results = index.Searcher.Search(updatedValue.ToString()!);
         Assert.That(results, Is.Not.Empty);
@@ -148,9 +137,7 @@ public class InvariantDocumentTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexAggregatedTexts(bool publish)
     {
-        IIndex index = ExamineManager.GetIndex(publish
-            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
-            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
         queryBuilder.SelectField(Constants.SystemFields.AggregatedTexts);
@@ -225,17 +212,20 @@ public class InvariantDocumentTests : IndexTestBase
         Assert.That(content, Is.Not.Null);
     }
 
-    private void UpdateProperty(string propertyName, object value, bool publish)
+    private async Task UpdateProperty(string propertyName, object value, bool publish)
     {
         IContent content = ContentService.GetById(RootKey)!;
         content.SetValue(propertyName, value);
 
-        ContentService.Save(content);
-        if (publish)
+        await WaitForIndexing(GetIndexAlias(publish), () =>
         {
-            ContentService.Publish(content, ["*"]);
-        }
+            ContentService.Save(content);
+            if (publish)
+            {
+                ContentService.Publish(content, ["*"]);
+            }
 
-        Thread.Sleep(3000);
+            return Task.CompletedTask;
+        });
     }
 }
