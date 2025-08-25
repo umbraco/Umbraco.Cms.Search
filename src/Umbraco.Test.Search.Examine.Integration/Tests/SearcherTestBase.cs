@@ -167,12 +167,7 @@ public abstract class SearcherTestBase
         return result;
     }
 
-    private async Task EnsureIndex()
-    {
-        await DeleteIndex();
-
-        // TODO: force recreate index on disk?
-    }
+    private async Task EnsureIndex() => await DeleteIndex();
 
     private async Task DeleteIndex()
         => await GetRequiredService<IIndexer>().ResetAsync(IndexAlias);
