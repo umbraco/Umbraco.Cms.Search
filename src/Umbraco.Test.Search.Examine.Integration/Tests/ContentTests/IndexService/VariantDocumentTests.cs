@@ -14,11 +14,10 @@ public class VariantDocumentTests : IndexTestBase
 {
     [TestCase(true)]
     [TestCase(false)]
-    public void CanIndexAnyDocument(bool publish)
+    public async Task CanIndexAnyDocument(bool publish)
     {
-        IIndex index = ExamineManager.GetIndex(publish
-            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
-            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        await CreateVariantDocument();
+        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
 
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results, Is.Not.Empty);
@@ -28,6 +27,7 @@ public class VariantDocumentTests : IndexTestBase
     [TestCase(false)]
     public async Task CanRemoveAnyDocument(bool publish)
     {
+        await CreateVariantDocument();
         var indexAlias = GetIndexAlias(publish);
         await WaitForIndexing(indexAlias, () =>
         {
@@ -41,17 +41,33 @@ public class VariantDocumentTests : IndexTestBase
         Assert.That(results, Is.Empty);
     }
 
+    [Test]
+    public async Task CanRemoveSingleCultureFromPublishedDocument()
+    {
+        await CreateVariantDocument();
+        var indexAlias = GetIndexAlias(true);
+        await WaitForIndexing(indexAlias, () =>
+        {
+            IContent content = ContentService.GetById(RootKey)!;
+            ContentService.Unpublish(content, "da-DK");
+            return Task.CompletedTask;
+        });
+
+        IIndex index = ExamineManager.GetIndex(indexAlias);
+        ISearchResults results = index.Searcher.CreateQuery().All().Execute();
+        Assert.That(results.TotalItemCount, Is.EqualTo(6));
+    }
+
     [TestCase(true, "en-US", "Name")]
     [TestCase(false, "en-US", "Name")]
     [TestCase(true, "da-DK", "Navn")]
     [TestCase(false, "da-DK", "Navn")]
     [TestCase(true, "ja-JP", "名前")]
     [TestCase(false, "ja-JP", "名前")]
-    public void CanIndexVariantName(bool publish, string culture, string expectedValue)
+    public async Task CanIndexVariantName(bool publish, string culture, string expectedValue)
     {
-        IIndex index = ExamineManager.GetIndex(publish
-            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
-            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        await CreateVariantDocument();
+        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
         queryBuilder.SelectField(Constants.SystemFields.AggregatedTextsR1);
@@ -72,8 +88,9 @@ public class VariantDocumentTests : IndexTestBase
     [TestCase("invariantdecimalproperty", Constants.FieldValues.Decimals, 12.4552, "en-US")]
     [TestCase("invariantdecimalproperty", Constants.FieldValues.Decimals, 12.4552, "da-DK")]
     [TestCase("invariantdecimalproperty", Constants.FieldValues.Decimals, 12.4552, "ja-JP")]
-    public void CanIndexInvariantProperty(string property, string fieldValues, object value, string culture)
+    public async Task CanIndexInvariantProperty(string property, string fieldValues, object value, string culture)
     {
+        await CreateVariantDocument();
         var field = FieldNameHelper.FieldName(property, fieldValues);
         IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
@@ -92,6 +109,7 @@ public class VariantDocumentTests : IndexTestBase
     [TestCase("title", "updatedTitle", "ja-JP")]
     public async Task CanIndexUpdatedProperties(string propertyName, string updatedValue, string culture)
     {
+        await CreateVariantDocument();
         await UpdateProperty(propertyName, updatedValue, culture);
 
         IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
@@ -108,11 +126,10 @@ public class VariantDocumentTests : IndexTestBase
     [TestCase(false, "da-DK", "Rod")]
     [TestCase(true, "ja-JP", "ル-ト")]
     [TestCase(false, "ja-JP", "ル-ト")]
-    public void CanIndexVariantTextByCulture(bool publish, string culture, string expectedValue)
+    public async Task CanIndexVariantTextByCulture(bool publish, string culture, string expectedValue)
     {
-        IIndex index = ExamineManager.GetIndex(publish
-            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
-            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        await CreateVariantDocument();
+        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
         var fieldName = FieldNameHelper.FieldName("title", Constants.FieldValues.Texts);
@@ -132,11 +149,10 @@ public class VariantDocumentTests : IndexTestBase
     [TestCase(false, "da-DK","segment-2", "krop-segment-2")]
     [TestCase(true, "ja-JP", "segment-1", "ボディ-segment-1")]
     [TestCase(false, "ja-JP", "segment-2", "ボディ-segment-2")]
-    public void CanIndexVariantTextBySegment(bool publish, string culture, string segment, string expectedValue)
+    public async Task CanIndexVariantTextBySegment(bool publish, string culture, string segment, string expectedValue)
     {
-        IIndex index = ExamineManager.GetIndex(publish
-            ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
-            : Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        await CreateVariantDocument();
+        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
 
         ISearchResults results = index.Searcher.Search(expectedValue);
         Assert.That(results, Is.Not.Empty);
@@ -144,8 +160,7 @@ public class VariantDocumentTests : IndexTestBase
         Assert.That(results.First().Values.First(x => x.Key == fieldName).Value, Is.EqualTo(expectedValue.TransformDashes()));
     }
 
-    [SetUp]
-    public async Task CreateVariantDocument()
+    private async Task CreateVariantDocument()
     {
         DataType dataType = new DataTypeBuilder()
             .WithId(0)
