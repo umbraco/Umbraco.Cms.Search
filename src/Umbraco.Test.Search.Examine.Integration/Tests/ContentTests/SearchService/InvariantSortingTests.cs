@@ -36,15 +36,12 @@ public class InvariantSortingTests : SearcherTestBase
             0,
             100);
 
-        Assert.Multiple(() =>
+        Document[] documents = result.Documents.ToArray();
+        Assert.That(documents, Has.Length.EqualTo(keys.Length));
+        for (var i = 0; i < keys.Length; i++)
         {
-            Document[] documents = result.Documents.ToArray();
-            Assert.That(documents, Is.Not.Empty);
-            for (int i = 0; i < keys.Length; i++)
-            {
-                Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
-            }
-        });
+            Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
+        }
     }
 
     [TestCase(true, Direction.Descending)]
@@ -67,15 +64,12 @@ public class InvariantSortingTests : SearcherTestBase
             0,
             100);
 
-        Assert.Multiple(() =>
+        Document[] documents = result.Documents.ToArray();
+        Assert.That(documents, Has.Length.EqualTo(keys.Length));
+        for (int i = 0; i < keys.Length; i++)
         {
-            Document[] documents = result.Documents.ToArray();
-            Assert.That(documents, Is.Not.Empty);
-            for (int i = 0; i < keys.Length; i++)
-            {
-                Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
-            }
-        });
+            Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
+        }
     }
 
     [TestCase(true, Direction.Descending)]
@@ -99,15 +93,12 @@ public class InvariantSortingTests : SearcherTestBase
             0,
             100);
 
-        Assert.Multiple(() =>
+        Document[] documents = result.Documents.ToArray();
+        Assert.That(documents, Has.Length.EqualTo(keys.Length));
+        for (int i = 0; i < keys.Length; i++)
         {
-            Document[] documents = result.Documents.ToArray();
-            Assert.That(documents, Is.Not.Empty);
-            for (int i = 0; i < keys.Length; i++)
-            {
-                Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
-            }
-        });
+            Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
+        }
     }
 
     [TestCase(true, Direction.Descending)]
@@ -129,21 +120,18 @@ public class InvariantSortingTests : SearcherTestBase
             0,
             100);
 
-        Assert.Multiple(() =>
-        {
-            Document[] documents = result.Documents.ToArray();
-            Assert.That(documents, Is.Not.Empty);
-            Guid[] orderedKeys = (direction == Direction.Ascending
-                    ? keysAndValues.OrderBy(kvp => kvp.Value)
-                    : keysAndValues.OrderByDescending(kvp => kvp.Value))
-                .Select(kvp => kvp.Key)
-                .ToArray();
+        Document[] documents = result.Documents.ToArray();
+        Assert.That(documents, Has.Length.EqualTo(keysAndValues.Length));
+        Guid[] orderedKeys = (direction == Direction.Ascending
+                ? keysAndValues.OrderBy(kvp => kvp.Value)
+                : keysAndValues.OrderByDescending(kvp => kvp.Value))
+            .Select(kvp => kvp.Key)
+            .ToArray();
 
-            for (var i = 0; i < orderedKeys.Length; i++)
-            {
-                Assert.That(documents[i].Id, Is.EqualTo(orderedKeys[i]));
-            }
-        });
+        for (var i = 0; i < orderedKeys.Length; i++)
+        {
+            Assert.That(documents[i].Id, Is.EqualTo(orderedKeys[i]));
+        }
     }
 
     [TestCase(true, Direction.Descending)]
@@ -167,15 +155,12 @@ public class InvariantSortingTests : SearcherTestBase
             0,
             100);
 
-        Assert.Multiple(() =>
+        Document[] documents = result.Documents.ToArray();
+        Assert.That(documents, Has.Length.EqualTo(keys.Length));
+        for (int i = 0; i < keys.Length; i++)
         {
-            Document[] documents = result.Documents.ToArray();
-            Assert.That(documents, Is.Not.Empty);
-            for (int i = 0; i < keys.Length; i++)
-            {
-                Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
-            }
-        });
+            Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
+        }
     }
 
     [TestCase(true, Direction.Descending)]
@@ -201,15 +186,12 @@ public class InvariantSortingTests : SearcherTestBase
             0,
             100);
 
-        Assert.Multiple(() =>
+        Document[] documents = result.Documents.ToArray();
+        Assert.That(documents, Has.Length.EqualTo(keys.Length));
+        for (var i = 0; i < keys.Length; i++)
         {
-            Document[] documents = result.Documents.ToArray();
-            Assert.That(documents, Is.Not.Empty);
-            for (var i = 0; i < keys.Length; i++)
-            {
-                Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
-            }
-        });
+            Assert.That(documents[i].Id, Is.EqualTo(keys[i].Key));
+        }
     }
 
     // TODO: Remake these with actual properties in different r1 texts...

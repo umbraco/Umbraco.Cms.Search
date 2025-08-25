@@ -39,9 +39,9 @@ public class VariantDocumentTests : SearcherTestBase
         Assert.That(results.Total, Is.EqualTo(0));
     }
 
-    [TestCase("title", "updatedTitle", "en-US")]
-    [TestCase("title", "updatedTitle", "da-DK")]
-    [TestCase("title", "updatedTitle", "ja-JP")]
+    [TestCase("title", "updated", "en-US")]
+    [TestCase("title", "opdateret", "da-DK")]
+    [TestCase("title", "ボディ", "ja-JP")]
     public async Task CanSearchUpdatedProperties(string propertyName, string updatedValue, string culture)
     {
         await UpdateProperty(propertyName, updatedValue, culture);
@@ -68,12 +68,12 @@ public class VariantDocumentTests : SearcherTestBase
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
 
-    [TestCase(true, "en-US", "segment-1", "body-segment-1")]
-    [TestCase(false, "en-US", "segment-2", "body-segment-2")]
-    [TestCase(true, "da-DK","segment-1", "krop-segment-1")]
-    [TestCase(false, "da-DK","segment-2", "krop-segment-2")]
-    [TestCase(true, "ja-JP", "segment-1", "ボディ-segment-1")]
-    [TestCase(false, "ja-JP", "segment-2", "ボディ-segment-2")]
+    [TestCase(true, "en-US", "segment-1", "bodySegment1")]
+    [TestCase(false, "en-US", "segment-2", "bodySegment2")]
+    [TestCase(true, "da-DK","segment-1", "kropSegment1")]
+    [TestCase(false, "da-DK","segment-2", "kropSegment2")]
+    [TestCase(true, "ja-JP", "segment-1", "ボディSegment1")]
+    [TestCase(false, "ja-JP", "segment-2", "ボディSegment2")]
     public async Task CanSearchVariantTextBySegment(bool publish, string culture, string segment, string expectedValue)
     {
         var indexAlias = GetIndexAlias(publish);
@@ -128,12 +128,12 @@ public class VariantDocumentTests : SearcherTestBase
         root.SetValue("title", "Roden", "da-DK");
         root.SetValue("title", "ル-ト", "ja-JP");
 
-        root.SetValue("body", "body-segment-1", "en-US", "segment-1");
-        root.SetValue("body", "body-segment-2", "en-US", "segment-2");
-        root.SetValue("body", "krop-segment-1", "da-DK", "segment-1");
-        root.SetValue("body", "krop-segment-2", "da-DK", "segment-2");
-        root.SetValue("body", "ボディ-segment-1", "ja-JP", "segment-1");
-        root.SetValue("body", "ボディ-segment-2", "ja-JP", "segment-2");
+        root.SetValue("body", "bodySegment1", "en-US", "segment-1");
+        root.SetValue("body", "bodySegment2", "en-US", "segment-2");
+        root.SetValue("body", "kropSegment1", "da-DK", "segment-1");
+        root.SetValue("body", "kropSegment2", "da-DK", "segment-2");
+        root.SetValue("body", "ボディSegment1", "ja-JP", "segment-1");
+        root.SetValue("body", "ボディSegment2", "ja-JP", "segment-2");
 
         await WaitForIndexing(GetIndexAlias(true), () =>
         {
