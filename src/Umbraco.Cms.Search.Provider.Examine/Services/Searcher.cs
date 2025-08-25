@@ -288,7 +288,12 @@ internal sealed class Searcher : IExamineSearcher
 
                     break;
                 case TextFilter textFilter:
-                    IExamineValue[] textFilterValue = textFilter.Values.Select(value => value.TransformDashes().MultipleCharacterWildcard()).ToArray();
+                    // it would be nice to have wildcard search here. unfortunately, this requires the same workaround
+                    // as we currently have for free text search (see the comments for free text search elsewhere in
+                    // this implementation).
+                    // for now we will let the query analyzed handle text filters, and live with the lack of
+                    // wildcard filtering for text filters.
+                    string[] textFilterValue = textFilter.Values;
                     string[] textFields =
                     [
                         FieldNameHelper.FieldName(filter.FieldName, Constants.FieldValues.Texts),

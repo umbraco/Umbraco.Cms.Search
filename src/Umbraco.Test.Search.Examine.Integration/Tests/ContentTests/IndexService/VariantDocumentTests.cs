@@ -136,11 +136,8 @@ public class VariantDocumentTests : IndexTestBase
         queryBuilder.SelectField(fieldName);
         ISearchResults results = queryBuilder.Execute();
 
-        var result = results
-            .SelectMany(x => x.Values.Values)
-            .First(x => x == expectedValue.TransformDashes());
         Assert.That(results, Is.Not.Empty);
-        Assert.That(result, Is.EqualTo(expectedValue.TransformDashes()));
+        Assert.That(results.SelectMany(r => r.Values.Values).Contains(expectedValue), Is.True);
     }
 
     [TestCase(true, "en-US", "segment-1", "body-segment-1")]
@@ -157,7 +154,7 @@ public class VariantDocumentTests : IndexTestBase
         ISearchResults results = index.Searcher.Search(expectedValue);
         Assert.That(results, Is.Not.Empty);
         var fieldName = FieldNameHelper.FieldName("body", Constants.FieldValues.Texts);
-        Assert.That(results.First().Values.First(x => x.Key == fieldName).Value, Is.EqualTo(expectedValue.TransformDashes()));
+        Assert.That(results.First().Values.First(x => x.Key == fieldName).Value, Is.EqualTo(expectedValue));
     }
 
     private async Task CreateVariantDocument()

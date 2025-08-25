@@ -179,25 +179,25 @@ internal sealed class Indexer : IExamineIndexer
 
             if (field.Value.Texts?.Any() ?? false)
             {
-                result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.Texts), field.Value.Texts.Select(x => x.TransformDashes()));
+                result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.Texts), field.Value.Texts);
                 aggregatedTexts.AddRange(field.Value.Texts);
             }
 
             if (field.Value.TextsR1?.Any() ?? false)
             {
-                result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.TextsR1), field.Value.TextsR1.Select(x => x.TransformDashes()));
+                result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.TextsR1), field.Value.TextsR1);
                 aggregatedR1Texts.AddRange(field.Value.TextsR1);
             }
 
             if (field.Value.TextsR2?.Any() ?? false)
             {
-                result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.TextsR2), field.Value.TextsR2.Select(x => x.TransformDashes()));
+                result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.TextsR2), field.Value.TextsR2);
                 aggregatedR2Texts.AddRange(field.Value.TextsR2);
             }
 
             if (field.Value.TextsR3?.Any() ?? false)
             {
-                result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.TextsR3), field.Value.TextsR3.Select(x => x.TransformDashes()));
+                result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.TextsR3), field.Value.TextsR3);
                 aggregatedR3Texts.AddRange(field.Value.TextsR3);
             }
         }
