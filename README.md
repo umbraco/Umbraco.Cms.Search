@@ -22,7 +22,7 @@ As we progress with the project, it will eventually be released as an official a
 > [!IMPORTANT]
 > Umbraco Search is compatible with Umbraco v16 and beyond.
 
-To get started, install Umbraco Search and the Examine provider from NuGet:
+To get started, install Umbraco Search and the Examine search provider from NuGet:
 
 ```bash
 dotnet add package Umbraco.Cms.Search.Core
@@ -97,9 +97,9 @@ Umbraco Search indexes all relevant content properties alongside system fields l
 
 Different Umbraco property editors yield different index value types; some yield searchable `Text`, some yield filterable `Keyword`, and some yield numeric or date field types. This is important to keep in mind when searching with Umbraco Search, because the way property values are indexed directly affects the search results.
 
-A list of the built-in Umbraco property editors and their corresponding index value types can be found in Appendix A at the end of this article.
+A list of the built-in Umbraco property editors and their corresponding index value types can be found in [Appendix A](#appendix-a-indexed-values-of-built-in-property-editors).
 
-An overview of the indexed system fields can be found in Appendix B.
+An overview of the indexed system fields can be found in [Appendix B](#appendix-b-system-fields).
 
 ### Search by query (full text search)
 
@@ -216,7 +216,7 @@ filters:
 
 Umbraco Search can create facets for fields indexed as type `Keyword`, `Integer`, `Decimal` or `DateTimeOffset`.
 
-Once again, one must pay attention to the expected field index type when defining facets. Mismatched combinations of facets and value types will most likely yield zero facet results.
+Once again, one must pay attention to the expected field value type when defining facets. Mismatched combinations of facets and value types will most likely yield zero facet results.
 
 ```csharp
 using Umbraco.Cms.Search.Core;
@@ -344,9 +344,7 @@ By default, Umbraco Search will search only for invariant content. Use `culture`
 > Invariant content will automatically be included in the search result when searching for variant content.
 
 > [!IMPORTANT]  
-> At this time, segment variant search might produce incorrect search results.
-> 
-> Segment variant content, that has _not_ been created in the targeted segment, will not be part of the search result. This is a bug which will be fixed as soon as possible.
+> At this time, segment variant search might produce incorrect search results. See the [known limitations](#known-limitations) section for details.
 
 ```csharp
 using Umbraco.Cms.Search.Core.Models.Searching;
@@ -374,7 +372,7 @@ Use the `AccessContext` to include protected content (that is, content with publ
 The `AccessContext` requires the ID (key) of the currently logged-in [member](https://docs.umbraco.com/umbraco-cms/fundamentals/data/members), and accepts an optional collection of group IDs.
 
 > [!IMPORTANT]
-> Umbraco Search has no knowledge of members. If you have defined public access rules based on member groups, make sure to pass the group IDs alongside the member ID in `AccessContext`.
+> Umbraco Search has no knowledge of members. If public access rules are defined based on member groups, make sure to pass the group IDs alongside the member ID in `AccessContext`.
 
 ```csharp
 using Umbraco.Cms.Search.Core.Models.Searching;
@@ -398,6 +396,111 @@ public class MySearchConsumer(ISearcher searcher)
     }
 }
 ```
+
+## The Examine search provider
+
+Umbraco Search uses a provider based approach to the underlying search technology. By default, Umbraco Search is powered by [Examine](https://github.com/Shazwazza/Examine), which likely will require a bit of configuration to function as intended.
+
+> [!NOTE]  
+> This section _only_ applies to the default Examine search provider. Alternative search providers might be available, and they might require a different configuration.
+
+### Configuring fields for faceting and/or sorting
+
+Fields that will be used for faceting and/or sorting must be explicitly configured for the Examine search provider, _before_ anything is added to the indexes. This is done by configuring the `FieldOptions` using the options pattern.
+
+The field configuration is essentially a mapping between the Umbraco property aliases that hold the values, and the expected field index type of those properties. For example, the "genre" and "releaseYear" fields used throughout this article should be configured like this: 
+
+```csharp
+using Umbraco.Cms.Core.Composing;
+using Umbraco.Cms.Search.Provider.Examine.Configuration;
+
+namespace Site.DependencyInjection;
+
+public class FieldOptionsComposer : IComposer
+{
+    public void Compose(IUmbracoBuilder builder)
+        => builder.Services.Configure<FieldOptions>(options
+            => options.Fields =
+            [
+                // configure faceting and sorting for the "genre" property
+                new FieldOptions.Field
+                {
+                    PropertyName = "genre",
+                    FieldValues = FieldValues.Keywords,
+                    Facetable = true,
+                    Sortable = true
+                },
+                // configure faceting and sorting for the "releaseYear" property
+                new FieldOptions.Field
+                {
+                    PropertyName = "releaseYear",
+                    FieldValues = FieldValues.Integers,
+                    Facetable = true,
+                    Sortable = true
+                }
+            ]
+        );
+}
+```
+> [!IMPORTANT]
+> Since the field configurations must be known at index time, any changes made to this configuration will only take effect after a rebuild of all indexes.
+
+### Configuring the search behavior
+
+The `SearcherOptions` allow for configuring various aspects of how a search is executed. It is configured using the options pattern:
+
+```csharp
+using Umbraco.Cms.Core.Composing;
+using Umbraco.Cms.Search.Provider.Examine.Configuration;
+
+namespace Site.DependencyInjection;
+
+public class SearcherOptionsComposer : IComposer
+{
+    public void Compose(IUmbracoBuilder builder)
+        => builder.Services.Configure<SearcherOptions>(options =>
+        {
+            // configure searcher options here
+        });
+}
+```
+
+#### Boost levels
+
+Certain Umbraco properties yield different textual relevance values (see [Appendix A](#appendix-a-indexed-values-of-built-in-property-editors)). The Examine search provider automatically performs relevance boosting accordingly, but the boost levels can be tweaked if required. Use:
+
+- `SearcherOptions.BoostFactorTextR1` to control the relevance of highest relevance text (e.g. document names and H1 tags).
+- `SearcherOptions.BoostFactorTextR2` to control the relevance of second-highest relevance text (e.g. H2 tags).
+- `SearcherOptions.BoostFactorTextR3` to control the relevance of third-highest relevance text (e.g. H3 tags).
+
+#### Facet result behavior
+
+The available facet values are grouped by the `FieldName` passed to the facet definition when searching. In the examples above, this would be "genre" and "releaseYear". 
+
+When an end user picks a facet value from a search result, the subsequent search should contain a filter for the picked value - for example, the `KeywordFilter` in the examples above. 
+
+If a facet value has been picked and is applied as a filter, the default behavior for facet results is to exclude the facet values that are _not_ picked within the facet group.
+
+If all (applicable) facet values should be included for all groups in the search result, configure `SearcherOptions.ExpandFacetValues` as `true`.
+
+> [!CAUTION]
+> Expanding the facet values incurs a performance penalty, which is more or less linear to the number of facet groups in the search.
+
+#### Max facet values
+
+The Examine search provider limits the number of resulting facet values within a facet group to 100. This limit can be changed using `SearcherOptions.MaxFacetValues`.
+
+### Known limitations
+
+The Examine search provider has a few known limitations you should be aware of.
+
+#### Segment support
+
+Segment variant content, that has _not_ been created in the targeted segment, will not be part of the search result. This is a bug which will be fixed as soon as possible.
+
+#### Partial matching in text filters
+
+Text filters do not support partial matching (wildcard search). This might limit the ability to perform field specific search queries. It is an upstream challenge which we are investigating.
 
 ## Appendix A: Indexed values of built-in property editors
 
@@ -450,7 +553,7 @@ The following fields are explicitly indexed for all content.
 | `Umb_CreateDate`    | `DateTimeOffset` | The creation date of the content.                                            |
 | `Umb_Id`            | `Keyword`        | The content ID (key).                                                        |
 | `Umb_Level`         | `Integer`        | The content level in the tree.                                               |
-| `Umb_Name`          | `Text`           | The name of the content.                                                     |
+| `Umb_Name`          | `Text`           | The name of the content. Indexed as highest relevance text.                  |
 | `Umb_ObjectType`    | `Keyword`        | The content object type (i.e. "Document").                                   |
 | `Umb_ParentId`      | `Keyword`        | The ID (key) of the parent (if any).                                         |
 | `Umb_PathIds`       | `Keyword`        | The IDs (keys) of all ancestors and the content itself.                      |
