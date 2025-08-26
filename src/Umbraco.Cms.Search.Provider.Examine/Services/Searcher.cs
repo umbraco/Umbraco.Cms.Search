@@ -171,6 +171,10 @@ internal sealed class Searcher : IExamineSearcher
         AddFacets(searchQuery, deduplicateFacets);
         AddSorters(searchQuery, sortersAsArray);
 
+        // We only need the IndexType and NodeId
+        var selectedFields = new HashSet<string> {Constants.SystemFields.IndexType, "__NodeId" };
+        searchQuery.SelectFields(selectedFields);
+
         ISearchResults results;
         try
         {
