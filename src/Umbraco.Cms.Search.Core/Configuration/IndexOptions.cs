@@ -24,8 +24,8 @@ public sealed class IndexOptions
     }
 
     public IndexRegistration[] GetIndexRegistrations()
-        => _register.Values.ToArray();    
+        => _register.Values.ToArray();
 
     public IndexRegistration? GetIndexRegistration(string indexAlias)
-        => _register.TryGetValue(indexAlias, out var indexRegistration) ? indexRegistration : null;    
+        => _register.TryGetValue(indexAlias, out IndexRegistration? indexRegistration) ? indexRegistration : null;
 }

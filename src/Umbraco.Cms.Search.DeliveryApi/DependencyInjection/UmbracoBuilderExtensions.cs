@@ -13,7 +13,7 @@ public static class UmbracoBuilderExtensions
         // swap out the core query provider with a custom one based on the search abstractions
         builder.Services.AddSingleton<IApiContentQueryProvider, DeliveryApiContentQueryProvider>();
 
-        // add a content indexer for Delivery API selectors, filters, sorters etc. 
+        // add a content indexer for Delivery API selectors, filters, sorters etc.
         builder.Services.AddTransient<IContentIndexer, DeliveryApiContentIndexer>();
 
         return builder;

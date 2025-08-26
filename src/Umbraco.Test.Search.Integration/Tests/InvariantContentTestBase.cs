@@ -10,7 +10,7 @@ public abstract class InvariantContentTestBase : ContentTestBase
     [SetUp]
     public virtual async Task SetupTest()
     {
-        var contentType = new ContentTypeBuilder()
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
             .AddPropertyType()
             .WithAlias("title")
@@ -32,7 +32,7 @@ public abstract class InvariantContentTestBase : ContentTestBase
         contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
         await ContentTypeService.UpdateAsync(contentType, Constants.Security.SuperUserKey);
 
-        var root = new ContentBuilder()
+        Content root = new ContentBuilder()
             .WithKey(RootKey)
             .WithContentType(contentType)
             .WithName("Root")
@@ -46,7 +46,7 @@ public abstract class InvariantContentTestBase : ContentTestBase
             .Build();
         ContentService.Save(root);
 
-        var child = new ContentBuilder()
+        Content child = new ContentBuilder()
             .WithKey(ChildKey)
             .WithContentType(contentType)
             .WithName("Child")
@@ -61,7 +61,7 @@ public abstract class InvariantContentTestBase : ContentTestBase
             .Build();
         ContentService.Save(child);
 
-        var grandchild = new ContentBuilder()
+        Content grandchild = new ContentBuilder()
             .WithKey(GrandchildKey)
             .WithContentType(contentType)
             .WithName("Grandchild")
@@ -76,7 +76,7 @@ public abstract class InvariantContentTestBase : ContentTestBase
             .Build();
         ContentService.Save(grandchild);
 
-        var greatGrandchild = new ContentBuilder()
+        Content greatGrandchild = new ContentBuilder()
             .WithKey(GreatGrandchildKey)
             .WithContentType(contentType)
             .WithName("Great Grandchild")

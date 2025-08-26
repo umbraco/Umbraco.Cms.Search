@@ -24,7 +24,7 @@ public class MarkdownPropertyValueHandler : IPropertyValueHandler, ICoreProperty
         var mark = new Markdown();
         var html = mark.Transform(markdown);
 
-        var indexValue = _htmlIndexValueParser.Parse(html);
+        IndexValue? indexValue = _htmlIndexValueParser.Parse(html);
         return indexValue is not null
             ? [new IndexField(property.Alias, indexValue, culture, segment)]
             : [];

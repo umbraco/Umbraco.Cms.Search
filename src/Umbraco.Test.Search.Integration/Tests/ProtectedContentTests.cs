@@ -36,8 +36,8 @@ public class ProtectedContentTests : InvariantContentTestBase
     [Test]
     public void PublishedStructure_IncludesExistingContentProtectionOnIndexUpdate()
     {
-        var root = Root();
-        var entryResult = PublicAccessService.Save(
+        IContent root = Root();
+        Attempt<OperationResult?> entryResult = PublicAccessService.Save(
             new PublicAccessEntry(root, root, root, [
                 new PublicAccessRule
                 {
@@ -49,14 +49,13 @@ public class ProtectedContentTests : InvariantContentTestBase
                     RuleType = Constants.Conventions.PublicAccess.MemberRoleRuleType,
                     RuleValue = "MemberGroupTwo"
                 }
-            ])
-        );
+            ]));
         Assert.That(entryResult.Success, Is.True);
-        
+
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -74,8 +73,8 @@ public class ProtectedContentTests : InvariantContentTestBase
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        var root = Root();
-        var entryResult = PublicAccessService.Save(
+        IContent root = Root();
+        Attempt<OperationResult?> entryResult = PublicAccessService.Save(
             new PublicAccessEntry(root, root, root, [
                 new PublicAccessRule
                 {
@@ -87,11 +86,10 @@ public class ProtectedContentTests : InvariantContentTestBase
                     RuleType = Constants.Conventions.PublicAccess.MemberRoleRuleType,
                     RuleValue = "MemberGroupTwo"
                 }
-            ])
-        );
+            ]));
         Assert.That(entryResult.Success, Is.True);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -106,8 +104,8 @@ public class ProtectedContentTests : InvariantContentTestBase
     [Test]
     public void PublishedStructure_CanRemoveContentProtectionWithoutRepublishing()
     {
-        var root = Root();
-        var entryResult = PublicAccessService.Save(
+        IContent root = Root();
+        Attempt<OperationResult?> entryResult = PublicAccessService.Save(
             new PublicAccessEntry(root, root, root, [
                 new PublicAccessRule
                 {
@@ -119,20 +117,19 @@ public class ProtectedContentTests : InvariantContentTestBase
                     RuleType = Constants.Conventions.PublicAccess.MemberRoleRuleType,
                     RuleValue = "MemberGroupTwo"
                 }
-            ])
-        );
+            ]));
         Assert.That(entryResult.Success, Is.True);
 
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        var entry = PublicAccessService.GetEntryForContent(root);
+        PublicAccessEntry? entry = PublicAccessService.GetEntryForContent(root);
         Assert.That(entry, Is.Not.Null);
 
         entryResult = PublicAccessService.Delete(entry);
         Assert.That(entryResult.Success, Is.True);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>

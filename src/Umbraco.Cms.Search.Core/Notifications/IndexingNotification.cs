@@ -29,6 +29,6 @@ public class IndexingNotification : ICancelableNotification
     public IEnumerable<Variation> Variations { get; }
 
     public IEnumerable<IndexField> Fields { get; set; }
-    
+
     public bool Cancel { get; set; }
 }

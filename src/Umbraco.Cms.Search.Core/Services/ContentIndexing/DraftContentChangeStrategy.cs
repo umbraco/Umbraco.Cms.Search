@@ -41,16 +41,16 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
 
     public async Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
     {
-        var indexInfosAsArray = indexInfos as IndexInfo[] ?? indexInfos.ToArray();
+        IndexInfo[] indexInfosAsArray = indexInfos as IndexInfo[] ?? indexInfos.ToArray();
 
         // get the relevant changes for this change strategy
-        var changesAsArray = changes.Where(change =>
-            change.ContentState is ContentState.Draft
-            && change.ObjectType is UmbracoObjectTypes.Document or UmbracoObjectTypes.Media or UmbracoObjectTypes.Member
-        ).ToArray();
+        ContentChange[] changesAsArray = changes.Where(change =>
+                change.ContentState is ContentState.Draft
+                && change.ObjectType is UmbracoObjectTypes.Document or UmbracoObjectTypes.Media or UmbracoObjectTypes.Member)
+            .ToArray();
 
         var pendingRemovals = new List<ContentChange>();
-        foreach (var change in changesAsArray.Where(change => change.ContentState is ContentState.Draft))
+        foreach (ContentChange change in changesAsArray.Where(change => change.ContentState is ContentState.Draft))
         {
             if (change.ChangeImpact is ChangeImpact.Remove)
             {
@@ -58,7 +58,7 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
             }
             else
             {
-                var content = GetContent(change);
+                IContentBase? content = GetContent(change);
                 if (content is null)
                 {
                     pendingRemovals.Add(change);
@@ -124,7 +124,7 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
             }
 
             members = _memberService.GetAll(pageIndex, ContentEnumerationPageSize, out _, "sortOrder", Direction.Ascending).ToArray();
-            foreach (var member in members)
+            foreach (IMember member in members)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -141,10 +141,10 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
             LogIndexRebuildCancellation(indexInfo);
         }
     }
-    
+
     private async Task<bool> UpdateIndexAsync(IndexInfo[] indexInfos, ContentChange change, IContentBase content, CancellationToken cancellationToken)
     {
-        var applicableIndexInfos = indexInfos.Where(info => info.ContainedObjectTypes.Contains(change.ObjectType)).ToArray();
+        IndexInfo[] applicableIndexInfos = indexInfos.Where(info => info.ContainedObjectTypes.Contains(change.ObjectType)).ToArray();
         if(applicableIndexInfos.Length is 0)
         {
             return true;
@@ -164,8 +164,7 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
                             .GetPagedDescendants(id, pageIndex, pageSize, out _, query, ordering)
                             .ToArray(),
                         async descendants =>
-                            await UpdateIndexDescendantsAsync(applicableIndexInfos, descendants, change.ObjectType, cancellationToken)
-                    );
+                            await UpdateIndexDescendantsAsync(applicableIndexInfos, descendants, change.ObjectType, cancellationToken));
                     break;
                 case UmbracoObjectTypes.Media:
                     await EnumerateDescendantsByPath<IMedia>(
@@ -175,8 +174,7 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
                             .GetPagedDescendants(id, pageIndex, pageSize, out _, query, ordering)
                             .ToArray(),
                         async descendants =>
-                            await UpdateIndexDescendantsAsync(applicableIndexInfos, descendants, change.ObjectType, cancellationToken)
-                    );
+                            await UpdateIndexDescendantsAsync(applicableIndexInfos, descendants, change.ObjectType, cancellationToken));
                     break;
             }
         }
@@ -187,15 +185,15 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
     private async Task UpdateIndexDescendantsAsync<T>(IndexInfo[] indexInfos, T[] descendants, UmbracoObjectTypes objectType, CancellationToken cancellationToken)
         where T : IContentBase
     {
-        foreach (var descendant in descendants)
+        foreach (T descendant in descendants)
         {
             await UpdateIndexAsync(indexInfos, descendant, objectType, cancellationToken);
         }
     }
-    
+
     private async Task<bool> UpdateIndexAsync(IndexInfo[] indexInfos, IContentBase content, UmbracoObjectTypes objectType, CancellationToken cancellationToken)
     {
-        var fields = (await _contentIndexingDataCollectionService.CollectAsync(content, false, cancellationToken))?.ToArray();
+        IndexField[]? fields = (await _contentIndexingDataCollectionService.CollectAsync(content, false, cancellationToken))?.ToArray();
         if (fields is null)
         {
             return false;
@@ -203,21 +201,19 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
 
         string?[] cultures = content.AvailableCultures();
 
-        var variations = content.ContentType.VariesBySegment()
+        Variation[] variations = content.ContentType.VariesBySegment()
             ? cultures
                 .SelectMany(culture => content
                     .Properties
-                    .SelectMany(property =>
-                        property.Values.Where(value => value.Culture.InvariantEquals(culture))
-                    )
+                    .SelectMany(property => property.Values.Where(value => value.Culture.InvariantEquals(culture)))
                     .DistinctBy(value => value.Segment).Select(value => value.Segment)
-                    .Select(segment => new Variation(culture, segment))
-                ).ToArray()
+                    .Select(segment => new Variation(culture, segment)))
+                .ToArray()
             : cultures
                 .Select(culture => new Variation(culture, null))
                 .ToArray();
 
-        foreach (var indexInfo in indexInfos)
+        foreach (IndexInfo indexInfo in indexInfos)
         {
             var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, variations, fields);
             if (await _eventAggregator.PublishCancelableAsync(notification))
@@ -239,9 +235,9 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
             return;
         }
 
-        foreach (var indexInfo in indexInfos)
+        foreach (IndexInfo indexInfo in indexInfos)
         {
-            var keys = contentChanges
+            Guid[] keys = contentChanges
                 .Where(change => indexInfo.ContainedObjectTypes.Contains(change.ObjectType))
                 .Select(change => change.Id)
                 .ToArray();
@@ -276,9 +272,9 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
             return;
         }
 
-        var indexInfos = new [] { indexInfo };
+        IndexInfo[] indexInfos = [indexInfo];
 
-        foreach (var rootContent in getContentAtRoot())
+        foreach (IContentBase rootContent in getContentAtRoot())
         {
             if (cancellationToken.IsCancellationRequested)
             {
@@ -287,7 +283,7 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
 
             await UpdateIndexAsync(indexInfos, GetContentChange(rootContent), rootContent, cancellationToken);
         }
-        
+
         if (cancellationToken.IsCancellationRequested)
         {
             LogIndexRebuildCancellation(indexInfo);
@@ -304,7 +300,7 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
             }
 
             contentInRecycleBin = getPagedContentAtRecycleBinRoot(pageIndex, ContentEnumerationPageSize).ToArray();
-            foreach (var content in contentInRecycleBin)
+            foreach (IContentBase content in contentInRecycleBin)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -320,7 +316,7 @@ internal class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftCon
 
         ContentChange GetContentChange(IContentBase content)
         {
-            var contentChange = objectType switch
+            ContentChange contentChange = objectType switch
             {
                 UmbracoObjectTypes.Document => ContentChange.Document(content.Key, ChangeImpact.RefreshWithDescendants, ContentState.Draft),
                 UmbracoObjectTypes.Media => ContentChange.Media(content.Key, ChangeImpact.RefreshWithDescendants, ContentState.Draft),

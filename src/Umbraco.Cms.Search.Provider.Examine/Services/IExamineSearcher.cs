@@ -2,7 +2,7 @@
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
-// public marker interface allowing for explicit index registrations using the in-memory indexer 
+// public marker interface allowing for explicit index registrations using the Examine searcher
 public interface IExamineSearcher : ISearcher
 {
 }

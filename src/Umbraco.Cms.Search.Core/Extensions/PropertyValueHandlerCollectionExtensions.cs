@@ -8,7 +8,7 @@ public static class PropertyValueHandlerCollectionExtensions
 {
     public static IPropertyValueHandler? GetPropertyValueHandler(this PropertyValueHandlerCollection collection, IPropertyType propertyType)
     {
-        var applicableHandlers = collection
+        IPropertyValueHandler[] applicableHandlers = collection
             .Where(handler => handler.CanHandle(propertyType.PropertyEditorAlias))
             .ToArray();
 

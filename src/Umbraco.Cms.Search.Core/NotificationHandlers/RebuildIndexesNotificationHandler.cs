@@ -21,9 +21,9 @@ internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<U
     public void Handle(UmbracoApplicationStartedNotification notification)
     {
         _logger.LogInformation("Rebuilding core search indexes...");
-        _contentIndexingService.Rebuild(Core.Constants.IndexAliases.PublishedContent);
-        _contentIndexingService.Rebuild(Core.Constants.IndexAliases.DraftContent);
-        _contentIndexingService.Rebuild(Core.Constants.IndexAliases.DraftMedia);
-        _contentIndexingService.Rebuild(Core.Constants.IndexAliases.DraftMembers);
+        _contentIndexingService.Rebuild(Constants.IndexAliases.PublishedContent);
+        _contentIndexingService.Rebuild(Constants.IndexAliases.DraftContent);
+        _contentIndexingService.Rebuild(Constants.IndexAliases.DraftMedia);
+        _contentIndexingService.Rebuild(Constants.IndexAliases.DraftMembers);
     }
 }

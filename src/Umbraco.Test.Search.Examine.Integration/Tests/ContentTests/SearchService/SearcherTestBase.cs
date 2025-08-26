@@ -1,5 +1,4 @@
-﻿using Umbraco.Cms.Core.Models;
-using ISearcher = Umbraco.Cms.Search.Core.Services.ISearcher;
+﻿using ISearcher = Umbraco.Cms.Search.Core.Services.ISearcher;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.SearchService;
 

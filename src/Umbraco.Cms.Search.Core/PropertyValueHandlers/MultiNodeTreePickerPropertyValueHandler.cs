@@ -21,7 +21,7 @@ public class MultiNodeTreePickerPropertyValueHandler : IPropertyValueHandler, IC
 
     public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
-        var configuration = _dataTypeConfigurationCache.GetConfigurationAs<MultiNodePickerConfiguration>(property.PropertyType.DataTypeKey);
+        MultiNodePickerConfiguration? configuration = _dataTypeConfigurationCache.GetConfigurationAs<MultiNodePickerConfiguration>(property.PropertyType.DataTypeKey);
         // NOTE: the default configuration for MNTP has ObjectType null, which is inferred as a document picker
         if (configuration?.TreeSource?.ObjectType is not (null or Umbraco.Cms.Core.Constants.ObjectTypes.Strings.Document))
         {
@@ -36,11 +36,10 @@ public class MultiNodeTreePickerPropertyValueHandler : IPropertyValueHandler, IC
 
         var keysAsKeywords = value
             .Split(Umbraco.Cms.Core.Constants.CharArrays.Comma, StringSplitOptions.RemoveEmptyEntries)
-            .Select(v => UdiParser.TryParse(v, out var udi)
+            .Select(v => UdiParser.TryParse(v, out Udi? udi)
                          && udi is GuidUdi { EntityType: Umbraco.Cms.Core.Constants.UdiEntityType.Document } guidUdi
                 ? guidUdi.Guid.AsKeyword()
-                : null
-            )
+                : null)
             .WhereNotNull()
             .ToArray();
 

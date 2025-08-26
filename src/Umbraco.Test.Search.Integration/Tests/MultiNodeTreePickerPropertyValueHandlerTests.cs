@@ -3,8 +3,10 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
+using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
@@ -15,7 +17,7 @@ public class MultiNodeTreePickerPropertyValueHandlerTests : ContentTestBase
     [Test]
     public void ExplicitDocumentPicker_CanBeIndexed()
     {
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(_contentType)
             .WithName("MultiNode Tree Picker")
             .WithPropertyValues(
@@ -28,18 +30,18 @@ public class MultiNodeTreePickerPropertyValueHandlerTests : ContentTestBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var document = documents.Single();
-        var explicitPickerValue = document.Fields.FirstOrDefault(f => f.FieldName == "explicitPickerValue")?.Value.Keywords;
+        TestIndexDocument document = documents.Single();
+        IEnumerable<string>? explicitPickerValue = document.Fields.FirstOrDefault(f => f.FieldName == "explicitPickerValue")?.Value.Keywords;
         Assert.That(explicitPickerValue, Is.EqualTo(new [] {"7c7ad126-bdbc-46c1-8cc1-c281bf575d97", "b9cc8a2e-9a02-4bbe-b0ca-38e197316517"}).AsCollection);
     }
 
     [Test]
     public void ImplicitDocumentPicker_CanBeIndexed()
     {
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(_contentType)
             .WithName("MultiNode Tree Picker")
             .WithPropertyValues(
@@ -52,18 +54,18 @@ public class MultiNodeTreePickerPropertyValueHandlerTests : ContentTestBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var document = documents.Single();
-        var implicitPickerValue = document.Fields.FirstOrDefault(f => f.FieldName == "implicitPickerValue")?.Value.Keywords;
+        TestIndexDocument document = documents.Single();
+        IEnumerable<string>? implicitPickerValue = document.Fields.FirstOrDefault(f => f.FieldName == "implicitPickerValue")?.Value.Keywords;
         Assert.That(implicitPickerValue, Is.EqualTo(new [] {"7c7ad126-bdbc-46c1-8cc1-c281bf575d97", "b9cc8a2e-9a02-4bbe-b0ca-38e197316517"}).AsCollection);
     }
 
     [Test]
     public void NonDocumentPicker_IsIgnored()
     {
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(_contentType)
             .WithName("MultiNode Tree Picker")
             .WithPropertyValues(
@@ -77,20 +79,20 @@ public class MultiNodeTreePickerPropertyValueHandlerTests : ContentTestBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var document = documents.Single();
-        var mediaPickerValue = document.Fields.FirstOrDefault(f => f.FieldName == "mediaPickerValue");
+        TestIndexDocument document = documents.Single();
+        IndexField? mediaPickerValue = document.Fields.FirstOrDefault(f => f.FieldName == "mediaPickerValue");
         Assert.That(mediaPickerValue, Is.Null);
-        var memberPickerValue = document.Fields.FirstOrDefault(f => f.FieldName == "memberPickerValue");
+        IndexField? memberPickerValue = document.Fields.FirstOrDefault(f => f.FieldName == "memberPickerValue");
         Assert.That(memberPickerValue, Is.Null);
     }
 
     [Test]
     public void ExplicitDocumentPicker_DisregardsInvalidValues()
     {
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(_contentType)
             .WithName("MultiNode Tree Picker")
             .WithPropertyValues(
@@ -103,20 +105,20 @@ public class MultiNodeTreePickerPropertyValueHandlerTests : ContentTestBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var document = documents.Single();
-        var explicitPickerValue = document.Fields.FirstOrDefault(f => f.FieldName == "explicitPickerValue")?.Value.Keywords;
+        TestIndexDocument document = documents.Single();
+        IEnumerable<string>? explicitPickerValue = document.Fields.FirstOrDefault(f => f.FieldName == "explicitPickerValue")?.Value.Keywords;
         Assert.That(explicitPickerValue, Is.EqualTo(new [] {"b9cc8a2e-9a02-4bbe-b0ca-38e197316517"}).AsCollection);
     }
 
     [SetUp]
     protected async Task CreateAllLabelEditorsContentType()
     {
-        var dataTypeService = GetRequiredService<IDataTypeService>();
-        var propertyEditorCollection = GetRequiredService<PropertyEditorCollection>();
-        var configurationEditorJsonSerializer = GetRequiredService<IConfigurationEditorJsonSerializer>();
+        IDataTypeService dataTypeService = GetRequiredService<IDataTypeService>();
+        PropertyEditorCollection propertyEditorCollection = GetRequiredService<PropertyEditorCollection>();
+        IConfigurationEditorJsonSerializer configurationEditorJsonSerializer = GetRequiredService<IConfigurationEditorJsonSerializer>();
 
         var implicitPickerDataType = new DataType(propertyEditorCollection[Constants.PropertyEditors.Aliases.MultiNodeTreePicker], configurationEditorJsonSerializer)
         {

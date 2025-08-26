@@ -1,11 +1,11 @@
-﻿using Umbraco.Cms.Core.Cache;
+﻿using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Extensions;
 
-// NOTE: the namespace is defined as what it would be, if this was part of Umbraco core.
-namespace Umbraco.Cms.Core.Events;
+namespace Umbraco.Cms.Search.Core.Cache.PublicAccess;
 
 internal sealed class PublicAccessNotificationHandler :
     IDistributedCacheNotificationHandler<PublicAccessEntrySavedNotification>,
@@ -28,16 +28,16 @@ internal sealed class PublicAccessNotificationHandler :
 
     private void Handle(IEnumerable<PublicAccessEntry> entities)
     {
-        var payloads = entities.Select(entity =>
+        PublicAccessDetailedCacheRefresher.JsonPayload[] payloads = entities.Select(entity =>
             {
-                var attempt = _idKeyMap.GetKeyForId(entity.ProtectedNodeId, UmbracoObjectTypes.Document);
+                Attempt<Guid> attempt = _idKeyMap.GetKeyForId(entity.ProtectedNodeId, UmbracoObjectTypes.Document);
                 return attempt.Success
                     ? new PublicAccessDetailedCacheRefresher.JsonPayload(attempt.Result)
                     : null;
             })
             .WhereNotNull()
             .ToArray();
-        
+
         _distributedCache.RefreshByPayload(PublicAccessDetailedCacheRefresher.UniqueId, payloads);
-    }    
+    }
 }

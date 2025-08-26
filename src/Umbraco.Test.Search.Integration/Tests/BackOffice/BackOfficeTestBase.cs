@@ -14,7 +14,7 @@ public abstract class BackOfficeTestBase : TestBase
 {
     private bool _fixtureIsInitialized;
 
-    protected IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>(); 
+    protected IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>();
 
     protected IContentService ContentService => GetRequiredService<IContentService>();
 
@@ -47,7 +47,7 @@ public abstract class BackOfficeTestBase : TestBase
 
     private async Task SetupContent()
     {
-        var rootContentType = new ContentTypeBuilder()
+        IContentType rootContentType = new ContentTypeBuilder()
             .WithAlias("rootContentType")
             .AddPropertyType()
             .WithAlias("title")
@@ -57,7 +57,7 @@ public abstract class BackOfficeTestBase : TestBase
             .Build();
         await ContentTypeService.CreateAsync(rootContentType, Constants.Security.SuperUserKey);
 
-        var childContentType = new ContentTypeBuilder()
+        IContentType childContentType = new ContentTypeBuilder()
             .WithAlias("childContentType")
             .AddPropertyType()
             .WithAlias("title")
@@ -72,7 +72,7 @@ public abstract class BackOfficeTestBase : TestBase
 
         for (var i = 0; i < 3; i++)
         {
-            var root = new ContentBuilder()
+            Content root = new ContentBuilder()
                 .WithContentType(rootContentType)
                 .WithName($"Root {i}")
                 .WithPropertyValues(
@@ -82,12 +82,12 @@ public abstract class BackOfficeTestBase : TestBase
                     })
                 .Build();
             ContentService.Save(root);
-        
+
             for (var j = 0; j < 10; j++)
             {
                 // need to sleep for consistent datetime ordering results
                 Thread.Sleep(20);
-                var child = new ContentBuilder()
+                Content child = new ContentBuilder()
                     .WithContentType(childContentType)
                     .WithName($"Child {j}")
                     .WithParent(root)
@@ -104,7 +104,7 @@ public abstract class BackOfficeTestBase : TestBase
 
     private async Task SetupMedia()
     {
-        var rootMediaType = new MediaTypeBuilder()
+        IMediaType rootMediaType = new MediaTypeBuilder()
             .WithAlias("rootMediaType")
             .AddPropertyGroup()
             .AddPropertyType()
@@ -116,7 +116,7 @@ public abstract class BackOfficeTestBase : TestBase
             .Build();
         await MediaTypeService.CreateAsync(rootMediaType, Constants.Security.SuperUserKey);
 
-        var childMediaType = new MediaTypeBuilder()
+        IMediaType childMediaType = new MediaTypeBuilder()
             .WithAlias("childMediaType")
             .AddPropertyGroup()
             .AddPropertyType()
@@ -133,7 +133,7 @@ public abstract class BackOfficeTestBase : TestBase
 
         for (var i = 0; i < 3; i++)
         {
-            var folder = new MediaBuilder()
+            Media folder = new MediaBuilder()
                 .WithMediaType(rootMediaType)
                 .WithName($"Root {i}")
                 .WithPropertyValues(
@@ -143,12 +143,12 @@ public abstract class BackOfficeTestBase : TestBase
                     })
                 .Build();
             MediaService.Save(folder);
-        
+
             for (var j = 0; j < 10; j++)
             {
                 // need to sleep for consistent datetime ordering results
                 Thread.Sleep(20);
-                var child = new MediaBuilder()
+                Media child = new MediaBuilder()
                     .WithMediaType(childMediaType)
                     .WithName($"Child {j}")
                     .WithPropertyValues(

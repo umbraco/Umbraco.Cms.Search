@@ -27,7 +27,7 @@ public class ContentIndexingServiceExplicitIndexRegistrationsTests : ContentInde
     [Test]
     public void IndexesAreRegistered()
     {
-        var sut = GetRequiredService<IContentIndexingService>();
+        IContentIndexingService sut = GetRequiredService<IContentIndexingService>();
         sut.Handle([ContentChange.Document(Guid.NewGuid(), ChangeImpact.Refresh, ContentState.Published)]);
 
         // one change strategy registered (same for both indexes)
@@ -39,7 +39,7 @@ public class ContentIndexingServiceExplicitIndexRegistrationsTests : ContentInde
         {
             Assert.That(Strategy.HandledIndexInfos[0][0].IndexAlias, Is.EqualTo(Constants.IndexAliases.PublishedContent));
             Assert.That(Strategy.HandledIndexInfos[0][0].Indexer, Is.TypeOf<TestIndexer>());
-            
+
             Assert.That(Strategy.HandledIndexInfos[0][1].IndexAlias, Is.EqualTo(Constants.IndexAliases.DraftContent));
             Assert.That(Strategy.HandledIndexInfos[0][1].Indexer, Is.TypeOf<TestIndexer>());
         });

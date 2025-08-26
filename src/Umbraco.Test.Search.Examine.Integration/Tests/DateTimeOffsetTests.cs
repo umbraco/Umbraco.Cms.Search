@@ -14,16 +14,14 @@ public class DateTimeOffsetTests : SearcherTestBase
     public async Task CanFilterSingleDocumentByDateTimeOffsetExact()
     {
         SearchResult result = await SearchAsync(
-            filters: [new DateTimeOffsetExactFilter(FieldMultipleValues, [StartDate().AddDays(1)], false)]
-        );
+            filters: [new DateTimeOffsetExactFilter(FieldMultipleValues, [StartDate().AddDays(1)], false)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(1));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(_documentIds[1]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(DocumentIds[1]));
+            });
     }
 
     [Test]
@@ -35,18 +33,15 @@ public class DateTimeOffsetTests : SearcherTestBase
                 new DateTimeOffsetRangeFilter(
                     FieldMultipleValues,
                     [new DateTimeOffsetRangeFilterRange(StartDate().AddDays(1), StartDate().AddDays(2))],
-                    false
-                )
-            ]
-        );
+                    false)
+            ]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(1));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(_documentIds[1]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(DocumentIds[1]));
+            });
     }
 
     [Test]
@@ -58,10 +53,8 @@ public class DateTimeOffsetTests : SearcherTestBase
                 new DateTimeOffsetExactFilter(
                     FieldMultipleValues,
                     [StartDate().AddDays(10), StartDate().AddDays(50), StartDate().AddDays(100)],
-                    false
-                )
-            ]
-        );
+                    false)
+            ]);
 
         Assert.Multiple(
             () =>
@@ -75,12 +68,9 @@ public class DateTimeOffsetTests : SearcherTestBase
                     Is.EqualTo(
                         new[]
                         {
-                            _documentIds[5], _documentIds[10], _documentIds[25], _documentIds[50], _documentIds[100]
-                        }.OrderBy(x => x).ToArray()
-                    ).AsCollection
-                );
-            }
-        );
+                            DocumentIds[5], DocumentIds[10], DocumentIds[25], DocumentIds[50], DocumentIds[100]
+                        }.OrderBy(x => x).ToArray()).AsCollection);
+            });
     }
 
     [Test]
@@ -96,10 +86,8 @@ public class DateTimeOffsetTests : SearcherTestBase
                         new DateTimeOffsetRangeFilterRange(StartDate().AddDays(20), StartDate().AddDays(25)),
                         new DateTimeOffsetRangeFilterRange(StartDate().AddDays(100), StartDate().AddDays(101))
                     ],
-                    false
-                )
-            ]
-        );
+                    false)
+            ]);
 
         Assert.Multiple(
             () =>
@@ -116,41 +104,36 @@ public class DateTimeOffsetTests : SearcherTestBase
                     Is.EquivalentTo(
                         new[]
                         {
-                            _documentIds[1],
-                            _documentIds[2],
-                            _documentIds[3],
-                            _documentIds[4],
-                            _documentIds[10],
-                            _documentIds[11],
-                            _documentIds[12],
-                            _documentIds[20],
-                            _documentIds[21],
-                            _documentIds[22],
-                            _documentIds[23],
-                            _documentIds[24],
-                            _documentIds[50],
-                            _documentIds[100],
-                        }
-                    )
-                );
-            }
-        );
+                            DocumentIds[1],
+                            DocumentIds[2],
+                            DocumentIds[3],
+                            DocumentIds[4],
+                            DocumentIds[10],
+                            DocumentIds[11],
+                            DocumentIds[12],
+                            DocumentIds[20],
+                            DocumentIds[21],
+                            DocumentIds[22],
+                            DocumentIds[23],
+                            DocumentIds[24],
+                            DocumentIds[50],
+                            DocumentIds[100],
+                        }));
+            });
     }
 
     [Test]
     public async Task CanFilterDocumentsByDateTimeOffsetExactNegated()
     {
         SearchResult result = await SearchAsync(
-            filters: [new DateTimeOffsetExactFilter(FieldMultipleValues, [StartDate().AddDays(1)], true)]
-        );
+            filters: [new DateTimeOffsetExactFilter(FieldMultipleValues, [StartDate().AddDays(1)], true)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(99));
-                Assert.That(result.Documents.Select(d => d.Id), Is.EqualTo(_documentIds.Values.Skip(1)).AsCollection);
-            }
-        );
+                Assert.That(result.Documents.Select(d => d.Id), Is.EqualTo(DocumentIds.Values.Skip(1)).AsCollection);
+            });
     }
 
     [Test]
@@ -162,18 +145,15 @@ public class DateTimeOffsetTests : SearcherTestBase
                 new DateTimeOffsetRangeFilter(
                     FieldMultipleValues,
                     [new DateTimeOffsetRangeFilterRange(StartDate().AddDays(1), StartDate().AddDays(2))],
-                    true
-                )
-            ]
-        );
+                    true)
+            ]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(99));
-                Assert.That(result.Documents.Select(d => d.Id), Is.EqualTo(_documentIds.Values.Skip(1)).AsCollection);
-            }
-        );
+                Assert.That(result.Documents.Select(d => d.Id), Is.EqualTo(DocumentIds.Values.Skip(1)).AsCollection);
+            });
     }
 
     [TestCase(true)]
@@ -188,11 +168,9 @@ public class DateTimeOffsetTests : SearcherTestBase
                     new DateTimeOffsetExactFilter(
                         FieldSingleValue,
                         [StartDate().AddDays(1), StartDate().AddDays(2), StartDate().AddDays(3)],
-                        false
-                    )
+                        false)
                 ]
-                : []
-        );
+                : []);
 
         // expecting the same facets whether filtering is enabled or not, because
         // both faceting and filtering is applied to the same field
@@ -241,8 +219,7 @@ public class DateTimeOffsetTests : SearcherTestBase
                         new DateTimeOffsetRangeFacetRange("Two", StartDate().AddDays(25), StartDate().AddDays(50)),
                         new DateTimeOffsetRangeFacetRange("Three", StartDate().AddDays(50), StartDate().AddDays(75)),
                         new DateTimeOffsetRangeFacetRange("Four", StartDate().AddDays(75), StartDate().AddDays(100))
-                    ]
-                )
+                    ])
             ],
             filters: filtered
                 ?
@@ -250,11 +227,9 @@ public class DateTimeOffsetTests : SearcherTestBase
                     new DateTimeOffsetExactFilter(
                         FieldSingleValue,
                         [StartDate().AddDays(1), StartDate().AddDays(2), StartDate().AddDays(3)],
-                        false
-                    )
+                        false)
                 ]
-                : []
-        );
+                : []);
 
         // expecting the same facets whether filtering is enabled or not, because
         // both faceting and filtering is applied to the same field
@@ -270,11 +245,9 @@ public class DateTimeOffsetTests : SearcherTestBase
                             < 75 => "Three",
                             < 100 => "Four",
                             _ => null
-                        }
-                    )
+                        })
                     .WhereNotNull()
-                    .Distinct()
-            )
+                    .Distinct())
             .GroupBy(key => key)
             .Select(group => new { Key = group.Key, Count = group.Count() })
             .WhereNotNull()
@@ -310,15 +283,13 @@ public class DateTimeOffsetTests : SearcherTestBase
             sorters:
             [
                 new DateTimeOffsetSorter(FieldSingleValue, ascending ? Direction.Ascending : Direction.Descending)
-            ]
-        );
+            ]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(100));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(ascending ? _documentIds[1] : _documentIds[100]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(ascending ? DocumentIds[1] : DocumentIds[100]));
+            });
     }
 }

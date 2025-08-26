@@ -2,6 +2,7 @@
 using Umbraco.Cms.Search.Core.Helpers;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Extensions;
+using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
@@ -14,7 +15,7 @@ public class VariantContentTests : VariantContentTestBase
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -33,14 +34,14 @@ public class VariantContentTests : VariantContentTestBase
             VerifyDocumentPropertyValues(documents[3], "The great grandchild title", "The great grandchild message", 78);
         });
     }
-    
+
     [Test]
     public void PublishedStructure_CanRefreshChild_InSingleCulture()
     {
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
-        
-        var child = Child();
+
+        IContent child = Child();
         child.SetValue("title", "The updated child title in English", "en-US");
         child.SetValue("message", "The updated child message in English (default)", "en-US");
         child.SetValue("message", "The updated child message in English (segment-1)", "en-US", "segment-1");
@@ -48,30 +49,31 @@ public class VariantContentTests : VariantContentTestBase
         ContentService.Save(child);
         ContentService.Publish(Child(), ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         VerifyDocumentPropertyValues(
-            documents[1], 
-            "The updated child title in English", 
-            "The child title in Danish", 
-            "The updated child message in English", 
-            "The child message in Danish", 34);
+            documents[1],
+            "The updated child title in English",
+            "The child title in Danish",
+            "The updated child message in English",
+            "The child message in Danish",
+            34);
     }
-    
+
     [Test]
     public void PublishedStructure_CanRefreshChild_InMultipleCultures()
     {
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
-        
-        var child = Child();
+
+        IContent child = Child();
         child.SetValue("title", "The updated child title in English", "en-US");
         child.SetValue("title", "The updated child title in Danish", "da-DK");
         ContentService.Save(child);
         ContentService.Publish(Child(), ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         VerifyDocumentPropertyValues(documents[1], "The updated child title", "The child message", 34);
@@ -82,13 +84,13 @@ public class VariantContentTests : VariantContentTestBase
     {
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
-        
-        var child = Child();
+
+        IContent child = Child();
         child.SetValue("count", 123456);
         ContentService.Save(child);
         ContentService.Publish(Child(), ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         VerifyDocumentPropertyValues(documents[1], "The child title", "The child message", 123456);
@@ -100,7 +102,7 @@ public class VariantContentTests : VariantContentTestBase
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -126,12 +128,12 @@ public class VariantContentTests : VariantContentTestBase
     private void VerifyDocumentPropertyValues(TestIndexDocument document, string englishTitle, string danishTitle, string englishMessage, string danishMessage, int count)
         => Assert.Multiple(() =>
         {
-            var titleFields = document.Fields.Where(f => f.FieldName == "title").ToArray();
+            IndexField[] titleFields = document.Fields.Where(f => f.FieldName == "title").ToArray();
             Assert.That(titleFields.Length, Is.EqualTo(2));
             Assert.That(titleFields.SingleOrDefault(f => f.Culture.InvariantEquals("en-US"))?.Value.Texts?.SingleOrDefault(), Is.EqualTo(englishTitle));
             Assert.That(titleFields.SingleOrDefault(f => f.Culture.InvariantEquals("da-DK"))?.Value.Texts?.SingleOrDefault(), Is.EqualTo(danishTitle));
 
-            var messageFields = document.Fields.Where(f => f.FieldName == "message").ToArray();
+            IndexField[] messageFields = document.Fields.Where(f => f.FieldName == "message").ToArray();
             Assert.That(messageFields.Length, Is.EqualTo(6));
             Assert.That(messageFields.SingleOrDefault(f => f.Culture.InvariantEquals("en-US") && f.Segment is null)?.Value.Texts?.SingleOrDefault(), Is.EqualTo($"{englishMessage} (default)"));
             Assert.That(messageFields.SingleOrDefault(f => f.Culture.InvariantEquals("en-US") && f.Segment == "segment-1")?.Value.Texts?.SingleOrDefault(), Is.EqualTo($"{englishMessage} (segment-1)"));
@@ -139,29 +141,29 @@ public class VariantContentTests : VariantContentTestBase
             Assert.That(messageFields.SingleOrDefault(f => f.Culture.InvariantEquals("da-DK") && f.Segment is null)?.Value.Texts?.SingleOrDefault(), Is.EqualTo($"{danishMessage} (default)"));
             Assert.That(messageFields.SingleOrDefault(f => f.Culture.InvariantEquals("da-DK") && f.Segment == "segment-1")?.Value.Texts?.SingleOrDefault(), Is.EqualTo($"{danishMessage} (segment-1)"));
             Assert.That(messageFields.SingleOrDefault(f => f.Culture.InvariantEquals("da-DK") && f.Segment == "segment-2")?.Value.Texts?.SingleOrDefault(), Is.EqualTo($"{danishMessage} (segment-2)"));
-            
+
             var countValue = document.Fields.FirstOrDefault(f => f.FieldName == "count")?.Value.Integers?.SingleOrDefault();
             Assert.That(countValue, Is.EqualTo(count));
         });
 
     private void VerifyDocumentSystemValues(TestIndexDocument document, IContent content)
     {
-        var dateTimeOffsetConverter = GetRequiredService<IDateTimeOffsetConverter>();
+        IDateTimeOffsetConverter dateTimeOffsetConverter = GetRequiredService<IDateTimeOffsetConverter>();
 
         Assert.Multiple(() =>
         {
             var contentTypeValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.ContentTypeId)?.Value.Keywords?.SingleOrDefault();
             Assert.That(contentTypeValue, Is.EqualTo(content.ContentType.Key.AsKeyword()));
 
-            var nameFields = document.Fields.Where(f => f.FieldName == Constants.FieldNames.Name).ToArray();
+            IndexField[] nameFields = document.Fields.Where(f => f.FieldName == Constants.FieldNames.Name).ToArray();
             Assert.That(nameFields.Length, Is.EqualTo(2));
             Assert.That(nameFields.SingleOrDefault(f => f.Culture.InvariantEquals("en-US"))?.Value.TextsR1?.SingleOrDefault(), Is.EqualTo(content.GetCultureName("en-US")));
             Assert.That(nameFields.SingleOrDefault(f => f.Culture.InvariantEquals("da-DK"))?.Value.TextsR1?.SingleOrDefault(), Is.EqualTo(content.GetCultureName("da-DK")));
 
-            var createDateValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.CreateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
+            DateTimeOffset? createDateValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.CreateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
             Assert.That(createDateValue, Is.EqualTo(dateTimeOffsetConverter.ToDateTimeOffset(content.CreateDate)));
 
-            var updateDateValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.UpdateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
+            DateTimeOffset? updateDateValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.UpdateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
             Assert.That(updateDateValue, Is.EqualTo(dateTimeOffsetConverter.ToDateTimeOffset(content.UpdateDate)));
 
             var levelValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.Level)?.Value.Integers?.SingleOrDefault();

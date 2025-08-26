@@ -13,24 +13,21 @@ public class TextTests : SearcherTestBase
     public async Task CanFilterSingleDocumentBySpecificText()
     {
         SearchResult result = await SearchAsync(
-            filters: [new TextFilter(FieldMultipleValues, ["single12"], false)]
-        );
+            filters: [new TextFilter(FieldMultipleValues, ["single12"], false)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(1));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(_documentIds[12]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(DocumentIds[12]));
+            });
     }
 
     [Test]
     public async Task CanFilterMultipleDocumentsBySpecificText()
     {
         SearchResult result = await SearchAsync(
-            filters: [new TextFilter(FieldMultipleValues, ["single11", "single22", "single33"], false)]
-        );
+            filters: [new TextFilter(FieldMultipleValues, ["single11", "single22", "single33"], false)]);
 
         Assert.Multiple(
             () =>
@@ -40,10 +37,8 @@ public class TextTests : SearcherTestBase
                 var documents = result.Documents.ToList();
                 Assert.That(
                     documents.Select(d => d.Id),
-                    Is.EqualTo(new[] { _documentIds[11], _documentIds[22], _documentIds[33] }).AsCollection
-                );
-            }
-        );
+                    Is.EqualTo(new[] { DocumentIds[11], DocumentIds[22], DocumentIds[33] }).AsCollection);
+            });
     }
 
     [TestCase(true)]
@@ -51,8 +46,7 @@ public class TextTests : SearcherTestBase
     public async Task CanFilterMultipleDocumentsByCommonText(bool even)
     {
         SearchResult result = await SearchAsync(
-            filters: [new TextFilter(FieldMultipleValues, [even ? "even" : "odd"], false)]
-        );
+            filters: [new TextFilter(FieldMultipleValues, [even ? "even" : "odd"], false)]);
 
         Assert.Multiple(
             () =>
@@ -63,18 +57,15 @@ public class TextTests : SearcherTestBase
                 var expectedIds = OddOrEvenIds(even);
                 Assert.That(
                     documents.Select(d => d.Id),
-                    Is.EqualTo(expectedIds.Select(id => _documentIds[id])).AsCollection
-                );
-            }
-        );
+                    Is.EqualTo(expectedIds.Select(id => DocumentIds[id])).AsCollection);
+            });
     }
 
     [Test]
     public async Task CanFilterDocumentsBySpecificTextNegated()
     {
         SearchResult result = await SearchAsync(
-            filters: [new TextFilter(FieldMultipleValues, ["single12"], true)]
-        );
+            filters: [new TextFilter(FieldMultipleValues, ["single12"], true)]);
 
         Assert.Multiple(
             () =>
@@ -82,10 +73,8 @@ public class TextTests : SearcherTestBase
                 Assert.That(result.Total, Is.EqualTo(99));
                 Assert.That(
                     result.Documents.Select(d => d.Id),
-                    Is.EqualTo(_documentIds.Values.Except([_documentIds[12]])).AsCollection
-                );
-            }
-        );
+                    Is.EqualTo(DocumentIds.Values.Except([DocumentIds[12]])).AsCollection);
+            });
     }
 
     [TestCase(true)]
@@ -93,8 +82,7 @@ public class TextTests : SearcherTestBase
     public async Task CanFilterDocumentsByCommonTextNegated(bool even)
     {
         SearchResult result = await SearchAsync(
-            filters: [new TextFilter(FieldMultipleValues, [even ? "even" : "odd"], true)]
-        );
+            filters: [new TextFilter(FieldMultipleValues, [even ? "even" : "odd"], true)]);
 
         Assert.Multiple(
             () =>
@@ -105,10 +93,8 @@ public class TextTests : SearcherTestBase
                 var expectedIds = OddOrEvenIds(even is false);
                 Assert.That(
                     documents.Select(d => d.Id),
-                    Is.EqualTo(expectedIds.Select(id => _documentIds[id])).AsCollection
-                );
-            }
-        );
+                    Is.EqualTo(expectedIds.Select(id => DocumentIds[id])).AsCollection);
+            });
     }
 
     [Test]
@@ -116,16 +102,14 @@ public class TextTests : SearcherTestBase
     public async Task CanFilterAllDocumentsByWildcardText()
     {
         SearchResult result = await SearchAsync(
-            filters: [new TextFilter(FieldMultipleValues, ["single"], false)]
-        );
+            filters: [new TextFilter(FieldMultipleValues, ["single"], false)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(100));
-                Assert.That(result.Documents.Select(d => d.Id), Is.EqualTo(_documentIds.Values).AsCollection);
-            }
-        );
+                Assert.That(result.Documents.Select(d => d.Id), Is.EqualTo(DocumentIds.Values).AsCollection);
+            });
     }
 
     [TestCase(true)]
@@ -136,8 +120,7 @@ public class TextTests : SearcherTestBase
     {
         SearchResult result = await SearchAsync(
             filters: [new TextFilter(FieldTextRelevance, ["spec"], false)],
-            sorters: [new ScoreSorter(ascending ? Direction.Ascending : Direction.Descending)]
-        );
+            sorters: [new ScoreSorter(ascending ? Direction.Ascending : Direction.Descending)]);
 
         Assert.Multiple(
             () =>
@@ -146,10 +129,10 @@ public class TextTests : SearcherTestBase
 
                 Guid[] expectedDocumentIdsByOrderOfRelevance =
                 [
-                    _documentIds[30], // TextsR1
-                    _documentIds[20], // TextsR2
-                    _documentIds[40], // TextsR3
-                    _documentIds[10] // Texts
+                    DocumentIds[30], // TextsR1
+                    DocumentIds[20], // TextsR2
+                    DocumentIds[40], // TextsR3
+                    DocumentIds[10] // Texts
                 ];
                 if (ascending)
                 {
@@ -158,10 +141,8 @@ public class TextTests : SearcherTestBase
 
                 Assert.That(
                     result.Documents.Select(d => d.Id),
-                    Is.EqualTo(expectedDocumentIdsByOrderOfRelevance).AsCollection
-                );
-            }
-        );
+                    Is.EqualTo(expectedDocumentIdsByOrderOfRelevance).AsCollection);
+            });
     }
 
     [TestCase(true)]
@@ -169,15 +150,13 @@ public class TextTests : SearcherTestBase
     public async Task CanSortDocumentsByText(bool ascending)
     {
         SearchResult result = await SearchAsync(
-            sorters: [new TextSorter(FieldSingleValue, ascending ? Direction.Ascending : Direction.Descending)]
-        );
+            sorters: [new TextSorter(FieldSingleValue, ascending ? Direction.Ascending : Direction.Descending)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(100));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(ascending ? _documentIds[1] : _documentIds[99]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(ascending ? DocumentIds[1] : DocumentIds[99]));
+            });
     }
 }

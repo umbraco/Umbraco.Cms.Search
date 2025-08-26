@@ -17,11 +17,11 @@ public partial class DateFilter : ContainsFilterBase, IContentIndexHandler
     // Indexing
     public IEnumerable<IndexFieldValue> GetFieldValues(IContent content, string? culture)
     {
-        var dateTimeValue = content.GetValue<DateTime>("date");
+        DateTime dateTimeValue = content.GetValue<DateTime>("date");
 
         if (dateTimeValue == DateTime.UnixEpoch)
         {
-            return Array.Empty<IndexFieldValue>();
+            return [];
         }
 
         return

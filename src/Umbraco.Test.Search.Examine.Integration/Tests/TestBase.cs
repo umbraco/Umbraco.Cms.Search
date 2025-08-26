@@ -26,13 +26,16 @@ public abstract class TestBase : UmbracoIntegrationTest
 
     protected DateTime CurrentDateTime { get; set; }
 
-    protected DateTimeOffset CurrentDateTimeOffset = DateTimeOffset.Now;
+    protected DateTimeOffset CurrentDateTimeOffset { get; } = DateTimeOffset.Now;
 
-    protected decimal DecimalValue = 12.431167165486823626216m;
+    protected decimal DecimalValue { get; } = 12.431167165486823626216m;
+
     protected IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>();
 
     protected IContentService ContentService => GetRequiredService<IContentService>();
+
     protected IDataTypeService DataTypeService => GetRequiredService<IDataTypeService>();
+
     protected ILocalizationService LocalizationService => GetRequiredService<ILocalizationService>();
 
     protected void SaveAndPublish(IContent content)

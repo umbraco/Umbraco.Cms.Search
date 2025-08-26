@@ -35,7 +35,7 @@ public class MultiUrlPickerPropertyValueHandler : IPropertyValueHandler, ICorePr
 
         try
         {
-            var linkDtos = _jsonSerializer.Deserialize<MultiUrlPickerValueEditor.LinkDto[]>(value);
+            MultiUrlPickerValueEditor.LinkDto[]? linkDtos = _jsonSerializer.Deserialize<MultiUrlPickerValueEditor.LinkDto[]>(value);
             return linkDtos?.Select(linkDto => linkDto.Name).WhereNotNull().ToArray();
         }
         catch
@@ -44,5 +44,4 @@ public class MultiUrlPickerPropertyValueHandler : IPropertyValueHandler, ICorePr
             return null;
         }
     }
-
 }

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Persistence.Querying;
 using Umbraco.Cms.Core.Services;
@@ -16,7 +17,7 @@ internal abstract class ContentChangeStrategyBase
     protected abstract bool SupportsTrashedContent { get; }
 
     protected const int ContentEnumerationPageSize = 1000;
-    
+
     protected ContentChangeStrategyBase(
         IUmbracoDatabaseFactory umbracoDatabaseFactory,
         IIdKeyMap idKeyMap,
@@ -34,7 +35,7 @@ internal abstract class ContentChangeStrategyBase
         Func<T[], Task> actionToPerform)
         where T : IContentBase
     {
-        var rootIdAttempt = _idKeyMap.GetIdForKey(rootId, objectType);
+        Attempt<int> rootIdAttempt = _idKeyMap.GetIdForKey(rootId, objectType);
         if (rootIdAttempt.Success is false)
         {
             _logger.LogWarning("Could not resolve ID for {objectType} item {rootId} - aborting enumerations of descendants.", objectType, rootId);
@@ -45,7 +46,7 @@ internal abstract class ContentChangeStrategyBase
 
         T[] descendants;
 
-        var query = _umbracoDatabaseFactory.SqlContext.Query<T>();
+        IQuery<T> query = _umbracoDatabaseFactory.SqlContext.Query<T>();
         if (SupportsTrashedContent is false)
         {
             query = query.Where(content => content.Trashed == false);
@@ -58,7 +59,8 @@ internal abstract class ContentChangeStrategyBase
             await actionToPerform(descendants.ToArray());
 
             pageIndex++;
-        } while (descendants.Length == ContentEnumerationPageSize);
+        }
+        while (descendants.Length == ContentEnumerationPageSize);
     }
 
     protected void LogIndexRebuildCancellation(IndexInfo indexInfo)

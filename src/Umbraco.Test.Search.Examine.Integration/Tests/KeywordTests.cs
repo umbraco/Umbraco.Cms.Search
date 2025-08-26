@@ -14,16 +14,14 @@ public  class KeywordTests : SearcherTestBase
     public async Task CanFilterSingleDocumentByKeyword()
     {
         SearchResult result = await SearchAsync(
-            filters: [new KeywordFilter(FieldMultipleValues, ["single1"], false)]
-        );
+            filters: [new KeywordFilter(FieldMultipleValues, ["single1"], false)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(1));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(_documentIds[1]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(DocumentIds[1]));
+            });
     }
 
     [TestCase(true)]
@@ -31,8 +29,7 @@ public  class KeywordTests : SearcherTestBase
     public async Task CanFilterMultipleDocumentsByKeyword(bool even)
     {
         SearchResult result = await SearchAsync(
-            filters: [new KeywordFilter(FieldMultipleValues, [even ? "even" : "odd"], false)]
-        );
+            filters: [new KeywordFilter(FieldMultipleValues, [even ? "even" : "odd"], false)]);
 
         Assert.Multiple(
             () =>
@@ -43,50 +40,43 @@ public  class KeywordTests : SearcherTestBase
                 var expectedIds = OddOrEvenIds(even);
                 Assert.That(
                     documents.Select(d => d.Id),
-                    Is.EqualTo(expectedIds.Select(id => _documentIds[id])).AsCollection
-                );
-            }
-        );
+                    Is.EqualTo(expectedIds.Select(id => DocumentIds[id])).AsCollection);
+            });
     }
 
     [Test]
     public async Task CanFilterAllDocumentsByKeyword()
     {
         SearchResult result = await SearchAsync(
-            filters: [new KeywordFilter(FieldMultipleValues, ["all"], false)]
-        );
+            filters: [new KeywordFilter(FieldMultipleValues, ["all"], false)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(100));
-                Assert.That(result.Documents.Select(d => d.Id), Is.EqualTo(_documentIds.Values).AsCollection);
-            }
-        );
+                Assert.That(result.Documents.Select(d => d.Id), Is.EqualTo(DocumentIds.Values).AsCollection);
+            });
     }
 
     [Test]
     public async Task CanFilterDocumentsByKeywordNegated()
     {
         SearchResult result = await SearchAsync(
-            filters: [new KeywordFilter(FieldMultipleValues, ["single1"], true)]
-        );
+            filters: [new KeywordFilter(FieldMultipleValues, ["single1"], true)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(99));
-                Assert.That(result.Documents.Select(d => d.Id), Is.EqualTo(_documentIds.Values.Skip(1)).AsCollection);
-            }
-        );
+                Assert.That(result.Documents.Select(d => d.Id), Is.EqualTo(DocumentIds.Values.Skip(1)).AsCollection);
+            });
     }
 
     [Test]
     public async Task CannotFilterMultipleDocumentByPartialKeyword()
     {
         SearchResult result = await SearchAsync(
-            filters: [new KeywordFilter(FieldMultipleValues, ["common"], false)]
-        );
+            filters: [new KeywordFilter(FieldMultipleValues, ["common"], false)]);
 
         Assert.That(result.Total, Is.EqualTo(0));
     }
@@ -96,16 +86,14 @@ public  class KeywordTests : SearcherTestBase
     public async Task CanFilterSingleDocumentByKeywordWithSpace()
     {
         SearchResult result = await SearchAsync(
-            filters: [new KeywordFilter(FieldMultipleValues, ["common single1"], false)]
-        );
+            filters: [new KeywordFilter(FieldMultipleValues, ["common single1"], false)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(1));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(_documentIds[1]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(DocumentIds[1]));
+            });
     }
 
     [TestCase(true)]
@@ -116,8 +104,7 @@ public  class KeywordTests : SearcherTestBase
             facets: [new KeywordFacet(FieldSingleValue)],
             filters: filtered
                 ? [new KeywordFilter(FieldSingleValue, ["single1", "single2", "single3"], false)]
-                : []
-        );
+                : []);
 
         // expecting the same facets whether filtering is enabled or not, because
         // both faceting and filtering is applied to the same field
@@ -154,15 +141,13 @@ public  class KeywordTests : SearcherTestBase
     public async Task CanSortDocumentsByKeyword(bool ascending)
     {
         SearchResult result = await SearchAsync(
-            sorters: [new KeywordSorter(FieldSingleValue, ascending ? Direction.Ascending : Direction.Descending)]
-        );
+            sorters: [new KeywordSorter(FieldSingleValue, ascending ? Direction.Ascending : Direction.Descending)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(100));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(ascending ? _documentIds[1] : _documentIds[99]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(ascending ? DocumentIds[1] : DocumentIds[99]));
+            });
     }
 }

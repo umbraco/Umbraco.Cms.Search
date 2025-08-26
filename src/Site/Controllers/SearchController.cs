@@ -55,20 +55,19 @@ public class SearchController : RenderController
             return CurrentTemplate(new SearchViewModel());
         }
 
-        var searcher = _searcherResolver.GetRequiredSearcher(Constants.IndexAliases.PublishedContent);
-        
-        var filterDictionary = SplitParameters(filters);
-        var filterValues = filterDictionary?
+        ISearcher searcher = _searcherResolver.GetRequiredSearcher(Constants.IndexAliases.PublishedContent);
+
+        Dictionary<string, string[]>? filterDictionary = SplitParameters(filters);
+        Filter[]? filterValues = filterDictionary?
             .Select(kvp => ParseFilter(kvp.Key, kvp.Value))
             .WhereNotNull()
             .ToArray();
 
-        var facetValues = facets?.Select(f => f.InvariantContains("integer")
+        Facet[]? facetValues = facets?.Select(f => f.InvariantContains("integer")
             ? new IntegerExactFacet(f)
-            : (Facet)new KeywordFacet(f)
-        ).ToArray();
+            : (Facet)new KeywordFacet(f)).ToArray();
 
-        var direction = sortDirection == "asc" ? Direction.Ascending : Direction.Descending;
+        Direction direction = sortDirection == "asc" ? Direction.Ascending : Direction.Descending;
         Sorter[] sorters = sortBy.IsNullOrWhiteSpace() || sortBy == "score"
             ? [new ScoreSorter(direction)]
             : sortBy.InvariantContains("integer") || sortBy == Constants.FieldNames.Level
@@ -76,21 +75,20 @@ public class SearchController : RenderController
                 : sortBy.InvariantContains("date")
                     ? [new DateTimeOffsetSorter(sortBy, direction)]
                     : sortBy.InvariantContains("dropdown")
-                        ? [new KeywordSorter(sortBy, direction)] 
+                        ? [new KeywordSorter(sortBy, direction)]
                         : [new TextSorter(sortBy, direction)];
 
-        var accessContext = await CurrentMemberAccessContext();
-        
-        var result = await searcher.SearchAsync(Constants.IndexAliases.PublishedContent, query, filterValues, facetValues, sorters, culture, segment, accessContext, 0, 100);
-        
+        AccessContext? accessContext = await CurrentMemberAccessContext();
+
+        SearchResult result = await searcher.SearchAsync(Constants.IndexAliases.PublishedContent, query, filterValues, facetValues, sorters, culture, segment, accessContext, 0, 100);
+
         return CurrentTemplate(
             new SearchViewModel
             {
                 Total = result.Total,
                 Facets = result.Facets.ToArray(),
-                Documents = result.Documents.Select(document => UmbracoContext.Content!.GetById(document.Id)!).ToArray()
-            }
-        );
+                Documents = result.Documents.Select(document => UmbracoContext.Content.GetById(document.Id)!).ToArray()
+            });
     }
 
     private Dictionary<string, string[]>? SplitParameters(string[]? parameters)
@@ -106,7 +104,7 @@ public class SearchController : RenderController
         // range filter?
         if (values.Length == 1)
         {
-            var match = Regex.Match(values[0], @"\[(?<lower>\S*),(?<upper>\S*)\]");
+            Match match = Regex.Match(values[0], @"\[(?<lower>\S*),(?<upper>\S*)\]");
             if (match.Success)
             {
                 var lower = match.Groups["lower"].Value;
@@ -138,19 +136,19 @@ public class SearchController : RenderController
                     }
 
                     return DecimalRangeFilter.Single(fieldName, minimum, maximum, false);
-                }            
+                }
 
                 if (fieldName.InvariantContains("date"))
                 {
-                    DateTimeOffset? minimum = lower.IsNullOrWhiteSpace() ? null : DateTime.TryParse(lower, CultureInfo.InvariantCulture, out var lowerValue) ? _dateTimeOffsetConverter.ToDateTimeOffset(lowerValue) : null;
-                    DateTimeOffset? maximum = upper.IsNullOrWhiteSpace() ? null : DateTime.TryParse(upper, CultureInfo.InvariantCulture, out var upperValue) ? _dateTimeOffsetConverter.ToDateTimeOffset(upperValue) : null;
+                    DateTimeOffset? minimum = lower.IsNullOrWhiteSpace() ? null : DateTime.TryParse(lower, CultureInfo.InvariantCulture, out DateTime lowerValue) ? _dateTimeOffsetConverter.ToDateTimeOffset(lowerValue) : null;
+                    DateTimeOffset? maximum = upper.IsNullOrWhiteSpace() ? null : DateTime.TryParse(upper, CultureInfo.InvariantCulture, out DateTime upperValue) ? _dateTimeOffsetConverter.ToDateTimeOffset(upperValue) : null;
                     if (minimum.HasValue is false && maximum.HasValue is false)
                     {
                         throw new InvalidOperationException("Could not parse valid date range bounds.");
                     }
 
                     return DateTimeOffsetRangeFilter.Single(fieldName, minimum, maximum, false);
-                }            
+                }
 
                 throw new InvalidOperationException("Unsupported range field type.");
             }
@@ -172,7 +170,7 @@ public class SearchController : RenderController
 
         if (fieldName.InvariantContains("date"))
         {
-            var fieldValues = values.Select(v => DateTime.TryParse(v, CultureInfo.InvariantCulture, out var d) ? _dateTimeOffsetConverter.ToDateTimeOffset(d) : DateTimeOffset.MinValue).Where(d => d > DateTimeOffset.MinValue).ToArray();
+            DateTimeOffset[] fieldValues = values.Select(v => DateTime.TryParse(v, CultureInfo.InvariantCulture, out DateTime d) ? _dateTimeOffsetConverter.ToDateTimeOffset(d) : DateTimeOffset.MinValue).Where(d => d > DateTimeOffset.MinValue).ToArray();
             return new DateTimeOffsetExactFilter(fieldName, fieldValues, false);
         }
 
@@ -183,20 +181,20 @@ public class SearchController : RenderController
 
     private async Task<AccessContext?> CurrentMemberAccessContext()
     {
-        var authenticateResult = await HttpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
+        AuthenticateResult authenticateResult = await HttpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
         if (authenticateResult.Succeeded is false)
         {
             return null;
         }
 
-        var member = await _memberManager.GetUserAsync(authenticateResult.Principal);
+        MemberIdentityUser? member = await _memberManager.GetUserAsync(authenticateResult.Principal);
         if (member?.UserName is null)
         {
             return null;
         }
-        
+
         var memberRoles = _memberService.GetAllRoles(member.UserName).ToArray();
-        var memberGroupKeys = memberRoles.Length > 0
+        Guid[]? memberGroupKeys = memberRoles.Length > 0
             ? _memberService
                 .GetAllRoles()
                 .Where(group => memberRoles.InvariantContains(group.Name ?? string.Empty))

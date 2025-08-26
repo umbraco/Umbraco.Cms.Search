@@ -1,11 +1,11 @@
 ﻿using Umbraco.Cms.Core.Cache;
+using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services.Changes;
 using Umbraco.Extensions;
 
-// NOTE: the namespace is defined as what it would be, if this was part of Umbraco core.
-namespace Umbraco.Cms.Core.Events;
+namespace Umbraco.Cms.Search.Core.Cache.Content;
 
 internal sealed class PublishedContentNotificationHandler : ContentNotificationHandlerBase,
     IDistributedCacheNotificationHandler<ContentPublishedNotification>,
@@ -21,20 +21,20 @@ internal sealed class PublishedContentNotificationHandler : ContentNotificationH
     public void Handle(ContentPublishedNotification notification)
     {
         // we sometimes get unpublished entities here... filter those out, we don't need them
-        var publishedEntities = notification.PublishedEntities.Where(entity => entity.Published).ToArray();
+        IContent[] publishedEntities = notification.PublishedEntities.Where(entity => entity.Published).ToArray();
         if (publishedEntities.Any() is false)
         {
             return;
         }
-        
-        var topmostEntities = FindTopmostEntities(publishedEntities);
-        var payloads = topmostEntities
+
+        IContent[] topmostEntities = FindTopmostEntities(publishedEntities);
+        PublishedContentCacheRefresher.JsonPayload[] payloads = topmostEntities
             .Select(entity =>
             {
-                var publishedCultures = entity.CultureInfos?.Values
+                IEnumerable<string> publishedCultures = entity.CultureInfos?.Values
                     .Where(x => entity.WasPropertyDirty($"{ContentBase.ChangeTrackingPrefix.PublishedCulture}{x.Culture}"))
                     .Select(x => x.Culture) ?? [];
-                var unpublishedCultures = entity.CultureInfos?.Values
+                IEnumerable<string> unpublishedCultures = entity.CultureInfos?.Values
                     .Where(x => entity.WasPropertyDirty($"{ContentBase.ChangeTrackingPrefix.UnpublishedCulture}{x.Culture}"))
                     .Select(x => x.Culture) ?? [];
                 var wasUnpublished = entity.WasPropertyDirty(nameof(IContent.Published));
@@ -50,7 +50,7 @@ internal sealed class PublishedContentNotificationHandler : ContentNotificationH
 
     public void Handle(ContentUnpublishedNotification notification)
     {
-        var payloads = notification
+        PublishedContentCacheRefresher.JsonPayload[] payloads = notification
             .UnpublishedEntities
             .Select(entity => new PublishedContentCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.Remove, []))
             .ToArray();
@@ -66,8 +66,8 @@ internal sealed class PublishedContentNotificationHandler : ContentNotificationH
 
     private void HandleMove(IEnumerable<MoveEventInfoBase<IContent>> moveEventInfo, TreeChangeTypes changeType)
     {
-        var topmostEntities = FindTopmostEntities(moveEventInfo.Select(i => i.Entity));
-        var payloads = topmostEntities
+        IContent[] topmostEntities = FindTopmostEntities(moveEventInfo.Select(i => i.Entity));
+        PublishedContentCacheRefresher.JsonPayload[] payloads = topmostEntities
             .Select(entity => new PublishedContentCacheRefresher.JsonPayload(entity.Key, changeType, []))
             .ToArray();
 

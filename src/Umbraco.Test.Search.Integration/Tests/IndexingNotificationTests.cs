@@ -21,14 +21,14 @@ public class IndexingNotificationTests : InvariantContentTestBase
         AddOrUpdateIndexingNotificationHandler.CancelIndexingFor = [];
         return base.SetupTest();
     }
-    
+
     [Test]
     public void PublishedContent_CanManipulateIndexedFields()
     {
         AddOrUpdateIndexingNotificationHandler.ManipulateFields = true;
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -47,14 +47,14 @@ public class IndexingNotificationTests : InvariantContentTestBase
             VerifyDocumentPropertyValues(documents[3], "The great grandchild title - changed by notification handler", true);
         });
     }
-    
+
     [Test]
     public void PublishedContent_CanCancelIndexingForSpecificDocument()
     {
         AddOrUpdateIndexingNotificationHandler.CancelIndexingFor = [ChildKey];
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -71,14 +71,14 @@ public class IndexingNotificationTests : InvariantContentTestBase
             VerifyDocumentPropertyValues(documents[2], "The great grandchild title", false);
         });
     }
-    
+
     [Test]
     public void DraftContent_CanManipulateIndexedFields()
     {
         AddOrUpdateIndexingNotificationHandler.ManipulateFields = true;
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -97,14 +97,14 @@ public class IndexingNotificationTests : InvariantContentTestBase
             VerifyDocumentPropertyValues(documents[3], "The great grandchild title - changed by notification handler", true);
         });
     }
-    
+
     [Test]
     public void DraftContent_CanCancelIndexingForSpecificDocument()
     {
         AddOrUpdateIndexingNotificationHandler.CancelIndexingFor = [ChildKey];
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -126,7 +126,7 @@ public class IndexingNotificationTests : InvariantContentTestBase
     {
         Assert.That(document.Fields.Any(f => f.FieldName == "count"), manipulatedByNotificationHandler ? Is.False : Is.True);
 
-        var titleField = document.Fields.FirstOrDefault(f => f.FieldName == "title");
+        IndexField? titleField = document.Fields.FirstOrDefault(f => f.FieldName == "title");
         Assert.That(titleField, Is.Not.Null);
 
         Assert.That(titleField.Value.Texts?.SingleOrDefault(), Is.EqualTo(title));
@@ -135,7 +135,7 @@ public class IndexingNotificationTests : InvariantContentTestBase
         {
             CollectionAssert.AreEqual(titleField.Value.Keywords, new[] { "NotificationHandlerKeyword", document.Id.ToString("D") });
 
-            var nameField = document.Fields.SingleOrDefault(field => field.FieldName == Constants.FieldNames.Name);
+            IndexField? nameField = document.Fields.SingleOrDefault(field => field.FieldName == Constants.FieldNames.Name);
             Assert.That(nameField, Is.Not.Null);
             Assert.Multiple(() =>
             {
@@ -150,14 +150,14 @@ public class IndexingNotificationTests : InvariantContentTestBase
         public static bool ManipulateFields { get; set; }
 
         public static Guid[] CancelIndexingFor { get; set; } = [];
-        
+
         public void Handle(IndexingNotification notification)
         {
             if (ManipulateFields)
             {
-                var titleField = notification.Fields.SingleOrDefault(field => field.FieldName == "title");
-                var countField = notification.Fields.SingleOrDefault(field => field.FieldName == "count");
-                var nameField = notification.Fields.SingleOrDefault(field => field.FieldName == Constants.FieldNames.Name);
+                IndexField? titleField = notification.Fields.SingleOrDefault(field => field.FieldName == "title");
+                IndexField? countField = notification.Fields.SingleOrDefault(field => field.FieldName == "count");
+                IndexField? nameField = notification.Fields.SingleOrDefault(field => field.FieldName == Constants.FieldNames.Name);
                 Assert.Multiple(() =>
                 {
                     Assert.That(titleField, Is.Not.Null);
@@ -165,7 +165,7 @@ public class IndexingNotificationTests : InvariantContentTestBase
                     Assert.That(nameField, Is.Not.Null);
                 });
 
-                var newTitleField = titleField with
+                IndexField newTitleField = titleField with
                 {
                     Value = new IndexValue
                     {
@@ -174,7 +174,7 @@ public class IndexingNotificationTests : InvariantContentTestBase
                     }
                 };
 
-                var newNameField = nameField with
+                IndexField newNameField = nameField with
                 {
                     Value = new IndexValue
                     {

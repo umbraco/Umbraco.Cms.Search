@@ -1,8 +1,11 @@
 ﻿using Moq;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Models.Entities;
+using Umbraco.Cms.Core.Models.Membership;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Services.OperationStatus;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
@@ -11,7 +14,7 @@ namespace Umbraco.Test.Search.Integration.Tests.BackOffice;
 public class IndexedEntitySearchServiceWithUserStartNodesTests : BackOfficeTestBase
 {
     private bool _fixtureIsInitialized;
-    
+
     private static Guid LimitedUserKey { get; } = new Guid("417FCE43-31EF-434D-BE76-279497F2302F");
 
     private IIndexedEntitySearchService IndexedEntitySearchService => GetRequiredService<IIndexedEntitySearchService>();
@@ -31,7 +34,7 @@ public class IndexedEntitySearchServiceWithUserStartNodesTests : BackOfficeTestB
             .SetupGet(b => b.BackOfficeSecurity)
             .Returns(backOfficeSecurity.Object);
 
-        builder.Services.AddUnique<IBackOfficeSecurityAccessor>(backOfficeSecurityAccessor.Object);
+        builder.Services.AddUnique(backOfficeSecurityAccessor.Object);
     }
 
     public override async Task SetupTest()
@@ -43,13 +46,13 @@ public class IndexedEntitySearchServiceWithUserStartNodesTests : BackOfficeTestB
             return;
         }
 
-        var contentAtRoot = ContentService.GetRootContent().OrderBy(content => content.SortOrder).ToArray();
+        IContent[] contentAtRoot = ContentService.GetRootContent().OrderBy(content => content.SortOrder).ToArray();
         ContentService.MoveToRecycleBin(contentAtRoot.Last());
 
-        var mediaAtRoot = MediaService.GetRootMedia().OrderBy(media => media.SortOrder).ToArray();
+        IMedia[] mediaAtRoot = MediaService.GetRootMedia().OrderBy(media => media.SortOrder).ToArray();
         MediaService.MoveToRecycleBin(mediaAtRoot.Last());
 
-        var limitedUser = new UserBuilder()
+        User limitedUser = new UserBuilder()
             .WithKey(LimitedUserKey)
             .WithEmail("limited@local")
             .WithName("Limited User")
@@ -58,12 +61,12 @@ public class IndexedEntitySearchServiceWithUserStartNodesTests : BackOfficeTestB
             .Build();
         GetRequiredService<IUserService>().Save(limitedUser);
 
-        var groupAttempt = await GetRequiredService<IUserGroupService>().AddUsersToUserGroupAsync(
+        Attempt<UserGroupOperationStatus> groupAttempt = await GetRequiredService<IUserGroupService>().AddUsersToUserGroupAsync(
             new UsersToUserGroupManipulationModel(Constants.Security.EditorGroupKey, [limitedUser.Key]),
             Constants.Security.SuperUserKey);
 
         Assert.That(groupAttempt.Success, Is.True);
-        
+
         _fixtureIsInitialized = true;
     }
 
@@ -81,13 +84,12 @@ public class IndexedEntitySearchServiceWithUserStartNodesTests : BackOfficeTestB
     [TestCase("single2child", true, 0)]
     public async Task Content_RespectsUserStartNodes(string query, bool trashed, int expectedTotal)
     {
-        var result = await IndexedEntitySearchService.SearchAsync(
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Document,
             query: query,
             parentId: null,
             contentTypeIds: null,
-            trashed: trashed
-        );
+            trashed: trashed);
 
         Assert.That(result.Total, Is.EqualTo(expectedTotal));
     }
@@ -106,13 +108,12 @@ public class IndexedEntitySearchServiceWithUserStartNodesTests : BackOfficeTestB
     [TestCase("single2child", true, 0)]
     public async Task Media_RespectsUserStartNodes(string query, bool trashed, int expectedTotal)
     {
-        var result = await IndexedEntitySearchService.SearchAsync(
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Media,
             query: query,
             parentId: null,
             contentTypeIds: null,
-            trashed: trashed
-        );
+            trashed: trashed);
 
         Assert.That(result.Total, Is.EqualTo(expectedTotal));
     }

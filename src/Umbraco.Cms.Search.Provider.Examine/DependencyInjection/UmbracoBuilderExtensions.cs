@@ -9,21 +9,13 @@ public static class UmbracoBuilderExtensions
     {
         builder.Services.AddExamineSearchProviderServices();
 
-        builder.Services.AddExamineLuceneIndex(Search.Core.Constants.IndexAliases.DraftContent, configuration =>
-        {
-        });
+        builder.Services.AddExamineLuceneIndex(Core.Constants.IndexAliases.DraftContent, _ => { });
 
-        builder.Services.AddExamineLuceneIndex(Search.Core.Constants.IndexAliases.PublishedContent, configuration =>
-        {
-        });
+        builder.Services.AddExamineLuceneIndex(Core.Constants.IndexAliases.PublishedContent, _ => { });
 
-        builder.Services.AddExamineLuceneIndex(Search.Core.Constants.IndexAliases.DraftMedia, configuration =>
-        {
-        });
+        builder.Services.AddExamineLuceneIndex(Core.Constants.IndexAliases.DraftMedia, _ => { });
 
-        builder.Services.AddExamineLuceneIndex(Search.Core.Constants.IndexAliases.DraftMembers, configuration =>
-        {
-        });
+        builder.Services.AddExamineLuceneIndex(Core.Constants.IndexAliases.DraftMembers, _ => { });
 
         return builder;
     }

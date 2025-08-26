@@ -4,7 +4,6 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
-using Umbraco.Cms.Search.Provider.Examine.Extensions;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using CoreConstants = Umbraco.Cms.Search.Core.Constants;
 

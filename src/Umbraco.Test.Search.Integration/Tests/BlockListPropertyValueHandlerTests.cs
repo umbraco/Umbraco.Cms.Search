@@ -8,6 +8,8 @@ using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
+using Umbraco.Test.Search.Integration.Services;
+using IndexValue = Umbraco.Cms.Search.Core.Models.Indexing.IndexValue;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
@@ -151,7 +153,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         };
         var blocksPropertyValue = JsonSerializer.Serialize(blockListValue);
 
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(contentType)
             .WithName("My Blocks")
             .WithPropertyValues(new { blocks = blocksPropertyValue })
@@ -162,21 +164,21 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         AssertDocumentFields(IndexAliases.DraftContent);
         AssertDocumentFields(IndexAliases.PublishedContent);
 
-        var document = Indexer.Dump(IndexAliases.PublishedContent).Single();
-        var tagsValue = document.Fields.FirstOrDefault(f => f.FieldName == Cms.Search.Core.Constants.FieldNames.Tags)?.Value;
+        TestIndexDocument document = Indexer.Dump(IndexAliases.PublishedContent).Single();
+        IndexValue? tagsValue = document.Fields.FirstOrDefault(f => f.FieldName == Cms.Search.Core.Constants.FieldNames.Tags)?.Value;
         Assert.That(tagsValue, Is.Not.Null);
         CollectionAssert.AreEquivalent(new [] { "One", "Two", "Three", "Four", "Five", "Six" }, tagsValue.Keywords);
-        
+
         return;
 
         void AssertDocumentFields(string indexAlias)
         {
-            var documents = Indexer.Dump(indexAlias);
+            IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(indexAlias);
             Assert.That(documents, Has.Count.EqualTo(1));
 
-            var document = documents.Single();
+            TestIndexDocument document = documents.Single();
 
-            var indexValue = document.Fields.FirstOrDefault(f => f.FieldName == "blocks")?.Value;
+            IndexValue? indexValue = document.Fields.FirstOrDefault(f => f.FieldName == "blocks")?.Value;
             Assert.That(indexValue, Is.Not.Null);
 
             Assert.Multiple(() =>
@@ -187,11 +189,13 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
 
                 CollectionAssert.AreEqual(new [] { 56.78m, 1.23m, 2.34m, 5.67m }, indexValue.Decimals);
 
-                CollectionAssert.AreEqual(new []
-                {
-                    new DateTimeOffset(new DateOnly(2001, 02, 03), new TimeOnly(), TimeSpan.Zero),
-                    new DateTimeOffset(new DateOnly(2004, 05, 06), new TimeOnly(07, 08, 09), TimeSpan.Zero)
-                }, indexValue.DateTimeOffsets);
+                CollectionAssert.AreEqual(
+                    new[]
+                    {
+                        new DateTimeOffset(new DateOnly(2001, 02, 03), new TimeOnly(), TimeSpan.Zero),
+                        new DateTimeOffset(new DateOnly(2004, 05, 06), new TimeOnly(07, 08, 09), TimeSpan.Zero)
+                    },
+                    indexValue.DateTimeOffsets);
 
                 CollectionAssert.AreEqual(new [] { "One", "Two", "Three", "Four", "Five", "Six", "55bf7f6d-acd2-4f1e-92bd-f0b5c41dbfed" }, indexValue.Keywords);
             });
@@ -230,8 +234,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
                                     [
                                         new (nestedElement1Key, nestedElementType.Key, nestedElementType.Alias)
                                         {
-                                            Values = 
-                                            [
+                                            Values = [
                                                 new ()
                                                 {
                                                     Alias = "textBoxValue",
@@ -254,8 +257,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
                                     [
                                         new BlockItemVariation(nestedElement1Key, null, null)
                                     ]
-                                }
-                            )
+                                })
                         }
                     ]
                 },
@@ -275,8 +277,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
                                     [
                                         new (nestedElement2Key, nestedElementType.Key, nestedElementType.Alias)
                                         {
-                                            Values = 
-                                            [
+                                            Values = [
                                                 new ()
                                                 {
                                                     Alias = "textBoxValue",
@@ -299,8 +300,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
                                     [
                                         new BlockItemVariation(nestedElement2Key, null, null)
                                     ]
-                                }
-                            )
+                                })
                         }
                     ]
                 }
@@ -313,7 +313,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         };
         var blocksPropertyValue = JsonSerializer.Serialize(blockListValue);
 
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(contentType)
             .WithName("My Blocks")
             .WithPropertyValues(new { rootBlocks = blocksPropertyValue })
@@ -321,12 +321,12 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var document = documents.Single();
+        TestIndexDocument document = documents.Single();
 
-        var indexValue = document.Fields.FirstOrDefault(f => f.FieldName == "rootBlocks")?.Value;
+        IndexValue? indexValue = document.Fields.FirstOrDefault(f => f.FieldName == "rootBlocks")?.Value;
         Assert.That(indexValue, Is.Not.Null);
 
         Assert.Multiple(() =>
@@ -336,7 +336,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
             CollectionAssert.AreEqual(new[] { "One", "Two", "Three", "Four", "Five", "Six" }, indexValue.Keywords);
         });
 
-        var tagsValue = document.Fields.FirstOrDefault(f => f.FieldName == Cms.Search.Core.Constants.FieldNames.Tags)?.Value;
+        IndexValue? tagsValue = document.Fields.FirstOrDefault(f => f.FieldName == Cms.Search.Core.Constants.FieldNames.Tags)?.Value;
         Assert.That(tagsValue, Is.Not.Null);
         CollectionAssert.AreEquivalent(new [] { "One", "Two", "Three", "Four", "Five", "Six" }, tagsValue.Keywords);
     }
@@ -353,16 +353,16 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
 
         void AssertDocumentFields(string indexAlias)
         {
-            var documents = Indexer.Dump(indexAlias);
+            IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(indexAlias);
             Assert.That(documents, Has.Count.EqualTo(1));
 
-            var document = documents.Single();
+            TestIndexDocument document = documents.Single();
 
-            var indexValueInv = document.Fields.SingleOrDefault(f => f is { FieldName: "rootBlocks", Culture: null })?.Value;
+            IndexValue? indexValueInv = document.Fields.SingleOrDefault(f => f is { FieldName: "rootBlocks", Culture: null })?.Value;
             Assert.That(indexValueInv, Is.Not.Null);
             CollectionAssert.AreEqual(new[] { "Nested TextArea value INV", "Root TextArea value INV" }, indexValueInv.Texts);
 
-            var indexValueEn = document.Fields.SingleOrDefault(f => f is { FieldName: "rootBlocks", Culture: "en-US" })?.Value;
+            IndexValue? indexValueEn = document.Fields.SingleOrDefault(f => f is { FieldName: "rootBlocks", Culture: "en-US" })?.Value;
             Assert.That(indexValueEn, Is.Not.Null);
 
             Assert.Multiple(() =>
@@ -371,7 +371,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
                 CollectionAssert.AreEqual(new[] { 21, 11 }, indexValueEn.Integers);
             });
 
-            var indexValueDa = document.Fields.SingleOrDefault(f => f is { FieldName: "rootBlocks", Culture: "da-DK" })?.Value;
+            IndexValue? indexValueDa = document.Fields.SingleOrDefault(f => f is { FieldName: "rootBlocks", Culture: "da-DK" })?.Value;
             Assert.That(indexValueDa, Is.Not.Null);
 
             Assert.Multiple(() =>
@@ -380,14 +380,14 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
                 CollectionAssert.AreEqual(new[] { 22, 12 }, indexValueDa.Integers);
             });
 
-            var indexValueDe = document.Fields.SingleOrDefault(f => f is { FieldName: "rootBlocks", Culture: "de-DE" })?.Value;
+            IndexValue? indexValueDe = document.Fields.SingleOrDefault(f => f is { FieldName: "rootBlocks", Culture: "de-DE" })?.Value;
             Assert.That(indexValueDe, Is.Not.Null);
 
             Assert.Multiple(() =>
             {
                 CollectionAssert.AreEqual(new[] { "Nested TextBox value DE", "Root TextBox value DE" }, indexValueDe.Texts);
                 CollectionAssert.AreEqual(new[] { 23, 13 }, indexValueDe.Integers);
-            });   
+            });
         }
     }
 
@@ -403,16 +403,16 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
 
         void AssertDocumentFields(string indexAlias, bool expectEnValues)
         {
-            var documents = Indexer.Dump(indexAlias);
+            IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(indexAlias);
             Assert.That(documents, Has.Count.EqualTo(1));
 
-            var document = documents.Single();
+            TestIndexDocument document = documents.Single();
 
-            var indexValueInv = document.Fields.SingleOrDefault(f => f is { FieldName: "rootBlocks", Culture: null })?.Value;
+            IndexValue? indexValueInv = document.Fields.SingleOrDefault(f => f is { FieldName: "rootBlocks", Culture: null })?.Value;
             Assert.That(indexValueInv, Is.Not.Null);
             CollectionAssert.AreEqual(new[] { "Nested TextArea value INV", "Root TextArea value INV" }, indexValueInv.Texts);
 
-            var indexValueEn = document.Fields.SingleOrDefault(f => f is { FieldName: "rootBlocks", Culture: "en-US" })?.Value;
+            IndexValue? indexValueEn = document.Fields.SingleOrDefault(f => f is { FieldName: "rootBlocks", Culture: "en-US" })?.Value;
 
             if (expectEnValues)
             {
@@ -428,8 +428,8 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
             {
                 Assert.That(indexValueEn, Is.Null);
             }
-            
-            var indexValueDa = document.Fields.SingleOrDefault(f => f is { FieldName: "rootBlocks", Culture: "da-DK" })?.Value;
+
+            IndexValue? indexValueDa = document.Fields.SingleOrDefault(f => f is { FieldName: "rootBlocks", Culture: "da-DK" })?.Value;
             Assert.That(indexValueDa, Is.Not.Null);
 
             Assert.Multiple(() =>
@@ -438,17 +438,17 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
                 CollectionAssert.AreEqual(new[] { 22, 12 }, indexValueDa.Integers);
             });
 
-            var indexValueDe = document.Fields.SingleOrDefault(f => f is { FieldName: "rootBlocks", Culture: "de-DE" })?.Value;
+            IndexValue? indexValueDe = document.Fields.SingleOrDefault(f => f is { FieldName: "rootBlocks", Culture: "de-DE" })?.Value;
             Assert.That(indexValueDe, Is.Not.Null);
 
             Assert.Multiple(() =>
             {
                 CollectionAssert.AreEqual(new[] { "Nested TextBox value DE", "Root TextBox value DE" }, indexValueDe.Texts);
                 CollectionAssert.AreEqual(new[] { 23, 13 }, indexValueDe.Integers);
-            });   
+            });
         }
     }
-    
+
     [Test]
     public async Task BlockLevelVariation_CanBeIndexed_WithSomeElementsExposed()
     {
@@ -497,7 +497,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         };
         var blocksPropertyValue = JsonSerializer.Serialize(blockListValue);
 
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(contentType)
             .WithCultureName("en-US", "My Blocks EN")
             .WithCultureName("da-DK", "My Blocks DA")
@@ -506,33 +506,29 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        AssertDocumentFields
-        (
+        AssertDocumentFields(
             IndexAliases.DraftContent,
             ["TextBox EN #1", "TextBox EN #2", "TextBox EN #3"],
-            ["TextBox DA #1", "TextBox DA #2", "TextBox DA #3"]
-        );
-        AssertDocumentFields
-        (
+            ["TextBox DA #1", "TextBox DA #2", "TextBox DA #3"]);
+        AssertDocumentFields(
             IndexAliases.PublishedContent,
             ["TextBox EN #1", "TextBox EN #2"],
-            ["TextBox DA #1", "TextBox DA #3"]
-        );
+            ["TextBox DA #1", "TextBox DA #3"]);
 
         return;
 
         void AssertDocumentFields(string indexAlias, IEnumerable<string> expectedTextBoxValuesEn, IEnumerable<string> expectedTextBoxValuesDa)
         {
-            var documents = Indexer.Dump(indexAlias);
+            IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(indexAlias);
             Assert.That(documents, Has.Count.EqualTo(1));
 
-            var document = documents.Single();
+            TestIndexDocument document = documents.Single();
 
-            var indexValueEn = document.Fields.FirstOrDefault(f => f is { FieldName: "blocks", Culture: "en-US" })?.Value;
+            IndexValue? indexValueEn = document.Fields.FirstOrDefault(f => f is { FieldName: "blocks", Culture: "en-US" })?.Value;
             Assert.That(indexValueEn, Is.Not.Null);
             CollectionAssert.AreEqual(expectedTextBoxValuesEn, indexValueEn.Texts);
 
-            var indexValueDa = document.Fields.FirstOrDefault(f => f is { FieldName: "blocks", Culture: "da-DK" })?.Value;
+            IndexValue? indexValueDa = document.Fields.FirstOrDefault(f => f is { FieldName: "blocks", Culture: "da-DK" })?.Value;
             Assert.That(indexValueDa, Is.Not.Null);
             CollectionAssert.AreEqual(expectedTextBoxValuesDa, indexValueDa.Texts);
         }
@@ -560,11 +556,11 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
                             Alias = "markdownValue",
                             Value = """
                                     # H1 Heading #1
-                                    
+
                                     ## H2 Heading #1
-                                    
+
                                     ### H3 Heading #1
-                                    
+
                                     Paragraph #1
                                     """
                         }
@@ -597,17 +593,17 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         };
         var blocksPropertyValue = JsonSerializer.Serialize(blockListValue);
 
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(contentType)
             .WithName("My Blocks")
             .WithPropertyValues(new { blocks = blocksPropertyValue })
             .Build();
         ContentService.Save(content);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var blocksValue = documents[0].Fields.FirstOrDefault(f => f.FieldName is "blocks")?.Value;
+        IndexValue? blocksValue = documents[0].Fields.FirstOrDefault(f => f.FieldName is "blocks")?.Value;
         Assert.That(blocksValue, Is.Not.Null);
 
         CollectionAssert.AreEqual(new [] { "H1 Heading #1", "H1 Heading #2"}, blocksValue.TextsR1);
@@ -615,10 +611,10 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         CollectionAssert.AreEqual(new [] { "H3 Heading #1", "H3 Heading #2"}, blocksValue.TextsR3);
         CollectionAssert.AreEqual(new [] { "Paragraph #1", "Paragraph #2"}, blocksValue.Texts);
     }
-    
+
     private async Task<IContentType> CreateAllSimpleEditorsElementType(bool forBlockLevelVariance = false)
     {
-        var elementType = await CreateAllSimpleEditorsContentType();
+        IContentType elementType = await CreateAllSimpleEditorsContentType();
         elementType.IsElement = true;
 
         if (forBlockLevelVariance)
@@ -627,14 +623,14 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
             elementType.PropertyTypes.First(p => p.Alias == "textBoxValue").Variations = ContentVariation.Culture;
             elementType.PropertyTypes.First(p => p.Alias == "integerValue").Variations = ContentVariation.Culture;
         }
-        
+
         await ContentTypeService.UpdateAsync(elementType, Constants.Security.SuperUserKey);
         return elementType;
     }
 
     private async Task<(IContentType ContentType, IContentType ElementType)> SetupSimpleEditorsTest(bool forBlockLevelVariance = false)
     {
-        var elementType = await CreateAllSimpleEditorsElementType(forBlockLevelVariance);
+        IContentType elementType = await CreateAllSimpleEditorsElementType(forBlockLevelVariance);
 
         var blockListDataType = new DataType(PropertyEditorCollection[Constants.PropertyEditors.Aliases.BlockList], ConfigurationEditorJsonSerializer)
         {
@@ -656,7 +652,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
 
         await GetRequiredService<IDataTypeService>().CreateAsync(blockListDataType, Constants.Security.SuperUserKey);
 
-        var contentType = new ContentTypeBuilder()
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("blockEditor")
             .WithName("Block Editor")
             .AddPropertyType()
@@ -670,7 +666,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         {
             contentType.Variations = ContentVariation.Culture;
         }
-        
+
         await ContentTypeService.UpdateAsync(contentType, Constants.Security.SuperUserKey);
 
         return (contentType, elementType);
@@ -678,9 +674,9 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
 
     private async Task<(IContentType ContentType, IContentType RootElementType, IContentType NestedElementType)> SetupNestedBlockEditorsTest(bool forBlockLevelVariance = false)
     {
-        var dataTypeService = GetRequiredService<IDataTypeService>();
+        IDataTypeService dataTypeService = GetRequiredService<IDataTypeService>();
 
-        var nestedElementType = await CreateAllSimpleEditorsElementType(forBlockLevelVariance);
+        IContentType nestedElementType = await CreateAllSimpleEditorsElementType(forBlockLevelVariance);
 
         var nestedBlockListDataType = new DataType(PropertyEditorCollection[Constants.PropertyEditors.Aliases.BlockList], ConfigurationEditorJsonSerializer)
         {
@@ -701,7 +697,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         };
         await dataTypeService.CreateAsync(nestedBlockListDataType, Constants.Security.SuperUserKey);
 
-        var rootElementType = new ContentTypeBuilder()
+        IContentType rootElementType = new ContentTypeBuilder()
             .WithAlias("rootBlockEditor")
             .WithName("Block Editor")
             .WithIsElement(true)
@@ -712,7 +708,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
             .Done()
             .Build();
         await ContentTypeService.CreateAsync(rootElementType, Constants.Security.SuperUserKey);
-        
+
         var rootBlockListDataType = new DataType(PropertyEditorCollection[Constants.PropertyEditors.Aliases.BlockList], ConfigurationEditorJsonSerializer)
         {
             ConfigurationData = new Dictionary<string, object>
@@ -733,7 +729,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         };
         await dataTypeService.CreateAsync(rootBlockListDataType, Constants.Security.SuperUserKey);
 
-        var contentType = new ContentTypeBuilder()
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("blockEditor")
             .WithName("Block Editor")
             .WithContentVariation(forBlockLevelVariance ? ContentVariation.Culture : ContentVariation.Nothing)
@@ -750,9 +746,9 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
 
     private async Task<(IContentType ContentType, IContentType ElementType)> SetupMultipleTextRelevanceTest()
     {
-        var dataTypeService = GetRequiredService<IDataTypeService>();
+        IDataTypeService dataTypeService = GetRequiredService<IDataTypeService>();
 
-        var markdownDataType = new DataTypeBuilder()
+        DataType markdownDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Nvarchar)
             .WithName("Markdown")
@@ -763,7 +759,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
 
         await dataTypeService.CreateAsync(markdownDataType, Constants.Security.SuperUserKey);
 
-        var elementType = new ContentTypeBuilder()
+        IContentType elementType = new ContentTypeBuilder()
             .WithAlias("blockEditorElement")
             .WithName("Block Editor Element")
             .WithIsElement(true)
@@ -774,7 +770,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
             .Done()
             .Build();
         await ContentTypeService.CreateAsync(elementType, Constants.Security.SuperUserKey);
-        
+
         var blockListDataType = new DataType(PropertyEditorCollection[Constants.PropertyEditors.Aliases.BlockList], ConfigurationEditorJsonSerializer)
         {
             ConfigurationData = new Dictionary<string, object>
@@ -795,7 +791,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         };
         await dataTypeService.CreateAsync(blockListDataType, Constants.Security.SuperUserKey);
 
-        var contentType = new ContentTypeBuilder()
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("blockEditor")
             .WithName("Block Editor")
             .AddPropertyType()
@@ -839,8 +835,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
                                     [
                                         new (nestedElement1Key, nestedElementType.Key, nestedElementType.Alias)
                                         {
-                                            Values = 
-                                            [
+                                            Values = [
                                                 new ()
                                                 {
                                                     Alias = "textBoxValue",
@@ -891,15 +886,13 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
                                         new BlockItemVariation(nestedElement1Key, "da-DK", null),
                                         new BlockItemVariation(nestedElement1Key, "de-DE", null),
                                     ]
-                                }
-                            )
+                                })
                         }
                     ]
                 },
                 new (rootElement2Key, nestedElementType.Key, nestedElementType.Alias)
                 {
-                    Values = 
-                    [
+                    Values = [
                         new ()
                         {
                             Alias = "textBoxValue",
@@ -956,7 +949,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         };
         var blocksPropertyValue = JsonSerializer.Serialize(blockListValue);
 
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(contentType)
             .WithCultureName("en-US", "My Blocks EN")
             .WithCultureName("da-DK", "My Blocks DA")

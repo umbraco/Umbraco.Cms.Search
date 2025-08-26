@@ -96,8 +96,7 @@ public class InvariantDocumentTests : IndexTestBase
         Assert.That(results, Is.Not.Empty);
         Assert.That(
             double.Parse(results.First().Values.First(x => x.Key == fieldName).Value),
-            Is.EqualTo((double)DecimalValue)
-        );
+            Is.EqualTo((double)DecimalValue));
     }
 
     [TestCase(true)]

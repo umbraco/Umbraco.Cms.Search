@@ -1,11 +1,10 @@
-// NOTE: the namespace is defined as what it would be, if this was part of Umbraco core.
-
 using Umbraco.Cms.Core.Cache;
+using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services.Changes;
 
-namespace Umbraco.Cms.Core.Events;
+namespace Umbraco.Cms.Search.Core.Cache.Content;
 
 internal sealed class DraftContentNotificationHandler : ContentNotificationHandlerBase,
     IDistributedCacheNotificationHandler<ContentSavedNotification>,
@@ -20,7 +19,7 @@ internal sealed class DraftContentNotificationHandler : ContentNotificationHandl
 
     public void Handle(ContentSavedNotification notification)
     {
-        var payloads = notification
+        DraftContentCacheRefresher.JsonPayload[] payloads = notification
             .SavedEntities
             .Select(entity => new DraftContentCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.RefreshNode))
             .ToArray();
@@ -36,7 +35,7 @@ internal sealed class DraftContentNotificationHandler : ContentNotificationHandl
 
     public void Handle(ContentDeletedNotification notification)
     {
-        var payloads = notification
+        DraftContentCacheRefresher.JsonPayload[] payloads = notification
             .DeletedEntities
             .Select(entity => new DraftContentCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.Remove))
             .ToArray();
@@ -46,8 +45,8 @@ internal sealed class DraftContentNotificationHandler : ContentNotificationHandl
 
     private void HandleMove(IEnumerable<MoveEventInfoBase<IContent>> moveEventInfo)
     {
-        var topmostEntities = FindTopmostEntities(moveEventInfo.Select(i => i.Entity));
-        var payloads = topmostEntities
+        IContent[] topmostEntities = FindTopmostEntities(moveEventInfo.Select(i => i.Entity));
+        DraftContentCacheRefresher.JsonPayload[] payloads = topmostEntities
             .Select(entity => new DraftContentCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.RefreshBranch))
             .ToArray();
 

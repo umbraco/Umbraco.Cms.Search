@@ -1,12 +1,15 @@
-﻿using Umbraco.Cms.Core.Cache;
+﻿using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Entities;
+using Umbraco.Cms.Core.Models.Membership;
 using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
-using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Extensions;
+using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Services;
+using Constants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Umbraco.Cms.Search.BackOffice.Services;
 
@@ -41,7 +44,7 @@ internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIn
         int take = 100,
         bool ignoreUserStartNodes = false)
     {
-        var startNodeKeys = CurrentUserStartNodeKeys(objectType);
+        Guid[] startNodeKeys = CurrentUserStartNodeKeys(objectType);
 
         // cannot combine trashed and start node filtering - this should always yield zero results
         if (startNodeKeys.Length > 0 && trashed is true)
@@ -57,18 +60,16 @@ internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIn
             _ => throw new ArgumentOutOfRangeException(nameof(objectType), objectType, null)
         };
 
-        var filters = ParseFilters(query, parentId, out var effectiveQuery);
+        List<Filter> filters = ParseFilters(query, parentId, out var effectiveQuery);
 
-        var contentTypeIdsAsArray = contentTypeIds as Guid[] ?? contentTypeIds?.ToArray();
+        Guid[]? contentTypeIdsAsArray = contentTypeIds as Guid[] ?? contentTypeIds?.ToArray();
         if (contentTypeIdsAsArray?.Length > 0)
         {
             filters.Add(
                 new KeywordFilter(
                     FieldName: Constants.FieldNames.ContentTypeId,
                     Values: contentTypeIdsAsArray.Select(contentTypeId => contentTypeId.AsKeyword()).ToArray(),
-                    Negate: false
-                )
-            );
+                    Negate: false));
         }
 
         if (startNodeKeys.Length > 0)
@@ -77,17 +78,15 @@ internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIn
                 new KeywordFilter(
                     FieldName: Constants.FieldNames.PathIds,
                     Values: startNodeKeys.Select(key => key.AsKeyword()).ToArray(),
-                    Negate: false
-                )
-            );
+                    Negate: false));
         }
         else if (trashed.HasValue)
         {
-            var recycleBinId = objectType switch
+            Guid? recycleBinId = objectType switch
             {
                 UmbracoObjectTypes.Document => Cms.Core.Constants.System.RecycleBinContentKey,
                 UmbracoObjectTypes.Media => Cms.Core.Constants.System.RecycleBinMediaKey,
-                _ => (Guid?)null
+                _ => null
             };
 
             if (recycleBinId.HasValue)
@@ -96,13 +95,11 @@ internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIn
                     new KeywordFilter(
                         FieldName: Constants.FieldNames.PathIds,
                         Values: [recycleBinId.Value.AsKeyword()],
-                        Negate: trashed.Value is false
-                    )
-                );
+                        Negate: trashed.Value is false));
             }
         }
 
-        var result = await _searcher.SearchAsync(
+        SearchResult result = await _searcher.SearchAsync(
             indexAlias,
             query: effectiveQuery,
             filters: filters,
@@ -114,8 +111,8 @@ internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIn
             skip,
             take);
 
-        var resultKeys = result.Documents.Select(d => d.Id).ToArray();
-        var resultEntities = resultKeys.Any()
+        Guid[] resultKeys = result.Documents.Select(d => d.Id).ToArray();
+        IEntitySlim[] resultEntities = resultKeys.Any()
             ? _entityService.GetAll(objectType, resultKeys).ToArray()
             : [];
 
@@ -124,7 +121,7 @@ internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIn
 
     private Guid[] CurrentUserStartNodeKeys(UmbracoObjectTypes objectType)
     {
-        var currentUser = _backOfficeSecurityAccessor.BackOfficeSecurity?.CurrentUser;
+        IUser? currentUser = _backOfficeSecurityAccessor.BackOfficeSecurity?.CurrentUser;
         var startNodeIds = objectType switch
         {
             UmbracoObjectTypes.Document => currentUser?.CalculateContentStartNodeIds(_entityService, _appCaches),
@@ -135,7 +132,7 @@ internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIn
         return startNodeIds is not null
             ? startNodeIds.Select(id =>
                 {
-                    var attempt = _idKeyMap.GetKeyForId(id, objectType);
+                    Attempt<Guid> attempt = _idKeyMap.GetKeyForId(id, objectType);
                     return attempt.Success ? attempt.Result : (Guid?)null;
                 })
                 .Where(key => key.HasValue)

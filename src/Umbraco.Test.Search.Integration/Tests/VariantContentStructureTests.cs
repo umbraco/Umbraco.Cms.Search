@@ -1,4 +1,6 @@
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
@@ -11,7 +13,7 @@ public class VariantContentStructureTests : VariantContentTestBase
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -32,7 +34,7 @@ public class VariantContentStructureTests : VariantContentTestBase
             VerifyDocumentVariance(documents[3], "en-US", "da-DK");
         });
     }
-    
+
     [TestCase("en-US")]
     [TestCase("da-DK")]
     public void PublishedStructureSingleCulture_YieldsAllPublishedDocumentsInOneCultures(string culture)
@@ -40,7 +42,7 @@ public class VariantContentStructureTests : VariantContentTestBase
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, [culture]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -66,7 +68,7 @@ public class VariantContentStructureTests : VariantContentTestBase
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.Default, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
         Assert.That(documents[0].Id, Is.EqualTo(RootKey));
         VerifyDocumentVariance(documents[0], "en-US", "da-DK");
@@ -77,12 +79,12 @@ public class VariantContentStructureTests : VariantContentTestBase
     {
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
-        
-        var result = ContentService.Unpublish(Root());
+
+        PublishResult result = ContentService.Unpublish(Root());
         Assert.That(result.Success, Is.True);
         Assert.That(Child().Published, Is.True);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Is.Empty);
     }
 
@@ -92,21 +94,20 @@ public class VariantContentStructureTests : VariantContentTestBase
     {
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
-        
-        var result = ContentService.Unpublish(Root(), cultureToUnpublish);
+
+        PublishResult result = ContentService.Unpublish(Root(), cultureToUnpublish);
         Assert.That(result.Success, Is.True);
 
-        var root = Root();
+        IContent root = Root();
         Assert.Multiple(() =>
         {
             Assert.That(root.Published, Is.True);
             Assert.That(
                 root.PublishedCultures.Select(c => c.ToLowerInvariant()),
-                Is.EquivalentTo(new [] { expectedCulture.ToLowerInvariant() })
-            );
+                Is.EquivalentTo(new [] { expectedCulture.ToLowerInvariant() }));
         });
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -125,20 +126,20 @@ public class VariantContentStructureTests : VariantContentTestBase
             VerifyDocumentVariance(documents[3], expectedCulture);
         });
     }
-    
+
     [Test]
     public void PublishedStructureInAllCultures_WithUnpublishedGrandchildInAllCultures_YieldsNothingBelowChild()
     {
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
-        
-        var result = ContentService.Unpublish(Grandchild());
+
+        PublishResult result = ContentService.Unpublish(Grandchild());
         Assert.That(result.Success, Is.True);
         Assert.That(GreatGrandchild().Published, Is.True);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(2));
-           
+
         Assert.Multiple(() =>
         {
             Assert.That(documents[0].Id, Is.EqualTo(RootKey));
@@ -151,14 +152,14 @@ public class VariantContentStructureTests : VariantContentTestBase
             VerifyDocumentVariance(documents[1], "en-US", "da-DK");
         });
     }
-    
+
     [Test]
     public void PublishedStructureInAllCultures_UnpublishAllCulturesForGrandchildOneAtATime_YieldsNothingBelowChild()
     {
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
-        
-        var result = ContentService.Unpublish(Grandchild(), "en-US");
+
+        PublishResult result = ContentService.Unpublish(Grandchild(), "en-US");
         Assert.That(result.Success, Is.True);
         Assert.That(Grandchild().Published, Is.True);
         result = ContentService.Unpublish(Grandchild(), "da-DK");
@@ -166,9 +167,9 @@ public class VariantContentStructureTests : VariantContentTestBase
         Assert.That(Grandchild().Published, Is.False);
         Assert.That(GreatGrandchild().Published, Is.True);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(2));
-           
+
         Assert.Multiple(() =>
         {
             Assert.That(documents[0].Id, Is.EqualTo(RootKey));
@@ -188,26 +189,25 @@ public class VariantContentStructureTests : VariantContentTestBase
     {
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
-        
-        var result = ContentService.Unpublish(Grandchild(), cultureToUnpublish);
+
+        PublishResult result = ContentService.Unpublish(Grandchild(), cultureToUnpublish);
         Assert.That(result.Success, Is.True);
 
         // grandchild should now be unpublished in a single culture
-        var grandchild = Grandchild();
+        IContent grandchild = Grandchild();
         Assert.Multiple(() =>
         {
             Assert.That(grandchild.Published, Is.True);
             Assert.That(
                 grandchild.PublishedCultures.Select(c => c.ToLowerInvariant()),
-                Is.EquivalentTo(new [] { expectedCulture.ToLowerInvariant() })
-            );
+                Is.EquivalentTo(new [] { expectedCulture.ToLowerInvariant() }));
         });
 
         Assert.That(GreatGrandchild().Published, Is.True);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
- 
+
         Assert.Multiple(() =>
         {
             Assert.That(documents[0].Id, Is.EqualTo(RootKey));
@@ -227,7 +227,7 @@ public class VariantContentStructureTests : VariantContentTestBase
 
     private void VerifyDocumentVariance(TestIndexDocument document, params string[] cultures)
     {
-        var variations = document.Variations.ToArray();
+        Variation[] variations = document.Variations.ToArray();
 
         Assert.Multiple(() =>
         {

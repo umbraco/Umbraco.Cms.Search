@@ -9,13 +9,12 @@ public partial class IndexedEntitySearchServiceTests
     [Test]
     public async Task Content_CanFindAll()
     {
-        var result = await IndexedEntitySearchService.SearchAsync(
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Document,
             query: string.Empty,
             parentId: null,
             contentTypeIds: null,
-            trashed: null
-        );
+            trashed: null);
 
         Assert.Multiple(() =>
         {
@@ -29,13 +28,12 @@ public partial class IndexedEntitySearchServiceTests
     [Test]
     public async Task Content_CanFindAllRootsByQuery()
     {
-        var result = await IndexedEntitySearchService.SearchAsync(
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Document,
             query: "root",
             parentId: null,
             contentTypeIds: null,
-            trashed: null
-        );
+            trashed: null);
 
         Assert.Multiple(() =>
         {
@@ -51,14 +49,13 @@ public partial class IndexedEntitySearchServiceTests
     [Test]
     public async Task Content_CanFindSpecificRootByQuery()
     {
-        var root = ContentService.GetRootContent().OrderBy(content => content.SortOrder).Skip(1).First();
-        var result = await IndexedEntitySearchService.SearchAsync(
+        IContent root = ContentService.GetRootContent().OrderBy(content => content.SortOrder).Skip(1).First();
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Document,
             query: "single1root",
             parentId: null,
             contentTypeIds: null,
-            trashed: null
-        );
+            trashed: null);
 
         Assert.Multiple(() =>
         {
@@ -71,13 +68,12 @@ public partial class IndexedEntitySearchServiceTests
     [Test]
     public async Task Content_CanFindAllChildrenByQuery()
     {
-        var result = await IndexedEntitySearchService.SearchAsync(
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Document,
             query: "child",
             parentId: null,
             contentTypeIds: null,
-            trashed: null
-        );
+            trashed: null);
 
         Assert.Multiple(() =>
         {
@@ -92,14 +88,13 @@ public partial class IndexedEntitySearchServiceTests
     [Test]
     public async Task Content_CanFindAllChildrenBelowParent()
     {
-        var root = ContentService.GetRootContent().Last();
-        var result = await IndexedEntitySearchService.SearchAsync(
+        IContent root = ContentService.GetRootContent().Last();
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Document,
             query: string.Empty,
             parentId: root.Key,
             contentTypeIds: null,
-            trashed: null
-        );
+            trashed: null);
 
         Assert.Multiple(() =>
         {
@@ -114,19 +109,18 @@ public partial class IndexedEntitySearchServiceTests
     [Test]
     public async Task Content_CanFindChildrenBelowParentByQuery()
     {
-        var root = ContentService.GetRootContent().Last();
-        var result = await IndexedEntitySearchService.SearchAsync(
+        IContent root = ContentService.GetRootContent().Last();
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Document,
             query: "triple2child",
             parentId: root.Key,
             contentTypeIds: null,
-            trashed: null
-        );
+            trashed: null);
 
         Assert.Multiple(() =>
         {
             Assert.That(result.Total, Is.EqualTo(3));
-            var items = result.Items.OrderBy(item => item.SortOrder).ToArray();
+            IEntitySlim[] items = result.Items.OrderBy(item => item.SortOrder).ToArray();
             Assert.That(items[0].Name, Is.EqualTo("Child 6"));
             Assert.That(items[1].Name, Is.EqualTo("Child 7"));
             Assert.That(items[2].Name, Is.EqualTo("Child 8"));
@@ -142,21 +136,20 @@ public partial class IndexedEntitySearchServiceTests
     [TestCase("childContentType", true, 10)]
     public async Task Content_CanFindAllByContentType(string contentTypeAlias, bool? trashed, int expectedTotal)
     {
-        var contentTypeKey = ContentTypeService.Get(contentTypeAlias)?.Key
-            ?? throw new InvalidOperationException($"Could not find {contentTypeAlias}.");
+        Guid contentTypeKey = ContentTypeService.Get(contentTypeAlias)?.Key
+                              ?? throw new InvalidOperationException($"Could not find {contentTypeAlias}.");
 
-        var result = await IndexedEntitySearchService.SearchAsync(
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Document,
             query: string.Empty,
             parentId: null,
             contentTypeIds: [contentTypeKey],
-            trashed: trashed
-        );
+            trashed: trashed);
 
         Assert.Multiple(() =>
         {
             Assert.That(result.Total, Is.EqualTo(expectedTotal));
-            var items = result.Items.OfType<IDocumentEntitySlim>().ToArray();
+            IDocumentEntitySlim[] items = result.Items.OfType<IDocumentEntitySlim>().ToArray();
             Assert.That(items.Length, Is.EqualTo(expectedTotal));
             Assert.That(items.All(item => item.ContentTypeAlias == contentTypeAlias), Is.True);
         });
@@ -165,22 +158,21 @@ public partial class IndexedEntitySearchServiceTests
     [Test]
     public async Task Content_CanCombineParentAndContentTypeFiltering()
     {
-        var root = ContentService.GetRootContent().Last();
-        var contentTypeKey = ContentTypeService.Get("childContentType")?.Key
-                             ?? throw new InvalidOperationException("Could not find childContentType");
+        IContent root = ContentService.GetRootContent().Last();
+        Guid contentTypeKey = ContentTypeService.Get("childContentType")?.Key
+                              ?? throw new InvalidOperationException("Could not find childContentType");
 
-        var result = await IndexedEntitySearchService.SearchAsync(
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Document,
             query: string.Empty,
             parentId: root.Key,
             contentTypeIds: [contentTypeKey],
-            trashed: null
-        );
+            trashed: null);
 
         Assert.Multiple(() =>
         {
             Assert.That(result.Total, Is.EqualTo(10));
-            var items = result.Items.OfType<IDocumentEntitySlim>().ToArray();
+            IDocumentEntitySlim[] items = result.Items.OfType<IDocumentEntitySlim>().ToArray();
             Assert.That(items.Length, Is.EqualTo(10));
             Assert.That(items.All(item => item.ContentTypeAlias is "childContentType"), Is.True);
             Assert.That(items.All(item => item.ParentId == root.Id), Is.True);
@@ -191,13 +183,12 @@ public partial class IndexedEntitySearchServiceTests
     [TestCase(true, 11)]
     public async Task Content_CanFilterByTrashedState(bool trashed, int expectedTotal)
     {
-        var result = await IndexedEntitySearchService.SearchAsync(
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Document,
             query: string.Empty,
             parentId: null,
             contentTypeIds: null,
-            trashed: trashed
-        );
+            trashed: trashed);
 
         Assert.Multiple(() =>
         {
@@ -217,13 +208,12 @@ public partial class IndexedEntitySearchServiceTests
     [TestCase("oddeven1child", true, 5)]
     public async Task Content_CanCombineQueryAndTrashedFilteringContent(string query, bool trashed, int expectedTotal)
     {
-        var result = await IndexedEntitySearchService.SearchAsync(
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Document,
             query: query,
             parentId: null,
             contentTypeIds: null,
-            trashed: trashed
-        );
+            trashed: trashed);
 
         Assert.That(result.Total, Is.EqualTo(expectedTotal));
     }

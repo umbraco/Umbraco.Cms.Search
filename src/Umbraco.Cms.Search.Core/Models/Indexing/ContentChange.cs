@@ -11,7 +11,7 @@ public record ContentChange
         ChangeImpact = changeImpact;
         ContentState = contentState;
     }
-    
+
     public static ContentChange Document(Guid id, ChangeImpact changeImpact, ContentState contentState)
         => new (id, UmbracoObjectTypes.Document, changeImpact, contentState);
 

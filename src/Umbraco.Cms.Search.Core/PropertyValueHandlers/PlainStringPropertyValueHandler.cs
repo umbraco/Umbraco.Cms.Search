@@ -1,6 +1,5 @@
 ﻿using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Indexing;
-using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 

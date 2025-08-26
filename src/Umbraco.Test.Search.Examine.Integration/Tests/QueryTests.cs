@@ -15,25 +15,20 @@ public class QueryTests : SearcherTestBase
     public async Task CanQuerySingleDocument(string? relevanceLevel)
     {
         var query = $"texts{(relevanceLevel is not null ? $"_{relevanceLevel.ToLowerInvariant()}" : null)}_12";
-        SearchResult result = await SearchAsync(
-            query: query
-        );
+        SearchResult result = await SearchAsync(query: query);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(1));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(_documentIds[12]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(DocumentIds[12]));
+            });
     }
 
     [Test]
     public async Task CanQueryMultipleDocumentsByWildcardQuery()
     {
-        SearchResult result = await SearchAsync(
-            query: "single1"
-        );
+        SearchResult result = await SearchAsync(query: "single1");
 
         Assert.Multiple(
             () =>
@@ -47,64 +42,53 @@ public class QueryTests : SearcherTestBase
                     Is.EqualTo(
                         new[]
                         {
-                            _documentIds[1],
-                            _documentIds[10],
-                            _documentIds[11],
-                            _documentIds[12],
-                            _documentIds[13],
-                            _documentIds[14],
-                            _documentIds[15],
-                            _documentIds[16],
-                            _documentIds[17],
-                            _documentIds[18],
-                            _documentIds[19],
-                            _documentIds[100],
-                        }
-                    ).AsCollection
-                );
-            }
-        );
+                            DocumentIds[1],
+                            DocumentIds[10],
+                            DocumentIds[11],
+                            DocumentIds[12],
+                            DocumentIds[13],
+                            DocumentIds[14],
+                            DocumentIds[15],
+                            DocumentIds[16],
+                            DocumentIds[17],
+                            DocumentIds[18],
+                            DocumentIds[19],
+                            DocumentIds[100],
+                        }).AsCollection);
+            });
     }
 
     [Test]
     public async Task CanQuerySingleDocumentByPhrase()
     {
-        SearchResult result = await SearchAsync(
-            query: "phrase search single12"
-        );
+        SearchResult result = await SearchAsync(query: "phrase search single12");
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(1));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(_documentIds[12]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(DocumentIds[12]));
+            });
     }
 
     [Test]
     public async Task CanQuerySingleDocumentByPhraseInverted()
     {
-        SearchResult result = await SearchAsync(
-            query: "single12 search phrase"
-        );
+        SearchResult result = await SearchAsync(query: "single12 search phrase");
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(1));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(_documentIds[12]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(DocumentIds[12]));
+            });
     }
 
     [TestCase(true)]
     [TestCase(false)]
     public async Task CanQueryMultipleDocumentsByCommonWord(bool even)
     {
-        SearchResult result = await SearchAsync(
-            query: even ? "even" : "odd"
-        );
+        SearchResult result = await SearchAsync(query: even ? "even" : "odd");
 
         Assert.Multiple(
             () =>
@@ -115,10 +99,8 @@ public class QueryTests : SearcherTestBase
                 var expectedIds = OddOrEvenIds(even);
                 Assert.That(
                     documents.Select(d => d.Id),
-                    Is.EqualTo(expectedIds.Select(id => _documentIds[id])).AsCollection
-                );
-            }
-        );
+                    Is.EqualTo(expectedIds.Select(id => DocumentIds[id])).AsCollection);
+            });
     }
 
     [TestCase(true, Ignore = "Examine does not seem to support ascending score sorting.")]
@@ -127,17 +109,16 @@ public class QueryTests : SearcherTestBase
     {
         SearchResult result = await SearchAsync(
             query: "special",
-            sorters: [new ScoreSorter(ascending ? Direction.Ascending : Direction.Descending)]
-        );
+            sorters: [new ScoreSorter(ascending ? Direction.Ascending : Direction.Descending)]);
 
         Assert.That(result.Total, Is.EqualTo(4));
 
         Guid[] expectedDocumentIdsByOrderOfRelevance =
         [
-            _documentIds[30], // TextsR1
-            _documentIds[20], // TextsR2
-            _documentIds[40], // TextsR3
-            _documentIds[10] // Texts
+            DocumentIds[30], // TextsR1
+            DocumentIds[20], // TextsR2
+            DocumentIds[40], // TextsR3
+            DocumentIds[10] // Texts
         ];
         if (ascending)
         {
@@ -146,7 +127,6 @@ public class QueryTests : SearcherTestBase
 
         Assert.That(
             result.Documents.Select(d => d.Id),
-            Is.EqualTo(expectedDocumentIdsByOrderOfRelevance).AsCollection
-        );
+            Is.EqualTo(expectedDocumentIdsByOrderOfRelevance).AsCollection);
     }
 }

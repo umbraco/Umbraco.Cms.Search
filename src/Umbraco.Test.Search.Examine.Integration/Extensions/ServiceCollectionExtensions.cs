@@ -21,19 +21,19 @@ internal static class ServiceCollectionExtensions
         // Register indexes with optional custom type and factory
         services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(
             Cms.Search.Core.Constants.IndexAliases.DraftContent,
-            config => { });
+            _ => { });
 
         services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(
             Cms.Search.Core.Constants.IndexAliases.PublishedContent,
-            config => { });
+            _ => { });
 
         services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(
             Cms.Search.Core.Constants.IndexAliases.DraftMedia,
-            config => { });
+            _ => { });
 
         services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(
             Cms.Search.Core.Constants.IndexAliases.DraftMembers,
-            config => { });
+            _ => { });
 
         return services;
     }

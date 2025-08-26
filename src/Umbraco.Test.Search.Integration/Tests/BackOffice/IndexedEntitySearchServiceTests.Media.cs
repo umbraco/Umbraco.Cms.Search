@@ -9,13 +9,12 @@ public partial class IndexedEntitySearchServiceTests
     [Test]
     public async Task Media_CanFindAll()
     {
-        var result = await IndexedEntitySearchService.SearchAsync(
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Media,
             query: string.Empty,
             parentId: null,
             contentTypeIds: null,
-            trashed: null
-        );
+            trashed: null);
 
         Assert.Multiple(() =>
         {
@@ -29,13 +28,12 @@ public partial class IndexedEntitySearchServiceTests
     [Test]
     public async Task Media_CanFindAllRootsByQuery()
     {
-        var result = await IndexedEntitySearchService.SearchAsync(
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Media,
             query: "root",
             parentId: null,
             contentTypeIds: null,
-            trashed: null
-        );
+            trashed: null);
 
         Assert.Multiple(() =>
         {
@@ -51,14 +49,13 @@ public partial class IndexedEntitySearchServiceTests
     [Test]
     public async Task Media_CanFindSpecificRootByQuery()
     {
-        var root = MediaService.GetRootMedia().OrderBy(media => media.SortOrder).Skip(1).First();
-        var result = await IndexedEntitySearchService.SearchAsync(
+        IMedia root = MediaService.GetRootMedia().OrderBy(media => media.SortOrder).Skip(1).First();
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Media,
             query: "single1root",
             parentId: null,
             contentTypeIds: null,
-            trashed: null
-        );
+            trashed: null);
 
         Assert.Multiple(() =>
         {
@@ -71,13 +68,12 @@ public partial class IndexedEntitySearchServiceTests
     [Test]
     public async Task Media_CanFindAllChildrenByQuery()
     {
-        var result = await IndexedEntitySearchService.SearchAsync(
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Media,
             query: "child",
             parentId: null,
             contentTypeIds: null,
-            trashed: null
-        );
+            trashed: null);
 
         Assert.Multiple(() =>
         {
@@ -92,14 +88,13 @@ public partial class IndexedEntitySearchServiceTests
     [Test]
     public async Task Media_CanFindAllChildrenBelowParent()
     {
-        var root = MediaService.GetRootMedia().Last();
-        var result = await IndexedEntitySearchService.SearchAsync(
+        IMedia root = MediaService.GetRootMedia().Last();
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Media,
             query: string.Empty,
             parentId: root.Key,
             contentTypeIds: null,
-            trashed: null
-        );
+            trashed: null);
 
         Assert.Multiple(() =>
         {
@@ -114,19 +109,18 @@ public partial class IndexedEntitySearchServiceTests
     [Test]
     public async Task Media_CanFindChildrenBelowParentByQuery()
     {
-        var root = MediaService.GetRootMedia().Last();
-        var result = await IndexedEntitySearchService.SearchAsync(
+        IMedia root = MediaService.GetRootMedia().Last();
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Media,
             query: "triple2child",
             parentId: root.Key,
             contentTypeIds: null,
-            trashed: null
-        );
+            trashed: null);
 
         Assert.Multiple(() =>
         {
             Assert.That(result.Total, Is.EqualTo(3));
-            var items = result.Items.OrderBy(item => item.SortOrder).ToArray();
+            IEntitySlim[] items = result.Items.OrderBy(item => item.SortOrder).ToArray();
             Assert.That(items[0].Name, Is.EqualTo("Child 6"));
             Assert.That(items[1].Name, Is.EqualTo("Child 7"));
             Assert.That(items[2].Name, Is.EqualTo("Child 8"));
@@ -142,21 +136,20 @@ public partial class IndexedEntitySearchServiceTests
     [TestCase("childMediaType", true, 10)]
     public async Task Media_CanFindAllByMediaType(string mediaTypeAlias, bool? trashed, int expectedTotal)
     {
-        var mediaTypeKey = MediaTypeService.Get(mediaTypeAlias)?.Key
-                             ?? throw new InvalidOperationException($"Could not find {mediaTypeAlias}.");
+        Guid mediaTypeKey = MediaTypeService.Get(mediaTypeAlias)?.Key
+                            ?? throw new InvalidOperationException($"Could not find {mediaTypeAlias}.");
 
-        var result = await IndexedEntitySearchService.SearchAsync(
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Media,
             query: string.Empty,
             parentId: null,
             contentTypeIds: [mediaTypeKey],
-            trashed: trashed
-        );
+            trashed: trashed);
 
         Assert.Multiple(() =>
         {
             Assert.That(result.Total, Is.EqualTo(expectedTotal));
-            var items = result.Items.OfType<IMediaEntitySlim>().ToArray();
+            IMediaEntitySlim[] items = result.Items.OfType<IMediaEntitySlim>().ToArray();
             Assert.That(items.Length, Is.EqualTo(expectedTotal));
             Assert.That(items.All(item => item.ContentTypeAlias == mediaTypeAlias), Is.True);
         });
@@ -165,22 +158,21 @@ public partial class IndexedEntitySearchServiceTests
     [Test]
     public async Task Media_CanCombineParentAndMediaTypeFiltering()
     {
-        var root = MediaService.GetRootMedia().Last();
-        var mediaTypeKey = MediaTypeService.Get("childMediaType")?.Key
-                             ?? throw new InvalidOperationException("Could not find childMediaType");
+        IMedia root = MediaService.GetRootMedia().Last();
+        Guid mediaTypeKey = MediaTypeService.Get("childMediaType")?.Key
+                            ?? throw new InvalidOperationException("Could not find childMediaType");
 
-        var result = await IndexedEntitySearchService.SearchAsync(
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Media,
             query: string.Empty,
             parentId: root.Key,
             contentTypeIds: [mediaTypeKey],
-            trashed: null
-        );
+            trashed: null);
 
         Assert.Multiple(() =>
         {
             Assert.That(result.Total, Is.EqualTo(10));
-            var items = result.Items.OfType<IMediaEntitySlim>().ToArray();
+            IMediaEntitySlim[] items = result.Items.OfType<IMediaEntitySlim>().ToArray();
             Assert.That(items.Length, Is.EqualTo(10));
             Assert.That(items.All(item => item.ContentTypeAlias is "childMediaType"), Is.True);
             Assert.That(items.All(item => item.ParentId == root.Id), Is.True);
@@ -191,13 +183,12 @@ public partial class IndexedEntitySearchServiceTests
     [TestCase(true, 11)]
     public async Task Media_CanFilterByTrashedState(bool trashed, int expectedTotal)
     {
-        var result = await IndexedEntitySearchService.SearchAsync(
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Media,
             query: string.Empty,
             parentId: null,
             contentTypeIds: null,
-            trashed: trashed
-        );
+            trashed: trashed);
 
         Assert.Multiple(() =>
         {
@@ -217,13 +208,12 @@ public partial class IndexedEntitySearchServiceTests
     [TestCase("oddeven1child", true, 5)]
     public async Task Media_CanCombineQueryAndTrashedFilteringContent(string query, bool trashed, int expectedTotal)
     {
-        var result = await IndexedEntitySearchService.SearchAsync(
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
             UmbracoObjectTypes.Media,
             query: query,
             parentId: null,
             contentTypeIds: null,
-            trashed: trashed
-        );
+            trashed: trashed);
 
         Assert.That(expectedTotal, Is.EqualTo(result.Total));
     }

@@ -2,6 +2,7 @@ using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
+using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
@@ -12,7 +13,7 @@ public class LabelPropertyValueHandlerTests : ContentTestBase
     [Test]
     public void AllLabelEditors_CanBeIndexed()
     {
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(_contentType)
             .WithName("All Label Editors")
             .WithPropertyValues(
@@ -30,10 +31,10 @@ public class LabelPropertyValueHandlerTests : ContentTestBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var document = documents.Single();
+        TestIndexDocument document = documents.Single();
         Assert.Multiple(() =>
         {
             var bigIntValue = document.Fields.FirstOrDefault(f => f.FieldName == "bigIntValue")?.Value.Integers?.SingleOrDefault();
@@ -48,19 +49,19 @@ public class LabelPropertyValueHandlerTests : ContentTestBase
             var stringValue = document.Fields.FirstOrDefault(f => f.FieldName == "stringValue")?.Value.Texts?.SingleOrDefault();
             Assert.That(stringValue, Is.EqualTo("The label value"));
 
-            var dateTimeValue = document.Fields.FirstOrDefault(f => f.FieldName == "dateTimeValue")?.Value.DateTimeOffsets?.SingleOrDefault();
+            DateTimeOffset? dateTimeValue = document.Fields.FirstOrDefault(f => f.FieldName == "dateTimeValue")?.Value.DateTimeOffsets?.SingleOrDefault();
             Assert.That(dateTimeValue, Is.EqualTo(new DateTimeOffset(new DateOnly(2004, 05, 06), new TimeOnly(07, 08, 09), TimeSpan.Zero)));
 
             // time is unsupported
             Assert.That(document.Fields.Any(f => f.FieldName == "timeValue"), Is.False);
         });
     }
-    
+
     [TestCase(long.MaxValue)]
     [TestCase(long.MinValue)]
     public void LongValueWithOverflowAsInteger_IsNotIndexed(long value)
     {
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(_contentType)
             .WithName("All Label Editors")
             .WithPropertyValues(
@@ -73,18 +74,18 @@ public class LabelPropertyValueHandlerTests : ContentTestBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var document = documents.Single();
+        TestIndexDocument document = documents.Single();
         Assert.That(document.Fields.Any(f => f.FieldName == "bigIntValue"), Is.False);
     }
-    
+
     [TestCase(null)]
     [TestCase("")]
     public void EmptyValues_AreNotIndexed(string? value)
     {
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(_contentType)
             .WithName("All Label Editors")
             .WithPropertyValues(
@@ -102,10 +103,10 @@ public class LabelPropertyValueHandlerTests : ContentTestBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var document = documents.Single();
+        TestIndexDocument document = documents.Single();
         Assert.Multiple(() =>
         {
             Assert.That(document.Fields.Any(f => f.FieldName == "bigIntValue"), Is.False);
@@ -116,7 +117,7 @@ public class LabelPropertyValueHandlerTests : ContentTestBase
             Assert.That(document.Fields.Any(f => f.FieldName == "dateTimeValue"), Is.False);
         });
     }
-    
+
     [SetUp]
     protected async Task CreateAllLabelEditorsContentType()
     {

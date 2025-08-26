@@ -13,16 +13,14 @@ namespace Umbraco.Test.Search.Integration.Tests;
 [UmbracoTest(Database = UmbracoTestOptions.Database.None)]
 public abstract class ContentIndexingServiceTestsBase : UmbracoIntegrationTest
 {
-    private readonly TestContentChangeStrategy _strategy = new();
-
-    protected TestContentChangeStrategy Strategy => _strategy;
+    protected TestContentChangeStrategy Strategy { get; } = new();
 
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
         base.CustomTestSetup(builder);
 
         builder.AddSearchCore();
-        
+
         builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
     }

@@ -1,10 +1,12 @@
 using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
+using IndexValue = Umbraco.Cms.Search.Core.Models.Indexing.IndexValue;
 
 namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
@@ -34,19 +36,19 @@ public class RichTextPropertyValueHandler : BlockEditorPropertyValueHandler, ICo
     public override IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
         var source = property.GetValue(culture, segment, published);
-        if (RichTextPropertyEditorHelper.TryParseRichTextEditorValue(source, _jsonSerializer, _logger, out var richTextEditorValue) is false)
+        if (RichTextPropertyEditorHelper.TryParseRichTextEditorValue(source, _jsonSerializer, _logger, out RichTextEditorValue? richTextEditorValue) is false)
         {
             return [];
         }
 
-        var blockIndexValues = richTextEditorValue.Blocks is not null
+        Dictionary<(string? Culture, string? Segment), CumulativeIndexValue> blockIndexValues = richTextEditorValue.Blocks is not null
             ? GetCumulativeIndexValues(richTextEditorValue.Blocks.ContentData, richTextEditorValue.Blocks.Expose, property, culture, segment, published, contentContext)
             : new ();
 
-        var htmlFieldValue = _htmlIndexValueParser.Parse(richTextEditorValue.Markup);
+        IndexValue? htmlFieldValue = _htmlIndexValueParser.Parse(richTextEditorValue.Markup);
         if (htmlFieldValue is not null)
         {
-            if (blockIndexValues.TryGetValue((culture, segment), out var fieldValue) is false)
+            if (blockIndexValues.TryGetValue((culture, segment), out CumulativeIndexValue? fieldValue) is false)
             {
                 fieldValue = new();
                 blockIndexValues[(culture, segment)] = fieldValue;

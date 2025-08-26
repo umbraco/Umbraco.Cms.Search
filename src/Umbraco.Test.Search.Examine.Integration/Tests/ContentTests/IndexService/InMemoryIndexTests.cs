@@ -14,8 +14,8 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexServic
 [UmbracoTest(Database = UmbracoTestOptions.Database.None)]
 public class InMemoryIndexTests : UmbracoIntegrationTest
 {
+    private IExamineManager ExamineManager => GetRequiredService<IExamineManager>();
 
-    public IExamineManager ExamineManager => GetRequiredService<IExamineManager>();
     protected override void ConfigureTestServices(IServiceCollection services)
     {
         services.AddExamine();
@@ -35,7 +35,7 @@ public class InMemoryIndexTests : UmbracoIntegrationTest
     [Test]
     public void CanIndexAnyData()
     {
-        var index = GetIndex();
+        IIndex index = GetIndex();
         index.IndexItem(new ValueSet(
             "test",
             "Person",
@@ -49,7 +49,7 @@ public class InMemoryIndexTests : UmbracoIntegrationTest
 
         Thread.Sleep(3000);
 
-        var results = index.Searcher.CreateQuery().All().Execute();
+        ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results.TotalItemCount, Is.EqualTo(1));
         Assert.That(results.First().Id, Is.EqualTo("test"));
     }
@@ -60,13 +60,13 @@ public class InMemoryIndexTests : UmbracoIntegrationTest
     [TestCase(100)]
     public void CanIndexData(int count)
     {
-        var index = GetIndex();
+        IIndex index = GetIndex();
         IndexData(index, count);
-        var results = index.Searcher.CreateQuery().All().Execute();
+        ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results.TotalItemCount, Is.EqualTo(count));
     }
 
-    public void IndexData(IIndex index, int count = 3)
+    private void IndexData(IIndex index, int count = 3)
     {
         for (int i = 0; i < count; i++)
         {

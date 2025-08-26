@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Extensions;
@@ -32,17 +33,17 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
 
     private IEnumerable<IndexField> CollectSystemFields(IContentBase content, string?[] cultures)
     {
-        var objectType = content.ObjectType();
-        if (TryGetParentId(content, objectType, out var parentKey) is false)
+        UmbracoObjectTypes objectType = content.ObjectType();
+        if (TryGetParentId(content, objectType, out Guid? parentKey) is false)
         {
             return [];
         }
 
-        if (TryGetPathIds(content, objectType, out var pathKeys) is false)
+        if (TryGetPathIds(content, objectType, out IList<Guid> pathKeys) is false)
         {
             return [];
         }
-        
+
         var fields = new List<IndexField>
         {
             new(Constants.FieldNames.Id, new() { Keywords = [content.Key.AsKeyword()] }, null, null),
@@ -68,7 +69,7 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
         {
             if (content.Trashed)
             {
-                var recycleBinId = GetRecycleBinId(objectType);
+                Guid? recycleBinId = GetRecycleBinId(objectType);
                 if (recycleBinId.HasValue is false)
                 {
                     _logger.LogWarning(
@@ -90,7 +91,7 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
             return true;
         }
 
-        var parentKeyAttempt = _idKeyMap.GetKeyForId(content.ParentId, objectType);
+        Attempt<Guid> parentKeyAttempt = _idKeyMap.GetKeyForId(content.ParentId, objectType);
         if (parentKeyAttempt.Success is false)
         {
             _logger.LogWarning(
@@ -104,14 +105,14 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
         parentId = parentKeyAttempt.Result;
         return true;
     }
-    
+
     private bool TryGetPathIds(IContentBase content, UmbracoObjectTypes objectType, out IList<Guid> pathIds)
     {
         pathIds = new List<Guid>();
 
         if (content.Trashed)
         {
-            var recycleBinId = GetRecycleBinId(objectType);
+            Guid? recycleBinId = GetRecycleBinId(objectType);
             if (recycleBinId.HasValue is false)
             {
                 _logger.LogWarning(
@@ -122,11 +123,11 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
             }
             pathIds.Add(recycleBinId.Value);
         }
-        
-        var ancestorIds = content.AncestorIds();
+
+        IEnumerable<int> ancestorIds = content.AncestorIds();
         foreach (var ancestorId in ancestorIds)
         {
-            var attempt = _idKeyMap.GetKeyForId(ancestorId, objectType);
+            Attempt<Guid> attempt = _idKeyMap.GetKeyForId(ancestorId, objectType);
             if (attempt.Success is false)
             {
                 _logger.LogWarning(
@@ -172,7 +173,6 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
                     content.Key,
                     culture ?? "[invariant]");
                 continue;
-                
             }
 
             yield return new IndexField(Constants.FieldNames.Name, new() { TextsR1 = [name] }, culture, null);

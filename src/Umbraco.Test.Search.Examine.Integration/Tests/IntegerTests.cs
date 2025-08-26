@@ -14,91 +14,79 @@ public class IntegerTests : SearcherTestBase
     public async Task CanFilterSingleDocumentByIntegerExact()
     {
         SearchResult result = await SearchAsync(
-            filters: [new IntegerExactFilter(FieldMultipleValues, [1], false)]
-        );
+            filters: [new IntegerExactFilter(FieldMultipleValues, [1], false)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(1));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(_documentIds[1]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(DocumentIds[1]));
+            });
     }
 
     [Test]
     public async Task CanFilterSingleDocumentByNegativeIntegerExact()
     {
         SearchResult result = await SearchAsync(
-            filters: [new IntegerExactFilter(FieldMultipleValues, [-2], false)]
-        );
+            filters: [new IntegerExactFilter(FieldMultipleValues, [-2], false)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(1));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(_documentIds[2]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(DocumentIds[2]));
+            });
     }
 
     [Test]
     public async Task CanFilterSingleDocumentByIntegerRange()
     {
         SearchResult result = await SearchAsync(
-            filters: [new IntegerRangeFilter(FieldMultipleValues, [new IntegerRangeFilterRange(1, 2)], false)]
-        );
+            filters: [new IntegerRangeFilter(FieldMultipleValues, [new IntegerRangeFilterRange(1, 2)], false)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(1));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(_documentIds[1]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(DocumentIds[1]));
+            });
     }
 
     [Test]
     public async Task CanFilterSingleDocumentByNegativeIntegerRange()
     {
         SearchResult result = await SearchAsync(
-            filters: [new IntegerRangeFilter(FieldMultipleValues, [new IntegerRangeFilterRange(-2, -1)], false)]
-        );
+            filters: [new IntegerRangeFilter(FieldMultipleValues, [new IntegerRangeFilterRange(-2, -1)], false)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(1));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(_documentIds[2]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(DocumentIds[2]));
+            });
     }
 
     [Test]
     public async Task CanFilterMultipleDocumentsByIntegerExact()
     {
         SearchResult result = await SearchAsync(
-            filters: [new IntegerExactFilter(FieldMultipleValues, [10, 50, 100], false)]
-        );
+            filters: [new IntegerExactFilter(FieldMultipleValues, [10, 50, 100], false)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(5));
 
-                var documents = result.Documents.OrderBy(x => x.Id);
+                IOrderedEnumerable<Document> documents = result.Documents.OrderBy(x => x.Id);
                 // expecting 1 (10), 5 (50), 10 (10 + 100), 50 (50) and 100 (100)
                 Assert.That(
                     documents.Select(d => d.Id).ToArray(),
                     Is.EqualTo(
                         new[]
                         {
-                            _documentIds[1], _documentIds[5], _documentIds[10], _documentIds[50], _documentIds[100]
-                        }.OrderBy(x => x).ToArray()
-                    ).AsCollection
-                );
-            }
-        );
+                            DocumentIds[1], DocumentIds[5], DocumentIds[10], DocumentIds[50], DocumentIds[100]
+                        }.OrderBy(x => x).ToArray()).AsCollection);
+            });
     }
 
     [Test]
@@ -114,10 +102,8 @@ public class IntegerTests : SearcherTestBase
                         new IntegerRangeFilterRange(20, 25),
                         new IntegerRangeFilterRange(100, 101)
                     ],
-                    false
-                )
-            ]
-        );
+                    false)
+            ]);
 
         Assert.Multiple(
             () =>
@@ -134,54 +120,47 @@ public class IntegerTests : SearcherTestBase
                     Is.EquivalentTo(
                         new[]
                         {
-                            _documentIds[1],
-                            _documentIds[2],
-                            _documentIds[3],
-                            _documentIds[4],
-                            _documentIds[10],
-                            _documentIds[20],
-                            _documentIds[21],
-                            _documentIds[22],
-                            _documentIds[23],
-                            _documentIds[24],
-                            _documentIds[100],
-                        }
-                    )
-                );
-            }
-        );
+                            DocumentIds[1],
+                            DocumentIds[2],
+                            DocumentIds[3],
+                            DocumentIds[4],
+                            DocumentIds[10],
+                            DocumentIds[20],
+                            DocumentIds[21],
+                            DocumentIds[22],
+                            DocumentIds[23],
+                            DocumentIds[24],
+                            DocumentIds[100],
+                        }));
+            });
     }
 
     [Test]
     public async Task CanFilterDocumentsByIntegerExactNegated()
     {
         SearchResult result = await SearchAsync(
-            filters: [new IntegerExactFilter(FieldMultipleValues, [1], true)]
-        );
+            filters: [new IntegerExactFilter(FieldMultipleValues, [1], true)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(99));
-                Assert.That(result.Documents.Select(d => d.Id), Is.EqualTo(_documentIds.Values.Skip(1)).AsCollection);
-            }
-        );
+                Assert.That(result.Documents.Select(d => d.Id), Is.EqualTo(DocumentIds.Values.Skip(1)).AsCollection);
+            });
     }
 
     [Test]
     public async Task CanFilterDocumentsByIntegerRangeNegated()
     {
         SearchResult result = await SearchAsync(
-            filters: [new IntegerRangeFilter(FieldMultipleValues, [new IntegerRangeFilterRange(1, 2)], true)]
-        );
+            filters: [new IntegerRangeFilter(FieldMultipleValues, [new IntegerRangeFilterRange(1, 2)], true)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(99));
-                Assert.That(result.Documents.Select(d => d.Id), Is.EqualTo(_documentIds.Values.Skip(1)).AsCollection);
-            }
-        );
+                Assert.That(result.Documents.Select(d => d.Id), Is.EqualTo(DocumentIds.Values.Skip(1)).AsCollection);
+            });
     }
 
     [TestCase(true)]
@@ -190,8 +169,7 @@ public class IntegerTests : SearcherTestBase
     {
         SearchResult result = await SearchAsync(
             facets: [new IntegerExactFacet(FieldSingleValue)],
-            filters: filtered ? [new IntegerExactFilter(FieldSingleValue, [1, 2, 3], false)] : []
-        );
+            filters: filtered ? [new IntegerExactFilter(FieldSingleValue, [1, 2, 3], false)] : []);
 
         // expecting the same facets whether filtering is enabled or not, because
         // both faceting and filtering is applied to the same field
@@ -239,11 +217,9 @@ public class IntegerTests : SearcherTestBase
                         new IntegerRangeFacetRange("Two", 25, 50),
                         new IntegerRangeFacetRange("Three", 50, 75),
                         new IntegerRangeFacetRange("Four", 75, 100)
-                    ]
-                )
+                    ])
             ],
-            filters: filtered ? [new IntegerExactFilter(FieldSingleValue, [1, 2, 3], false)] : []
-        );
+            filters: filtered ? [new IntegerExactFilter(FieldSingleValue, [1, 2, 3], false)] : []);
 
         // expecting the same facets whether filtering is enabled or not, because
         // both faceting and filtering is applied to the same field
@@ -259,11 +235,9 @@ public class IntegerTests : SearcherTestBase
                             < 75 => "Three",
                             < 100 => "Four",
                             _ => null
-                        }
-                    )
+                        })
                     .WhereNotNull()
-                    .Distinct()
-            )
+                    .Distinct())
             .GroupBy(key => key)
             .Select(group => new { Key = group.Key, Count = group.Count() })
             .WhereNotNull()
@@ -295,15 +269,13 @@ public class IntegerTests : SearcherTestBase
     public async Task CanSortDocumentsByInteger(bool ascending)
     {
         SearchResult result = await SearchAsync(
-            sorters: [new IntegerSorter(FieldSingleValue, ascending ? Direction.Ascending : Direction.Descending)]
-        );
+            sorters: [new IntegerSorter(FieldSingleValue, ascending ? Direction.Ascending : Direction.Descending)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(100));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(ascending ? _documentIds[1] : _documentIds[100]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(ascending ? DocumentIds[1] : DocumentIds[100]));
+            });
     }
 }

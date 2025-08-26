@@ -1,5 +1,6 @@
-﻿using Umbraco.Cms.Core;
-using Umbraco.Cms.Core.Models;
+﻿using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
+using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
@@ -11,7 +12,7 @@ public partial class InvariantContentStructureTests
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -24,14 +25,14 @@ public partial class InvariantContentStructureTests
             Assert.That(documents.All(d => d.ObjectType is UmbracoObjectTypes.Document), Is.True);
         });
     }
-    
+
     [Test]
     public void PublishedRoot_YieldsOnlyRootDocument()
     {
         ContentService.Save(Root());
         ContentService.Publish(Root(), ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
         Assert.That(documents[0].Id, Is.EqualTo(RootKey));
     }
@@ -41,12 +42,12 @@ public partial class InvariantContentStructureTests
     {
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
-        
-        var result = ContentService.Unpublish(Root());
+
+        PublishResult result = ContentService.Unpublish(Root());
         Assert.That(result.Success, Is.True);
         Assert.That(Child().Published, Is.True);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Is.Empty);
     }
 
@@ -56,13 +57,13 @@ public partial class InvariantContentStructureTests
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        var result = ContentService.Unpublish(Grandchild());
+        PublishResult result = ContentService.Unpublish(Grandchild());
         Assert.That(result.Success, Is.True);
         Assert.That(GreatGrandchild().Published, Is.True);
-           
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(2));
-           
+
         Assert.Multiple(() =>
         {
             Assert.That(documents[0].Id, Is.EqualTo(RootKey));
@@ -75,14 +76,14 @@ public partial class InvariantContentStructureTests
     {
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
-        
-        var result = ContentService.MoveToRecycleBin(Grandchild());
+
+        OperationResult result = ContentService.MoveToRecycleBin(Grandchild());
         Assert.That(result.Success, Is.True);
         Assert.That(GreatGrandchild().Trashed, Is.True);
-           
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(2));
-           
+
         Assert.Multiple(() =>
         {
             Assert.That(documents[0].Id, Is.EqualTo(RootKey));
@@ -95,17 +96,17 @@ public partial class InvariantContentStructureTests
     {
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
-        
-        var result = ContentService.Delete(Grandchild());
+
+        OperationResult result = ContentService.Delete(Grandchild());
         Assert.Multiple(() =>
         {
             Assert.That(result.Success, Is.True);
             Assert.That(ContentService.GetById(GreatGrandchildKey), Is.Null);
         });
-           
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(2));
-           
+
         Assert.Multiple(() =>
         {
             Assert.That(documents[0].Id, Is.EqualTo(RootKey));

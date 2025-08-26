@@ -4,12 +4,12 @@ public static class Constants
 {
     public static class IndexAliases
     {
-        private const string IndexPrefix = "Umb_"; 
+        private const string IndexPrefix = "Umb_";
 
         public const string PublishedContent = $"{IndexPrefix}PublishedContent";
 
         // TODO: "Draft" should be removed from these index constants (values only; we do have functional "Draft" notation elsewhere in the code).
-        
+
         public const string DraftContent = $"{IndexPrefix}DraftContent";
 
         public const string DraftMedia = $"{IndexPrefix}DraftMedia";
@@ -19,7 +19,7 @@ public static class Constants
 
     public static class FieldNames
     {
-        private const string FieldPrefix = "Umb_"; 
+        private const string FieldPrefix = "Umb_";
 
         public const string Id = $"{FieldPrefix}Id";
 

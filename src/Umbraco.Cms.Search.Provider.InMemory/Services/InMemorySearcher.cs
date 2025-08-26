@@ -28,43 +28,38 @@ internal sealed class InMemorySearcher : IInMemorySearcher
         int skip = 0,
         int take = 10)
     {
-        if (_dataStore.TryGetValue(indexAlias, out var index) is false)
+        if (_dataStore.TryGetValue(indexAlias, out Dictionary<Guid, IndexDocument>? index) is false)
         {
             throw new ArgumentException($"The index \"{indexAlias}\" was not defined.", nameof(indexAlias));
         }
-        
-        var result = index.Where(kvp => kvp
+
+        IEnumerable<KeyValuePair<Guid, IndexDocument>> result = index.Where(kvp => kvp
             .Value
             .Variations
             .Any(variation =>
                 (variation.Culture is null || variation.Culture.InvariantEquals(culture))
-                && (variation.Segment is null || variation.Segment.InvariantEquals(segment))
-            )
-        );
+                && (variation.Segment is null || variation.Segment.InvariantEquals(segment))));
 
-        var accessKeys = accessContext?.PrincipalId.Yield().Union(accessContext.GroupIds ?? []).ToArray();
+        Guid[]? accessKeys = accessContext?.PrincipalId.Yield().Union(accessContext.GroupIds ?? []).ToArray();
         result = result.Where(kvp =>
             kvp.Value.Protection is null
-            || (accessKeys is not null && kvp.Value.Protection.AccessIds.ContainsAny(accessKeys)
-            )
-        );
-        
+            || (accessKeys is not null && kvp.Value.Protection.AccessIds.ContainsAny(accessKeys)));
+
         if (query.IsNullOrWhiteSpace() is false)
         {
             result = result.Where(kvp => kvp
                 .Value
                 .Fields
                 .Any(field => FieldMatcher.IsMatch(field, kvp.Value, null, culture, segment)
-                              && AllTexts(field.Value).Any(text => text.InvariantContains(query)))
-            );
+                              && AllTexts(field.Value).Any(text => text.InvariantContains(query))));
         }
 
         // filters needs splitting into two parts; regular filters (not used for faceting) and facet filters
         // - regular filters must be applied before any facets are calculated (they narrow down the potential result set)
         // - facet filters must be applied after facets calculation has begun (additional considerations apply, see comments below)
         var facetFieldNames = facets?.Select(facet => facet.FieldName).ToArray();
-        var facetFilters = filters?.Where(f => facetFieldNames?.InvariantContains(f.FieldName) is true).ToArray();
-        var regularFilters = filters?.Except(facetFilters ?? []).ToArray();
+        Filter[]? facetFilters = filters?.Where(f => facetFieldNames?.InvariantContains(f.FieldName) is true).ToArray();
+        Filter[]? regularFilters = filters?.Except(facetFilters ?? []).ToArray();
 
         if (regularFilters is not null)
         {
@@ -73,10 +68,10 @@ internal sealed class InMemorySearcher : IInMemorySearcher
 
         // facets needs splitting into two parts; active facets and passive facets
         // - active facets are facets that have active filters - they need calculating before applying the facet filters
-        // - passive facets do not have active filters - they need calculating after applying the facet filters 
-        var activeFacets = facets?.Where(facet => facetFilters?.Any(filter => filter.FieldName.InvariantEquals(facet.FieldName)) is true).ToArray();
-        var passiveFacets = facets?.Except(activeFacets ?? []).ToArray();
-        
+        // - passive facets do not have active filters - they need calculating after applying the facet filters
+        Facet[]? activeFacets = facets?.Where(facet => facetFilters?.Any(filter => filter.FieldName.InvariantEquals(facet.FieldName)) is true).ToArray();
+        Facet[]? passiveFacets = facets?.Except(activeFacets ?? []).ToArray();
+
         var facetResults = new List<FacetResult>();
         if (activeFacets is not null)
         {
@@ -98,29 +93,25 @@ internal sealed class InMemorySearcher : IInMemorySearcher
         // default sorting = by score, descending
         sorters ??= [new ScoreSorter(Direction.Descending)];
         result = SortDocuments(result, sorters.ToArray(), culture, segment);
-        
-        var resultAsArray = result.ToArray();
+
+        KeyValuePair<Guid, IndexDocument>[] resultAsArray = result.ToArray();
         return Task.FromResult(
             new SearchResult(
                 resultAsArray.Length,
                 resultAsArray.Skip(skip).Take(take).Select(kpv => new Document(kpv.Key, kpv.Value.ObjectType)).ToArray(),
-                facetResults
-            )
-        );
+                facetResults));
     }
-    
+
     private IEnumerable<KeyValuePair<Guid, IndexDocument>> FilterDocuments(IEnumerable<KeyValuePair<Guid, IndexDocument>> documents, Filter[] filters, string? culture, string? segment)
     {
-        foreach (var filter in filters)
+        foreach (Filter filter in filters)
         {
             documents = documents.Where(kvp =>
                 kvp.Value.Fields.Any(field =>
                     FieldMatcher.IsMatch(field, kvp.Value, filter.FieldName, culture, segment)
-                    && IsFilterMatch(filter, field.Value)
-                )
-            );
+                    && IsFilterMatch(filter, field.Value)));
         }
-            
+
         return documents;
 
         bool IsFilterMatch(Filter filter, IndexValue value)
@@ -145,13 +136,12 @@ internal sealed class InMemorySearcher : IInMemorySearcher
     private IEnumerable<FacetResult> ExtractFacets(IEnumerable<KeyValuePair<Guid, IndexDocument>> documents, Facet[] facets, string? culture, string? segment)
         => facets.Select(facet =>
         {
-            var facetFields = documents
+            IEnumerable<IndexField> facetFields = documents
                 .Select(candidate => candidate.Value.Fields.FirstOrDefault(field =>
-                    FieldMatcher.IsMatch(field, candidate.Value, facet.FieldName, culture, segment)
-                ))
+                    FieldMatcher.IsMatch(field, candidate.Value, facet.FieldName, culture, segment)))
                 .WhereNotNull();
 
-            var facetValues = GetFacetValues(facet,  facetFields.Select(f => f.Value));
+            IEnumerable<FacetValue> facetValues = GetFacetValues(facet,  facetFields.Select(f => f.Value));
 
             return new FacetResult(facet.FieldName, facetValues);
 
@@ -162,11 +152,11 @@ internal sealed class InMemorySearcher : IInMemorySearcher
                     IntegerExactFacet => values.SelectMany(v => v.Integers ?? []).GroupBy(v => v).Select(g => new IntegerExactFacetValue(g.Key, g.Count())),
                     DecimalExactFacet => values.SelectMany(v => v.Decimals ?? []).GroupBy(v => v).Select(g => new DecimalExactFacetValue(g.Key, g.Count())),
                     DateTimeOffsetExactFacet => values.SelectMany(v => v.DateTimeOffsets ?? []).GroupBy(v => v).Select(g => new DateTimeOffsetExactFacetValue(g.Key, g.Count())),
-                    IntegerRangeFacet integerRangeFacet => ExtractIntegerRangeFacetValues(integerRangeFacet, values), 
+                    IntegerRangeFacet integerRangeFacet => ExtractIntegerRangeFacetValues(integerRangeFacet, values),
                     DecimalRangeFacet decimalRangeFacet => ExtractDecimalRangeFacetValues(decimalRangeFacet, values),
                     DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet => ExtractDateTimeOffsetRangeFacetValues(dateTimeOffsetRangeFacet, values),
                     _ => throw new ArgumentOutOfRangeException(nameof(facet), $"Encountered an unsupported facet type: {facet.GetType().Name}")
-                }; 
+                };
         }).ToArray();
 
     private IntegerRangeFacetValue[] ExtractIntegerRangeFacetValues(IntegerRangeFacet facet, IEnumerable<IndexValue> values)
@@ -178,10 +168,10 @@ internal sealed class InMemorySearcher : IInMemorySearcher
                 range.Key,
                 range.MinValue,
                 range.MaxValue,
-                allValues.Count(v => v > (range.MinValue ?? int.MinValue) && v <= (range.MaxValue ?? int.MaxValue)))
-            ).ToArray();
+                allValues.Count(v => v > (range.MinValue ?? int.MinValue) && v <= (range.MaxValue ?? int.MaxValue))))
+            .ToArray();
     }
-    
+
     private DecimalRangeFacetValue[] ExtractDecimalRangeFacetValues(DecimalRangeFacet facet, IEnumerable<IndexValue> values)
     {
         var allValues = values.SelectMany(v => v.Decimals ?? []).ToArray();
@@ -191,26 +181,25 @@ internal sealed class InMemorySearcher : IInMemorySearcher
                 range.Key,
                 range.MinValue,
                 range.MaxValue,
-                allValues.Count(v => v > (range.MinValue ?? decimal.MinValue) && v <= (range.MaxValue ?? decimal.MaxValue)))
-            ).ToArray();
+                allValues.Count(v => v > (range.MinValue ?? decimal.MinValue) && v <= (range.MaxValue ?? decimal.MaxValue)))).ToArray();
     }
 
     private DateTimeOffsetRangeFacetValue[] ExtractDateTimeOffsetRangeFacetValues(DateTimeOffsetRangeFacet facet, IEnumerable<IndexValue> values)
     {
-        var allValues = values.SelectMany(v => v.DateTimeOffsets ?? []).ToArray();
+        DateTimeOffset[] allValues = values.SelectMany(v => v.DateTimeOffsets ?? []).ToArray();
         return facet
             .Ranges
             .Select(range => new DateTimeOffsetRangeFacetValue(
                 range.Key,
                 range.MinValue,
                 range.MaxValue,
-                allValues.Count(v => v > (range.MinValue ?? DateTimeOffset.MinValue) && v <= (range.MaxValue ?? DateTimeOffset.MaxValue)))
-            ).ToArray();
+                allValues.Count(v => v > (range.MinValue ?? DateTimeOffset.MinValue) && v <= (range.MaxValue ?? DateTimeOffset.MaxValue))))
+            .ToArray();
     }
 
     private IEnumerable<KeyValuePair<Guid, IndexDocument>> SortDocuments(IEnumerable<KeyValuePair<Guid, IndexDocument>> documents, Sorter[] sorters, string? culture, string? segment)
     {
-        var sorter = sorters.FirstOrDefault() ?? throw new ArgumentException("Expected one or more sorters.", nameof(sorters));
+        Sorter sorter = sorters.FirstOrDefault() ?? throw new ArgumentException("Expected one or more sorters.", nameof(sorters));
 
         if (sorter is ScoreSorter)
         {
@@ -244,11 +233,11 @@ internal sealed class InMemorySearcher : IInMemorySearcher
 
         public int Compare(IndexDocument? x, IndexDocument? y)
         {
-            var xField = x?.Fields.FirstOrDefault(field => FieldMatcher.IsMatch(field, x, _sorter.FieldName, _culture, _segment));
-            var yField = y?.Fields.FirstOrDefault(field => FieldMatcher.IsMatch(field, y, _sorter.FieldName, _culture, _segment));
+            IndexField? xField = x?.Fields.FirstOrDefault(field => FieldMatcher.IsMatch(field, x, _sorter.FieldName, _culture, _segment));
+            IndexField? yField = y?.Fields.FirstOrDefault(field => FieldMatcher.IsMatch(field, y, _sorter.FieldName, _culture, _segment));
 
-            var xFieldValue = FieldValue(xField);
-            var yFieldValue = FieldValue(yField);
+            IComparable? xFieldValue = FieldValue(xField);
+            IComparable? yFieldValue = FieldValue(yField);
 
             return xFieldValue is not null
                 ? xFieldValue.CompareTo(yFieldValue)
@@ -286,7 +275,7 @@ internal sealed class InMemorySearcher : IInMemorySearcher
             {
                 return true;
             }
-            
+
             return IsSegmentLessMatch(field) && document.Fields.Any(IsExactMatch) is false;
         }
     }

@@ -14,72 +14,63 @@ public class DecimalTests : SearcherTestBase
     public async Task CanFilterSingleDocumentByDecimalExact()
     {
         SearchResult result = await SearchAsync(
-            filters: [new DecimalExactFilter(FieldMultipleValues, [1.5m], false)]
-        );
+            filters: [new DecimalExactFilter(FieldMultipleValues, [1.5m], false)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(1));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(_documentIds[1]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(DocumentIds[1]));
+            });
     }
 
     [Test]
     public async Task CanFilterSingleDocumentByNegativeDecimalExact()
     {
         SearchResult result = await SearchAsync(
-            filters: [new DecimalExactFilter(FieldMultipleValues, [-1.5m], false)]
-        );
+            filters: [new DecimalExactFilter(FieldMultipleValues, [-1.5m], false)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(1));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(_documentIds[1]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(DocumentIds[1]));
+            });
     }
 
     [Test]
     public async Task CanFilterSingleDocumentByDecimalRange()
     {
         SearchResult result = await SearchAsync(
-            filters: [new DecimalRangeFilter(FieldMultipleValues, [new DecimalRangeFilterRange(1m, 2m)], false)]
-        );
+            filters: [new DecimalRangeFilter(FieldMultipleValues, [new DecimalRangeFilterRange(1m, 2m)], false)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(1));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(_documentIds[1]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(DocumentIds[1]));
+            });
     }
 
     [Test]
     public async Task CanFilterSingleDocumentByNegativeDecimalRange()
     {
         SearchResult result = await SearchAsync(
-            filters: [new DecimalRangeFilter(FieldMultipleValues, [new DecimalRangeFilterRange(-1.9m, -1.1m)], false)]
-        );
+            filters: [new DecimalRangeFilter(FieldMultipleValues, [new DecimalRangeFilterRange(-1.9m, -1.1m)], false)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(1));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(_documentIds[1]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(DocumentIds[1]));
+            });
     }
 
     [Test]
     public async Task CanFilterMultipleDocumentsByDecimalExact()
     {
         SearchResult result = await SearchAsync(
-            filters: [new DecimalExactFilter(FieldMultipleValues, [15m, 30m, 42m], false)]
-        );
+            filters: [new DecimalExactFilter(FieldMultipleValues, [15m, 30m, 42m], false)]);
 
         Assert.Multiple(
             () =>
@@ -93,17 +84,14 @@ public class DecimalTests : SearcherTestBase
                     Is.EqualTo(
                         new[]
                         {
-                            _documentIds[10],
-                            _documentIds[15],
-                            _documentIds[20],
-                            _documentIds[28],
-                            _documentIds[30],
-                            _documentIds[42]
-                        }
-                    ).AsCollection
-                );
-            }
-        );
+                            DocumentIds[10],
+                            DocumentIds[15],
+                            DocumentIds[20],
+                            DocumentIds[28],
+                            DocumentIds[30],
+                            DocumentIds[42]
+                        }).AsCollection);
+            });
     }
 
     [Test]
@@ -119,10 +107,8 @@ public class DecimalTests : SearcherTestBase
                         new DecimalRangeFilterRange(20m, 25m),
                         new DecimalRangeFilterRange(100m, 101m)
                     ],
-                    false
-                )
-            ]
-        );
+                    false)
+            ]);
 
         Assert.Multiple(
             () =>
@@ -139,57 +125,50 @@ public class DecimalTests : SearcherTestBase
                     Is.EquivalentTo(
                         new[]
                         {
-                            _documentIds[1],
-                            _documentIds[2],
-                            _documentIds[3],
-                            _documentIds[4],
-                            _documentIds[14],
-                            _documentIds[15],
-                            _documentIds[16],
-                            _documentIds[20],
-                            _documentIds[21],
-                            _documentIds[22],
-                            _documentIds[23],
-                            _documentIds[24],
-                            _documentIds[67],
-                            _documentIds[100],
-                        }
-                    )
-                );
-            }
-        );
+                            DocumentIds[1],
+                            DocumentIds[2],
+                            DocumentIds[3],
+                            DocumentIds[4],
+                            DocumentIds[14],
+                            DocumentIds[15],
+                            DocumentIds[16],
+                            DocumentIds[20],
+                            DocumentIds[21],
+                            DocumentIds[22],
+                            DocumentIds[23],
+                            DocumentIds[24],
+                            DocumentIds[67],
+                            DocumentIds[100],
+                        }));
+            });
     }
 
     [Test]
     public async Task CanFilterDocumentsByDecimalExactNegated()
     {
         SearchResult result = await SearchAsync(
-            filters: [new DecimalExactFilter(FieldMultipleValues, [1.5m], true)]
-        );
+            filters: [new DecimalExactFilter(FieldMultipleValues, [1.5m], true)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(99));
-                Assert.That(result.Documents.Select(d => d.Id), Is.EqualTo(_documentIds.Values.Skip(1)).AsCollection);
-            }
-        );
+                Assert.That(result.Documents.Select(d => d.Id), Is.EqualTo(DocumentIds.Values.Skip(1)).AsCollection);
+            });
     }
 
     [Test]
     public async Task CanFilterDocumentsByDecimalRangeNegated()
     {
         SearchResult result = await SearchAsync(
-            filters: [new DecimalRangeFilter(FieldMultipleValues, [new DecimalRangeFilterRange(1m, 2m)], true)]
-        );
+            filters: [new DecimalRangeFilter(FieldMultipleValues, [new DecimalRangeFilterRange(1m, 2m)], true)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(99));
-                Assert.That(result.Documents.Select(d => d.Id), Is.EqualTo(_documentIds.Values.Skip(1)).AsCollection);
-            }
-        );
+                Assert.That(result.Documents.Select(d => d.Id), Is.EqualTo(DocumentIds.Values.Skip(1)).AsCollection);
+            });
     }
 
     [TestCase(true)]
@@ -198,8 +177,7 @@ public class DecimalTests : SearcherTestBase
     {
         SearchResult result = await SearchAsync(
             facets: [new DecimalExactFacet(FieldSingleValue)],
-            filters: filtered ? [new DecimalExactFilter(FieldSingleValue, [1, 2, 3], false)] : []
-        );
+            filters: filtered ? [new DecimalExactFilter(FieldSingleValue, [1, 2, 3], false)] : []);
 
         // expecting the same facets whether filtering is enabled or not, because
         // both faceting and filtering is applied to the same field
@@ -247,11 +225,9 @@ public class DecimalTests : SearcherTestBase
                         new DecimalRangeFacetRange("Two", 25m, 50m),
                         new DecimalRangeFacetRange("Three", 50m, 75m),
                         new DecimalRangeFacetRange("Four", 75m, 100m)
-                    ]
-                )
+                    ])
             ],
-            filters: filtered ? [new DecimalExactFilter(FieldSingleValue, [1m, 2m, 3m], false)] : []
-        );
+            filters: filtered ? [new DecimalExactFilter(FieldSingleValue, [1m, 2m, 3m], false)] : []);
 
         // expecting the same facets whether filtering is enabled or not, because
         // both faceting and filtering is applied to the same field
@@ -267,11 +243,9 @@ public class DecimalTests : SearcherTestBase
                             < 75m => "Three",
                             < 100m => "Four",
                             _ => null
-                        }
-                    )
+                        })
                     .WhereNotNull()
-                    .Distinct()
-            )
+                    .Distinct())
             .GroupBy(key => key)
             .Select(group => new { Key = group.Key, Count = group.Count() })
             .WhereNotNull()
@@ -303,15 +277,13 @@ public class DecimalTests : SearcherTestBase
     public async Task CanSortDocumentsByDecimal(bool ascending)
     {
         SearchResult result = await SearchAsync(
-            sorters: [new DecimalSorter(FieldSingleValue, ascending ? Direction.Ascending : Direction.Descending)]
-        );
+            sorters: [new DecimalSorter(FieldSingleValue, ascending ? Direction.Ascending : Direction.Descending)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(100));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(ascending ? _documentIds[1] : _documentIds[100]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(ascending ? DocumentIds[1] : DocumentIds[100]));
+            });
     }
 }

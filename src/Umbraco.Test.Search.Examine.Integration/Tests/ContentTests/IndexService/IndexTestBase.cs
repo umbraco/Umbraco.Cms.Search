@@ -1,5 +1,4 @@
 ﻿using Examine;
-using Umbraco.Cms.Core.Models;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
 

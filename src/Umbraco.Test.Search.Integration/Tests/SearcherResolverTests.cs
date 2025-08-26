@@ -46,7 +46,7 @@ public class SearcherResolverTests : UmbracoIntegrationTest
     [Test]
     public void FirstIndex_ResolvesFirstSearcher()
     {
-        var searcher = SearcherResolver.GetSearcher("FirstIndex");
+        ISearcher? searcher = SearcherResolver.GetSearcher("FirstIndex");
         Assert.That(searcher, Is.Not.Null);
         Assert.That(searcher, Is.TypeOf<FirstSearcher>());
     }
@@ -54,7 +54,7 @@ public class SearcherResolverTests : UmbracoIntegrationTest
     [Test]
     public void SecondIndex_ResolvesSecondSearcher()
     {
-        var searcher = SearcherResolver.GetSearcher("SecondIndex");
+        ISearcher? searcher = SearcherResolver.GetSearcher("SecondIndex");
         Assert.That(searcher, Is.Not.Null);
         Assert.That(searcher, Is.TypeOf<SecondSearcher>());
     }
@@ -62,7 +62,7 @@ public class SearcherResolverTests : UmbracoIntegrationTest
     [Test]
     public void UnknownIndex_ResolvesNoSearcher()
     {
-        var searcher = SearcherResolver.GetSearcher("UnknownIndex");
+        ISearcher? searcher = SearcherResolver.GetSearcher("UnknownIndex");
         Assert.That(searcher, Is.Null);
         VerifyLogging(LogLevel.Warning, "No index registration was found");
     }
@@ -70,7 +70,7 @@ public class SearcherResolverTests : UmbracoIntegrationTest
     [Test]
     public void UnregisteredSearcher_ResolvesNoSearcher()
     {
-        var searcher = SearcherResolver.GetSearcher("IndexWithUnregisteredSearcher");
+        ISearcher? searcher = SearcherResolver.GetSearcher("IndexWithUnregisteredSearcher");
         Assert.That(searcher, Is.Null);
         VerifyLogging(LogLevel.Error, "Could not resolve type");
     }
@@ -82,12 +82,10 @@ public class SearcherResolverTests : UmbracoIntegrationTest
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((value, _) => value.ToString()!.StartsWith(startOfMessage)),
                 It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()
-            )
-        );
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()));
 
     private class FirstSearcher : SearcherBase
-    { 
+    {
     }
 
     private class SecondSearcher : SearcherBase
@@ -100,8 +98,7 @@ public class SearcherResolverTests : UmbracoIntegrationTest
 
     private class TestContentChangeStrategy : IContentChangeStrategy
     {
-        public Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes,
-            CancellationToken cancellationToken)
+        public Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
             => throw new NotImplementedException();
 
         public Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
@@ -110,8 +107,7 @@ public class SearcherResolverTests : UmbracoIntegrationTest
 
     private class TestIndexer : IIndexer
     {
-        public Task AddOrUpdateAsync(string indexAlias, Guid id, UmbracoObjectTypes objectType,
-            IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)
+        public Task AddOrUpdateAsync(string indexAlias, Guid id, UmbracoObjectTypes objectType, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)
             => throw new NotImplementedException();
 
         public Task DeleteAsync(string indexAlias, IEnumerable<Guid> ids)
@@ -123,10 +119,17 @@ public class SearcherResolverTests : UmbracoIntegrationTest
 
     private abstract class SearcherBase : ISearcher
     {
-        public Task<SearchResult> SearchAsync(string indexAlias, string? query = null, IEnumerable<Filter>? filters = null,
-            IEnumerable<Facet>? facets = null, IEnumerable<Sorter>? sorters = null,
-            string? culture = null, string? segment = null, AccessContext? accessContext = null,
-            int skip = 0, int take = 10)
+        public Task<SearchResult> SearchAsync(
+            string indexAlias,
+            string? query = null,
+            IEnumerable<Filter>? filters = null,
+            IEnumerable<Facet>? facets = null,
+            IEnumerable<Sorter>? sorters = null,
+            string? culture = null,
+            string? segment = null,
+            AccessContext? accessContext = null,
+            int skip = 0,
+            int take = 10)
             => throw new NotImplementedException();
     }
 }

@@ -8,6 +8,8 @@ using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
+using Umbraco.Test.Search.Integration.Services;
+using IndexValue = Umbraco.Cms.Search.Core.Models.Indexing.IndexValue;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
@@ -157,7 +159,7 @@ public class BlockGridPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         };
         var blocksPropertyValue = JsonSerializer.Serialize(blockListValue);
 
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(contentType)
             .WithName("My Blocks")
             .WithPropertyValues(new { blocks = blocksPropertyValue })
@@ -168,21 +170,21 @@ public class BlockGridPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         AssertDocumentFields(IndexAliases.DraftContent);
         AssertDocumentFields(IndexAliases.PublishedContent);
 
-        var document = Indexer.Dump(IndexAliases.PublishedContent).Single();
-        var tagsValue = document.Fields.FirstOrDefault(f => f.FieldName == Cms.Search.Core.Constants.FieldNames.Tags)?.Value;
+        TestIndexDocument document = Indexer.Dump(IndexAliases.PublishedContent).Single();
+        IndexValue? tagsValue = document.Fields.FirstOrDefault(f => f.FieldName == Cms.Search.Core.Constants.FieldNames.Tags)?.Value;
         Assert.That(tagsValue, Is.Not.Null);
         CollectionAssert.AreEquivalent(new [] { "One", "Two", "Three", "Four", "Five", "Six" }, tagsValue.Keywords);
-        
+
         return;
 
         void AssertDocumentFields(string indexAlias)
         {
-            var documents = Indexer.Dump(indexAlias);
+            IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(indexAlias);
             Assert.That(documents, Has.Count.EqualTo(1));
 
-            var document = documents.Single();
+            TestIndexDocument document = documents.Single();
 
-            var indexValue = document.Fields.FirstOrDefault(f => f.FieldName == "blocks")?.Value;
+            IndexValue? indexValue = document.Fields.FirstOrDefault(f => f.FieldName == "blocks")?.Value;
             Assert.That(indexValue, Is.Not.Null);
 
             Assert.Multiple(() =>
@@ -193,11 +195,13 @@ public class BlockGridPropertyValueHandlerTests : PropertyValueHandlerTestsBase
 
                 CollectionAssert.AreEqual(new [] { 56.78m, 1.23m, 2.34m, 5.67m }, indexValue.Decimals);
 
-                CollectionAssert.AreEqual(new []
-                {
-                    new DateTimeOffset(new DateOnly(2001, 02, 03), new TimeOnly(), TimeSpan.Zero),
-                    new DateTimeOffset(new DateOnly(2004, 05, 06), new TimeOnly(07, 08, 09), TimeSpan.Zero)
-                }, indexValue.DateTimeOffsets);
+                CollectionAssert.AreEqual(
+                    new[]
+                    {
+                        new DateTimeOffset(new DateOnly(2001, 02, 03), new TimeOnly(), TimeSpan.Zero),
+                        new DateTimeOffset(new DateOnly(2004, 05, 06), new TimeOnly(07, 08, 09), TimeSpan.Zero)
+                    },
+                    indexValue.DateTimeOffsets);
 
                 CollectionAssert.AreEqual(new [] { "One", "Two", "Three", "Four", "Five", "Six", "55bf7f6d-acd2-4f1e-92bd-f0b5c41dbfed" }, indexValue.Keywords);
             });
@@ -235,8 +239,7 @@ public class BlockGridPropertyValueHandlerTests : PropertyValueHandlerTestsBase
                                     [
                                         new (nestedElement1Key, nestedElementType.Key, nestedElementType.Alias)
                                         {
-                                            Values = 
-                                            [
+                                            Values = [
                                                 new ()
                                                 {
                                                     Alias = "textBoxValue",
@@ -259,8 +262,7 @@ public class BlockGridPropertyValueHandlerTests : PropertyValueHandlerTestsBase
                                     [
                                         new BlockItemVariation(nestedElement1Key, null, null)
                                     ]
-                                }
-                            )
+                                })
                         }
                     ]
                 },
@@ -294,7 +296,7 @@ public class BlockGridPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         };
         var blocksPropertyValue = JsonSerializer.Serialize(blockGridValue);
 
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(contentType)
             .WithName("My Blocks")
             .WithPropertyValues(new { rootBlocks = blocksPropertyValue })
@@ -302,12 +304,12 @@ public class BlockGridPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var document = documents.Single();
+        TestIndexDocument document = documents.Single();
 
-        var indexValue = document.Fields.FirstOrDefault(f => f.FieldName == "rootBlocks")?.Value;
+        IndexValue? indexValue = document.Fields.FirstOrDefault(f => f.FieldName == "rootBlocks")?.Value;
         Assert.That(indexValue, Is.Not.Null);
 
         Assert.Multiple(() =>
@@ -317,14 +319,14 @@ public class BlockGridPropertyValueHandlerTests : PropertyValueHandlerTestsBase
             CollectionAssert.AreEqual(new[] { "One", "Two", "Three", "Four", "Five", "Six" }, indexValue.Keywords);
         });
 
-        var tagsValue = document.Fields.FirstOrDefault(f => f.FieldName == Cms.Search.Core.Constants.FieldNames.Tags)?.Value;
+        IndexValue? tagsValue = document.Fields.FirstOrDefault(f => f.FieldName == Cms.Search.Core.Constants.FieldNames.Tags)?.Value;
         Assert.That(tagsValue, Is.Not.Null);
         CollectionAssert.AreEquivalent(new [] { "One", "Two", "Three", "Four", "Five", "Six" }, tagsValue.Keywords);
     }
-    
+
     private async Task<IContentType> CreateAllSimpleEditorsElementType(bool forBlockLevelVariance = false)
     {
-        var elementType = await CreateAllSimpleEditorsContentType();
+        IContentType elementType = await CreateAllSimpleEditorsContentType();
         elementType.IsElement = true;
 
         if (forBlockLevelVariance)
@@ -333,14 +335,14 @@ public class BlockGridPropertyValueHandlerTests : PropertyValueHandlerTestsBase
             elementType.PropertyTypes.First(p => p.Alias == "textBoxValue").Variations = ContentVariation.Culture;
             elementType.PropertyTypes.First(p => p.Alias == "integerValue").Variations = ContentVariation.Culture;
         }
-        
+
         await ContentTypeService.UpdateAsync(elementType, Constants.Security.SuperUserKey);
         return elementType;
     }
 
     private async Task<(IContentType ContentType, IContentType ElementType)> SetupSimpleEditorsTest(bool forBlockLevelVariance = false)
     {
-        var elementType = await CreateAllSimpleEditorsElementType(forBlockLevelVariance);
+        IContentType elementType = await CreateAllSimpleEditorsElementType(forBlockLevelVariance);
 
         var blockGridDataType = new DataType(PropertyEditorCollection[Constants.PropertyEditors.Aliases.BlockGrid], ConfigurationEditorJsonSerializer)
         {
@@ -362,7 +364,7 @@ public class BlockGridPropertyValueHandlerTests : PropertyValueHandlerTestsBase
 
         await GetRequiredService<IDataTypeService>().CreateAsync(blockGridDataType, Constants.Security.SuperUserKey);
 
-        var contentType = new ContentTypeBuilder()
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("blockEditor")
             .WithName("Block Editor")
             .AddPropertyType()
@@ -376,7 +378,7 @@ public class BlockGridPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         {
             contentType.Variations = ContentVariation.Culture;
         }
-        
+
         await ContentTypeService.UpdateAsync(contentType, Constants.Security.SuperUserKey);
 
         return (contentType, elementType);
@@ -384,9 +386,9 @@ public class BlockGridPropertyValueHandlerTests : PropertyValueHandlerTestsBase
 
     private async Task<(IContentType ContentType, IContentType RootElementType, IContentType NestedElementType)> SetupNestedBlockEditorsTest(bool forBlockLevelVariance = false)
     {
-        var dataTypeService = GetRequiredService<IDataTypeService>();
+        IDataTypeService dataTypeService = GetRequiredService<IDataTypeService>();
 
-        var nestedElementType = await CreateAllSimpleEditorsElementType(forBlockLevelVariance);
+        IContentType nestedElementType = await CreateAllSimpleEditorsElementType(forBlockLevelVariance);
 
         var nestedBlockGridDataType = new DataType(PropertyEditorCollection[Constants.PropertyEditors.Aliases.BlockGrid], ConfigurationEditorJsonSerializer)
         {
@@ -407,7 +409,7 @@ public class BlockGridPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         };
         await dataTypeService.CreateAsync(nestedBlockGridDataType, Constants.Security.SuperUserKey);
 
-        var rootElementType = new ContentTypeBuilder()
+        IContentType rootElementType = new ContentTypeBuilder()
             .WithAlias("rootBlockEditor")
             .WithName("Block Editor")
             .WithIsElement(true)
@@ -418,7 +420,7 @@ public class BlockGridPropertyValueHandlerTests : PropertyValueHandlerTestsBase
             .Done()
             .Build();
         await ContentTypeService.CreateAsync(rootElementType, Constants.Security.SuperUserKey);
-        
+
         var rootBlockGridDataType = new DataType(PropertyEditorCollection[Constants.PropertyEditors.Aliases.BlockGrid], ConfigurationEditorJsonSerializer)
         {
             ConfigurationData = new Dictionary<string, object>
@@ -439,7 +441,7 @@ public class BlockGridPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         };
         await dataTypeService.CreateAsync(rootBlockGridDataType, Constants.Security.SuperUserKey);
 
-        var contentType = new ContentTypeBuilder()
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("blockEditor")
             .WithName("Block Editor")
             .WithContentVariation(forBlockLevelVariance ? ContentVariation.Culture : ContentVariation.Nothing)

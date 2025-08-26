@@ -15,8 +15,6 @@ namespace Umbraco.Test.Search.Integration.Tests;
 
 public abstract class TestBase : UmbracoIntegrationTest
 {
-    private readonly TestIndexer _testIndexer = new();
-    
     internal static class IndexAliases
     {
         public const string PublishedContent = "TestPublishedContentIndex";
@@ -25,14 +23,14 @@ public abstract class TestBase : UmbracoIntegrationTest
         public const string Member = "TestMemberIndex";
     }
 
-    protected TestIndexer Indexer => _testIndexer;
-        
+    protected TestIndexer Indexer { get; } = new();
+
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
         base.CustomTestSetup(builder);
 
         builder.AddSearchCore();
-        
+
         builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
 

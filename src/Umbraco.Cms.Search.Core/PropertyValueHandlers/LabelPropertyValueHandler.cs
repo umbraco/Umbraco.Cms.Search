@@ -29,13 +29,13 @@ public class LabelPropertyValueHandler : IPropertyValueHandler, ICorePropertyVal
             return [];
         }
 
-        var configuration = _dataTypeConfigurationCache.GetConfigurationAs<LabelConfiguration>(property.PropertyType.DataTypeKey);
+        LabelConfiguration? configuration = _dataTypeConfigurationCache.GetConfigurationAs<LabelConfiguration>(property.PropertyType.DataTypeKey);
         if (configuration is null)
         {
             return [];
         }
-        
-        var indexValue = configuration.ValueType switch
+
+        IndexValue? indexValue = configuration.ValueType switch
         {
             ValueTypes.Integer when value is int integerValue
                 => new IndexValue { Integers = [integerValue] },
@@ -45,7 +45,7 @@ public class LabelPropertyValueHandler : IPropertyValueHandler, ICorePropertyVal
                 => new IndexValue { DateTimeOffsets = [_dateTimeOffsetConverter.ToDateTimeOffset(dateTimeValue)] },
             ValueTypes.String when value is string stringValue
                 => new IndexValue { Texts = [stringValue] },
-            ValueTypes.Bigint when value is string stringValue && int.TryParse(stringValue, out var integerValue)  
+            ValueTypes.Bigint when value is string stringValue && int.TryParse(stringValue, out var integerValue)
                 => new IndexValue { Integers = [integerValue] },
             _ => null
         };

@@ -1,7 +1,9 @@
 using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.Changes;
+using Umbraco.Cms.Search.Core.Cache.Content;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
@@ -13,7 +15,7 @@ public partial class PublishedContentCacheRefresherTests
     [TestCase(false)]
     public async Task Variant_PublishRoot_MultipleCultures(bool publishDescendants)
     {
-        var setup = await SetupVariantContentTest();
+        (Guid RootKey, Guid ChildKey, Guid GrandchildKey) setup = await SetupVariantContentTest();
         if (publishDescendants)
         {
             ContentService.Save(Get(setup.RootKey));
@@ -26,7 +28,7 @@ public partial class PublishedContentCacheRefresherTests
         }
 
         // the result must be same no matter if descendants are included or not, because the root was unpublished to begin with
-        var payloads = GetNotificationPayloads();
+        List<PublishedContentCacheRefresher.JsonPayload> payloads = GetNotificationPayloads();
         Assert.That(payloads, Has.Count.EqualTo(1));
         Assert.Multiple(() =>
         {
@@ -42,12 +44,12 @@ public partial class PublishedContentCacheRefresherTests
     [TestCase("da-DK", false)]
     public async Task Variant_PublishRoot_SingleCulture(string cultureToPublish, bool publishDescendants)
     {
-        var setup = await SetupVariantContentTest();
+        (Guid RootKey, Guid ChildKey, Guid GrandchildKey) setup = await SetupVariantContentTest();
         ContentService.Save(Get(setup.RootKey));
         ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, [cultureToPublish]);
 
         // the result must be same no matter if descendants are included or not, because the root was unpublished to begin with
-        var payloads = GetNotificationPayloads();
+        List<PublishedContentCacheRefresher.JsonPayload> payloads = GetNotificationPayloads();
         Assert.That(payloads, Has.Count.EqualTo(1));
         Assert.Multiple(() =>
         {
@@ -61,7 +63,7 @@ public partial class PublishedContentCacheRefresherTests
     [TestCase(false)]
     public async Task Variant_PublishRoot_CultureByCulture(bool publishDescendants)
     {
-        var setup = await SetupVariantContentTest();
+        (Guid RootKey, Guid ChildKey, Guid GrandchildKey) setup = await SetupVariantContentTest();
         if (publishDescendants)
         {
             ContentService.Save(Get(setup.RootKey));
@@ -78,14 +80,14 @@ public partial class PublishedContentCacheRefresherTests
         }
 
         // the result must be same no matter if descendants are included or not, because the root was unpublished to begin with
-        var payloads = GetNotificationPayloads();
+        List<PublishedContentCacheRefresher.JsonPayload> payloads = GetNotificationPayloads();
         Assert.That(payloads, Has.Count.EqualTo(2));
         Assert.Multiple(() =>
         {
             Assert.That(payloads[0].ChangeTypes, Is.EqualTo(TreeChangeTypes.RefreshBranch));
             Assert.That(payloads[0].ContentKey, Is.EqualTo(setup.RootKey));
             Assert.That(payloads[0].AffectedCultures, Is.EquivalentTo(new[] { "en-US" }));
-            
+
             Assert.That(payloads[1].ChangeTypes, Is.EqualTo(TreeChangeTypes.RefreshBranch));
             Assert.That(payloads[1].ContentKey, Is.EqualTo(setup.RootKey));
             Assert.That(payloads[1].AffectedCultures, Is.EquivalentTo(new[] { "da-DK" }));
@@ -96,7 +98,7 @@ public partial class PublishedContentCacheRefresherTests
     [TestCase(false)]
     public async Task Variant_RepublishChild_MultipleCultures(bool publishDescendants)
     {
-        var setup = await SetupVariantContentTest();
+        (Guid RootKey, Guid ChildKey, Guid GrandchildKey) setup = await SetupVariantContentTest();
         ContentService.Save(Get(setup.RootKey));
         ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
@@ -104,7 +106,7 @@ public partial class PublishedContentCacheRefresherTests
         if (publishDescendants)
         {
             // we need to change something, otherwise the branch publish will detect "no changes" and no notifications will be invoked
-            var content = Get(setup.ChildKey);
+            IContent content = Get(setup.ChildKey);
             content.SetCultureName("Updated EN", "en-US");
             content.SetCultureName("Updated DA", "da-DK");
             ContentService.Save(content);
@@ -119,7 +121,7 @@ public partial class PublishedContentCacheRefresherTests
         }
 
         // the result must be same no matter if descendants are included or not, because the child was already published
-        var payloads = GetNotificationPayloads();
+        List<PublishedContentCacheRefresher.JsonPayload> payloads = GetNotificationPayloads();
         Assert.That(payloads, Has.Count.EqualTo(1));
         Assert.Multiple(() =>
         {
@@ -135,7 +137,7 @@ public partial class PublishedContentCacheRefresherTests
     [TestCase("da-DK", false)]
     public async Task Variant_RepublishChild_SingleCultures(string cultureToPublish, bool publishDescendants)
     {
-        var setup = await  SetupVariantContentTest();
+        (Guid RootKey, Guid ChildKey, Guid GrandchildKey) setup = await  SetupVariantContentTest();
         ContentService.Save(Get(setup.RootKey));
         ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
@@ -143,7 +145,7 @@ public partial class PublishedContentCacheRefresherTests
         if (publishDescendants)
         {
             // we need to change something, otherwise the branch publish will detect "no changes" and no notifications will be invoked
-            var content = Get(setup.ChildKey);
+            IContent content = Get(setup.ChildKey);
             content.SetCultureName("Updated EN", "en-US");
             content.SetCultureName("Updated DA", "da-DK");
             ContentService.Save(content);
@@ -158,7 +160,7 @@ public partial class PublishedContentCacheRefresherTests
         }
 
         // the result must be same no matter if descendants are included or not, because the child was already published
-        var payloads = GetNotificationPayloads();
+        List<PublishedContentCacheRefresher.JsonPayload> payloads = GetNotificationPayloads();
         Assert.That(payloads, Has.Count.EqualTo(1));
         Assert.Multiple(() =>
         {
@@ -172,7 +174,7 @@ public partial class PublishedContentCacheRefresherTests
     [TestCase(false)]
     public async Task Variant_UnpublishRoot_AllCultures(bool publishDescendants)
     {
-        var setup = await SetupVariantContentTest();
+        (Guid RootKey, Guid ChildKey, Guid GrandchildKey) setup = await SetupVariantContentTest();
         ContentService.Save(Get(setup.RootKey));
         ContentService.PublishBranch(Get(setup.RootKey), publishDescendants ? PublishBranchFilter.IncludeUnpublished : PublishBranchFilter.Default, ["*"]);
         ResetNotificationPayloads();
@@ -180,7 +182,7 @@ public partial class PublishedContentCacheRefresherTests
         ContentService.Unpublish(Get(setup.RootKey));
 
         // the result must be same no matter if descendants are included or not, because unpublish explicitly affects the whole branch
-        var payloads = GetNotificationPayloads();
+        List<PublishedContentCacheRefresher.JsonPayload> payloads = GetNotificationPayloads();
         Assert.That(payloads, Has.Count.EqualTo(1));
         Assert.Multiple(() =>
         {
@@ -189,11 +191,11 @@ public partial class PublishedContentCacheRefresherTests
             Assert.That(payloads[0].AffectedCultures, Is.Empty);
         });
     }
-    
+
     [Test]
     public async Task Variant_UnpublishChild_AllCultures()
     {
-        var setup = await SetupVariantContentTest();
+        (Guid RootKey, Guid ChildKey, Guid GrandchildKey) setup = await SetupVariantContentTest();
         ContentService.Save(Get(setup.RootKey));
         ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
@@ -201,7 +203,7 @@ public partial class PublishedContentCacheRefresherTests
         ContentService.Unpublish(Get(setup.ChildKey));
 
         // the result must be same no matter if descendants are included or not, because unpublish explicitly affects the whole branch
-        var payloads = GetNotificationPayloads();
+        List<PublishedContentCacheRefresher.JsonPayload> payloads = GetNotificationPayloads();
         Assert.That(payloads, Has.Count.EqualTo(1));
         Assert.Multiple(() =>
         {
@@ -210,12 +212,12 @@ public partial class PublishedContentCacheRefresherTests
             Assert.That(payloads[0].AffectedCultures, Is.Empty);
         });
     }
-    
+
     [TestCase(true)]
     [TestCase(false)]
     public async Task Variant_UnpublishRoot_CultureByCulture(bool publishDescendants)
     {
-        var setup = await SetupVariantContentTest();
+        (Guid RootKey, Guid ChildKey, Guid GrandchildKey) setup = await SetupVariantContentTest();
         ContentService.Save(Get(setup.RootKey));
         ContentService.PublishBranch(Get(setup.RootKey), publishDescendants ? PublishBranchFilter.IncludeUnpublished : PublishBranchFilter.Default, ["*"]);
         ResetNotificationPayloads();
@@ -224,7 +226,7 @@ public partial class PublishedContentCacheRefresherTests
         ContentService.Unpublish(Get(setup.RootKey), "en-US");
 
         // the result must be same no matter if descendants are included or not, because unpublish explicitly affects the whole branch
-        var payloads = GetNotificationPayloads();
+        List<PublishedContentCacheRefresher.JsonPayload> payloads = GetNotificationPayloads();
         Assert.That(payloads, Has.Count.EqualTo(2));
         Assert.Multiple(() =>
         {
@@ -232,25 +234,25 @@ public partial class PublishedContentCacheRefresherTests
             Assert.That(payloads[0].ChangeTypes, Is.EqualTo(TreeChangeTypes.RefreshBranch));
             Assert.That(payloads[0].ContentKey, Is.EqualTo(setup.RootKey));
             Assert.That(payloads[0].AffectedCultures, Is.EquivalentTo(new[] { "da-DK" }));
-            
+
             // the second payload is "remove" because the content is completely unpublished
             Assert.That(payloads[1].ChangeTypes, Is.EqualTo(TreeChangeTypes.Remove));
             Assert.That(payloads[1].ContentKey, Is.EqualTo(setup.RootKey));
             Assert.That(payloads[1].AffectedCultures, Is.Empty);
         });
     }
-    
+
     [Test]
     public async Task Variant_MoveRootToRecycleBin()
     {
-        var setup = await SetupVariantContentTest();
+        (Guid RootKey, Guid ChildKey, Guid GrandchildKey) setup = await SetupVariantContentTest();
         ContentService.Save(Get(setup.RootKey));
         ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
 
         ContentService.MoveToRecycleBin(Get(setup.RootKey));
 
-        var payloads = GetNotificationPayloads();
+        List<PublishedContentCacheRefresher.JsonPayload> payloads = GetNotificationPayloads();
         Assert.That(payloads, Has.Count.EqualTo(1));
         Assert.Multiple(() =>
         {
@@ -263,14 +265,14 @@ public partial class PublishedContentCacheRefresherTests
     [Test]
     public async Task Variant_MoveChildToRecycleBin()
     {
-        var setup = await SetupVariantContentTest();
+        (Guid RootKey, Guid ChildKey, Guid GrandchildKey) setup = await SetupVariantContentTest();
         ContentService.Save(Get(setup.RootKey));
         ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
 
         ContentService.MoveToRecycleBin(Get(setup.ChildKey));
 
-        var payloads = GetNotificationPayloads();
+        List<PublishedContentCacheRefresher.JsonPayload> payloads = GetNotificationPayloads();
         Assert.That(payloads, Has.Count.EqualTo(1));
         Assert.Multiple(() =>
         {
@@ -279,18 +281,18 @@ public partial class PublishedContentCacheRefresherTests
             Assert.That(payloads[0].AffectedCultures, Is.Empty);
         });
     }
-    
+
     [Test]
     public async Task Variant_DeletePublishedRoot()
     {
-        var setup = await SetupVariantContentTest();
+        (Guid RootKey, Guid ChildKey, Guid GrandchildKey) setup = await SetupVariantContentTest();
         ContentService.Save(Get(setup.RootKey));
         ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
 
         ContentService.Delete(Get(setup.RootKey));
 
-        var payloads = GetNotificationPayloads();
+        List<PublishedContentCacheRefresher.JsonPayload> payloads = GetNotificationPayloads();
         Assert.That(payloads, Has.Count.EqualTo(1));
         Assert.Multiple(() =>
         {
@@ -303,14 +305,14 @@ public partial class PublishedContentCacheRefresherTests
     [Test]
     public async Task Variant_DeletePublishedChild()
     {
-        var setup = await SetupVariantContentTest();
+        (Guid RootKey, Guid ChildKey, Guid GrandchildKey) setup = await SetupVariantContentTest();
         ContentService.Save(Get(setup.RootKey));
         ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ResetNotificationPayloads();
 
         ContentService.Delete(Get(setup.ChildKey));
 
-        var payloads = GetNotificationPayloads();
+        List<PublishedContentCacheRefresher.JsonPayload> payloads = GetNotificationPayloads();
         Assert.That(payloads, Has.Count.EqualTo(1));
         Assert.Multiple(() =>
         {
@@ -323,7 +325,7 @@ public partial class PublishedContentCacheRefresherTests
     [Test]
     public async Task Variant_DeleteRootFromRecycleBin()
     {
-        var setup = await SetupVariantContentTest();
+        (Guid RootKey, Guid ChildKey, Guid GrandchildKey) setup = await SetupVariantContentTest();
         ContentService.Save(Get(setup.RootKey));
         ContentService.PublishBranch(Get(setup.RootKey), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ContentService.MoveToRecycleBin(Get(setup.RootKey));
@@ -332,7 +334,7 @@ public partial class PublishedContentCacheRefresherTests
         ContentService.Delete(Get(setup.RootKey));
 
         // no payload expected; it should've already been handled when moving the content to the recycle bin
-        var payloads = GetNotificationPayloads();
+        List<PublishedContentCacheRefresher.JsonPayload> payloads = GetNotificationPayloads();
         Assert.That(payloads, Has.Count.EqualTo(0));
     }
 
@@ -340,10 +342,9 @@ public partial class PublishedContentCacheRefresherTests
     {
         await GetRequiredService<ILanguageService>().CreateAsync(
             new LanguageBuilder().WithCultureInfo("da-DK").Build(),
-            Constants.Security.SuperUserKey
-        );
-        
-        var contentType = new ContentTypeBuilder()
+            Constants.Security.SuperUserKey);
+
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("variant")
             .WithContentVariation(ContentVariation.CultureAndSegment)
             .Build();
@@ -351,14 +352,14 @@ public partial class PublishedContentCacheRefresherTests
         contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
         await ContentTypeService.UpdateAsync(contentType, Constants.Security.SuperUserKey);
 
-        var root = new ContentBuilder()
+        Content root = new ContentBuilder()
             .WithContentType(contentType)
             .WithCultureName("en-US", "Root EN")
             .WithCultureName("da-DK", "Root DA")
             .Build();
         ContentService.Save(root);
 
-        var child = new ContentBuilder()
+        Content child = new ContentBuilder()
             .WithContentType(contentType)
             .WithCultureName("en-US", "Child EN")
             .WithCultureName("da-DK", "Child DA")
@@ -366,7 +367,7 @@ public partial class PublishedContentCacheRefresherTests
             .Build();
         ContentService.Save(child);
 
-        var grandchild = new ContentBuilder()
+        Content grandchild = new ContentBuilder()
             .WithContentType(contentType)
             .WithCultureName("en-US", "Grandchild EN")
             .WithCultureName("da-DK", "Grandchild DA")

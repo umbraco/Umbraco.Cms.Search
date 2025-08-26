@@ -6,6 +6,7 @@ using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
+using Umbraco.Test.Search.Integration.Services;
 using CoreConstants = Umbraco.Cms.Core.Constants;
 
 namespace Umbraco.Test.Search.Integration.Tests;
@@ -37,7 +38,7 @@ public class CustomIndexRegistrationTests : ContentBaseTestBase
     [SetUp]
     public async Task SetupTest()
     {
-        var contentType = new ContentTypeBuilder()
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("theContentType")
             .AddPropertyType()
             .WithAlias("title")
@@ -57,10 +58,9 @@ public class CustomIndexRegistrationTests : ContentBaseTestBase
                     {
                         title = "The content title"
                     })
-                .Build()
-        );
+                .Build());
 
-        var mediaType = new MediaTypeBuilder()
+        IMediaType mediaType = new MediaTypeBuilder()
             .WithAlias("theMediaType")
             .AddPropertyGroup()
             .AddPropertyType()
@@ -82,10 +82,9 @@ public class CustomIndexRegistrationTests : ContentBaseTestBase
                     {
                         altText = "The media alt text"
                     })
-                .Build()
-        );
+                .Build());
 
-        var memberType = new MemberTypeBuilder()
+        IMemberType memberType = new MemberTypeBuilder()
             .WithAlias("theMemberType")
             .AddPropertyGroup()
             .AddPropertyType()
@@ -107,8 +106,7 @@ public class CustomIndexRegistrationTests : ContentBaseTestBase
                 .AddPropertyData()
                 .WithKeyValue("organization", "The Organization")
                 .Done()
-                .Build()
-        );
+                .Build());
 
         Indexer.Reset();
     }
@@ -120,7 +118,7 @@ public class CustomIndexRegistrationTests : ContentBaseTestBase
         MediaService.Save(Media());
         MemberService.Save(Member());
 
-        var documents = Indexer.Dump("My_Index");
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump("My_Index");
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -140,7 +138,7 @@ public class CustomIndexRegistrationTests : ContentBaseTestBase
             VerifyDocumentSystemValues(documents[2], Member(), []);
         });
     }
-    
+
     private IContent Content() => ContentService.GetById(ContentKey) ?? throw new InvalidOperationException("Content was not found");
 
     private IMedia Media() => MediaService.GetById(MediaKey) ?? throw new InvalidOperationException("Media was not found");

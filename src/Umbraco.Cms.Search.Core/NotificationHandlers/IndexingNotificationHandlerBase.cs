@@ -33,5 +33,4 @@ internal abstract class IndexingNotificationHandlerBase
             action.Invoke();
         }
     }
-
 }

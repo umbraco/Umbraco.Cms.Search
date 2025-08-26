@@ -24,13 +24,13 @@ internal sealed class ContentProtectionProvider : IContentProtectionProvider
         {
             return null;
         }
-        
-        var publicAccessEntry = _publicAccessService.GetEntryForContent(content.Path);
+
+        PublicAccessEntry? publicAccessEntry = _publicAccessService.GetEntryForContent(content.Path);
         if (publicAccessEntry is null)
         {
             return null;
         }
-        
+
         var roles = RuleValues(publicAccessEntry, Umbraco.Cms.Core.Constants.Conventions.PublicAccess.MemberRoleRuleType);
         var usernames = RuleValues(publicAccessEntry, Umbraco.Cms.Core.Constants.Conventions.PublicAccess.MemberUsernameRuleType);
 
@@ -38,12 +38,11 @@ internal sealed class ContentProtectionProvider : IContentProtectionProvider
 
         if (roles.Length > 0)
         {
-            var memberGroups = await _memberGroupService.GetAllAsync();
+            IEnumerable<IMemberGroup> memberGroups = await _memberGroupService.GetAllAsync();
             accessKeys.AddRange(
                 memberGroups
                     .Where(role => role.Name.IsNullOrWhiteSpace() is false && roles.InvariantContains(role.Name))
-                    .Select(role => role.Key)
-            );
+                    .Select(role => role.Key));
         }
 
         if (usernames.Length > 0)
@@ -51,8 +50,7 @@ internal sealed class ContentProtectionProvider : IContentProtectionProvider
             accessKeys.AddRange(
                 usernames.Select(username => _memberService.GetByUsername(username)?.Key ?? null)
                     .Where(key => key.HasValue)
-                    .Select(key => key!.Value)
-            );
+                    .Select(key => key!.Value));
         }
 
         return accessKeys.Count > 0 ? new ContentProtection(accessKeys) : null;

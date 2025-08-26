@@ -3,12 +3,13 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
+using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
 public class ContentTypeTests : ContentBaseTestBase
 {
-    private IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>(); 
+    private IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>();
 
     private IContentService ContentService => GetRequiredService<IContentService>();
 
@@ -29,12 +30,12 @@ public class ContentTypeTests : ContentBaseTestBase
     private readonly Guid _contentType3RootContentKey = Guid.NewGuid();
 
     private readonly Guid _contentType3ChildContentKey = Guid.NewGuid();
-    
+
     [SetUp]
     public async Task SetupTest()
     {
         Indexer.Reset();
-        
+
         _contentType1 = await CreateContentType();
         _contentType2 = await CreateContentType();
         _contentType3 = await CreateContentType();
@@ -42,12 +43,12 @@ public class ContentTypeTests : ContentBaseTestBase
         CreateContentStructure(_contentType1, _contentType1RootContentKey, _contentType1ChildContentKey);
         CreateContentStructure(_contentType2, _contentType2RootContentKey, _contentType2ChildContentKey);
         CreateContentStructure(_contentType3, _contentType3RootContentKey, _contentType3ChildContentKey);
-        
+
         return;
 
         async Task<IContentType> CreateContentType()
         {
-            var contentType = new ContentTypeBuilder().Build();
+            IContentType contentType = new ContentTypeBuilder().Build();
             await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
             contentType.AllowedAsRoot = true;
             contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
@@ -58,19 +59,19 @@ public class ContentTypeTests : ContentBaseTestBase
 
         void CreateContentStructure(IContentType contentType, Guid rootContentKey, Guid childContentKey)
         {
-            var root = new ContentBuilder()
+            Content root = new ContentBuilder()
                 .WithKey(rootContentKey)
                 .WithContentType(contentType)
                 .Build();
             ContentService.Save(root);
 
-            var child = new ContentBuilder()
+            Content child = new ContentBuilder()
                 .WithKey(childContentKey)
                 .WithContentType(contentType)
                 .WithParent(root)
                 .Build();
             ContentService.Save(child);
-            
+
             ContentService.PublishBranch(root, PublishBranchFilter.IncludeUnpublished, ["*"]);
         }
     }
@@ -78,17 +79,17 @@ public class ContentTypeTests : ContentBaseTestBase
     [Test]
     public async Task DeleteContentType1()
     {
-        var draftDocuments = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> draftDocuments = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(draftDocuments, Has.Count.EqualTo(6));
 
-        var publishedDocuments = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> publishedDocuments = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(publishedDocuments, Has.Count.EqualTo(6));
 
         await ContentTypeService.DeleteAsync(_contentType1.Key, Constants.Security.SuperUserKey);
 
         draftDocuments = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(draftDocuments, Has.Count.EqualTo(4));
-        
+
         publishedDocuments = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(publishedDocuments, Has.Count.EqualTo(4));
 
@@ -109,10 +110,10 @@ public class ContentTypeTests : ContentBaseTestBase
     [Test]
     public async Task DeleteContentType2And3()
     {
-        var draftDocuments = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> draftDocuments = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(draftDocuments, Has.Count.EqualTo(6));
 
-        var publishedDocuments = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> publishedDocuments = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(publishedDocuments, Has.Count.EqualTo(6));
 
         await ContentTypeService.DeleteAsync(_contentType2.Key, Constants.Security.SuperUserKey);
@@ -120,7 +121,7 @@ public class ContentTypeTests : ContentBaseTestBase
 
         draftDocuments = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(draftDocuments, Has.Count.EqualTo(2));
-        
+
         publishedDocuments = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(publishedDocuments, Has.Count.EqualTo(2));
 
@@ -137,10 +138,10 @@ public class ContentTypeTests : ContentBaseTestBase
     [Test]
     public async Task DeleteAllContentTypes()
     {
-        var draftDocuments = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> draftDocuments = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(draftDocuments, Has.Count.EqualTo(6));
 
-        var publishedDocuments = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> publishedDocuments = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(publishedDocuments, Has.Count.EqualTo(6));
 
         await ContentTypeService.DeleteAsync(_contentType1.Key, Constants.Security.SuperUserKey);
@@ -149,7 +150,7 @@ public class ContentTypeTests : ContentBaseTestBase
 
         draftDocuments = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(draftDocuments, Is.Empty);
-        
+
         publishedDocuments = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(publishedDocuments, Is.Empty);
     }

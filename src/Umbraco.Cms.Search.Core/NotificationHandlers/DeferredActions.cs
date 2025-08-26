@@ -14,7 +14,8 @@ internal class DeferredActions
     {
         IScopeContext? scopeContext = scopeProvider.Context;
 
-        return scopeContext?.Enlist("umbDeferredIndexing",
+        return scopeContext?.Enlist(
+            "umbDeferredIndexing",
             () => new DeferredActions(),
             (completed, deferredActions) =>
             {
@@ -26,11 +27,12 @@ internal class DeferredActions
             EnlistPriority);
     }
 
-    public void Add(Action action) => _actions.Add(action);
+    public void Add(Action action)
+        => _actions.Add(action);
 
     private void Execute()
     {
-        foreach (var action in _actions)
+        foreach (Action action in _actions)
         {
             action.Invoke();
         }

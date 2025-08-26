@@ -1,8 +1,10 @@
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
+using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
@@ -13,7 +15,7 @@ public class RichTextPropertyValueHandlerTests : ContentTestBase
     [Test]
     public void RichTextEditor_CanIndexAllTextRelevanceLevels()
     {
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(_contentType)
             .WithName("RichText Editor")
             .WithPropertyValues(
@@ -32,17 +34,16 @@ public class RichTextPropertyValueHandlerTests : ContentTestBase
                                     <p>Paragraph #6</p>
                                     <ul><li>List Item #1</li><li>List Item #2</li></ul>
                                     """
- 
                 })
             .Build();
 
         ContentService.Save(content);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var document = documents.Single();
-        var richTextValue = document.Fields.FirstOrDefault(f => f.FieldName == "richTextValue")?.Value;
+        TestIndexDocument document = documents.Single();
+        IndexValue? richTextValue = document.Fields.FirstOrDefault(f => f.FieldName == "richTextValue")?.Value;
         Assert.That(richTextValue, Is.Not.Null);
 
         Assert.Multiple(() =>
@@ -58,7 +59,7 @@ public class RichTextPropertyValueHandlerTests : ContentTestBase
     [Test]
     public void RichTextEditor_IncludesTextFromNestedTags()
     {
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(_contentType)
             .WithName("RichText Editor")
             .WithPropertyValues(
@@ -68,17 +69,16 @@ public class RichTextPropertyValueHandlerTests : ContentTestBase
                                <p>Some <strong>bold</strong> text</p>
                                <p><a href="https://some.where">A link to somewhere</a></p>
                                """
- 
                 })
             .Build();
 
         ContentService.Save(content);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var document = documents.Single();
-        var richTextValue = document.Fields.FirstOrDefault(f => f.FieldName == "richTextValue")?.Value;
+        TestIndexDocument document = documents.Single();
+        IndexValue? richTextValue = document.Fields.FirstOrDefault(f => f.FieldName == "richTextValue")?.Value;
         Assert.That(richTextValue, Is.Not.Null);
         CollectionAssert.AreEqual(new [] { "Some bold text", "A link to somewhere" }, richTextValue.Texts);
     }
@@ -87,7 +87,7 @@ public class RichTextPropertyValueHandlerTests : ContentTestBase
     [TestCase("")]
     public void RichTextEditor_IgnoresEmptyAndInvalidValues(object? value)
     {
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(_contentType)
             .WithName("RichText Editor")
             .WithPropertyValues(
@@ -99,10 +99,10 @@ public class RichTextPropertyValueHandlerTests : ContentTestBase
 
         ContentService.Save(content);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var document = documents.Single();
+        TestIndexDocument document = documents.Single();
         Assert.That(document.Fields.Any(field => field.FieldName == "richTextValue"), Is.False);
     }
 
@@ -111,7 +111,7 @@ public class RichTextPropertyValueHandlerTests : ContentTestBase
     [TestCase("This is not valid HTML")]
     public void RichTextEditor_IncludesSimpleValues(object value)
     {
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(_contentType)
             .WithName("RichText Editor")
             .WithPropertyValues(
@@ -123,19 +123,19 @@ public class RichTextPropertyValueHandlerTests : ContentTestBase
 
         ContentService.Save(content);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var document = documents.Single();
-        var richTextValue = document.Fields.FirstOrDefault(f => f.FieldName == "richTextValue")?.Value;
+        TestIndexDocument document = documents.Single();
+        IndexValue? richTextValue = document.Fields.FirstOrDefault(f => f.FieldName == "richTextValue")?.Value;
         Assert.That(richTextValue, Is.Not.Null);
         CollectionAssert.AreEqual(new [] { value.ToString() }, richTextValue.Texts);
     }
-    
+
     [SetUp]
     public async Task SetupTest()
     {
-        var richTextDataType = new DataTypeBuilder()
+        DataType richTextDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Ntext)
             .WithName("RichText Editor")

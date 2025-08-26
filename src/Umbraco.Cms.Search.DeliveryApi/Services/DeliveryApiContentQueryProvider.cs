@@ -63,7 +63,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
         int skip,
         int take)
         => ExecuteQuery(selectorOption, filterOptions, sortOptions, culture, ProtectedAccess.None, preview, skip, take);
-    
+
     public PagedModel<Guid> ExecuteQuery(
         SelectorOption selectorOption,
         IList<FilterOption> filterOptions,
@@ -76,24 +76,23 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
     {
         var filters = new List<Filter>();
 
-        if (selectorOption.Values.Length > 0 && TryCreateFilter(selectorOption.FieldName, FilterOperation.Is, selectorOption.Values, out var selectorOptionFilter))
+        if (selectorOption.Values.Length > 0 && TryCreateFilter(selectorOption.FieldName, FilterOperation.Is, selectorOption.Values, out Filter? selectorOptionFilter))
         {
             filters.Add(selectorOptionFilter);
         }
 
-        foreach (var filterOption in filterOptions)
+        foreach (FilterOption filterOption in filterOptions)
         {
-            if (TryCreateFilter(filterOption.FieldName, filterOption.Operator, filterOption.Values, out var filterOptionFilter))
+            if (TryCreateFilter(filterOption.FieldName, filterOption.Operator, filterOption.Values, out Filter? filterOptionFilter))
             {
                 filters.Add(filterOptionFilter);
             }
         }
 
-        var sorters = sortOptions
-            .Select(sortOption => TryCreateSorter(sortOption.FieldName, sortOption.Direction, out var sorter)
+        Sorter[]? sorters = sortOptions
+            .Select(sortOption => TryCreateSorter(sortOption.FieldName, sortOption.Direction, out Sorter? sorter)
                 ? sorter
-                : null
-            )
+                : null)
             .WhereNotNull()
             .ToArray();
 
@@ -101,10 +100,10 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
             ? null
             : sorters;
 
-        var accessContext = GetAccessContextAsync().GetAwaiter().GetResult();
+        AccessContext? accessContext = GetAccessContextAsync().GetAwaiter().GetResult();
 
         var indexAlias = preview ? Constants.IndexAliases.DraftContent : Constants.IndexAliases.PublishedContent;
-        var result = _searcher
+        SearchResult result = _searcher
             .SearchAsync(indexAlias, null, filters, null, sorters, culture, null, accessContext, skip, take)
             .GetAwaiter()
             .GetResult();
@@ -123,7 +122,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
             return false;
         }
 
-        if (_fieldTypes.TryGetValue(fieldName, out var fieldType) is false)
+        if (_fieldTypes.TryGetValue(fieldName, out FieldType fieldType) is false)
         {
             _logger.LogWarning(
                 "Filter implementation for field name {FieldName} does not match an index handler implementation, cannot resolve field type.",
@@ -134,7 +133,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
 
         fieldName = MapSystemFieldName(fieldName);
         values = MapSystemFieldValues(fieldName, values);
-        
+
         switch (fieldType)
         {
             case FieldType.StringRaw:
@@ -175,8 +174,8 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
                 };
                 break;
             case FieldType.Date:
-                var dateTimeOffsetValues = values
-                    .Select(v => DateTime.TryParse(v, CultureInfo.InvariantCulture, out var d) ? d : DateTime.MinValue)
+                DateTimeOffset[] dateTimeOffsetValues = values
+                    .Select(v => DateTime.TryParse(v, CultureInfo.InvariantCulture, out DateTime d) ? d : DateTime.MinValue)
                     .Where(d => d > DateTime.MinValue)
                     .Select(_dateTimeOffsetConverter.ToDateTimeOffset)
                     .ToArray();
@@ -205,7 +204,7 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
 
     private bool TryCreateSorter(string fieldName, Direction direction, [NotNullWhen(true)] out Sorter? sorter)
     {
-        if (_fieldTypes.TryGetValue(fieldName, out var fieldType) is false)
+        if (_fieldTypes.TryGetValue(fieldName, out FieldType fieldType) is false)
         {
             _logger.LogWarning(
                 "Sorter implementation for field name {FieldName} does not match an index handler implementation, cannot resolve field type.",
@@ -262,13 +261,13 @@ internal sealed class DeliveryApiContentQueryProvider : IApiContentQueryProvider
 
     private async Task<AccessContext?> GetAccessContextAsync()
     {
-        var memberAccess = await _requestMemberAccessService.MemberAccessAsync();
+        ProtectedAccess memberAccess = await _requestMemberAccessService.MemberAccessAsync();
         if (memberAccess.MemberKey.HasValue is false)
         {
             return null;
         }
-        
-        var memberGroupKeys = memberAccess.MemberRoles is { Length: > 0 }
+
+        Guid[]? memberGroupKeys = memberAccess.MemberRoles is { Length: > 0 }
             ? _memberService
                 .GetAllRoles()
                 .Where(group => memberAccess.MemberRoles!.InvariantContains(group.Name ?? string.Empty))

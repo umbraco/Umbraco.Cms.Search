@@ -14,12 +14,8 @@ public class SiteSegmentService : ISegmentService
     ];
 
     public Task<Attempt<PagedModel<Segment>?, SegmentOperationStatus>> GetPagedSegmentsAsync(int skip = 0, int take = 100)
-        => Task.FromResult
-        (
-            Attempt.SucceedWithStatus<PagedModel<Segment>?, SegmentOperationStatus>
-            (
+        => Task.FromResult(
+            Attempt.SucceedWithStatus<PagedModel<Segment>?, SegmentOperationStatus>(
                 SegmentOperationStatus.Success,
-                new PagedModel<Segment> { Total = _segments.Length, Items = _segments.Skip(skip).Take(take) }
-            )
-        );
+                new PagedModel<Segment> { Total = _segments.Length, Items = _segments.Skip(skip).Take(take) }));
 }

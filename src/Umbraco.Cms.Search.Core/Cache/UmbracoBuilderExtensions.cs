@@ -1,8 +1,11 @@
 ﻿using Umbraco.Cms.Core.DependencyInjection;
+using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Search.Core.Cache.Content;
+using Umbraco.Cms.Search.Core.Cache.Media;
+using Umbraco.Cms.Search.Core.Cache.PublicAccess;
 
-// NOTE: the namespace is defined as what it would be, if this was part of Umbraco core.
-namespace Umbraco.Cms.Core.Events;
+namespace Umbraco.Cms.Search.Core.Cache;
 
 /*
  * This wires up notification handlers for custom distributed cache refreshers for content and public access changes.

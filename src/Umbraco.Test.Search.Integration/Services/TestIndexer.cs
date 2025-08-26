@@ -15,7 +15,7 @@ namespace Umbraco.Test.Search.Integration.Services;
 public class TestIndexer : IIndexer, ISearcher
 {
     private readonly Dictionary<string, Dictionary<Guid, TestIndexDocument>> _indexes = new();
-        
+
     public Task AddOrUpdateAsync(string indexAlias, Guid id, UmbracoObjectTypes objectType, IEnumerable<Variation> variations, IEnumerable<IndexField> fields, ContentProtection? protection)
     {
         GetIndex(indexAlias)[id] = new (id, objectType, variations, fields, protection);
@@ -25,13 +25,12 @@ public class TestIndexer : IIndexer, ISearcher
     public Task DeleteAsync(string indexAlias, IEnumerable<Guid> ids)
     {
         // index is responsible for deleting descendants
-        foreach (var key in ids)
+        foreach (Guid key in ids)
         {
             GetIndex(indexAlias).Remove(key);
-            var descendantDocuments = GetIndex(indexAlias).Values.Where(document =>
-                document.Fields.Any(f => f.FieldName == Constants.FieldNames.PathIds && f.Value.Keywords?.Contains($"{key:D}") is true)
-            );
-            foreach (var descendantDocument in descendantDocuments)
+            IEnumerable<TestIndexDocument> descendantDocuments = GetIndex(indexAlias).Values.Where(document =>
+                document.Fields.Any(f => f.FieldName == Constants.FieldNames.PathIds && f.Value.Keywords?.Contains($"{key:D}") is true));
+            foreach (TestIndexDocument descendantDocument in descendantDocuments)
             {
                 GetIndex(indexAlias).Remove(descendantDocument.Id);
             }
@@ -49,7 +48,7 @@ public class TestIndexer : IIndexer, ISearcher
     public IReadOnlyList<TestIndexDocument> Dump(string indexAlias) => GetIndex(indexAlias).Values.ToList();
 
     public void Reset() => _indexes.Clear();
-    
+
     private Dictionary<Guid, TestIndexDocument> GetIndex(string index)
     {
         if (_indexes.ContainsKey(index) is false)
@@ -82,41 +81,38 @@ public class TestIndexer : IIndexer, ISearcher
 
         bool IsVarianceMatch(IndexField field)
             => (field.Culture is null || field.Culture == culture)
-               && (field.Segment is null || field.Segment == culture); 
-        
-        var index = GetIndex(indexAlias);
-        var result = index.Values.ToArray();
+               && (field.Segment is null || field.Segment == culture);
+
+        Dictionary<Guid, TestIndexDocument> index = GetIndex(indexAlias);
+        TestIndexDocument[] result = index.Values.ToArray();
         if (query is not null)
         {
-            result = result.Where(document =>
+            result = result.Where(predicate: document =>
                 document.Fields.Any(field =>
                     IsVarianceMatch(field)
-                    && field.Value.AllTexts().Any(text => text.Contains(query)) is true
-                )
-            ).ToArray();
+                    && field.Value.AllTexts().Any(text => text.Contains(query)) is true))
+                .ToArray();
         }
 
-        foreach (var filter in filters ?? [])
+        foreach (Filter filter in filters ?? [])
         {
             switch (filter)
             {
                 case KeywordFilter keywordFilter:
-                    result = result.Where(document =>
+                    result = result.Where(predicate: document =>
                         document.Fields.Any(field =>
                             IsVarianceMatch(field)
                             && field.FieldName == keywordFilter.FieldName
-                            && field.Value.Keywords?.ContainsAny(keywordFilter.Values) != keywordFilter.Negate
-                        )
-                    ).ToArray();
+                            && field.Value.Keywords?.ContainsAny(keywordFilter.Values) != keywordFilter.Negate))
+                        .ToArray();
                     break;
                 case IntegerExactFilter integerExactFilter:
                     result = result.Where(document =>
                         document.Fields.Any(field =>
                             IsVarianceMatch(field)
                             && field.FieldName == integerExactFilter.FieldName
-                            && field.Value.Integers?.ContainsAny(integerExactFilter.Values) != integerExactFilter.Negate
-                        )
-                    ).ToArray();
+                            && field.Value.Integers?.ContainsAny(integerExactFilter.Values) != integerExactFilter.Negate))
+                        .ToArray();
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(filter), "Unsupported filter type");
@@ -125,7 +121,7 @@ public class TestIndexer : IIndexer, ISearcher
 
         if (sorters is not null)
         {
-            var sortersAsArray = sorters as Sorter[] ?? sorters.ToArray();
+            Sorter[] sortersAsArray = sorters as Sorter[] ?? sorters.ToArray();
             if (sortersAsArray.Length != 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(sorters), "Only one sorter is supported (or none at all)");
@@ -136,15 +132,11 @@ public class TestIndexer : IIndexer, ISearcher
                 TextSorter textSorter => result.OrderBy(document =>
                     document.Fields.FirstOrDefault(field =>
                         IsVarianceMatch(field)
-                        && field.FieldName == textSorter.FieldName
-                    )?.Value.AllTexts().FirstOrDefault()
-                ).ToArray(),
+                        && field.FieldName == textSorter.FieldName)?.Value.AllTexts().FirstOrDefault()).ToArray(),
                 DateTimeOffsetSorter dateTimeOffsetSorter => result.OrderBy(document =>
                     document.Fields.FirstOrDefault(field =>
                         IsVarianceMatch(field)
-                        && field.FieldName == dateTimeOffsetSorter.FieldName
-                    )?.Value.DateTimeOffsets?.FirstOrDefault()
-                ).ToArray(),
+                        && field.FieldName == dateTimeOffsetSorter.FieldName)?.Value.DateTimeOffsets?.FirstOrDefault()).ToArray(),
                 _ => result
             };
 
@@ -162,8 +154,6 @@ public class TestIndexer : IIndexer, ISearcher
                     .Take(take)
                     .Select(document => new Document(document.Id, document.ObjectType))
                     .ToArray(),
-                []
-            )
-        );
+                []));
     }
 }

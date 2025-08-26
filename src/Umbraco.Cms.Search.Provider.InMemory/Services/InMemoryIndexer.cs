@@ -1,7 +1,6 @@
 ﻿using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Models.Indexing;
-using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Provider.InMemory.Models;
 
 namespace Umbraco.Cms.Search.Provider.InMemory.Services;
@@ -22,17 +21,16 @@ internal sealed class InMemoryIndexer : IInMemoryIndexer
 
     public Task DeleteAsync(string indexAlias, IEnumerable<Guid> ids)
     {
-        var keysArray = ids as Guid[] ?? ids.ToArray();
+        Guid[] keysArray = ids as Guid[] ?? ids.ToArray();
 
         // index is responsible for deleting descendants!
-        foreach (var key in keysArray)
+        foreach (Guid key in keysArray)
         {
             Remove(indexAlias, key);
-            var descendantKeys = GetIndex(indexAlias).Where(v =>
-                    v.Value.Fields.Any(f => f.FieldName == Constants.FieldNames.PathIds && f.Value.Keywords?.Contains($"{key:D}") is true)
-                )
+            IEnumerable<Guid> descendantKeys = GetIndex(indexAlias).Where(v =>
+                    v.Value.Fields.Any(f => f.FieldName == Constants.FieldNames.PathIds && f.Value.Keywords?.Contains($"{key:D}") is true))
                 .Select(pair => pair.Key);
-            foreach (var descendantKey in descendantKeys)
+            foreach (Guid descendantKey in descendantKeys)
             {
                 Remove(indexAlias, descendantKey);
             }

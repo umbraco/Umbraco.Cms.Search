@@ -29,7 +29,7 @@ public partial class ContentExtensionsTests
     {
         var contentTypeMock = new Mock<ISimpleContentType>();
         contentTypeMock.SetupGet(m => m.Variations).Returns(ContentVariation.Culture);
-        
+
         var contentMock = new Mock<TContent>();
         contentMock.SetupGet(m => m.AvailableCultures).Returns(cultures);
         contentMock.SetupGet(m => m.ContentType).Returns(contentTypeMock.Object);
@@ -43,7 +43,7 @@ public partial class ContentExtensionsTests
     {
         var contentTypeMock = new Mock<ISimpleContentType>();
         contentTypeMock.SetupGet(m => m.Variations).Returns(ContentVariation.Nothing);
-        
+
         var contentMock = new Mock<TContent>();
         contentMock.SetupGet(m => m.ContentType).Returns(contentTypeMock.Object);
 

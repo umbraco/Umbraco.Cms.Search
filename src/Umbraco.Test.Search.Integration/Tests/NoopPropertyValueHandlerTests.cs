@@ -9,6 +9,7 @@ using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
+using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
@@ -17,15 +18,15 @@ public class NoopPropertyValueHandlerTests : ContentTestBase
     [Test]
     public void AllNoopEditors_YieldNoValues()
     {
-        var jsonSerializer = GetRequiredService<IJsonSerializer>();
+        IJsonSerializer jsonSerializer = GetRequiredService<IJsonSerializer>();
 
-        var media = new MediaBuilder()
+        Media media = new MediaBuilder()
             .WithMediaType(GetMediaType())
             .WithName("The media")
             .Build();
         GetRequiredService<IMediaService>().Save(media);
-        
-        var content = new ContentBuilder()
+
+        Content content = new ContentBuilder()
             .WithContentType(GetContentType())
             .WithName("All Supported Editors")
             .WithPropertyValues(
@@ -44,10 +45,10 @@ public class NoopPropertyValueHandlerTests : ContentTestBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var document = documents.Single();
+        TestIndexDocument document = documents.Single();
         Assert.That(document.Fields.Any(), Is.True);
         Assert.Multiple(() =>
         {
@@ -61,7 +62,7 @@ public class NoopPropertyValueHandlerTests : ContentTestBase
         });
 
         // cross-check that the input values actually yielded the expected published values
-        var publishedContent = GetRequiredService<IPublishedContentCache>().GetById(content.Key);
+        IPublishedContent? publishedContent = GetRequiredService<IPublishedContentCache>().GetById(content.Key);
         Assert.That(publishedContent, Is.Not.Null);
         Assert.Multiple(() =>
         {
@@ -78,9 +79,9 @@ public class NoopPropertyValueHandlerTests : ContentTestBase
     [SetUp]
     public async Task SetupTest()
     {
-        var dataTypeService = GetRequiredService<IDataTypeService>();
+        IDataTypeService dataTypeService = GetRequiredService<IDataTypeService>();
 
-        var emailDataType = new DataTypeBuilder()
+        DataType emailDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Nvarchar)
             .WithName("Email")
@@ -90,7 +91,7 @@ public class NoopPropertyValueHandlerTests : ContentTestBase
             .Build();
         await dataTypeService.CreateAsync(emailDataType, Constants.Security.SuperUserKey);
 
-        var colorPickerWithLabelsDataType = new DataTypeBuilder()
+        DataType colorPickerWithLabelsDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Nvarchar)
             .WithName("Color Picker (with labels)")
@@ -105,7 +106,7 @@ public class NoopPropertyValueHandlerTests : ContentTestBase
         };
         await dataTypeService.CreateAsync(colorPickerWithLabelsDataType, Constants.Security.SuperUserKey);
 
-        var colorPickerWithoutLabelsDataType = new DataTypeBuilder()
+        DataType colorPickerWithoutLabelsDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Nvarchar)
             .WithName("Color Picker (without labels)")
@@ -120,7 +121,7 @@ public class NoopPropertyValueHandlerTests : ContentTestBase
         };
         await dataTypeService.CreateAsync(colorPickerWithoutLabelsDataType, Constants.Security.SuperUserKey);
 
-        var colorPickerEyeDropperDataType = new DataTypeBuilder()
+        DataType colorPickerEyeDropperDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Nvarchar)
             .WithName("Color Picker Eye Dropper")
@@ -130,7 +131,7 @@ public class NoopPropertyValueHandlerTests : ContentTestBase
             .Build();
         await dataTypeService.CreateAsync(colorPickerEyeDropperDataType, Constants.Security.SuperUserKey);
 
-        var mediaPicker3DataType = new DataTypeBuilder()
+        DataType mediaPicker3DataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Nvarchar)
             .WithName("Media Picker 3")
@@ -140,7 +141,7 @@ public class NoopPropertyValueHandlerTests : ContentTestBase
             .Build();
         await dataTypeService.CreateAsync(mediaPicker3DataType, Constants.Security.SuperUserKey);
 
-        var contentType = new ContentTypeBuilder()
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("allEditors")
             .AddPropertyType()
             .WithAlias("emailValue")

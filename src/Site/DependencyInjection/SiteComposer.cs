@@ -10,7 +10,6 @@ using Umbraco.Cms.Search.BackOffice.DependencyInjection;
 using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.DeliveryApi.DependencyInjection;
 using Umbraco.Cms.Search.Provider.Examine.DependencyInjection;
-using Umbraco.Cms.Search.Provider.InMemory.DependencyInjection;
 
 namespace Site.DependencyInjection;
 

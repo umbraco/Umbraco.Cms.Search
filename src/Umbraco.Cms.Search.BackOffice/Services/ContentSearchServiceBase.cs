@@ -2,6 +2,7 @@
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
 using Umbraco.Cms.Search.Core.Services;
@@ -43,7 +44,7 @@ internal abstract class ContentSearchServiceBase<TContent> : IndexedSearchServic
         int skip,
         int take)
     {
-        var filters = ParseFilters(query, parentId, out var effectiveQuery);
+        List<Filter> filters = ParseFilters(query, parentId, out var effectiveQuery);
 
         // this method only searches for children, not descendants; if there is no parent ID, explicitly match root level content
         if (parentId.HasValue is false)
@@ -51,9 +52,9 @@ internal abstract class ContentSearchServiceBase<TContent> : IndexedSearchServic
             filters.Add(new IntegerExactFilter(Core.Constants.FieldNames.Level, [1], false));
         }
 
-        var sorter = GetSorter(ordering);
+        Sorter? sorter = GetSorter(ordering);
 
-        var result = await _searcher.SearchAsync(
+        SearchResult result = await _searcher.SearchAsync(
             IndexAlias,
             query: effectiveQuery,
             filters: filters,
@@ -65,8 +66,8 @@ internal abstract class ContentSearchServiceBase<TContent> : IndexedSearchServic
             skip,
             take);
 
-        var resultKeys = result.Documents.Select(d => d.Id).ToArray();
-        var resultItems = resultKeys.Length > 0
+        Guid[] resultKeys = result.Documents.Select(d => d.Id).ToArray();
+        TContent[] resultItems = resultKeys.Length > 0
             ? GetItems(resultKeys)
                 // unfortunately we can't explicitly rely on the underlying services ordering the requested
                 // items correctly, so we need to enforce correct ordering here.
@@ -109,7 +110,7 @@ internal abstract class ContentSearchServiceBase<TContent> : IndexedSearchServic
 
         PaginationHelper.ConvertSkipTakeToPaging(skip, take, out var pageNumber, out var pageSize);
 
-        var items = SearchChildrenFromDatabase(parentIdAsInt, ordering, pageNumber, pageSize, out var total);
+        IEnumerable<TContent> items = SearchChildrenFromDatabase(parentIdAsInt, ordering, pageNumber, pageSize, out var total);
         return new PagedModel<TContent>
         {
             Items = items,

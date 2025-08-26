@@ -73,8 +73,7 @@ public class InvariantDocumentTests : SearcherTestBase
 
         SearchResult results = await Searcher.SearchAsync(
             indexAlias: indexAlias,
-            filters: new List<Filter> { new TextFilter("title", [updatedValue], false) }
-        );
+            filters: new List<Filter> { new TextFilter("title", [updatedValue], false) });
 
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
@@ -88,8 +87,7 @@ public class InvariantDocumentTests : SearcherTestBase
         // "test" is from the document name (TextsR1), "title" is from the document property (Texts)
         SearchResult results = await Searcher.SearchAsync(
             indexAlias: indexAlias,
-            query: "test title"
-        );
+            query: "test title");
 
         Assert.That(results.Total, Is.EqualTo(1));
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));

@@ -1,8 +1,10 @@
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
+using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
@@ -13,7 +15,7 @@ public class MarkdownPropertyValueHandlerTests : ContentTestBase
     [Test]
     public void MarkdownEditor_CanIndexAllTextRelevanceLevels()
     {
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(_contentType)
             .WithName("Markdown Editor")
             .WithPropertyValues(
@@ -26,9 +28,9 @@ public class MarkdownPropertyValueHandlerTests : ContentTestBase
                                     Paragraph #2
 
                                     ## H2 Heading #1
-                                    
+
                                     ### H3 Heading #1
-                                    
+
                                     Paragraph #3
                                     Paragraph #4
 
@@ -42,17 +44,17 @@ public class MarkdownPropertyValueHandlerTests : ContentTestBase
 
                                     Paragraph #6
                                     """
- 
+
                 })
             .Build();
 
         ContentService.Save(content);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var document = documents.Single();
-        var markdownValue = document.Fields.FirstOrDefault(f => f.FieldName == "markdownValue")?.Value;
+        TestIndexDocument document = documents.Single();
+        IndexValue? markdownValue = document.Fields.FirstOrDefault(f => f.FieldName == "markdownValue")?.Value;
         Assert.That(markdownValue, Is.Not.Null);
 
         Assert.Multiple(() =>
@@ -68,7 +70,7 @@ public class MarkdownPropertyValueHandlerTests : ContentTestBase
     [Test]
     public void MarkdownEditor_IncludesTextFromNestedTags()
     {
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(_contentType)
             .WithName("Markdown Editor")
             .WithPropertyValues(
@@ -79,27 +81,26 @@ public class MarkdownPropertyValueHandlerTests : ContentTestBase
 
                                     <a href="https://some.where">A link to somewhere</a>
                                     """
- 
+
                 })
             .Build();
 
         ContentService.Save(content);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var document = documents.Single();
-        var markdownValue = document.Fields.FirstOrDefault(f => f.FieldName == "markdownValue")?.Value;
+        TestIndexDocument document = documents.Single();
+        IndexValue? markdownValue = document.Fields.FirstOrDefault(f => f.FieldName == "markdownValue")?.Value;
         Assert.That(markdownValue, Is.Not.Null);
         CollectionAssert.AreEqual(new [] { "Some bold text", "A link to somewhere" }, markdownValue.Texts);
     }
 
-    
     [TestCase(null)]
     [TestCase("")]
     public void MarkdownEditor_IgnoresEmptyValues(object? value)
     {
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(_contentType)
             .WithName("Markdown Editor")
             .WithPropertyValues(
@@ -111,10 +112,10 @@ public class MarkdownPropertyValueHandlerTests : ContentTestBase
 
         ContentService.Save(content);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var document = documents.Single();
+        TestIndexDocument document = documents.Single();
         Assert.That(document.Fields.Any(field => field.FieldName == "markdownValue"), Is.False);
     }
 
@@ -123,7 +124,7 @@ public class MarkdownPropertyValueHandlerTests : ContentTestBase
     [TestCase("A text string")]
     public void MarkdownEditor_IncludesSimpleValues(object value)
     {
-        var content = new ContentBuilder()
+        Content content = new ContentBuilder()
             .WithContentType(_contentType)
             .WithName("Markdown Editor")
             .WithPropertyValues(
@@ -135,20 +136,20 @@ public class MarkdownPropertyValueHandlerTests : ContentTestBase
 
         ContentService.Save(content);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
 
-        var document = documents.Single();
-        var markdownValue = document.Fields.FirstOrDefault(f => f.FieldName == "markdownValue")?.Value;
+        TestIndexDocument document = documents.Single();
+        IndexValue? markdownValue = document.Fields.FirstOrDefault(f => f.FieldName == "markdownValue")?.Value;
         Assert.That(markdownValue, Is.Not.Null);
         CollectionAssert.AreEqual(new [] { value.ToString() }, markdownValue.Texts);
     }
-    
+
     [SetUp]
     public async Task SetupTest()
     {
-        var markdownDataType = new DataTypeBuilder()
+        DataType markdownDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Ntext)
             .WithName("Markdown Editor")

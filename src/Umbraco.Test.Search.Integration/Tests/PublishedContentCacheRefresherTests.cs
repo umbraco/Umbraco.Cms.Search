@@ -3,6 +3,7 @@ using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Search.Core.Cache.Content;
 using Umbraco.Cms.Tests.Common.Testing;
 
 namespace Umbraco.Test.Search.Integration.Tests;
@@ -29,7 +30,7 @@ public partial class PublishedContentCacheRefresherTests : TestBase
 
     private IContent Get(Guid key)
         => ContentService.GetById(key) ?? throw new ArgumentException("No content found with that key");
-    
+
     private IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>();
 
     private IContentService ContentService => GetRequiredService<IContentService>();

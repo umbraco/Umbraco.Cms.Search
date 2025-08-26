@@ -1,5 +1,7 @@
 ﻿using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
+using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
@@ -10,7 +12,7 @@ public class MediaStructureTests : MediaTestBase
     {
         MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
 
-        var documents = Indexer.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -30,7 +32,7 @@ public class MediaStructureTests : MediaTestBase
     {
         MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(0));
     }
 
@@ -39,7 +41,7 @@ public class MediaStructureTests : MediaTestBase
     {
         MediaService.Save(RootFolder());
 
-        var documents = Indexer.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(1));
         Assert.That(documents[0].Id, Is.EqualTo(RootFolderKey));
     }
@@ -48,8 +50,8 @@ public class MediaStructureTests : MediaTestBase
     public void FullStructure_WithChildFolderInRecycleBin_YieldsAllDocuments()
     {
         MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
-        
-        var result = MediaService.MoveToRecycleBin(ChildFolder());
+
+        Attempt<OperationResult?> result = MediaService.MoveToRecycleBin(ChildFolder());
         Assert.Multiple(() =>
         {
             Assert.That(result.Success, Is.True);
@@ -57,7 +59,7 @@ public class MediaStructureTests : MediaTestBase
             Assert.That(GrandchildMedia().Trashed, Is.True);
         });
 
-        var documents = Indexer.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -74,15 +76,15 @@ public class MediaStructureTests : MediaTestBase
     public void FullStructure_WithChildFolderDeleted_YieldsNothingBelowRootFolder()
     {
         MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
-        
-        var result = MediaService.Delete(ChildFolder());
+
+        Attempt<OperationResult?> result = MediaService.Delete(ChildFolder());
         Assert.Multiple(() =>
         {
             Assert.That(result.Success, Is.True);
             Assert.That(MediaService.GetById(GrandchildMediaKey), Is.Null);
         });
-           
-        var documents = Indexer.Dump(IndexAliases.Media);
+
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -98,11 +100,11 @@ public class MediaStructureTests : MediaTestBase
     {
         MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
 
-        var documents = Indexer.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         await MediaTypeService.DeleteAsync(RootMedia().ContentType.Key, Constants.Security.SuperUserKey);
-        
+
         documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(2));
 

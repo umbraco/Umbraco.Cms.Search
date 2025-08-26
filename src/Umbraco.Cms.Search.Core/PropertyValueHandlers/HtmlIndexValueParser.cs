@@ -29,12 +29,12 @@ public sealed partial class HtmlIndexValueParser : IHtmlIndexValueParser
             doc.LoadHtml(html.Replace("</", "\n</"));
 
             // all nodes of textual relevance to indexing is at document root level
-            var children = doc.DocumentNode.ChildNodes;
+            HtmlNodeCollection children = doc.DocumentNode.ChildNodes;
 
-            var h1 = children.Where(c => c.Name.InvariantEquals("h1")).ToArray();
-            var h2 = children.Where(c => c.Name.InvariantEquals("h2")).ToArray();
-            var h3 = children.Where(c => c.Name.InvariantEquals("h3")).ToArray();
-            var texts = children.Except(h1.Union(h2).Union(h3)).ToArray();
+            HtmlNode[] h1 = children.Where(c => c.Name.InvariantEquals("h1")).ToArray();
+            HtmlNode[] h2 = children.Where(c => c.Name.InvariantEquals("h2")).ToArray();
+            HtmlNode[] h3 = children.Where(c => c.Name.InvariantEquals("h3")).ToArray();
+            HtmlNode[] texts = children.Except(h1.Union(h2).Union(h3)).ToArray();
 
             var indexValue = new IndexValue
             {

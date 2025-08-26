@@ -33,34 +33,34 @@ internal sealed class ContentIndexingService : IContentIndexingService
 
     public void Rebuild(string indexAlias)
     {
-        var indexRegistration = _indexOptions.GetIndexRegistration(indexAlias);
+        IndexRegistration? indexRegistration = _indexOptions.GetIndexRegistration(indexAlias);
         if (indexRegistration is null)
         {
             _logger.LogError("Cannot rebuild index - no index registration found for alias: {indexAlias}", indexAlias);
             return;
         }
- 
+
         _backgroundTaskQueue.QueueBackgroundWorkItem(async cancellationToken => await RebuildAsync(indexRegistration, cancellationToken));
     }
-    
+
     private async Task HandleAsync(IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
     {
-        var changesAsArray = changes as ContentChange[] ?? changes.ToArray();
+        ContentChange[] changesAsArray = changes as ContentChange[] ?? changes.ToArray();
 
-        var indexRegistrationsByStrategyType = _indexOptions
+        IEnumerable<IGrouping<Type, IndexRegistration>> indexRegistrationsByStrategyType = _indexOptions
             .GetIndexRegistrations()
             .GroupBy(r => r.ContentChangeStrategy);
 
-        foreach (var group in indexRegistrationsByStrategyType)
+        foreach (IGrouping<Type, IndexRegistration> group in indexRegistrationsByStrategyType)
         {
-            if (TryGetContentChangeStrategy(group.Key, out var contentChangeStrategy) is false)
+            if (TryGetContentChangeStrategy(group.Key, out IContentChangeStrategy? contentChangeStrategy) is false)
             {
                 continue;
             }
 
-            var indexInfos = group
+            IndexInfo[] indexInfos = group
                 .Select(g =>
-                    TryGetIndexer(g.Indexer, out var indexer)
+                    TryGetIndexer(g.Indexer, out IIndexer? indexer)
                         ? new IndexInfo(g.IndexAlias, g.ContainedObjectTypes, indexer)
                         : null)
                 .WhereNotNull()
@@ -78,8 +78,8 @@ internal sealed class ContentIndexingService : IContentIndexingService
 
     private async Task RebuildAsync(IndexRegistration indexRegistration, CancellationToken cancellationToken)
     {
-        if (TryGetContentChangeStrategy(indexRegistration.ContentChangeStrategy, out var contentChangeStrategy) is false
-            || TryGetIndexer(indexRegistration.Indexer, out var indexer) is false)
+        if (TryGetContentChangeStrategy(indexRegistration.ContentChangeStrategy, out IContentChangeStrategy? contentChangeStrategy) is false
+            || TryGetIndexer(indexRegistration.Indexer, out IIndexer? indexer) is false)
         {
             return;
         }

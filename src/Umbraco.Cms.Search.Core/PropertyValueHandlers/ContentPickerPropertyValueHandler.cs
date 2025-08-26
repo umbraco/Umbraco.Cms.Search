@@ -13,7 +13,7 @@ public sealed class ContentPickerPropertyValueHandler : IPropertyValueHandler, I
 
     public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
-        var key = ParsePropertyValue(property, culture, segment, published);
+        Guid? key = ParsePropertyValue(property, culture, segment, published);
         return key.HasValue
             ? [new IndexField(property.Alias, new IndexValue { Keywords = [key.Value.AsKeyword()] }, culture, segment)]
             : [];
@@ -23,12 +23,12 @@ public sealed class ContentPickerPropertyValueHandler : IPropertyValueHandler, I
     {
         var value = property.GetValue(culture, segment, published) as string;
         if (value.IsNullOrWhiteSpace()
-            || UdiParser.TryParse(value, out var udi) is false
+            || UdiParser.TryParse(value, out Udi? udi) is false
             || udi is not GuidUdi guidUdi)
         {
             return null;
         }
 
-        return guidUdi.Guid; 
+        return guidUdi.Guid;
     }
 }

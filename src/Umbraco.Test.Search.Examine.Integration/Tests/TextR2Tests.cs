@@ -12,24 +12,21 @@ public class TextR2Tests : SearcherTestBase
     public async Task CanFilterSingleDocumentBySpecificTextR2()
     {
         SearchResult result = await SearchAsync(
-            filters: [new TextFilter(FieldTextRelevance, ["texts_r2_22"], false)]
-        );
+            filters: [new TextFilter(FieldTextRelevance, ["texts_r2_22"], false)]);
 
         Assert.Multiple(
             () =>
             {
                 Assert.That(result.Total, Is.EqualTo(1));
-                Assert.That(result.Documents.First().Id, Is.EqualTo(_documentIds[22]));
-            }
-        );
+                Assert.That(result.Documents.First().Id, Is.EqualTo(DocumentIds[22]));
+            });
     }
 
     [Test]
     public async Task CanFilterMultipleDocumentsBySpecificTextR2()
     {
         SearchResult result = await SearchAsync(
-            filters: [new TextFilter(FieldTextRelevance, ["texts_r2_21", "texts_r2_22", "texts_r2_23"], false)]
-        );
+            filters: [new TextFilter(FieldTextRelevance, ["texts_r2_21", "texts_r2_22", "texts_r2_23"], false)]);
 
         Assert.Multiple(
             () =>
@@ -39,18 +36,15 @@ public class TextR2Tests : SearcherTestBase
                 var documents = result.Documents.ToList();
                 Assert.That(
                     documents.Select(d => d.Id),
-                    Is.EqualTo(new[] { _documentIds[21], _documentIds[22], _documentIds[23] }).AsCollection
-                );
-            }
-        );
+                    Is.EqualTo(new[] { DocumentIds[21], DocumentIds[22], DocumentIds[23] }).AsCollection);
+            });
     }
 
     [Test]
     public async Task CanFilterDocumentsBySpecificTextR2Negated()
     {
         SearchResult result = await SearchAsync(
-            filters: [new TextFilter(FieldTextRelevance, ["texts_r2_22"], true)]
-        );
+            filters: [new TextFilter(FieldTextRelevance, ["texts_r2_22"], true)]);
 
         Assert.Multiple(
             () =>
@@ -58,9 +52,7 @@ public class TextR2Tests : SearcherTestBase
                 Assert.That(result.Total, Is.EqualTo(99));
                 Assert.That(
                     result.Documents.Select(d => d.Id),
-                    Is.EqualTo(_documentIds.Values.Except([_documentIds[22]])).AsCollection
-                );
-            }
-        );
+                    Is.EqualTo(DocumentIds.Values.Except([DocumentIds[22]])).AsCollection);
+            });
     }
 }

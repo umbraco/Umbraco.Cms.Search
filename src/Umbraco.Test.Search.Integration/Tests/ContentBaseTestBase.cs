@@ -16,7 +16,7 @@ public abstract class ContentBaseTestBase : TestBase
         {
             var idValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.Id)?.Value.Keywords?.SingleOrDefault();
             Assert.That(idValue, Is.EqualTo(key.AsKeyword()));
-            
+
             var parentIdValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.ParentId)?.Value.Keywords?.SingleOrDefault();
             Assert.That(parentIdValue, Is.EqualTo(parentKey.AsKeyword()));
 
@@ -28,7 +28,7 @@ public abstract class ContentBaseTestBase : TestBase
 
     protected void VerifyDocumentSystemValues(TestIndexDocument document, IContentBase content, string[] tags)
     {
-        var dateTimeOffsetConverter = GetRequiredService<IDateTimeOffsetConverter>();
+        IDateTimeOffsetConverter dateTimeOffsetConverter = GetRequiredService<IDateTimeOffsetConverter>();
         var expectedObjectTypeValue = content.ObjectType().ToString();
 
         Assert.Multiple(() =>
@@ -39,10 +39,10 @@ public abstract class ContentBaseTestBase : TestBase
             var nameValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.Name)?.Value.TextsR1?.SingleOrDefault();
             Assert.That(nameValue, Is.EqualTo(content.Name));
 
-            var createDateValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.CreateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
+            DateTimeOffset? createDateValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.CreateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
             Assert.That(createDateValue, Is.EqualTo(dateTimeOffsetConverter.ToDateTimeOffset(content.CreateDate)));
 
-            var updateDateValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.UpdateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
+            DateTimeOffset? updateDateValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.UpdateDate)?.Value.DateTimeOffsets?.SingleOrDefault();
             Assert.That(updateDateValue, Is.EqualTo(dateTimeOffsetConverter.ToDateTimeOffset(content.UpdateDate)));
 
             var levelValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.Level)?.Value.Integers?.SingleOrDefault();
@@ -54,7 +54,7 @@ public abstract class ContentBaseTestBase : TestBase
             var objectTypeValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.ObjectType)?.Value.Keywords?.SingleOrDefault();
             Assert.That(objectTypeValue, Is.EqualTo(expectedObjectTypeValue));
 
-            var tagsValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.Tags)?.Value.Keywords;
+            IEnumerable<string>? tagsValue = document.Fields.FirstOrDefault(f => f.FieldName == Constants.FieldNames.Tags)?.Value.Keywords;
             Assert.That(tagsValue ?? [], Is.EquivalentTo(tags));
 
             Assert.That(document.Protection, Is.Null);

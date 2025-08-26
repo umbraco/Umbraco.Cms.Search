@@ -1,5 +1,4 @@
-﻿
-using Umbraco.Cms.Core.HostedServices;
+﻿using Umbraco.Cms.Core.HostedServices;
 
 namespace Umbraco.Test.Search.Examine.Integration;
 

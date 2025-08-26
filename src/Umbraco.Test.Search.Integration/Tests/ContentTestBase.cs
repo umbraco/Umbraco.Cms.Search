@@ -6,7 +6,7 @@ namespace Umbraco.Test.Search.Integration.Tests;
 
 public abstract class ContentTestBase : ContentBaseTestBase
 {
-    protected IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>(); 
+    protected IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>();
 
     protected IContentService ContentService => GetRequiredService<IContentService>();
 

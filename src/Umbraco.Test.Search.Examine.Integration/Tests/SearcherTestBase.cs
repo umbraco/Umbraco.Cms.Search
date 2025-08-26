@@ -25,7 +25,7 @@ public abstract class SearcherTestBase
     protected const string FieldMultiSorting = "FieldThree";
     protected const string FieldTextRelevance = "FieldFour";
 
-    protected readonly Dictionary<int, Guid> _documentIds = [];
+    protected Dictionary<int, Guid> DocumentIds { get; } = [];
 
     [OneTimeSetUp]
     protected async Task PerformOneTimeSetUpAsync()
@@ -44,7 +44,7 @@ public abstract class SearcherTestBase
         for (var i = 1; i <= 100; i++)
         {
             var id = Guid.NewGuid();
-            _documentIds[i] = id;
+            DocumentIds[i] = id;
 
             await indexer.AddOrUpdateAsync(
                 IndexAlias,
@@ -62,8 +62,7 @@ public abstract class SearcherTestBase
                         Constants.FieldNames.PathIds,
                         new IndexValue { Keywords = [id.AsKeyword()], },
                         Culture: null,
-                        Segment: null
-                    ),
+                        Segment: null),
                     new IndexField(
                         FieldMultipleValues,
                         new IndexValue
@@ -80,8 +79,7 @@ public abstract class SearcherTestBase
                             Texts = ["all", i % 2 == 0 ? "even" : "odd", $"single{i}", $"phrase search single{i}"]
                         },
                         Culture: null,
-                        Segment: null
-                    ),
+                        Segment: null),
                     new IndexField(
                         FieldSingleValue,
                         new IndexValue
@@ -93,8 +91,7 @@ public abstract class SearcherTestBase
                             Texts = [$"single{i}"]
                         },
                         Culture: null,
-                        Segment: null
-                    ),
+                        Segment: null),
                     new IndexField(
                         FieldMultiSorting,
                         new IndexValue
@@ -105,8 +102,7 @@ public abstract class SearcherTestBase
                             DateTimeOffsets = [i % 2 == 0 ? StartDate().AddDays(1) : StartDate().AddDays(2)]
                         },
                         Culture: null,
-                        Segment: null
-                    ),
+                        Segment: null),
                     new IndexField(
                         FieldTextRelevance,
                         new IndexValue
@@ -117,11 +113,9 @@ public abstract class SearcherTestBase
                             TextsR3 = [$"texts_r3_{i}", i == 40 ? "special" : "common"]
                         },
                         Culture: null,
-                        Segment: null
-                    ),
+                        Segment: null),
                 ],
-                null
-            );
+                null);
         }
 
         await Task.Delay(3000);
@@ -149,7 +143,7 @@ public abstract class SearcherTestBase
         int skip = 0,
         int take = 100)
     {
-        var searcher = GetRequiredService<ISearcher>();
+        ISearcher searcher = GetRequiredService<ISearcher>();
         SearchResult result = await searcher.SearchAsync(
             IndexAlias,
             query,
@@ -160,8 +154,7 @@ public abstract class SearcherTestBase
             segment,
             accessContext,
             skip,
-            take
-        );
+            take);
 
         Assert.That(result, Is.Not.Null);
         return result;

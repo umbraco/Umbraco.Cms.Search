@@ -38,13 +38,13 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
 
     public virtual IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
-        var blockValue = ParsePropertyValue(property, culture, segment, published);
+        BlockValue? blockValue = ParsePropertyValue(property, culture, segment, published);
         if (blockValue is null || blockValue.ContentData.Count == 0)
         {
             return [];
         }
 
-        var blockIndexValues = GetCumulativeIndexValues(blockValue, property, culture, segment, published, contentContext);
+        Dictionary<(string? Culture, string? Segment), CumulativeIndexValue> blockIndexValues = GetCumulativeIndexValues(blockValue, property, culture, segment, published, contentContext);
         return ToIndexFields(blockIndexValues, property.Alias);
     }
 
@@ -85,9 +85,9 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
         // these are the cumulative index values (for all contained blocks) per contained variation
         var cumulativeIndexValuesByVariation = new Dictionary<(string? Culture, string? Segment), CumulativeIndexValue>();
 
-        foreach (var contentData in items)
+        foreach (BlockItemData contentData in items)
         {
-            var propertyTypesByAlias = GetPropertyTypesByAlias(contentData.ContentTypeKey, elementTypesByKey, culture, segment);
+            Dictionary<string, IPropertyType>? propertyTypesByAlias = GetPropertyTypesByAlias(contentData.ContentTypeKey, elementTypesByKey, culture, segment);
             if (propertyTypesByAlias is null)
             {
                 continue;
@@ -95,7 +95,7 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
 
             foreach (var propertyCulture in propertyCultures)
             {
-                foreach (var blockPropertyValue in contentData.Values.Where(value => value.Culture.InvariantEquals(propertyCulture)))
+                foreach (BlockPropertyValue blockPropertyValue in contentData.Values.Where(value => value.Culture.InvariantEquals(propertyCulture)))
                 {
                     if (published
                         && propertyCulture is not null
@@ -108,14 +108,14 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
                         continue;
                     }
 
-                    if (propertyTypesByAlias.TryGetValue(blockPropertyValue.Alias, out var propertyType) is false)
+                    if (propertyTypesByAlias.TryGetValue(blockPropertyValue.Alias, out IPropertyType? propertyType) is false)
                     {
                         // this is to be expected, if the property type has been removed from
                         // the element type after the block creation
                         continue;
                     }
 
-                    var editor = _propertyEditorCollection[propertyType.PropertyEditorAlias];
+                    IDataEditor? editor = _propertyEditorCollection[propertyType.PropertyEditorAlias];
                     if (editor is null)
                     {
                         _logger.LogDebug(
@@ -136,7 +136,7 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
                         blockProperty.PublishValues(propertyCulture ?? "*", segment ?? "*");
                     }
 
-                    var blockPropertyValueHandler = _propertyValueHandlerCollection.GetPropertyValueHandler(propertyType);
+                    IPropertyValueHandler? blockPropertyValueHandler = _propertyValueHandlerCollection.GetPropertyValueHandler(propertyType);
                     if (blockPropertyValueHandler is null)
                     {
                         _logger.LogDebug(
@@ -145,13 +145,13 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
                         continue;
                     }
 
-                    var blockPropertyIndexFields = blockPropertyValueHandler
+                    IndexField[] blockPropertyIndexFields = blockPropertyValueHandler
                         .GetIndexFields(blockProperty, propertyCulture, segment, published, contentContext)
                         .ToArray();
 
-                    foreach (var blockPropertyIndexField in blockPropertyIndexFields)
+                    foreach (IndexField blockPropertyIndexField in blockPropertyIndexFields)
                     {
-                        if (cumulativeIndexValuesByVariation.TryGetValue((blockPropertyIndexField.Culture, blockPropertyIndexField.Segment), out var blockIndexValue) is false)
+                        if (cumulativeIndexValuesByVariation.TryGetValue((blockPropertyIndexField.Culture, blockPropertyIndexField.Segment), out CumulativeIndexValue? blockIndexValue) is false)
                         {
                             blockIndexValue = new CumulativeIndexValue();
                             cumulativeIndexValuesByVariation.Add((blockPropertyIndexField.Culture, blockPropertyIndexField.Segment), blockIndexValue);
@@ -207,13 +207,11 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
                         propertyAlias,
                         indexValue,
                         kvp.Key.Culture,
-                        kvp.Key.Segment
-                    )
-                    : null
-            )
+                        kvp.Key.Segment)
+                    : null)
             .WhereNotNull()
             .ToArray();
-    
+
     private string?[] GetPropertyCultures(IPropertyType propertyType, string? requestedCulture, bool published, IContentBase contentContext)
     {
         // block level variance can cause invariant culture to expand into multiple concrete cultures
@@ -235,7 +233,7 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
 
     private Dictionary<string, IPropertyType>? GetPropertyTypesByAlias(Guid elementTypeKey, Dictionary<Guid, IContentType> elementTypes, string? requestedCulture, string? requestedSegment)
     {
-        if (elementTypes.TryGetValue(elementTypeKey, out var elementType) is false)
+        if (elementTypes.TryGetValue(elementTypeKey, out IContentType? elementType) is false)
         {
             return null;
         }
@@ -261,7 +259,7 @@ public abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
             })
             .ToDictionary(x => x.Alias);
     }
-    
+
     protected class BlockValue
     {
         public required List<BlockItemData> ContentData { get; init; }

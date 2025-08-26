@@ -1,4 +1,5 @@
-﻿using Umbraco.Cms.Core.Services;
+﻿using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests.BackOffice;
 
@@ -17,12 +18,12 @@ public partial class IndexedEntitySearchServiceTests : BackOfficeTestBase
             return;
         }
 
-        var contentAtRoot = ContentService.GetRootContent().OrderBy(content => content.SortOrder).ToArray();
+        IContent[] contentAtRoot = ContentService.GetRootContent().OrderBy(content => content.SortOrder).ToArray();
         ContentService.MoveToRecycleBin(contentAtRoot.Last());
 
-        var mediaAtRoot = MediaService.GetRootMedia().OrderBy(media => media.SortOrder).ToArray();
+        IMedia[] mediaAtRoot = MediaService.GetRootMedia().OrderBy(media => media.SortOrder).ToArray();
         MediaService.MoveToRecycleBin(mediaAtRoot.Last());
-        
+
         _fixtureIsInitialized = true;
     }
 }

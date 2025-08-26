@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
@@ -6,6 +7,8 @@ using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Scoping;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.Changes;
+using Umbraco.Cms.Search.Core.Cache.Content;
+using Umbraco.Cms.Search.Core.Cache.Media;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Extensions;
@@ -38,44 +41,41 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
 
     public void Handle(PublishedContentCacheRefresherNotification notification)
     {
-        var payloads = GetNotificationPayloads<PublishedContentCacheRefresher.JsonPayload>(notification);
-        
-        var changes = PublishedDocumentChanges(
-            payloads.Select(payload => (payload.ContentKey, TreeChangeTypes: payload.ChangeTypes))
-        );
+        PublishedContentCacheRefresher.JsonPayload[] payloads = GetNotificationPayloads<PublishedContentCacheRefresher.JsonPayload>(notification);
+
+        ContentChange[] changes = PublishedDocumentChanges(
+            payloads.Select(payload => (payload.ContentKey, TreeChangeTypes: payload.ChangeTypes)));
 
         ExecuteDeferred(() => _contentIndexingService.Handle(changes));
     }
 
     public void Handle(DraftContentCacheRefresherNotification notification)
     {
-        var payloads = GetNotificationPayloads<DraftContentCacheRefresher.JsonPayload>(notification);
+        DraftContentCacheRefresher.JsonPayload[] payloads = GetNotificationPayloads<DraftContentCacheRefresher.JsonPayload>(notification);
 
-        var changes = DraftDocumentChanges(
-            payloads.Select(payload => (payload.ContentKey, payload.ChangeTypes))
-        );
+        ContentChange[] changes = DraftDocumentChanges(
+            payloads.Select(payload => (payload.ContentKey, payload.ChangeTypes)));
 
         ExecuteDeferred(() => _contentIndexingService.Handle(changes));
     }
 
     public void Handle(DraftMediaCacheRefresherNotification notification)
     {
-        var payloads = GetNotificationPayloads<DraftMediaCacheRefresher.JsonPayload>(notification);
+        DraftMediaCacheRefresher.JsonPayload[] payloads = GetNotificationPayloads<DraftMediaCacheRefresher.JsonPayload>(notification);
 
-        var changes = MediaChanges(
-            payloads.Select(payload => (payload.MediaKey, payload.ChangeTypes))
-        );
+        ContentChange[] changes = MediaChanges(
+            payloads.Select(payload => (payload.MediaKey, payload.ChangeTypes)));
 
         ExecuteDeferred(() => _contentIndexingService.Handle(changes));
     }
 
     public void Handle(MemberCacheRefresherNotification notification)
     {
-        var payloads = GetNotificationPayloads<MemberCacheRefresher.JsonPayload>(notification);
-        var changes = payloads
+        MemberCacheRefresher.JsonPayload[] payloads = GetNotificationPayloads<MemberCacheRefresher.JsonPayload>(notification);
+        ContentChange[] changes = payloads
             .Select(payload =>
             {
-                var attempt = _idKeyMap.GetKeyForId(payload.Id, UmbracoObjectTypes.Member);
+                Attempt<Guid> attempt = _idKeyMap.GetKeyForId(payload.Id, UmbracoObjectTypes.Member);
                 return attempt.Success
                     ? ContentChange.Member(attempt.Result, payload.Removed ? ChangeImpact.Remove : ChangeImpact.Refresh, ContentState.Draft)
                     : null;
@@ -94,20 +94,17 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
     private ContentChange[] PublishedDocumentChanges(IEnumerable<(Guid ContentId, TreeChangeTypes ChangeTypes)> payloads)
         => GetContentChanges(
             payloads,
-            (contentKey, changeImpact) => ContentChange.Document(contentKey, changeImpact, ContentState.Published)
-        );
+            (contentKey, changeImpact) => ContentChange.Document(contentKey, changeImpact, ContentState.Published));
 
     private ContentChange[] DraftDocumentChanges(IEnumerable<(Guid ContentId, TreeChangeTypes ChangeTypes)> payloads)
         => GetContentChanges(
             payloads,
-            (contentKey, changeImpact) => ContentChange.Document(contentKey, changeImpact, ContentState.Draft)
-        );
+            (contentKey, changeImpact) => ContentChange.Document(contentKey, changeImpact, ContentState.Draft));
 
     private ContentChange[] MediaChanges(IEnumerable<(Guid ContentId, TreeChangeTypes ChangeTypes)> payloads)
         => GetContentChanges(
             payloads,
-            (contentKey, changeImpact) => ContentChange.Media(contentKey, changeImpact, ContentState.Draft)
-        );
+            (contentKey, changeImpact) => ContentChange.Media(contentKey, changeImpact, ContentState.Draft));
 
     private ContentChange[] GetContentChanges(IEnumerable<(Guid ContentId, TreeChangeTypes ChangeTypes)> payloads, Func<Guid, ChangeImpact, ContentChange> contentChangeFactory)
         => payloads
@@ -119,8 +116,7 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
                     TreeChangeTypes.RefreshBranch => contentChangeFactory(payload.ContentId, ChangeImpact.RefreshWithDescendants),
                     TreeChangeTypes.Remove => contentChangeFactory(payload.ContentId, ChangeImpact.Remove),
                     _ => throw new ArgumentOutOfRangeException(nameof(payload), payload.ChangeTypes, "Unexpected tree change type.")
-                }
-            )
+                })
             .WhereNotNull()
             .ToArray();
 }

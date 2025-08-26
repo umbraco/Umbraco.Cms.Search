@@ -30,7 +30,7 @@ internal sealed class DeliveryApiContentIndexer : IContentIndexer
         {
             return Task.FromResult(Enumerable.Empty<IndexField>());
         }
-        
+
         var indexFieldsByIdentifier = new Dictionary<string, IndexField>();
 
         foreach (IContentIndexHandler handler in _contentIndexHandlerCollection)
@@ -43,9 +43,9 @@ internal sealed class DeliveryApiContentIndexer : IContentIndexer
 
             foreach (var culture in cultures)
             {
-                var fields = handler.GetFields().ToArray();
-                var fieldValues = handler.GetFieldValues(concreteContent, culture).ToArray();
-                
+                Cms.Core.DeliveryApi.IndexField[] fields = handler.GetFields().ToArray();
+                IndexFieldValue[] fieldValues = handler.GetFieldValues(concreteContent, culture).ToArray();
+
                 foreach (IndexFieldValue fieldValue in fieldValues)
                 {
                     var identifier = $"{fieldValue.FieldName}|{culture}";
@@ -58,7 +58,7 @@ internal sealed class DeliveryApiContentIndexer : IContentIndexer
                         continue;
                     }
 
-                    var field = fields.FirstOrDefault(f => f.FieldName == fieldValue.FieldName);
+                    Cms.Core.DeliveryApi.IndexField? field = fields.FirstOrDefault(f => f.FieldName == fieldValue.FieldName);
                     if (field is null)
                     {
                         _logger.LogWarning("Field name {fieldName}  did not have a corresponding field definition from the index handler {indexHandler}", fieldValue.FieldName, handler.GetType().FullName);
@@ -102,7 +102,7 @@ internal sealed class DeliveryApiContentIndexer : IContentIndexer
                             }
                             break;
                         case FieldType.Date:
-                            var dateTimeOffsets = fieldValue.Values
+                            DateTimeOffset[] dateTimeOffsets = fieldValue.Values
                                 .OfType<DateTime>()
                                 .Select(_dateTimeOffsetConverter.ToDateTimeOffset)
                                 .ToArray();

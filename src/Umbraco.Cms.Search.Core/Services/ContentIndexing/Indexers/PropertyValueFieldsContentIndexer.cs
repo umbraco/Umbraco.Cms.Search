@@ -3,6 +3,7 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
+using Umbraco.Cms.Search.Core.PropertyValueHandlers;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
 using Umbraco.Extensions;
 
@@ -31,9 +32,9 @@ internal sealed class PropertyValueFieldsContentIndexer : IContentIndexer
     {
         var fields = new List<IndexField>();
 
-        var memberType = content is IMember ? await _memberTypeService.GetAsync(content.ContentType.Key) : null;
-        
-        foreach (var property in content.Properties)
+        IMemberType? memberType = content is IMember ? await _memberTypeService.GetAsync(content.ContentType.Key) : null;
+
+        foreach (IProperty property in content.Properties)
         {
             if (memberType?.IsSensitiveProperty(property.Alias) is true)
             {
@@ -41,7 +42,7 @@ internal sealed class PropertyValueFieldsContentIndexer : IContentIndexer
                 continue;
             }
 
-            var handler = _propertyValueHandlerCollection.GetPropertyValueHandler(property.PropertyType);
+            IPropertyValueHandler? handler = _propertyValueHandlerCollection.GetPropertyValueHandler(property.PropertyType);
             if (handler is null)
             {
                 _logger.LogDebug(
@@ -62,7 +63,8 @@ internal sealed class PropertyValueFieldsContentIndexer : IContentIndexer
             {
                 foreach (var segment in propertySegments)
                 {
-                    var indexFields = handler.GetIndexFields(property, culture, segment, published, content);
+                    IEnumerable<IndexField>? indexFields = handler.GetIndexFields(property, culture, segment, published, content);
+                    // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
                     if (indexFields is null)
                     {
                         continue;

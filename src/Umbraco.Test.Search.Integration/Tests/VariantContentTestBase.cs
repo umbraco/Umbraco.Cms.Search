@@ -13,10 +13,9 @@ public abstract class VariantContentTestBase : ContentTestBase
     {
         await GetRequiredService<ILanguageService>().CreateAsync(
             new LanguageBuilder().WithCultureInfo("da-DK").Build(),
-            Constants.Security.SuperUserKey
-        );
-        
-        var contentType = new ContentTypeBuilder()
+            Constants.Security.SuperUserKey);
+
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("variant")
             .WithContentVariation(ContentVariation.CultureAndSegment)
             .AddPropertyType()
@@ -42,7 +41,7 @@ public abstract class VariantContentTestBase : ContentTestBase
         contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
         await ContentTypeService.UpdateAsync(contentType, Constants.Security.SuperUserKey);
 
-        var root = new ContentBuilder()
+        Content root = new ContentBuilder()
             .WithKey(RootKey)
             .WithContentType(contentType)
             .WithCultureName("en-US", "Root EN")
@@ -53,7 +52,7 @@ public abstract class VariantContentTestBase : ContentTestBase
         root.SetValue("count", 12);
         ContentService.Save(root);
 
-        var child = new ContentBuilder()
+        Content child = new ContentBuilder()
             .WithKey(ChildKey)
             .WithContentType(contentType)
             .WithCultureName("en-US", "Child EN")
@@ -65,7 +64,7 @@ public abstract class VariantContentTestBase : ContentTestBase
         child.SetValue("count", 34);
         ContentService.Save(child);
 
-        var grandchild = new ContentBuilder()
+        Content grandchild = new ContentBuilder()
             .WithKey(GrandchildKey)
             .WithContentType(contentType)
             .WithCultureName("en-US", "Grandchild EN")
@@ -77,7 +76,7 @@ public abstract class VariantContentTestBase : ContentTestBase
         grandchild.SetValue("count", 56);
         ContentService.Save(grandchild);
 
-        var greatGrandchild = new ContentBuilder()
+        Content greatGrandchild = new ContentBuilder()
             .WithKey(GreatGrandchildKey)
             .WithContentType(contentType)
             .WithCultureName("en-US", "Great Grandchild EN")

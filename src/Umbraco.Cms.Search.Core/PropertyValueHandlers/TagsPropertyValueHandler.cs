@@ -38,8 +38,8 @@ public sealed class TagsPropertyValueHandler : IPropertyValueHandler, ICorePrope
             return null;
         }
 
-        var tagConfiguration = _dataTypeConfigurationCache.GetConfigurationAs<TagConfiguration>(property.PropertyType.DataTypeKey)
-                               ?? new TagConfiguration();
+        TagConfiguration tagConfiguration = _dataTypeConfigurationCache.GetConfigurationAs<TagConfiguration>(property.PropertyType.DataTypeKey)
+                                            ?? new TagConfiguration();
         tagConfiguration.Delimiter = tagConfiguration.Delimiter == default ? ',' : tagConfiguration.Delimiter;
 
         return tagConfiguration.StorageType switch

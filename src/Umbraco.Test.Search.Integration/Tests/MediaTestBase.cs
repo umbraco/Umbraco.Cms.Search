@@ -8,7 +8,7 @@ namespace Umbraco.Test.Search.Integration.Tests;
 
 public abstract class MediaTestBase : ContentBaseTestBase
 {
-    protected IMediaTypeService MediaTypeService => GetRequiredService<IMediaTypeService>(); 
+    protected IMediaTypeService MediaTypeService => GetRequiredService<IMediaTypeService>();
 
     protected IMediaService MediaService => GetRequiredService<IMediaService>();
 
@@ -21,7 +21,7 @@ public abstract class MediaTestBase : ContentBaseTestBase
     protected Guid ChildMediaKey { get; } = Guid.NewGuid();
 
     protected Guid GrandchildMediaKey { get; } = Guid.NewGuid();
-    
+
     protected IMedia RootFolder() => MediaService.GetById(RootFolderKey) ?? throw new InvalidOperationException("Root folder was not found");
 
     protected IMedia ChildFolder() => MediaService.GetById(ChildFolderKey) ?? throw new InvalidOperationException("Child folder was not found");
@@ -31,11 +31,11 @@ public abstract class MediaTestBase : ContentBaseTestBase
     protected IMedia ChildMedia() => MediaService.GetById(ChildMediaKey) ?? throw new InvalidOperationException("Child media was not found");
 
     protected IMedia GrandchildMedia() => MediaService.GetById(GrandchildMediaKey) ?? throw new InvalidOperationException("Child media was not found");
-    
+
     [SetUp]
     public async Task SetupTest()
     {
-        var mediaType = new MediaTypeBuilder()
+        IMediaType mediaType = new MediaTypeBuilder()
             .WithAlias("myMediaType")
             .AddPropertyGroup()
             .WithName("Group")
@@ -58,18 +58,18 @@ public abstract class MediaTestBase : ContentBaseTestBase
             .Build();
         await MediaTypeService.CreateAsync(mediaType, Constants.Security.SuperUserKey);
 
-        var folderType = MediaTypeService.Get(Constants.Conventions.MediaTypes.Folder) ?? throw new InvalidOperationException("Media type \"Folder\" was not found");
+        IMediaType folderType = MediaTypeService.Get(Constants.Conventions.MediaTypes.Folder) ?? throw new InvalidOperationException("Media type \"Folder\" was not found");
         folderType.AllowedContentTypes = [new ContentTypeSort(folderType.Key, 0, folderType.Alias), new ContentTypeSort(mediaType.Key, 1, mediaType.Alias)];
         await MediaTypeService.UpdateAsync(folderType, Constants.Security.SuperUserKey);
 
-        var rootFolder = new MediaBuilder()
+        Media rootFolder = new MediaBuilder()
             .WithKey(RootFolderKey)
             .WithMediaType(folderType)
             .WithName("Root folder")
             .Build();
         MediaService.Save(rootFolder);
 
-        var childFolder = new MediaBuilder()
+        Media childFolder = new MediaBuilder()
             .WithKey(ChildFolderKey)
             .WithMediaType(folderType)
             .WithName("Child folder")
@@ -77,7 +77,7 @@ public abstract class MediaTestBase : ContentBaseTestBase
             .Build();
         MediaService.Save(childFolder);
 
-        var rootMedia = new MediaBuilder()
+        Media rootMedia = new MediaBuilder()
             .WithKey(RootMediaKey)
             .WithMediaType(mediaType)
             .WithName("Root media")
@@ -91,7 +91,7 @@ public abstract class MediaTestBase : ContentBaseTestBase
             .Build();
         MediaService.Save(rootMedia);
 
-        var childMedia = new MediaBuilder()
+        Media childMedia = new MediaBuilder()
             .WithKey(ChildMediaKey)
             .WithMediaType(mediaType)
             .WithName("Child media")
@@ -106,7 +106,7 @@ public abstract class MediaTestBase : ContentBaseTestBase
             .Build();
         MediaService.Save(childMedia);
 
-        var grandchildMedia = new MediaBuilder()
+        Media grandchildMedia = new MediaBuilder()
             .WithKey(GrandchildMediaKey)
             .WithMediaType(mediaType)
             .WithName("Grandchild media")

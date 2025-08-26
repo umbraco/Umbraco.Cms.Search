@@ -10,9 +10,9 @@ public abstract class PropertyValueHandlerTestsBase : ContentTestBase
 {
     protected async Task<IContentType> CreateAllSimpleEditorsContentType()
     {
-        var dataTypeService = GetRequiredService<IDataTypeService>();
+        IDataTypeService dataTypeService = GetRequiredService<IDataTypeService>();
 
-        var decimalDataType = new DataTypeBuilder()
+        DataType decimalDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Decimal)
             .WithName("Decimal")
@@ -22,7 +22,7 @@ public abstract class PropertyValueHandlerTestsBase : ContentTestBase
             .Build();
         await dataTypeService.CreateAsync(decimalDataType, Constants.Security.SuperUserKey);
 
-        var tagsAsCsvDataType = new DataTypeBuilder()
+        DataType tagsAsCsvDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Nvarchar)
             .WithName("Tags as CSV")
@@ -32,11 +32,11 @@ public abstract class PropertyValueHandlerTestsBase : ContentTestBase
             .Build();
         tagsAsCsvDataType.ConfigurationData = new Dictionary<string, object>
         {
-            {"storageType", TagsStorageType.Csv}
-        }; 
+            { "storageType", TagsStorageType.Csv }
+        };
         await dataTypeService.CreateAsync(tagsAsCsvDataType, Constants.Security.SuperUserKey);
 
-        var tagsAsJsonDataType = new DataTypeBuilder()
+        DataType tagsAsJsonDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Nvarchar)
             .WithName("Tags as JSON")
@@ -46,11 +46,11 @@ public abstract class PropertyValueHandlerTestsBase : ContentTestBase
             .Build();
         tagsAsJsonDataType.ConfigurationData = new Dictionary<string, object>
         {
-            {"storageType", TagsStorageType.Json}
-        }; 
+            { "storageType", TagsStorageType.Json }
+        };
         await dataTypeService.CreateAsync(tagsAsCsvDataType, Constants.Security.SuperUserKey);
 
-        var multipleTextstringsDataType = new DataTypeBuilder()
+        DataType multipleTextstringsDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Nvarchar)
             .WithName("Multiple textstrings")
@@ -60,7 +60,7 @@ public abstract class PropertyValueHandlerTestsBase : ContentTestBase
             .Build();
         await dataTypeService.CreateAsync(multipleTextstringsDataType, Constants.Security.SuperUserKey);
 
-        var contentPickerDataType = new DataTypeBuilder()
+        DataType contentPickerDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Nvarchar)
             .WithName("Content picker")
@@ -70,7 +70,7 @@ public abstract class PropertyValueHandlerTestsBase : ContentTestBase
             .Build();
         await dataTypeService.CreateAsync(contentPickerDataType, Constants.Security.SuperUserKey);
 
-        var sliderSingleDataType = new DataTypeBuilder()
+        DataType sliderSingleDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Nvarchar)
             .WithName("Slider single")
@@ -84,7 +84,7 @@ public abstract class PropertyValueHandlerTestsBase : ContentTestBase
         };
         await dataTypeService.CreateAsync(sliderSingleDataType, Constants.Security.SuperUserKey);
 
-        var sliderRangeDataType = new DataTypeBuilder()
+        DataType sliderRangeDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Nvarchar)
             .WithName("Slider range")
@@ -98,7 +98,7 @@ public abstract class PropertyValueHandlerTestsBase : ContentTestBase
         };
         await dataTypeService.CreateAsync(sliderRangeDataType, Constants.Security.SuperUserKey);
 
-        var multiUrlPickerDataType = new DataTypeBuilder()
+        DataType multiUrlPickerDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Nvarchar)
             .WithName("Multi URL picker")
@@ -108,7 +108,7 @@ public abstract class PropertyValueHandlerTestsBase : ContentTestBase
             .Build();
         await dataTypeService.CreateAsync(multiUrlPickerDataType, Constants.Security.SuperUserKey);
 
-        var dropdownSingleDataType = new DataTypeBuilder()
+        DataType dropdownSingleDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Nvarchar)
             .WithName("Drop-down (single)")
@@ -123,7 +123,7 @@ public abstract class PropertyValueHandlerTestsBase : ContentTestBase
         };
         await dataTypeService.CreateAsync(dropdownSingleDataType, Constants.Security.SuperUserKey);
 
-        var dropdownMultipleDataType = new DataTypeBuilder()
+        DataType dropdownMultipleDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Nvarchar)
             .WithName("Drop-down (multiple)")
@@ -138,7 +138,7 @@ public abstract class PropertyValueHandlerTestsBase : ContentTestBase
         };
         await dataTypeService.CreateAsync(dropdownMultipleDataType, Constants.Security.SuperUserKey);
 
-        var radioButtonListDataType = new DataTypeBuilder()
+        DataType radioButtonListDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Nvarchar)
             .WithName("Radio button list")
@@ -152,7 +152,7 @@ public abstract class PropertyValueHandlerTestsBase : ContentTestBase
         };
         await dataTypeService.CreateAsync(radioButtonListDataType, Constants.Security.SuperUserKey);
 
-        var checkBoxListDataType = new DataTypeBuilder()
+        DataType checkBoxListDataType = new DataTypeBuilder()
             .WithId(0)
             .WithDatabaseType(ValueStorageType.Nvarchar)
             .WithName("CheckBox list")
@@ -166,7 +166,7 @@ public abstract class PropertyValueHandlerTestsBase : ContentTestBase
         };
         await dataTypeService.CreateAsync(checkBoxListDataType, Constants.Security.SuperUserKey);
 
-        var contentType = new ContentTypeBuilder()
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("allSimpleEditors")
             .AddPropertyType()
             .WithAlias("textBoxValue")

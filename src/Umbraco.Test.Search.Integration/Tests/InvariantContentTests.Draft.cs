@@ -3,6 +3,7 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
+using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
@@ -14,7 +15,7 @@ public partial class InvariantContentTests
         SetupDraftContent();
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -33,14 +34,14 @@ public partial class InvariantContentTests
             VerifyDocumentPropertyValues(documents[3], "The great grandchild title (draft)", 79);
         });
     }
-    
+
     [Test]
     public void DraftStructure_YieldsStructuralFields()
     {
         SetupDraftContent();
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -66,7 +67,7 @@ public partial class InvariantContentTests
         SetupDraftContent();
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -96,7 +97,7 @@ public partial class InvariantContentTests
         SetupDraftContent();
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -125,7 +126,7 @@ public partial class InvariantContentTests
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
         ContentService.MoveToRecycleBin(Root());
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -153,7 +154,7 @@ public partial class InvariantContentTests
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
         ContentService.MoveToRecycleBin(Root());
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -181,7 +182,7 @@ public partial class InvariantContentTests
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
         ContentService.MoveToRecycleBin(Child());
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -211,17 +212,17 @@ public partial class InvariantContentTests
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
         var secondRootKey = Guid.NewGuid();
-        var secondRoot = new ContentBuilder()
+        Content secondRoot = new ContentBuilder()
             .WithKey(secondRootKey)
             .WithContentType(ContentTypeService.Get(Root().ContentType.Key)!)
             .WithName("Second Root")
             .Build();
         ContentService.Save(secondRoot);
 
-        var moveResult = ContentService.Move(Root(), secondRoot.Id);
+        OperationResult moveResult = ContentService.Move(Root(), secondRoot.Id);
         Assert.That(moveResult.Result, Is.EqualTo(OperationResultType.Success));
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -252,17 +253,17 @@ public partial class InvariantContentTests
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
         var secondRootKey = Guid.NewGuid();
-        var secondRoot = new ContentBuilder()
+        Content secondRoot = new ContentBuilder()
             .WithKey(secondRootKey)
             .WithContentType(ContentTypeService.Get(Root().ContentType.Key)!)
             .WithName("Second Root")
             .Build();
         ContentService.Save(secondRoot);
 
-        var moveResult = ContentService.Move(Child(), secondRoot.Id);
+        OperationResult moveResult = ContentService.Move(Child(), secondRoot.Id);
         Assert.That(moveResult.Result, Is.EqualTo(OperationResultType.Success));
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -301,7 +302,7 @@ public partial class InvariantContentTests
 
         ContentService.Delete(Root());
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(0));
     }
 
@@ -319,7 +320,7 @@ public partial class InvariantContentTests
 
         ContentService.Delete(Child());
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
         Assert.That(documents[0].Id, Is.EqualTo(RootKey));
         VerifyDocumentStructureValues(documents[0], RootKey, Guid.Empty, [RootKey]);
@@ -337,7 +338,7 @@ public partial class InvariantContentTests
 
         ContentIndexingService.Rebuild(IndexAliases.DraftContent);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -367,11 +368,11 @@ public partial class InvariantContentTests
         // at this point we have:
         // - Root in the content tree root (the only item not in the recycle bin)
         // - Child and Grandchild in the recycle bin root
-        // - GreatGrandchild in the recycle bin below Grandchild 
+        // - GreatGrandchild in the recycle bin below Grandchild
 
         ContentIndexingService.Rebuild(IndexAliases.DraftContent);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>

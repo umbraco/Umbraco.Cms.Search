@@ -21,7 +21,7 @@ public partial class IntegerFilter : ContainsFilterBase, IContentIndexHandler
 
         if (integerValue == 0)
         {
-            return Array.Empty<IndexFieldValue>();
+            return [];
         }
 
         return

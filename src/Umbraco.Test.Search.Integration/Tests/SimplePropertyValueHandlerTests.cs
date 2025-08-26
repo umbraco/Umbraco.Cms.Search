@@ -1,9 +1,11 @@
-﻿using Umbraco.Cms.Core.PropertyEditors;
+﻿using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
+using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
@@ -12,9 +14,9 @@ public class SimplePropertyValueHandlerTests : PropertyValueHandlerTestsBase
     [Test]
     public void AllSupportedEditors_CanBeIndexed()
     {
-        var jsonSerializer = GetRequiredService<IJsonSerializer>();
-        
-        var content = new ContentBuilder()
+        IJsonSerializer jsonSerializer = GetRequiredService<IJsonSerializer>();
+
+        Content content = new ContentBuilder()
             .WithContentType(GetAllSimpleEditorsContentType())
             .WithName("All Supported Editors")
             .WithPropertyValues(
@@ -61,10 +63,10 @@ public class SimplePropertyValueHandlerTests : PropertyValueHandlerTestsBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
-        var document = documents.Single();
+        TestIndexDocument document = documents.Single();
         Assert.Multiple(() =>
         {
             var textBoxValue = document.Fields.FirstOrDefault(f => f.FieldName == "textBoxValue")?.Value.Texts?.SingleOrDefault();
@@ -79,10 +81,10 @@ public class SimplePropertyValueHandlerTests : PropertyValueHandlerTestsBase
             var decimalValue = document.Fields.FirstOrDefault(f => f.FieldName == "decimalValue")?.Value.Decimals?.SingleOrDefault();
             Assert.That(decimalValue, Is.EqualTo(56.78m));
 
-            var dateValue = document.Fields.FirstOrDefault(f => f.FieldName == "dateValue")?.Value.DateTimeOffsets?.SingleOrDefault();
+            DateTimeOffset? dateValue = document.Fields.FirstOrDefault(f => f.FieldName == "dateValue")?.Value.DateTimeOffsets?.SingleOrDefault();
             Assert.That(dateValue, Is.EqualTo(new DateTimeOffset(new DateOnly(2001, 02, 03), new TimeOnly(), TimeSpan.Zero)));
 
-            var dateAndTimeValue = document.Fields.FirstOrDefault(f => f.FieldName == "dateAndTimeValue")?.Value.DateTimeOffsets?.SingleOrDefault();
+            DateTimeOffset? dateAndTimeValue = document.Fields.FirstOrDefault(f => f.FieldName == "dateAndTimeValue")?.Value.DateTimeOffsets?.SingleOrDefault();
             Assert.That(dateAndTimeValue, Is.EqualTo(new DateTimeOffset(new DateOnly(2004, 05, 06), new TimeOnly(07, 08, 09), TimeSpan.Zero)));
 
             var tagsAsJsonValue = document.Fields.FirstOrDefault(f => f.FieldName == "tagsAsJsonValue")?.Value.Keywords?.ToArray();
@@ -135,11 +137,11 @@ public class SimplePropertyValueHandlerTests : PropertyValueHandlerTestsBase
     [Test]
     public void AllCorePropertyValueHandlers_HaveTheCorePropertyValueHandlerMarkerInterface()
     {
-        var handlers = GetRequiredService<PropertyValueHandlerCollection>().ToArray();
+        IPropertyValueHandler[] handlers = GetRequiredService<PropertyValueHandlerCollection>().ToArray();
         CollectionAssert.IsNotEmpty(handlers);
         Assert.That(handlers.All(handler => handler is ICorePropertyValueHandler), Is.True);
     }
-    
+
     [SetUp]
     public async Task SetupTest()
         => await CreateAllSimpleEditorsContentType();

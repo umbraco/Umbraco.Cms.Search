@@ -2,7 +2,6 @@
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
-using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
@@ -19,7 +18,7 @@ public sealed class ContentIndexingDataCollectionService : IContentIndexingDataC
 
     public async Task<IEnumerable<IndexField>?> CollectAsync(IContentBase content, bool published, CancellationToken cancellationToken)
     {
-        var systemFieldsIndexers = _contentIndexers.OfType<ISystemFieldsContentIndexer>().ToArray();
+        ISystemFieldsContentIndexer[] systemFieldsIndexers = _contentIndexers.OfType<ISystemFieldsContentIndexer>().ToArray();
         if (systemFieldsIndexers.Length != 1)
         {
             throw new InvalidOperationException("One and only one system fields content indexer must be present.");
@@ -31,16 +30,16 @@ public sealed class ContentIndexingDataCollectionService : IContentIndexingDataC
             return null;
         }
 
-        var systemFieldsIndexer = systemFieldsIndexers.First();
-        var systemFields = await systemFieldsIndexer.GetIndexFieldsAsync(content, cultures, published, cancellationToken);
-        
+        ISystemFieldsContentIndexer systemFieldsIndexer = systemFieldsIndexers.First();
+        IEnumerable<IndexField> systemFields = await systemFieldsIndexer.GetIndexFieldsAsync(content, cultures, published, cancellationToken);
+
         string Identifier(IndexField field) => $"{field.FieldName}|{field.Culture}|{field.Segment}";
         var fieldsByIdentifier = systemFields.ToDictionary(Identifier);
 
-        foreach (var contentIndexer in _contentIndexers.Except(systemFieldsIndexers))
+        foreach (IContentIndexer contentIndexer in _contentIndexers.Except(systemFieldsIndexers))
         {
-            var fields = await contentIndexer.GetIndexFieldsAsync(content, cultures, published, cancellationToken);
-            foreach (var field in fields)
+            IEnumerable<IndexField> fields = await contentIndexer.GetIndexFieldsAsync(content, cultures, published, cancellationToken);
+            foreach (IndexField field in fields)
             {
                 if (fieldsByIdentifier.TryAdd(Identifier(field), field) is false)
                 {

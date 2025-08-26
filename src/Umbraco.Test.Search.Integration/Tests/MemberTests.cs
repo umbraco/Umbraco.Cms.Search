@@ -17,7 +17,7 @@ public class MemberTests : ContentBaseTestBase
     {
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        var documents = Indexer.Dump(IndexAliases.Member);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -35,7 +35,7 @@ public class MemberTests : ContentBaseTestBase
     {
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        var documents = Indexer.Dump(IndexAliases.Member);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -51,7 +51,7 @@ public class MemberTests : ContentBaseTestBase
     {
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        var documents = Indexer.Dump(IndexAliases.Member);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -67,7 +67,7 @@ public class MemberTests : ContentBaseTestBase
     {
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        var documents = Indexer.Dump(IndexAliases.Member);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -81,16 +81,16 @@ public class MemberTests : ContentBaseTestBase
     [Test]
     public async Task AllMembers_DoesNotIndexSensitiveProperties()
     {
-        var memberTypeService = GetRequiredService<IMemberTypeService>();
-        var memberType = memberTypeService.Get("myMemberType");
+        IMemberTypeService memberTypeService = GetRequiredService<IMemberTypeService>();
+        IMemberType? memberType = memberTypeService.Get("myMemberType");
         Assert.That(memberType, Is.Not.Null);
 
         memberType.SetIsSensitiveProperty("organization", true);
         await memberTypeService.UpdateAsync(memberType, Constants.Security.SuperUserKey);
-        
+
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        var documents = Indexer.Dump(IndexAliases.Member);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -112,7 +112,7 @@ public class MemberTests : ContentBaseTestBase
 
         ContentIndexingService.Rebuild(IndexAliases.Member);
 
-        var documents = Indexer.Dump(IndexAliases.Member);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -137,11 +137,11 @@ public class MemberTests : ContentBaseTestBase
     {
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        var documents = Indexer.Dump(IndexAliases.Member);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         await MemberTypeService.DeleteAsync(MemberOne().ContentType.Key, Constants.Security.SuperUserKey);
-        
+
         documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(0));
     }
@@ -153,7 +153,7 @@ public class MemberTests : ContentBaseTestBase
     private Guid MemberOneKey { get; } = Guid.NewGuid();
 
     private Guid MemberTwoKey { get; } = Guid.NewGuid();
-    
+
     private Guid MemberThreeKey { get; } = Guid.NewGuid();
 
     private IMember MemberOne() => MemberService.GetById(MemberOneKey) ?? throw new InvalidOperationException("Member one was not found");
@@ -165,7 +165,7 @@ public class MemberTests : ContentBaseTestBase
     [SetUp]
     public async Task SetupTest()
     {
-        var memberType = new MemberTypeBuilder()
+        IMemberType memberType = new MemberTypeBuilder()
             .WithAlias("myMemberType")
             .AddPropertyGroup()
             .WithName("Group")
@@ -194,8 +194,7 @@ public class MemberTests : ContentBaseTestBase
                 .WithKeyValue("organization", "Organization One")
                 .WithKeyValue("tags", "[\"tag1\",\"tag2\"]")
                 .Done()
-                .Build()
-        );
+                .Build());
 
         MemberService.Save(
             new MemberBuilder()
@@ -208,8 +207,7 @@ public class MemberTests : ContentBaseTestBase
                 .WithKeyValue("organization", "Organization Two")
                 .WithKeyValue("tags", "[\"tag3\",\"tag4\"]")
                 .Done()
-                .Build()
-        );
+                .Build());
 
         MemberService.Save(
             new MemberBuilder()
@@ -222,8 +220,7 @@ public class MemberTests : ContentBaseTestBase
                 .WithKeyValue("organization", "Organization Three")
                 .WithKeyValue("tags", "[\"tag5\",\"tag6\"]")
                 .Done()
-                .Build()
-        );
+                .Build());
 
         Indexer.Reset();
     }

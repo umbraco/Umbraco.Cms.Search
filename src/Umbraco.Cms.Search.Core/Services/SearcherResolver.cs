@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Search.Core.Configuration;
+using Umbraco.Cms.Search.Core.Models.Configuration;
 
 namespace Umbraco.Cms.Search.Core.Services;
 
@@ -19,7 +20,7 @@ internal sealed class SearcherResolver : ISearcherResolver
 
     public ISearcher? GetSearcher(string indexAlias)
     {
-        var indexRegistration = _indexOptions.GetIndexRegistration(indexAlias);
+        IndexRegistration? indexRegistration = _indexOptions.GetIndexRegistration(indexAlias);
         if (indexRegistration is null)
         {
             _logger.LogWarning("No index registration was found for index alias: {indexAlias}", indexAlias);

@@ -14,7 +14,7 @@ public partial class ContentExtensionsTests
     {
         var contentTypeMock = new Mock<ISimpleContentType>();
         contentTypeMock.SetupGet(m => m.Variations).Returns(contentVariation);
-        
+
         var contentMock = new Mock<IContent>();
         contentMock.SetupGet(m => m.ContentType).Returns(contentTypeMock.Object);
 

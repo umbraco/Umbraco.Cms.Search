@@ -1,4 +1,6 @@
 ﻿using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
+using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
@@ -9,7 +11,7 @@ public partial class InvariantContentStructureTests
     {
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -28,7 +30,7 @@ public partial class InvariantContentStructureTests
     {
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
-        var documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(0));
     }
 
@@ -37,7 +39,7 @@ public partial class InvariantContentStructureTests
     {
         ContentService.Save(Root());
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
         Assert.That(documents[0].Id, Is.EqualTo(RootKey));
     }
@@ -46,8 +48,8 @@ public partial class InvariantContentStructureTests
     public void DraftStructure_WithGrandchildInRecycleBin_YieldsAllDocuments()
     {
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
-        
-        var result = ContentService.MoveToRecycleBin(Grandchild());
+
+        OperationResult result = ContentService.MoveToRecycleBin(Grandchild());
         Assert.Multiple(() =>
         {
             Assert.That(result.Success, Is.True);
@@ -55,9 +57,9 @@ public partial class InvariantContentStructureTests
             Assert.That(GreatGrandchild().Trashed, Is.True);
         });
 
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
-           
+
         Assert.Multiple(() =>
         {
             Assert.That(documents[0].Id, Is.EqualTo(RootKey));
@@ -71,17 +73,17 @@ public partial class InvariantContentStructureTests
     public void DraftStructure_WithGrandchildDeleted_YieldsNothingBelowChild()
     {
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
-        
-        var result = ContentService.Delete(Grandchild());
+
+        OperationResult result = ContentService.Delete(Grandchild());
         Assert.Multiple(() =>
         {
             Assert.That(result.Success, Is.True);
             Assert.That(ContentService.GetById(GreatGrandchildKey), Is.Null);
         });
-           
-        var documents = Indexer.Dump(IndexAliases.DraftContent);
+
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(2));
-           
+
         Assert.Multiple(() =>
         {
             Assert.That(documents[0].Id, Is.EqualTo(RootKey));

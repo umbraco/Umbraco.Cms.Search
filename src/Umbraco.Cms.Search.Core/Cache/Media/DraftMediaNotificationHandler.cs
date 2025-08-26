@@ -1,11 +1,10 @@
-// NOTE: the namespace is defined as what it would be, if this was part of Umbraco core.
-
 using Umbraco.Cms.Core.Cache;
+using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services.Changes;
 
-namespace Umbraco.Cms.Core.Events;
+namespace Umbraco.Cms.Search.Core.Cache.Media;
 
 internal sealed class DraftMediaNotificationHandler : ContentNotificationHandlerBase,
     IDistributedCacheNotificationHandler<MediaSavedNotification>,
@@ -20,7 +19,7 @@ internal sealed class DraftMediaNotificationHandler : ContentNotificationHandler
 
     public void Handle(MediaSavedNotification notification)
     {
-        var payloads = notification
+        DraftMediaCacheRefresher.JsonPayload[] payloads = notification
             .SavedEntities
             .Select(entity => new DraftMediaCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.RefreshNode))
             .ToArray();
@@ -36,7 +35,7 @@ internal sealed class DraftMediaNotificationHandler : ContentNotificationHandler
 
     public void Handle(MediaDeletedNotification notification)
     {
-        var payloads = notification
+        DraftMediaCacheRefresher.JsonPayload[] payloads = notification
             .DeletedEntities
             .Select(entity => new DraftMediaCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.Remove))
             .ToArray();
@@ -46,8 +45,8 @@ internal sealed class DraftMediaNotificationHandler : ContentNotificationHandler
 
     private void HandleMove(IEnumerable<MoveEventInfoBase<IMedia>> moveEventInfo)
     {
-        var topmostEntities = FindTopmostEntities(moveEventInfo.Select(i => i.Entity));
-        var payloads = topmostEntities
+        IMedia[] topmostEntities = FindTopmostEntities(moveEventInfo.Select(i => i.Entity));
+        DraftMediaCacheRefresher.JsonPayload[] payloads = topmostEntities
             .Select(entity => new DraftMediaCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.RefreshBranch))
             .ToArray();
 

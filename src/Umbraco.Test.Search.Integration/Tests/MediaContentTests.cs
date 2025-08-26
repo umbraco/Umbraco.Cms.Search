@@ -1,4 +1,5 @@
 ﻿using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Tests.Common.Builders;
@@ -16,7 +17,7 @@ public class MediaContentTests : MediaTestBase
     {
         MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
 
-        var documents = Indexer.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -28,13 +29,13 @@ public class MediaContentTests : MediaTestBase
             VerifyDocumentPropertyValues(documents[4], "The grandchild alt text", 9012);
         });
     }
-    
+
     [Test]
     public void FullStructure_YieldsStructuralFields()
     {
         MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
 
-        var documents = Indexer.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -52,7 +53,7 @@ public class MediaContentTests : MediaTestBase
     {
         MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
 
-        var documents = Indexer.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -64,26 +65,26 @@ public class MediaContentTests : MediaTestBase
             VerifyDocumentSystemValues(documents[4], GrandchildMedia(), ["tag5", "tag6"]);
         });
     }
-    
+
     [Test]
     public void FullStructure_UpdatesStructuralFieldsWhenChildrenAreMoved()
     {
         MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
 
         var secondRootFolderKey = Guid.NewGuid();
-        var secondRootFolder = new MediaBuilder()
+        Media secondRootFolder = new MediaBuilder()
             .WithKey(secondRootFolderKey)
             .WithMediaType(MediaTypeService.Get(RootFolder().ContentType.Key)!)
             .WithName("Second Root folder")
             .Build();
         MediaService.Save(secondRootFolder);
 
-        var moveResult = MediaService.Move(ChildFolder(), secondRootFolder.Id);
+        Attempt<OperationResult?> moveResult = MediaService.Move(ChildFolder(), secondRootFolder.Id);
         Assert.That(moveResult.Result?.Result, Is.EqualTo(OperationResultType.Success));
         moveResult = MediaService.Move(ChildMedia(), secondRootFolder.Id);
         Assert.That(moveResult.Result?.Result, Is.EqualTo(OperationResultType.Success));
 
-        var documents = Indexer.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(6));
 
         Assert.Multiple(() =>
@@ -99,26 +100,26 @@ public class MediaContentTests : MediaTestBase
             VerifyDocumentStructureValues(documents[5], secondRootFolderKey, Guid.Empty, [secondRootFolderKey]);
         });
     }
-    
+
     [Test]
     public void FullStructure_UpdatesStructuralFieldsWhenRootsAreMoved()
     {
         MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
 
         var secondRootFolderKey = Guid.NewGuid();
-        var secondRootFolder = new MediaBuilder()
+        Media secondRootFolder = new MediaBuilder()
             .WithKey(secondRootFolderKey)
             .WithMediaType(MediaTypeService.Get(RootFolder().ContentType.Key)!)
             .WithName("Second Root folder")
             .Build();
         MediaService.Save(secondRootFolder);
 
-        var moveResult = MediaService.Move(RootFolder(), secondRootFolder.Id);
+        Attempt<OperationResult?> moveResult = MediaService.Move(RootFolder(), secondRootFolder.Id);
         Assert.That(moveResult.Result?.Result, Is.EqualTo(OperationResultType.Success));
         moveResult = MediaService.Move(RootMedia(), secondRootFolder.Id);
         Assert.That(moveResult.Result?.Result, Is.EqualTo(OperationResultType.Success));
 
-        var documents = Indexer.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(6));
 
         Assert.Multiple(() =>
@@ -141,7 +142,7 @@ public class MediaContentTests : MediaTestBase
         MediaService.MoveToRecycleBin(RootFolder());
         MediaService.MoveToRecycleBin(RootMedia());
 
-        var documents = Indexer.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -161,7 +162,7 @@ public class MediaContentTests : MediaTestBase
         MediaService.MoveToRecycleBin(RootFolder());
         MediaService.MoveToRecycleBin(RootMedia());
 
-        var documents = Indexer.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -182,7 +183,7 @@ public class MediaContentTests : MediaTestBase
         MediaService.MoveToRecycleBin(ChildFolder());
         MediaService.MoveToRecycleBin(ChildMedia());
 
-        var documents = Indexer.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -190,7 +191,7 @@ public class MediaContentTests : MediaTestBase
             // root folder and root media remain in place (media tree root)
             VerifyDocumentStructureValues(documents[0], RootFolderKey, Guid.Empty, [RootFolderKey]);
             VerifyDocumentStructureValues(documents[2], RootMediaKey, Guid.Empty, [RootMediaKey]);
-           
+
             // child folder and child media (and by extension, grandchild media) are trashed, media recycle bin is the new parent of all children
             VerifyDocumentStructureValues(documents[1], ChildFolderKey, Constants.System.RecycleBinMediaKey, [Constants.System.RecycleBinMediaKey, ChildFolderKey]);
             VerifyDocumentStructureValues(documents[3], ChildMediaKey, Constants.System.RecycleBinMediaKey, [Constants.System.RecycleBinMediaKey, ChildMediaKey]);
@@ -211,7 +212,7 @@ public class MediaContentTests : MediaTestBase
 
         MediaService.Delete(RootFolder());
 
-        var documents = Indexer.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         Assert.Multiple(() =>
@@ -234,9 +235,9 @@ public class MediaContentTests : MediaTestBase
 
         MediaService.Delete(ChildFolder());
 
-        var documents = Indexer.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(3));
- 
+
         Assert.Multiple(() =>
         {
             // root folder, root media and child media remain unaffected by the deletion
@@ -257,9 +258,9 @@ public class MediaContentTests : MediaTestBase
 
         ContentIndexingService.Rebuild(IndexAliases.Media);
 
-        var documents = Indexer.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
-        
+
         Assert.Multiple(() =>
         {
             Assert.That(documents[0].Id, Is.EqualTo(RootFolderKey));
@@ -289,11 +290,11 @@ public class MediaContentTests : MediaTestBase
         // - RootFolder in the media tree root
         // - ChildMedia below RootFolder
         // - RootMedia and ChildFolder in the recycle bin root
-        // - GrandchildMedia in the recycle bin below ChildFolder 
+        // - GrandchildMedia in the recycle bin below ChildFolder
 
         ContentIndexingService.Rebuild(IndexAliases.Media);
 
-        var documents = Indexer.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -320,7 +321,7 @@ public class MediaContentTests : MediaTestBase
         {
             var altTextValue = document.Fields.FirstOrDefault(f => f.FieldName == "altText")?.Value.Texts?.SingleOrDefault();
             Assert.That(altTextValue, Is.EqualTo(altText));
-            
+
             var bytesValue = document.Fields.FirstOrDefault(f => f.FieldName == "bytes")?.Value.Integers?.SingleOrDefault();
             Assert.That(bytesValue, Is.EqualTo(bytes));
         });
