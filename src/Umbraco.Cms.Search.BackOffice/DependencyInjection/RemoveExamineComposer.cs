@@ -4,10 +4,10 @@ using Umbraco.Cms.Infrastructure.Examine;
 
 namespace Umbraco.Cms.Web.UI.Custom;
 
-[Disable(typeof(AddExamineComposer))]
-public class RemoveExamineComposer : IComposer
-{
-    public void Compose(IUmbracoBuilder builder)
-    {
-    }
-}
+// [Disable(typeof(AddExamineComposer))]
+// public class RemoveExamineComposer : IComposer
+// {
+//     public void Compose(IUmbracoBuilder builder)
+//     {
+//     }
+// }
