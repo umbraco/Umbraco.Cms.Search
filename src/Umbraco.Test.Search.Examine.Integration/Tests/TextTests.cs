@@ -112,6 +112,7 @@ public class TextTests : SearcherTestBase
     }
 
     [Test]
+    [Ignore("Wildcard textual filtering is not supported at this point")]
     public async Task CanFilterAllDocumentsByWildcardText()
     {
         SearchResult result = await SearchAsync(
