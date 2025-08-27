@@ -8,13 +8,11 @@ public static class Constants
 
         public const string PublishedContent = $"{IndexPrefix}PublishedContent";
 
-        // TODO: "Draft" should be removed from these index constants (values only; we do have functional "Draft" notation elsewhere in the code).
+        public const string DraftContent = $"{IndexPrefix}Content";
 
-        public const string DraftContent = $"{IndexPrefix}DraftContent";
+        public const string DraftMedia = $"{IndexPrefix}Media";
 
-        public const string DraftMedia = $"{IndexPrefix}DraftMedia";
-
-        public const string DraftMembers = $"{IndexPrefix}DraftMembers";
+        public const string DraftMembers = $"{IndexPrefix}Members";
     }
 
     public static class FieldNames
