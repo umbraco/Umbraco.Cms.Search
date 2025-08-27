@@ -139,6 +139,13 @@ stages:
             displayName: Run dotnet test
             inputs:
               command: test
+              projects: "src/Umbraco.Test.Search.Integration/Umbraco.Test.Search.Examine.Integration.csproj"
+              arguments: '--configuration $(buildConfiguration) --no-build'
+              testRunTitle: Examine Integration Tests SQLite - $(Agent.OS)
+          - task: DotNetCoreCLI@2
+            displayName: Run dotnet test
+            inputs:
+              command: test
               projects: "src/Umbraco.Test.Search.Integration/Umbraco.Test.Search.Integration.csproj"
               arguments: '--configuration $(buildConfiguration) --no-build'
               testRunTitle: Integration Tests SQLite - $(Agent.OS)
@@ -199,6 +206,13 @@ stages:
             condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
           # Test
+          - task: DotNetCoreCLI@2
+            displayName: Run dotnet test
+            inputs:
+              command: test
+              projects: "src/Umbraco.Test.Search.Integration/Umbraco.Test.Search.Examine.Integration.csproj"
+              arguments: '--configuration $(buildConfiguration) --no-build'
+              testRunTitle: Examine Integration Tests SQL Server - $(Agent.OS)
           - task: DotNetCoreCLI@2
             displayName: Run dotnet test
             inputs:
