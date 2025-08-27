@@ -143,7 +143,7 @@ stages:
               arguments: '--configuration $(buildConfiguration) --no-build'
               testRunTitle: Examine Integration Tests SQLite - $(Agent.OS)
           - task: DotNetCoreCLI@2
-            displayName: Run core tests
+            displayName: Run Core tests
             inputs:
               command: test
               projects: "src/Umbraco.Test.Search.Integration/Umbraco.Test.Search.Integration.csproj"
@@ -207,16 +207,16 @@ stages:
 
           # Test
           - task: DotNetCoreCLI@2
-            displayName: Run dotnet test
+            displayName: Run Examine tests
             inputs:
-              command: Run examine tests
+              command: test
               projects: "src/Umbraco.Test.Search.Examine.Integration/Umbraco.Test.Search.Examine.Integration.csproj"
               arguments: '--configuration $(buildConfiguration) --no-build'
               testRunTitle: Examine Integration Tests SQL Server - $(Agent.OS)
           - task: DotNetCoreCLI@2
-            displayName: Run dotnet test
+            displayName: Run Core tests
             inputs:
-              command: Run core tests
+              command: test
               projects: "src/Umbraco.Test.Search.Integration/Umbraco.Test.Search.Integration.csproj"
               arguments: '--configuration $(buildConfiguration) --no-build'
               testRunTitle: Integration Tests SQL Server - $(Agent.OS)
