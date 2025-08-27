@@ -210,14 +210,14 @@ stages:
             displayName: Run dotnet test
             inputs:
               command: test
-              projects: "src/Umbraco.Test.Search.Integration/Umbraco.Test.Search.Examine.Integration.csproj"
+              projects: "src/Umbraco.Test.Search.Examine.Integration/Umbraco.Test.Search.Examine.Integration.csproj"
               arguments: '--configuration $(buildConfiguration) --no-build'
               testRunTitle: Examine Integration Tests SQL Server - $(Agent.OS)
           - task: DotNetCoreCLI@2
             displayName: Run dotnet test
             inputs:
               command: test
-              projects: "src/Umbraco.Test.Search.Examine.Integration/Umbraco.Test.Search.Integration.csproj"
+              projects: "src/Umbraco.Test.Search.Integration/Umbraco.Test.Search.Integration.csproj"
               arguments: '--configuration $(buildConfiguration) --no-build'
               testRunTitle: Integration Tests SQL Server - $(Agent.OS)
 
