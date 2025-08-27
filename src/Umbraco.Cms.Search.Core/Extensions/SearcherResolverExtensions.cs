@@ -2,7 +2,7 @@ using Umbraco.Cms.Search.Core.Services;
 
 namespace Umbraco.Cms.Search.Core.Extensions;
 
-internal static class SearcherResolverExtensions
+public static class SearcherResolverExtensions
 {
     public static ISearcher GetRequiredSearcher(this ISearcherResolver searcherResolver, string indexAlias)
         => searcherResolver.GetSearcher(indexAlias)
