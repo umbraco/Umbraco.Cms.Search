@@ -7,7 +7,7 @@ using IndexValue = Umbraco.Cms.Search.Core.Models.Indexing.IndexValue;
 
 namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
-public class MultiUrlPickerPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
+internal sealed class MultiUrlPickerPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
 {
     private readonly IJsonSerializer _jsonSerializer;
 

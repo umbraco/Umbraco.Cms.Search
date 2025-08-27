@@ -5,7 +5,7 @@ using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
-public class SliderPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
+internal sealed class SliderPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
 {
     public bool CanHandle(string propertyEditorAlias)
         => propertyEditorAlias is Umbraco.Cms.Core.Constants.PropertyEditors.Aliases.Slider;

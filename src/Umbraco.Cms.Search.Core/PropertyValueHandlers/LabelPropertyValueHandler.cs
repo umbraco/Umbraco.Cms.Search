@@ -7,7 +7,7 @@ using IndexValue = Umbraco.Cms.Search.Core.Models.Indexing.IndexValue;
 
 namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
-public class LabelPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
+internal sealed class LabelPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
 {
     private readonly IDateTimeOffsetConverter _dateTimeOffsetConverter;
     private readonly IDataTypeConfigurationCache _dataTypeConfigurationCache;

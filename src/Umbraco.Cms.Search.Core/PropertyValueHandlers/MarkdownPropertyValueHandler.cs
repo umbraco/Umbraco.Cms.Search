@@ -4,7 +4,7 @@ using Umbraco.Cms.Search.Core.Models.Indexing;
 
 namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
-public class MarkdownPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
+internal sealed class MarkdownPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
 {
     private readonly IHtmlIndexValueParser _htmlIndexValueParser;
 

@@ -10,7 +10,7 @@ using IndexValue = Umbraco.Cms.Search.Core.Models.Indexing.IndexValue;
 
 namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
-public class RichTextPropertyValueHandler : BlockEditorPropertyValueHandler, ICorePropertyValueHandler
+internal sealed class RichTextPropertyValueHandler : BlockEditorPropertyValueHandler, ICorePropertyValueHandler
 {
     private readonly IJsonSerializer _jsonSerializer;
     private readonly IHtmlIndexValueParser _htmlIndexValueParser;

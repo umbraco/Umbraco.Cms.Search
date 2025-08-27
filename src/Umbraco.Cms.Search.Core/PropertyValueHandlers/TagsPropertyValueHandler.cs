@@ -8,7 +8,7 @@ using IndexValue = Umbraco.Cms.Search.Core.Models.Indexing.IndexValue;
 
 namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
-public sealed class TagsPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
+internal sealed class TagsPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
 {
     private readonly IJsonSerializer _jsonSerializer;
     private readonly IDataTypeConfigurationCache _dataTypeConfigurationCache;

@@ -3,7 +3,7 @@ using Umbraco.Cms.Core.Sync;
 
 namespace Umbraco.Cms.Search.Core.Cache.Media;
 
-public class DraftMediaCacheRefresherNotification : CacheRefresherNotification
+internal sealed class DraftMediaCacheRefresherNotification : CacheRefresherNotification
 {
     public DraftMediaCacheRefresherNotification(object messageObject, MessageType messageType)
         : base(messageObject, messageType)

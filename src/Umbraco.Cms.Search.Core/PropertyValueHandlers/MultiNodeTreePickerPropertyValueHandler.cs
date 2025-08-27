@@ -9,7 +9,7 @@ using IndexValue = Umbraco.Cms.Search.Core.Models.Indexing.IndexValue;
 
 namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
-public class MultiNodeTreePickerPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
+internal sealed class MultiNodeTreePickerPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
 {
     private readonly IDataTypeConfigurationCache _dataTypeConfigurationCache;
 

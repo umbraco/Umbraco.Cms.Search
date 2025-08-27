@@ -3,7 +3,7 @@ using Umbraco.Cms.Core.Sync;
 
 namespace Umbraco.Cms.Search.Core.Cache.Content;
 
-public class PublishedContentCacheRefresherNotification : CacheRefresherNotification
+internal sealed class PublishedContentCacheRefresherNotification : CacheRefresherNotification
 {
     public PublishedContentCacheRefresherNotification(object messageObject, MessageType messageType)
         : base(messageObject, messageType)

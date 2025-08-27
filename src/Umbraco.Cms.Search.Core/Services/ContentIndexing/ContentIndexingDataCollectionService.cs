@@ -5,7 +5,7 @@ using Umbraco.Cms.Search.Core.Models.Indexing;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
-public sealed class ContentIndexingDataCollectionService : IContentIndexingDataCollectionService
+internal sealed class ContentIndexingDataCollectionService : IContentIndexingDataCollectionService
 {
     private readonly ISet<IContentIndexer> _contentIndexers;
     private readonly ILogger<ContentIndexingDataCollectionService> _logger;

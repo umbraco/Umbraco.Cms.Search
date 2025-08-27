@@ -10,7 +10,7 @@ using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
-internal class PublishedContentChangeStrategy : ContentChangeStrategyBase, IPublishedContentChangeStrategy
+internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase, IPublishedContentChangeStrategy
 {
     private readonly IContentIndexingDataCollectionService _contentIndexingDataCollectionService;
     private readonly IContentProtectionProvider _contentProtectionProvider;

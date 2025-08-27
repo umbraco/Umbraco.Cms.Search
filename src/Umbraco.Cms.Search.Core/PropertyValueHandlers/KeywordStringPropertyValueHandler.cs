@@ -5,7 +5,7 @@ using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
-public sealed class KeywordStringPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
+internal sealed class KeywordStringPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
 {
     private readonly IJsonSerializer _jsonSerializer;
 

@@ -1,12 +1,11 @@
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Events;
-using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Services.Changes;
 
 namespace Umbraco.Cms.Search.Core.Cache.Content;
 
-public class DraftContentCacheRefresher : PayloadCacheRefresherBase<DraftContentCacheRefresherNotification, DraftContentCacheRefresher.JsonPayload>
+internal sealed class DraftContentCacheRefresher : PayloadCacheRefresherBase<DraftContentCacheRefresherNotification, DraftContentCacheRefresher.JsonPayload>
 {
     public static readonly Guid UniqueId = Guid.Parse("4DA581BA-07B8-4643-945E-FA9687C14D15");
 

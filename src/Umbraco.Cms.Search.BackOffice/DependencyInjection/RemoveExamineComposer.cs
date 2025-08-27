@@ -5,7 +5,7 @@ using Umbraco.Cms.Infrastructure.Examine;
 namespace Umbraco.Cms.Search.BackOffice.DependencyInjection;
 
 [Disable(typeof(AddExamineComposer))]
-public class RemoveExamineComposer : IComposer
+public sealed class RemoveExamineComposer : IComposer
 {
     public void Compose(IUmbracoBuilder builder)
     {

@@ -7,7 +7,7 @@ using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
-public sealed partial class HtmlIndexValueParser : IHtmlIndexValueParser
+internal sealed partial class HtmlIndexValueParser : IHtmlIndexValueParser
 {
     private readonly ILogger<HtmlIndexValueParser> _logger;
 

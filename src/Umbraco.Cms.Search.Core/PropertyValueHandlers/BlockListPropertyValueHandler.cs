@@ -6,7 +6,7 @@ using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
 
 namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
-public class BlockListPropertyValueHandler : BlockEditorPropertyValueHandler, ICorePropertyValueHandler
+internal sealed class BlockListPropertyValueHandler : BlockEditorPropertyValueHandler, ICorePropertyValueHandler
 {
     public BlockListPropertyValueHandler(
         IJsonSerializer jsonSerializer,

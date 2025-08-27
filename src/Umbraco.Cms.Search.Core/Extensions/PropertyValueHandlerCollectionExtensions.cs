@@ -4,7 +4,7 @@ using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
 
 namespace Umbraco.Cms.Search.Core.Extensions;
 
-public static class PropertyValueHandlerCollectionExtensions
+internal static class PropertyValueHandlerCollectionExtensions
 {
     public static IPropertyValueHandler? GetPropertyValueHandler(this PropertyValueHandlerCollection collection, IPropertyType propertyType)
     {

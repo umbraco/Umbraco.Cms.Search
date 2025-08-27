@@ -5,7 +5,7 @@ using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
 
 namespace Umbraco.Cms.Search.Core.Services;
 
-public class NoopSearcher : ISearcher
+internal sealed class NoopSearcher : ISearcher
 {
     public Task<SearchResult> SearchAsync(
         string indexAlias,

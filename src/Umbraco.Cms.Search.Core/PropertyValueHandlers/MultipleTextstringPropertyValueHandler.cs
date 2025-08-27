@@ -3,7 +3,7 @@ using Umbraco.Cms.Search.Core.Models.Indexing;
 
 namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
-public sealed class MultipleTextstringPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
+internal sealed class MultipleTextstringPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
 {
     public bool CanHandle(string propertyEditorAlias)
         => propertyEditorAlias is Umbraco.Cms.Core.Constants.PropertyEditors.Aliases.MultipleTextstring;

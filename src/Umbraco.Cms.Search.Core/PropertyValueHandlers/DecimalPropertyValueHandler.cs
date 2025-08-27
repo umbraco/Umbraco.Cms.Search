@@ -3,7 +3,7 @@ using Umbraco.Cms.Search.Core.Models.Indexing;
 
 namespace Umbraco.Cms.Search.Core.PropertyValueHandlers;
 
-public sealed class DecimalPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
+internal sealed class DecimalPropertyValueHandler : IPropertyValueHandler, ICorePropertyValueHandler
 {
     public bool CanHandle(string propertyEditorAlias)
         => propertyEditorAlias is Cms.Core.Constants.PropertyEditors.Aliases.Decimal

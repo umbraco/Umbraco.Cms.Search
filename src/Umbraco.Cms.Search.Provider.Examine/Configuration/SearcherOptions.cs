@@ -1,6 +1,6 @@
 ﻿namespace Umbraco.Cms.Search.Provider.Examine.Configuration;
 
-public class SearcherOptions
+public sealed class SearcherOptions
 {
     public int MaxFacetValues { get; set; } = 100;
 
