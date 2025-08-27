@@ -1,7 +1,0 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
-    <ItemGroup>
-      <ProjectReference Include="..\Umbraco.Cms.Search.Core\Umbraco.Cms.Search.Core.csproj" />
-    </ItemGroup>
-
-</Project>
