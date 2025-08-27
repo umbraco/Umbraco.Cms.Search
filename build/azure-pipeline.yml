@@ -136,14 +136,14 @@ stages:
 
           # Test
           - task: DotNetCoreCLI@2
-            displayName: Run dotnet test
+            displayName: Run Examine tests
             inputs:
               command: test
               projects: "src/Umbraco.Test.Search.Examine.Integration/Umbraco.Test.Search.Examine.Integration.csproj"
               arguments: '--configuration $(buildConfiguration) --no-build'
               testRunTitle: Examine Integration Tests SQLite - $(Agent.OS)
           - task: DotNetCoreCLI@2
-            displayName: Run dotnet test
+            displayName: Run core tests
             inputs:
               command: test
               projects: "src/Umbraco.Test.Search.Integration/Umbraco.Test.Search.Integration.csproj"
@@ -152,7 +152,7 @@ stages:
 
       # Integration Tests (SQL Server)
       - job: IntegrationTestsSQLServer
-        displayName: Run Integration Tests (SQLite)
+        displayName: Run Integration Tests (SQL Server)
         pool:
           vmImage: 'windows-latest'
         timeoutInMinutes: 30
@@ -209,14 +209,14 @@ stages:
           - task: DotNetCoreCLI@2
             displayName: Run dotnet test
             inputs:
-              command: test
+              command: Run examine tests
               projects: "src/Umbraco.Test.Search.Examine.Integration/Umbraco.Test.Search.Examine.Integration.csproj"
               arguments: '--configuration $(buildConfiguration) --no-build'
               testRunTitle: Examine Integration Tests SQL Server - $(Agent.OS)
           - task: DotNetCoreCLI@2
             displayName: Run dotnet test
             inputs:
-              command: test
+              command: Run core tests
               projects: "src/Umbraco.Test.Search.Integration/Umbraco.Test.Search.Integration.csproj"
               arguments: '--configuration $(buildConfiguration) --no-build'
               testRunTitle: Integration Tests SQL Server - $(Agent.OS)
