@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="Examine" Version="4.0.0-beta.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+    <PackageVersion Include="Moq" Version="4.20.72" />
+    <PackageVersion Include="NUnit" Version="3.14.0" />
+    <PackageVersion Include="NUnit.Analyzers" Version="3.9.0" />
+    <PackageVersion Include="NUnit3TestAdapter" Version="4.5.0" />
+    <PackageVersion Include="Umbraco.Cms.Examine.Lucene" Version="16.0.0" />
+    <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="16.0.0" />
+    <PackageVersion Include="Umbraco.Cms.Tests.Integration" Version="16.0.0" />
+  </ItemGroup>
+</Project>
