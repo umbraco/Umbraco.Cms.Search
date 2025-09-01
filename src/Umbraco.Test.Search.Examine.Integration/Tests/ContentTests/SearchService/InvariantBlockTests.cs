@@ -61,8 +61,7 @@ public class InvariantBlockTests : SearcherTestBase
         var indexAlias = GetIndexAlias(false);
         await CreateBlockContent();
 
-        SearchResult results = await Searcher.SearchAsync(indexAlias, filters: [new IntegerRangeFilter("blocks", [new IntegerRangeFilterRange(null, null)], false)
-        ]);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, filters: [new IntegerRangeFilter("blocks", [new IntegerRangeFilterRange(null, null)], false)]);
 
         Assert.That(results.Total, Is.EqualTo(1));
     }
@@ -73,8 +72,7 @@ public class InvariantBlockTests : SearcherTestBase
         var indexAlias = GetIndexAlias(false);
         await CreateBlockContent();
 
-        SearchResult results = await Searcher.SearchAsync(indexAlias, filters: [new DateTimeOffsetRangeFilter("blocks", [new DateTimeOffsetRangeFilterRange(null, null)], false)
-        ]);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, filters: [new DateTimeOffsetRangeFilter("blocks", [new DateTimeOffsetRangeFilterRange(null, null)], false)]);
 
         Assert.That(results.Total, Is.EqualTo(1));
     }
