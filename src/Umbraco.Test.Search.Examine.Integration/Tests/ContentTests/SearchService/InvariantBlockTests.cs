@@ -5,6 +5,7 @@ using Umbraco.Cms.Core.Models.Blocks;
 using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Search.Core.Models.Searching;
+using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
@@ -18,6 +19,8 @@ public class InvariantBlockTests : SearcherTestBase
 
     private IConfigurationEditorJsonSerializer ConfigurationEditorJsonSerializer => GetRequiredService<IConfigurationEditorJsonSerializer>();
 
+    private DateTime CurrentDateTime => DateTime.UtcNow;
+
 
     [Test]
     public async Task Can_Search_TextBox_In_Block()
@@ -25,7 +28,7 @@ public class InvariantBlockTests : SearcherTestBase
         var indexAlias = GetIndexAlias(false);
         await CreateBlockContent();
 
-        SearchResult results = await Searcher.SearchAsync(indexAlias, "testOne", null, null, null, null, null, null, 0, 100);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "textbox");
 
         Assert.That(results.Total, Is.EqualTo(1));
     }
@@ -36,7 +39,42 @@ public class InvariantBlockTests : SearcherTestBase
         var indexAlias = GetIndexAlias(false);
         await CreateBlockContent();
 
-        SearchResult results = await Searcher.SearchAsync(indexAlias, "testTwo", null, null, null, null, null, null, 0, 100);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "textarea");
+
+        Assert.That(results.Total, Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task Can_Search_RichText_In_Block()
+    {
+        var indexAlias = GetIndexAlias(false);
+        await CreateBlockContent();
+
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "richText");
+
+        Assert.That(results.Total, Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task Can_Search_Integer_In_Block()
+    {
+        var indexAlias = GetIndexAlias(false);
+        await CreateBlockContent();
+
+        SearchResult results = await Searcher.SearchAsync(indexAlias, filters: [new IntegerRangeFilter("blocks", [new IntegerRangeFilterRange(null, null)], false)
+        ]);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task Can_Search_DateTime_In_Block()
+    {
+        var indexAlias = GetIndexAlias(false);
+        await CreateBlockContent();
+
+        SearchResult results = await Searcher.SearchAsync(indexAlias, filters: [new DateTimeOffsetRangeFilter("blocks", [new DateTimeOffsetRangeFilterRange(null, null)], false)
+        ]);
 
         Assert.That(results.Total, Is.EqualTo(1));
     }
@@ -67,8 +105,11 @@ public class InvariantBlockTests : SearcherTestBase
                     ContentTypeKey = elementType.Key,
                     Values =
                     [
-                        new BlockPropertyValue { Alias = "singleLineText", Value = "testOne" },
-                        new BlockPropertyValue { Alias = "multilineText", Value = "testTwo" },
+                        new BlockPropertyValue { Alias = "singleLineText", Value = "Something with textbox" },
+                        new BlockPropertyValue { Alias = "multilineText", Value = "Something with textarea" },
+                        new BlockPropertyValue { Alias = "number", Value = 52 },
+                        new BlockPropertyValue { Alias = "bodyText", Value = "Something with richText" },
+                        new BlockPropertyValue { Alias = "dateTime", Value = CurrentDateTime },
                     ],
                 }
             ],
@@ -103,19 +144,19 @@ public class InvariantBlockTests : SearcherTestBase
                     "blocks",
                     new BlockListConfiguration.BlockConfiguration[]
                     {
-                        new() { ContentElementTypeKey = elementType.Key }
+                        new() { ContentElementTypeKey = elementType.Key },
                     }
-                }
+                },
             },
             Name = "My Block List",
             DatabaseType = ValueStorageType.Ntext,
             ParentId = Constants.System.Root,
-            CreateDate = DateTime.UtcNow
+            CreateDate = CurrentDateTime,
         };
 
         await DataTypeService.CreateAsync(blockListDataType, Constants.Security.SuperUserKey);
 
-        var contentType = new ContentTypeBuilder()
+        IContentType contentType = new ContentTypeBuilder()
             .WithAlias("myPage")
             .WithName("My Page")
             .AddPropertyType()

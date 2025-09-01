@@ -10,6 +10,18 @@ public class TestIndexConfigureOptions : IConfigureOptions<FieldOptions>
         [
             new FieldOptions.Field
             {
+                PropertyName = "blocks",
+                FieldValues = FieldValues.Integers,
+                Facetable = false,
+            },
+            new FieldOptions.Field
+            {
+                PropertyName = "blocks",
+                FieldValues = FieldValues.DateTimeOffsets,
+                Facetable = false,
+            },
+            new FieldOptions.Field
+            {
                 PropertyName = "fieldSingleValues",
                 FieldValues = FieldValues.Texts,
                 Facetable = true,
