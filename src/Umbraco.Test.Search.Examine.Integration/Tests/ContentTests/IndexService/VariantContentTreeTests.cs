@@ -217,107 +217,110 @@ public class VariantContentTreeTests : IndexTestBase
     }
 
     [SetUp]
-    public async Task CreateVariantDocumentTree() =>
+    public async Task CreateVariantDocumentTree()
+    {
+        ILanguage langDk = new LanguageBuilder()
+            .WithCultureInfo("da-DK")
+            .WithIsDefault(true)
+            .Build();
+
+        ILanguage langJp = new LanguageBuilder()
+            .WithCultureInfo("ja-JP")
+            .Build();
+
+        LocalizationService.Save(langDk);
+        LocalizationService.Save(langJp);
+
+        IContentType contentType = new ContentTypeBuilder()
+            .WithAlias("variant")
+            .WithContentVariation(ContentVariation.CultureAndSegment)
+            .AddPropertyType()
+            .WithAlias("title")
+            .WithVariations(ContentVariation.Culture)
+            .WithDataTypeId(Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("body")
+            .WithVariations(ContentVariation.CultureAndSegment)
+            .WithDataTypeId(Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .Done()
+            .Build();
+
+        ContentTypeService.Save(contentType);
+        contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
+        ContentTypeService.Save(contentType);
+
+        Content root = new ContentBuilder()
+            .WithKey(RootKey)
+            .WithContentType(contentType)
+            .WithCultureName("en-US", "Root")
+            .WithCultureName("da-DK", "Rod")
+            .WithCultureName("ja-JP", "ル-ト")
+            .Build();
+
+        root.SetValue("title", EnglishRootTitle, "en-US");
+        root.SetValue("title", DanishRootTitle, "da-DK");
+        root.SetValue("title", JapaneseRootTitle, "ja-JP");
+
+        root.SetValue("body", "root-body-segment-1", "en-US", "segment-1");
+        root.SetValue("body", "root-body-segment-2", "en-US", "segment-2");
+        root.SetValue("body", "rod-krop-segment-1", "da-DK", "segment-1");
+        root.SetValue("body", "rod-krop-segment-2", "da-DK", "segment-2");
+        root.SetValue("body", "ル-ト-ボディ-segment-1", "ja-JP", "segment-1");
+        root.SetValue("body", "ル-ト-ボディ-segment-2", "ja-JP", "segment-2");
+
+        ContentService.Save(root);
+
+        Content child = new ContentBuilder()
+            .WithKey(ChildKey)
+            .WithContentType(contentType)
+            .WithCultureName("en-US", "Child")
+            .WithCultureName("da-DK", "Barn")
+            .WithCultureName("ja-JP", "子供")
+            .WithParent(root)
+            .Build();
+
+        child.SetValue("title", EnglishChildTitle, "en-US");
+        child.SetValue("title", DanishChildTitle, "da-DK");
+        child.SetValue("title", JapaneseChildTitle, "ja-JP");
+
+        child.SetValue("body", "child-body-segment-1", "en-US", "segment-1");
+        child.SetValue("body", "child-body-segment-2", "en-US", "segment-2");
+        child.SetValue("body", "barn-krop-segment-1", "da-DK", "segment-1");
+        child.SetValue("body", "barn-krop-segment-2", "da-DK", "segment-2");
+        child.SetValue("body", "子供-ボディ-segment-1", "ja-JP", "segment-1");
+        child.SetValue("body", "子供-ボディ-segment-2", "ja-JP", "segment-2");
+
+        ContentService.Save(child);
+
+        Content grandchild = new ContentBuilder()
+            .WithKey(GrandchildKey)
+            .WithContentType(contentType)
+            .WithCultureName("en-US", "Grandchild")
+            .WithCultureName("da-DK", "Barn")
+            .WithCultureName("ja-JP", "孫")
+            .WithParent(child)
+            .Build();
+
+        grandchild.SetValue("title", EnglishGrandChildTitle, "en-US");
+        grandchild.SetValue("title", DanishGrandChildTitle, "da-DK");
+        grandchild.SetValue("title", JapaneseGrandChildTitle, "ja-JP");
+
+        grandchild.SetValue("body", "grandchild-body-segment-1", "en-US", "segment-1");
+        grandchild.SetValue("body", "grandchild-body-segment-2", "en-US", "segment-2");
+        grandchild.SetValue("body", "barnebarn-krop-segment-1", "da-DK", "segment-1");
+        grandchild.SetValue("body", "barnebarn-krop-segment-2", "da-DK", "segment-2");
+        grandchild.SetValue("body", "孫-ボディ-segment-1", "ja-JP", "segment-1");
+        grandchild.SetValue("body", "孫-ボディ-segment-2", "ja-JP", "segment-2");
+
         await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.DraftContent, () =>
         {
-            ILanguage langDk = new LanguageBuilder()
-                .WithCultureInfo("da-DK")
-                .WithIsDefault(true)
-                .Build();
-            ILanguage langJp = new LanguageBuilder()
-                .WithCultureInfo("ja-JP")
-                .Build();
-
-            LocalizationService.Save(langDk);
-            LocalizationService.Save(langJp);
-
-            IContentType contentType = new ContentTypeBuilder()
-                .WithAlias("variant")
-                .WithContentVariation(ContentVariation.CultureAndSegment)
-                .AddPropertyType()
-                .WithAlias("title")
-                .WithVariations(ContentVariation.Culture)
-                .WithDataTypeId(Constants.DataTypes.Textbox)
-                .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
-                .Done()
-                .AddPropertyType()
-                .WithAlias("body")
-                .WithVariations(ContentVariation.CultureAndSegment)
-                .WithDataTypeId(Constants.DataTypes.Textbox)
-                .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
-                .Done()
-                .Build();
-
-            ContentTypeService.Save(contentType);
-            contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
-            ContentTypeService.Save(contentType);
-
-            Content root = new ContentBuilder()
-                .WithKey(RootKey)
-                .WithContentType(contentType)
-                .WithCultureName("en-US", "Root")
-                .WithCultureName("da-DK", "Rod")
-                .WithCultureName("ja-JP", "ル-ト")
-                .Build();
-
-            root.SetValue("title", EnglishRootTitle, "en-US");
-            root.SetValue("title", DanishRootTitle, "da-DK");
-            root.SetValue("title", JapaneseRootTitle, "ja-JP");
-
-            root.SetValue("body", "root-body-segment-1", "en-US", "segment-1");
-            root.SetValue("body", "root-body-segment-2", "en-US", "segment-2");
-            root.SetValue("body", "rod-krop-segment-1", "da-DK", "segment-1");
-            root.SetValue("body", "rod-krop-segment-2", "da-DK", "segment-2");
-            root.SetValue("body", "ル-ト-ボディ-segment-1", "ja-JP", "segment-1");
-            root.SetValue("body", "ル-ト-ボディ-segment-2", "ja-JP", "segment-2");
-
-            ContentService.Save(root);
-
-            Content child = new ContentBuilder()
-                .WithKey(ChildKey)
-                .WithContentType(contentType)
-                .WithCultureName("en-US", "Child")
-                .WithCultureName("da-DK", "Barn")
-                .WithCultureName("ja-JP", "子供")
-                .WithParent(root)
-                .Build();
-
-            child.SetValue("title", EnglishChildTitle, "en-US");
-            child.SetValue("title", DanishChildTitle, "da-DK");
-            child.SetValue("title", JapaneseChildTitle, "ja-JP");
-
-            child.SetValue("body", "child-body-segment-1", "en-US", "segment-1");
-            child.SetValue("body", "child-body-segment-2", "en-US", "segment-2");
-            child.SetValue("body", "barn-krop-segment-1", "da-DK", "segment-1");
-            child.SetValue("body", "barn-krop-segment-2", "da-DK", "segment-2");
-            child.SetValue("body", "子供-ボディ-segment-1", "ja-JP", "segment-1");
-            child.SetValue("body", "子供-ボディ-segment-2", "ja-JP", "segment-2");
-
-            ContentService.Save(child);
-
-            Content grandchild = new ContentBuilder()
-                .WithKey(GrandchildKey)
-                .WithContentType(contentType)
-                .WithCultureName("en-US", "Grandchild")
-                .WithCultureName("da-DK", "Barn")
-                .WithCultureName("ja-JP", "孫")
-                .WithParent(child)
-                .Build();
-
-            grandchild.SetValue("title", EnglishGrandChildTitle, "en-US");
-            grandchild.SetValue("title", DanishGrandChildTitle, "da-DK");
-            grandchild.SetValue("title", JapaneseGrandChildTitle, "ja-JP");
-
-            grandchild.SetValue("body", "grandchild-body-segment-1", "en-US", "segment-1");
-            grandchild.SetValue("body", "grandchild-body-segment-2", "en-US", "segment-2");
-            grandchild.SetValue("body", "barnebarn-krop-segment-1", "da-DK", "segment-1");
-            grandchild.SetValue("body", "barnebarn-krop-segment-2", "da-DK", "segment-2");
-            grandchild.SetValue("body", "孫-ボディ-segment-1", "ja-JP", "segment-1");
-            grandchild.SetValue("body", "孫-ボディ-segment-2", "ja-JP", "segment-2");
-
             ContentService.Save(grandchild);
             return Task.CompletedTask;
         });
+    }
 
     private async Task PublishEntireStructure() =>
         await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, () =>
