@@ -4,14 +4,14 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Blocks;
 using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Serialization;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Models.Searching;
-using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.SearchService;
 
-public class InvariantBlockTests : SearcherTestBase
+public class VariantBlockTests : SearcherTestBase
 {
     private IJsonSerializer JsonSerializer => GetRequiredService<IJsonSerializer>();
 
@@ -19,67 +19,29 @@ public class InvariantBlockTests : SearcherTestBase
 
     private IConfigurationEditorJsonSerializer ConfigurationEditorJsonSerializer => GetRequiredService<IConfigurationEditorJsonSerializer>();
 
-    private DateTime CurrentDateTime => DateTime.UtcNow;
+    private ILanguageService LanguageService => GetRequiredService<ILanguageService>();
 
-
-    [Test]
-    public async Task Can_Search_TextBox_In_Block()
+    [TestCase("en-US", "Singleline")]
+    [TestCase("da-DK", "Enkeltlinje")]
+    public async Task Can_Search_TextBox_In_Block(string culture, string query)
     {
         var indexAlias = GetIndexAlias(false);
         await CreateBlockContent();
 
-        SearchResult results = await Searcher.SearchAsync(indexAlias, "textbox");
-
-        Assert.That(results.Total, Is.EqualTo(1));
-    }
-
-    [Test]
-    public async Task Can_Search_TextArea_In_Block()
-    {
-        var indexAlias = GetIndexAlias(false);
-        await CreateBlockContent();
-
-        SearchResult results = await Searcher.SearchAsync(indexAlias, "textarea");
-
-        Assert.That(results.Total, Is.EqualTo(1));
-    }
-
-    [Test]
-    public async Task Can_Search_RichText_In_Block()
-    {
-        var indexAlias = GetIndexAlias(false);
-        await CreateBlockContent();
-
-        SearchResult results = await Searcher.SearchAsync(indexAlias, "richText");
-
-        Assert.That(results.Total, Is.EqualTo(1));
-    }
-
-    [Test]
-    public async Task Can_Search_Integer_In_Block()
-    {
-        var indexAlias = GetIndexAlias(false);
-        await CreateBlockContent();
-
-        SearchResult results = await Searcher.SearchAsync(indexAlias, filters: [new IntegerRangeFilter("blocks", [new IntegerRangeFilterRange(null, null)], false)]);
-
-        Assert.That(results.Total, Is.EqualTo(1));
-    }
-
-    [Test]
-    public async Task Can_Search_DateTime_In_Block()
-    {
-        var indexAlias = GetIndexAlias(false);
-        await CreateBlockContent();
-
-        SearchResult results = await Searcher.SearchAsync(indexAlias, filters: [new DateTimeOffsetRangeFilter("blocks", [new DateTimeOffsetRangeFilterRange(null, null)], false)]);
+        SearchResult results = await Searcher.SearchAsync(indexAlias, query, culture: culture);
 
         Assert.That(results.Total, Is.EqualTo(1));
     }
 
     private async Task CreateBlockContent()
     {
+        await LanguageService.CreateAsync(new Language("da-DK", "Danish"), Constants.Security.SuperUserKey);
         ContentType elementType = ContentTypeBuilder.CreateAllTypesContentType("myElementType", "My Element Type");
+        elementType.Variations = ContentVariation.Culture;
+        elementType.PropertyTypes.First(p => p.Alias == "singleLineText").Variations = ContentVariation.Culture;
+        elementType.PropertyTypes.First(p => p.Alias == "bodyText").Variations = ContentVariation.Culture;
+        elementType.PropertyTypes.First(p => p.Alias == "number").Variations = ContentVariation.Culture;
+
         elementType.IsElement = true;
         ContentTypeService.Save(elementType);
 
@@ -103,10 +65,13 @@ public class InvariantBlockTests : SearcherTestBase
                     ContentTypeKey = elementType.Key,
                     Values =
                     [
-                        new BlockPropertyValue { Alias = "singleLineText", Value = "Something with textbox" },
+                        new BlockPropertyValue { Alias = "singleLineText", Value = "Singleline", Culture = "en-US" },
+                        new BlockPropertyValue { Alias = "singleLineText", Value = "Enkeltlinje", Culture = "da-DK" },
                         new BlockPropertyValue { Alias = "multilineText", Value = "Something with textarea" },
-                        new BlockPropertyValue { Alias = "number", Value = 52 },
-                        new BlockPropertyValue { Alias = "bodyText", Value = "Something with richText" },
+                        new BlockPropertyValue { Alias = "number", Value = 13, Culture = "en-US" },
+                        new BlockPropertyValue { Alias = "number", Value = 15, Culture = "da-DK" },
+                        new BlockPropertyValue { Alias = "bodyText", Value = "something with richtext", Culture = "en-US" },
+                        new BlockPropertyValue { Alias = "bodyText", Value = "noget med rigtext", Culture = "da-DK" },
                         new BlockPropertyValue { Alias = "dateTime", Value = CurrentDateTime },
                     ],
                 }
@@ -120,8 +85,9 @@ public class InvariantBlockTests : SearcherTestBase
 
         Content content = new ContentBuilder()
             .WithContentType(blockListContentType)
-            .WithName("My Blocks")
-            .WithPropertyValues(new {blocks = blocksPropertyValue})
+            .WithCultureName("en-US", "My Blocks EN")
+            .WithCultureName("da-DK", "My Blocks DA")
+            .WithPropertyValues(new { blocks = blocksPropertyValue })
             .Build();
 
         var indexAlias = GetIndexAlias(false);
@@ -131,8 +97,6 @@ public class InvariantBlockTests : SearcherTestBase
             return Task.CompletedTask;
         });
     }
-
-    // TODO: Assert blocks gets removed aswell.
 
     private async Task<IContentType> CreateBlockListContentType(IContentType elementType)
     {
@@ -164,6 +128,7 @@ public class InvariantBlockTests : SearcherTestBase
             .WithName("Blocks")
             .WithDataTypeId(blockListDataType.Id)
             .Done()
+            .WithContentVariation(ContentVariation.Culture)
             .Build();
         ContentTypeService.Save(contentType);
 

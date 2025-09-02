@@ -37,7 +37,7 @@ internal sealed class Indexer : IExamineIndexer
         foreach (Variation variation in variations)
         {
             var indexKey = CalculateIndexKey(key, variation);
-            IEnumerable<IndexField> fieldsToMap = GetMappableFields(fields, variation);
+            IEnumerable<IndexField> fieldsToMap = fields.Where(x => (x.Culture == variation.Culture && x.Segment == variation.Segment) || (x.Culture is null && x.Segment is null));
             valuesToIndex.Add(new ValueSet(
                 indexKey,
                 objectType.ToString(),
@@ -49,14 +49,21 @@ internal sealed class Indexer : IExamineIndexer
         return Task.CompletedTask;
     }
 
-    private IEnumerable<IndexField> GetMappableFields(IEnumerable<IndexField> fields, Variation variation)
+    private IEnumerable<IndexField> MapFields(IEnumerable<IndexField> fields, Variation variation)
     {
         var results = new Dictionary<string, IndexField>();
         foreach (IndexField field in fields)
         {
             if (field.Culture is null && field.Segment is null)
             {
-                results[field.FieldName] = field;
+                if (results.ContainsKey(field.FieldName))
+                {
+
+                }
+                else
+                {
+                    results[field.FieldName] = field;
+                }
                 continue;
             }
 
@@ -70,6 +77,11 @@ internal sealed class Indexer : IExamineIndexer
         }
 
         return results.Select(x => x.Value);
+    }
+
+    private IndexValue MergeIndexValue(IndexValue original, IndexValue toMerge)
+    {
+        
     }
 
     public Task ResetAsync(string indexAlias)
