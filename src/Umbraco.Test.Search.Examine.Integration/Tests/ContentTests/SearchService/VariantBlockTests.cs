@@ -6,6 +6,7 @@ using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Serialization;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Models.Searching;
+using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
@@ -23,12 +24,52 @@ public class VariantBlockTests : SearcherTestBase
 
     [TestCase("en-US", "Singleline")]
     [TestCase("da-DK", "Enkeltlinje")]
+    [TestCase("en-US", "richtext")]
+    [TestCase("da-DK", "rigtext")]
     public async Task Can_Search_TextBox_In_Block(string culture, string query)
     {
         var indexAlias = GetIndexAlias(false);
         await CreateBlockContent();
 
         SearchResult results = await Searcher.SearchAsync(indexAlias, query, culture: culture);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+    }
+
+    [TestCase("da-DK", "Singleline")]
+    [TestCase("en-US", "Enkeltlinje")]
+    [TestCase("da-DK", "richtext")]
+    [TestCase("en-US", "rigtext")]
+    public async Task Can_Not_Search_TextBox_In_Block_With_Wrong_Culture(string culture, string query)
+    {
+        var indexAlias = GetIndexAlias(false);
+        await CreateBlockContent();
+
+        SearchResult results = await Searcher.SearchAsync(indexAlias, query, culture: culture);
+
+        Assert.That(results.Total, Is.EqualTo(0));
+    }
+
+    [TestCase("en-US")]
+    [TestCase("da-DK")]
+    public async Task Can_Search_Invariant_TextArea_In_Block_Both_Cultures(string culture)
+    {
+        var indexAlias = GetIndexAlias(false);
+        await CreateBlockContent();
+
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "textarea", culture: culture);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+    }
+
+    [TestCase("da-DK", 100)]
+    [TestCase("en-US", 50)]
+    public async Task Can_Search_Integer_In_Block(string culture, int value)
+    {
+        var indexAlias = GetIndexAlias(false);
+        await CreateBlockContent();
+
+        SearchResult results = await Searcher.SearchAsync(indexAlias, culture: culture, filters: [new IntegerRangeFilter("blocks", [new IntegerRangeFilterRange(value - 10, value + 10)], false)]);
 
         Assert.That(results.Total, Is.EqualTo(1));
     }
@@ -67,9 +108,9 @@ public class VariantBlockTests : SearcherTestBase
                     [
                         new BlockPropertyValue { Alias = "singleLineText", Value = "Singleline", Culture = "en-US" },
                         new BlockPropertyValue { Alias = "singleLineText", Value = "Enkeltlinje", Culture = "da-DK" },
-                        new BlockPropertyValue { Alias = "multilineText", Value = "Something with textarea" },
-                        new BlockPropertyValue { Alias = "number", Value = 13, Culture = "en-US" },
-                        new BlockPropertyValue { Alias = "number", Value = 15, Culture = "da-DK" },
+                        new BlockPropertyValue { Alias = "multilineText", Value = "something with textarea" },
+                        new BlockPropertyValue { Alias = "number", Value = 50, Culture = "en-US" },
+                        new BlockPropertyValue { Alias = "number", Value = 100, Culture = "da-DK" },
                         new BlockPropertyValue { Alias = "bodyText", Value = "something with richtext", Culture = "en-US" },
                         new BlockPropertyValue { Alias = "bodyText", Value = "noget med rigtext", Culture = "da-DK" },
                         new BlockPropertyValue { Alias = "dateTime", Value = CurrentDateTime },
