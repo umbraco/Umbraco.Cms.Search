@@ -4,7 +4,7 @@ using Umbraco.Cms.Search.Core.Models.Indexing;
 
 namespace Umbraco.Cms.Search.Core.Notifications;
 
-internal sealed class IndexingNotification : ICancelableNotification
+public sealed class IndexingNotification : ICancelableNotification
 {
     public IndexingNotification(
         IndexInfo indexInfo,
