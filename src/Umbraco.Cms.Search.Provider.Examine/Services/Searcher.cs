@@ -90,9 +90,9 @@ internal sealed class Searcher : IExamineSearcher
         {
             IBooleanOperation searchQuery = index.Searcher
                 .CreateQuery()
-                .Field(Constants.SystemFields.Culture, culture ?? Constants.Variance.Invariant)
+                .GroupedOr([Constants.SystemFields.Culture], culture is null ? [Constants.Variance.Invariant] : [culture, Constants.Variance.Invariant])
                 .And()
-                .Field(Constants.SystemFields.Segment, segment ?? Constants.Variance.Invariant);
+                .GroupedOr([Constants.SystemFields.Segment], segment is null ? [Constants.Variance.Invariant] : [segment, Constants.Variance.Invariant]);
 
             if (query is not null)
             {
