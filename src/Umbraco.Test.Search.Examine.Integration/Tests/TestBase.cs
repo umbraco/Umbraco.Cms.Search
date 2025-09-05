@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics;
+using System.Reflection;
 using Examine;
 using Examine.Lucene.Providers;
 using NUnit.Framework;
@@ -77,12 +78,19 @@ public abstract class TestBase : UmbracoIntegrationTest
 
         var hasDoneAction = false;
 
+        var stopWatch = Stopwatch.StartNew();
+
         while (_indexingComplete is false)
         {
             if (hasDoneAction is false)
             {
                 await indexUpdatingAction();
                 hasDoneAction = true;
+            }
+
+            if (stopWatch.ElapsedMilliseconds > 5000)
+            {
+                throw new TimeoutException("Indexing timed out");
             }
 
             await Task.Delay(250);
