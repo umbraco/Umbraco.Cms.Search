@@ -37,7 +37,7 @@ internal sealed class Indexer : IExamineIndexer
         foreach (Variation variation in variations)
         {
             var indexKey = CalculateIndexKey(key, variation);
-            IEnumerable<IndexField> fieldsToMap = GetMappableFields(fields, variation);
+            IEnumerable<IndexField> fieldsToMap = MapFields(fields, variation);
             valuesToIndex.Add(new ValueSet(
                 indexKey,
                 objectType.ToString(),
@@ -49,27 +49,66 @@ internal sealed class Indexer : IExamineIndexer
         return Task.CompletedTask;
     }
 
-    private IEnumerable<IndexField> GetMappableFields(IEnumerable<IndexField> fields, Variation variation)
+    private IEnumerable<IndexField> MapFields(IEnumerable<IndexField> fields, Variation variation)
     {
         var results = new Dictionary<string, IndexField>();
         foreach (IndexField field in fields)
         {
             if (field.Culture is null && field.Segment is null)
             {
-                results[field.FieldName] = field;
-                continue;
+                if (results.TryGetValue(field.FieldName, out IndexField? indexField))
+                {
+                    results[field.FieldName] = new IndexField(field.FieldName, MergeIndexValue(indexField.Value, field.Value), variation.Culture, variation.Segment);
+                    continue;
+                }
+
+                results.Add(field.FieldName, field);
             }
 
-            // This looks kinda wierd but works great.
-            // This is because we  want to always index invariant properties
-            // However, if there is variant version of the property, we'll overwrite the invariant one
             if (field.Culture == variation.Culture && field.Segment == variation.Segment)
             {
+                if (results.TryGetValue(field.FieldName, out IndexField? indexField))
+                {
+                    results[field.FieldName] = new IndexField(field.FieldName, MergeIndexValue(indexField.Value, field.Value), variation.Culture, variation.Segment);
+                    continue;
+                }
+
                 results[field.FieldName] = field;
             }
         }
 
         return results.Select(x => x.Value);
+    }
+
+    private IndexValue MergeIndexValue(IndexValue original, IndexValue toMerge) =>
+        new()
+        {
+            Keywords = MergeValues(original.Keywords, toMerge.Keywords),
+            Integers = MergeValues(original.Integers, toMerge.Integers),
+            Decimals = MergeValues(original.Decimals, toMerge.Decimals),
+            DateTimeOffsets = MergeValues(original.DateTimeOffsets, toMerge.DateTimeOffsets),
+            Texts = MergeValues(original.Texts, toMerge.Texts),
+            TextsR1 = MergeValues(original.TextsR1, toMerge.TextsR1),
+            TextsR2 = MergeValues(original.TextsR2, toMerge.TextsR2),
+            TextsR3 = MergeValues(original.TextsR3, toMerge.TextsR3),
+        };
+
+    private static IEnumerable<T>? MergeValues<T>(IEnumerable<T>? one, IEnumerable<T>? other)
+    {
+        IEnumerable<T>? list = one;
+        if (list is null)
+        {
+            list = other;
+        }
+        else
+        {
+            if (other is not null)
+            {
+                return list.Concat(other).Distinct();
+            }
+        }
+
+        return list;
     }
 
     public Task ResetAsync(string indexAlias)
