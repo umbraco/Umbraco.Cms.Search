@@ -21,6 +21,7 @@ public abstract class SearcherTestBase
 
     private const string IndexAlias = Constants.IndexAliases.PublishedContent;
     protected const string FieldMultipleValues = "fieldMultipleValues";
+    protected const string FieldMultipleValuesWithFacets = "fieldMultipleValuesWithFacets";
     protected const string FieldSingleValue = "fieldSingleValues";
     protected const string FieldMultiSorting = "FieldThree";
     protected const string FieldTextRelevance = "FieldFour";
@@ -65,6 +66,23 @@ public abstract class SearcherTestBase
                         Segment: null),
                     new IndexField(
                         FieldMultipleValues,
+                        new IndexValue
+                        {
+                            Decimals = [i, i * 1.5m, i * -1m, i * -1.5m],
+                            Integers = [i, i * 10, i * -1],
+                            Keywords = ["all", i % 2 == 0 ? "even" : "odd", $"single{i}", $"common single{i}"],
+                            DateTimeOffsets =
+                            [
+                                Date(2025, 01, 01),
+                                StartDate().AddDays(i),
+                                StartDate().AddDays(i * 2)
+                            ],
+                            Texts = ["all", i % 2 == 0 ? "even" : "odd", $"single{i}", $"phrase search single{i}"]
+                        },
+                        Culture: null,
+                        Segment: null),
+                    new IndexField(
+                        FieldMultipleValuesWithFacets,
                         new IndexValue
                         {
                             Decimals = [i, i * 1.5m, i * -1m, i * -1.5m],

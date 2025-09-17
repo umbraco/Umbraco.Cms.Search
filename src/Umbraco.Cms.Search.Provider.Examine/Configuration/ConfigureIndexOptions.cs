@@ -63,6 +63,11 @@ internal sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirec
             var fieldName = getFieldName(field, fieldValues);
             options.FieldDefinitions.AddOrUpdate(new FieldDefinition(fieldName, fieldDefinitionType));
 
+            if (field.Facetable)
+            {
+                options.FacetsConfig.SetMultiValued(fieldName, true);
+            }
+
             if (field.FieldValues is FieldValues.Keywords && (field.Sortable || field.Facetable))
             {
                 // add extra field for keyword field sorting and/or faceting
