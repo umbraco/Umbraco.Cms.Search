@@ -131,6 +131,7 @@ public class TestIndexConfigureOptions : IConfigureOptions<FieldOptions>
             {
                 PropertyName = "fieldMultipleValues",
                 FieldValues = FieldValues.Keywords,
+                Facetable = true
             },
             new FieldOptions.Field
             {

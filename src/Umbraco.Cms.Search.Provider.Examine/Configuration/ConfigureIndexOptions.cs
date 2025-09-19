@@ -61,12 +61,20 @@ internal sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirec
             };
 
             var fieldName = getFieldName(field, fieldValues);
+            var facetFieldName = fieldName;
             options.FieldDefinitions.AddOrUpdate(new FieldDefinition(fieldName, fieldDefinitionType));
 
             if (field.FieldValues is FieldValues.Keywords && (field.Sortable || field.Facetable))
             {
                 // add extra field for keyword field sorting and/or faceting
-                options.FieldDefinitions.AddOrUpdate(new FieldDefinition( FieldNameHelper.QueryableKeywordFieldName(fieldName), FullTextDefinition(field)));
+                var queryableKeywordFieldName = FieldNameHelper.QueryableKeywordFieldName(fieldName);
+                options.FieldDefinitions.AddOrUpdate(new FieldDefinition(queryableKeywordFieldName, FullTextDefinition(field)));
+                facetFieldName = queryableKeywordFieldName;
+            }
+
+            if (field.Facetable)
+            {
+                options.FacetsConfig.SetMultiValued(facetFieldName, true);
             }
         }
     }
