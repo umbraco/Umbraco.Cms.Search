@@ -194,7 +194,8 @@ internal sealed class Indexer : IExamineIndexer
                 // add field for keyword filtering (will be indexed as RAW)
                 var fieldName = FieldNameHelper.FieldName(field, Constants.FieldValues.Keywords);
                 result.Add(fieldName, field.Value.Keywords);
-                FieldOptions.Field? fieldConfiguration = _fieldOptions.Fields.FirstOrDefault(f => f.PropertyName == field.FieldName);
+                FieldOptions.Field? fieldConfiguration = _fieldOptions.Fields.FirstOrDefault(f
+                    => f.PropertyName == field.FieldName && f.FieldValues == FieldValues.Keywords);
                 if (fieldConfiguration?.Sortable is true || fieldConfiguration?.Facetable is true)
                 {
                     // add extra field for sorting and/or faceting (will be indexed according to configuration)
