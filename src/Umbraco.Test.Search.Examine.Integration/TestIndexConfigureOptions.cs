@@ -111,6 +111,13 @@ public class TestIndexConfigureOptions : IConfigureOptions<FieldOptions>
                 FieldValues = FieldValues.Keywords,
                 Sortable = true
             },
+            new FieldOptions.Field
+            {
+                PropertyName = "fieldMultipleValuesWithFacets",
+                FieldValues = FieldValues.Integers,
+                Facetable = true
+            },
+
             // for the time being, we need to register filterable, non-textual fields explicitly due to complications with multivalue fields
             new FieldOptions.Field
             {
