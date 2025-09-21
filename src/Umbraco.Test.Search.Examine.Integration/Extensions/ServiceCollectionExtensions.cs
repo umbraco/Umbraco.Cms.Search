@@ -16,8 +16,6 @@ internal static class ServiceCollectionExtensions
         services.ConfigureOptions<TestIndexConfigureOptions>();
         services.AddSingleton<TDirectoryFactory>();
 
-        services.AddExamineSearchProviderServices();
-
         // Register indexes with optional custom type and factory
         services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(
             Cms.Search.Core.Constants.IndexAliases.DraftContent,
@@ -34,6 +32,9 @@ internal static class ServiceCollectionExtensions
         services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(
             Cms.Search.Core.Constants.IndexAliases.DraftMembers,
             _ => { });
+
+        services.AddExamineSearchProviderServices();
+
 
         return services;
     }
