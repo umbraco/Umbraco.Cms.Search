@@ -211,15 +211,13 @@ public class DecimalTests : SearcherTestBase
 
     [TestCase(true)]
     [TestCase(false)]
-    // TODO: Look into solution for this.
-    [Ignore("Ignore as facets are calculated after filters in examine at the moment")]
     public async Task CanFacetDocumentsByDecimalRange(bool filtered)
     {
         SearchResult result = await SearchAsync(
             facets:
             [
                 new DecimalRangeFacet(
-                    FieldMultipleValues,
+                    FieldSingleValue,
                     [
                         new DecimalRangeFacetRange("One", 1m, 25m),
                         new DecimalRangeFacetRange("Two", 25m, 50m),
@@ -228,28 +226,6 @@ public class DecimalTests : SearcherTestBase
                     ])
             ],
             filters: filtered ? [new DecimalExactFilter(FieldSingleValue, [1m, 2m, 3m], false)] : []);
-
-        // expecting the same facets whether filtering is enabled or not, because
-        // both faceting and filtering is applied to the same field
-        var expectedFacetValues = Enumerable
-            .Range(1, 100)
-            .SelectMany(
-                i => new[] { i, i * 1.5m }
-                    .Select(
-                        value => value switch
-                        {
-                            < 25m => "One",
-                            < 50m => "Two",
-                            < 75m => "Three",
-                            < 100m => "Four",
-                            _ => null
-                        })
-                    .WhereNotNull()
-                    .Distinct())
-            .GroupBy(key => key)
-            .Select(group => new { Key = group.Key, Count = group.Count() })
-            .WhereNotNull()
-            .ToArray();
 
         // expecting
         // - when filtered: 1, 2 and 3
@@ -263,12 +239,54 @@ public class DecimalTests : SearcherTestBase
         Assert.That(facet.FieldName, Is.EqualTo(FieldSingleValue));
 
         DecimalRangeFacetValue[] facetValues = facet.Values.OfType<DecimalRangeFacetValue>().ToArray();
-        Assert.That(facetValues, Has.Length.EqualTo(expectedFacetValues.Length));
-        foreach (var expectedFacetValue in expectedFacetValues)
+        Assert.That(facetValues, Has.Length.EqualTo(4));
+
+        // by default, Examine filters before calculating facets, so we expect the facet results to vary
+        // between filtered and non-filtered search
+        if (filtered)
         {
-            DecimalRangeFacetValue? facetValue = facetValues.FirstOrDefault(f => f.Key == expectedFacetValue.Key);
-            Assert.That(facetValue, Is.Not.Null);
-            Assert.That(facetValue.Count, Is.EqualTo(expectedFacetValue.Count));
+            var expectedFacetValues = new[]
+            {
+                new { Key = "One", Count = 3 },
+                new { Key = "Two", Count = 0 },
+                new { Key = "Three", Count = 0 },
+                new { Key = "Four", Count = 0 },
+            };
+
+            for (var i = 0; i < expectedFacetValues.Length; i++)
+            {
+                Assert.That(facetValues[i].Key, Is.EqualTo(expectedFacetValues[i].Key));
+                Assert.That(facetValues[i].Count, Is.EqualTo(expectedFacetValues[i].Count));
+            }
+        }
+        else
+        {
+            var expectedFacetValues = Enumerable
+                .Range(1, 100)
+                .SelectMany(
+                    i => new[] { i * 1m }
+                        .Select(
+                            value => value switch
+                            {
+                                < 25m => "One",
+                                < 50m => "Two",
+                                < 75m => "Three",
+                                < 100m => "Four",
+                                _ => null
+                            })
+                        .WhereNotNull()
+                        .Distinct())
+                .GroupBy(key => key)
+                .Select(group => new { Key = group.Key, Count = group.Count() })
+                .WhereNotNull()
+                .ToArray();
+
+            foreach (var expectedFacetValue in expectedFacetValues)
+            {
+                DecimalRangeFacetValue? facetValue = facetValues.FirstOrDefault(f => f.Key == expectedFacetValue.Key);
+                Assert.That(facetValue, Is.Not.Null);
+                Assert.That(facetValue.Count, Is.EqualTo(expectedFacetValue.Count));
+            }
         }
     }
 

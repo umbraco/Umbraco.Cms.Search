@@ -136,6 +136,36 @@ public  class KeywordTests : SearcherTestBase
         }
     }
 
+    [Test]
+    public async Task CanFacetDocumentsByMultipleKeyword()
+    {
+        SearchResult result = await SearchAsync(facets: [new KeywordFacet(FieldMultipleValues)]);
+
+        Assert.That(result.Total, Is.EqualTo(100));
+
+        FacetResult[] facets = result.Facets.ToArray();
+        Assert.That(facets, Has.Length.EqualTo(1));
+
+        FacetResult facet = facets.First();
+        Assert.That(facet.FieldName, Is.EqualTo(FieldMultipleValues));
+
+        KeywordFacetValue[] facetValues = facet.Values.OfType<KeywordFacetValue>().ToArray();
+        Assert.That(facetValues, Has.Length.EqualTo(203));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(facetValues.FirstOrDefault(f => f.Key == "all")?.Count, Is.EqualTo(100));
+            Assert.That(facetValues.FirstOrDefault(f => f.Key == "even")?.Count, Is.EqualTo(50));
+            Assert.That(facetValues.FirstOrDefault(f => f.Key == "odd")?.Count, Is.EqualTo(50));
+
+            for (var i = 1; i <= 100; i++)
+            {
+                Assert.That(facetValues.FirstOrDefault(f => f.Key == $"single{i}")?.Count, Is.EqualTo(1));
+                Assert.That(facetValues.FirstOrDefault(f => f.Key == $"common single{i}")?.Count, Is.EqualTo(1));
+            }
+        });
+    }
+
     [TestCase(true)]
     [TestCase(false)]
     public async Task CanSortDocumentsByKeyword(bool ascending)
