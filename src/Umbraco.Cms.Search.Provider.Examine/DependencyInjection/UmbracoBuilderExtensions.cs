@@ -7,8 +7,6 @@ public static class UmbracoBuilderExtensions
 {
     public static IUmbracoBuilder AddExamineSearchProvider(this IUmbracoBuilder builder)
     {
-        builder.Services.AddExamineSearchProviderServices();
-
         builder.Services.AddExamineLuceneIndex(Core.Constants.IndexAliases.DraftContent, _ => { });
 
         builder.Services.AddExamineLuceneIndex(Core.Constants.IndexAliases.PublishedContent, _ => { });
@@ -16,6 +14,8 @@ public static class UmbracoBuilderExtensions
         builder.Services.AddExamineLuceneIndex(Core.Constants.IndexAliases.DraftMedia, _ => { });
 
         builder.Services.AddExamineLuceneIndex(Core.Constants.IndexAliases.DraftMembers, _ => { });
+
+        builder.Services.AddExamineSearchProviderServices();
 
         return builder;
     }
