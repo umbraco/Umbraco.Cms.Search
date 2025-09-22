@@ -205,8 +205,6 @@ public class DateTimeOffsetTests : SearcherTestBase
 
     [TestCase(true)]
     [TestCase(false)]
-    // TODO: Look into solution for this.
-    [Ignore("Ignore as facets are calculated after filters in examine at the moment")]
     public async Task CanFacetDocumentsByDateTimeOffsetRange(bool filtered)
     {
         SearchResult result = await SearchAsync(
@@ -231,28 +229,6 @@ public class DateTimeOffsetTests : SearcherTestBase
                 ]
                 : []);
 
-        // expecting the same facets whether filtering is enabled or not, because
-        // both faceting and filtering is applied to the same field
-        var expectedFacetValues = Enumerable
-            .Range(1, 100)
-            .SelectMany(
-                i => new[] { i }
-                    .Select(
-                        value => value switch
-                        {
-                            < 25 => "One",
-                            < 50 => "Two",
-                            < 75 => "Three",
-                            < 100 => "Four",
-                            _ => null
-                        })
-                    .WhereNotNull()
-                    .Distinct())
-            .GroupBy(key => key)
-            .Select(group => new { Key = group.Key, Count = group.Count() })
-            .WhereNotNull()
-            .ToArray();
-
         // expecting
         // - when filtered: 1, 2 and 3
         // - when not filtered: all of them
@@ -265,13 +241,55 @@ public class DateTimeOffsetTests : SearcherTestBase
         Assert.That(facet.FieldName, Is.EqualTo(FieldSingleValue));
 
         DateTimeOffsetRangeFacetValue[] facetValues = facet.Values.OfType<DateTimeOffsetRangeFacetValue>().ToArray();
-        Assert.That(facetValues, Has.Length.EqualTo(expectedFacetValues.Length));
-        foreach (var expectedFacetValue in expectedFacetValues)
+        Assert.That(facetValues, Has.Length.EqualTo(4));
+
+        if (filtered)
         {
-            DateTimeOffsetRangeFacetValue?
-                facetValue = facetValues.FirstOrDefault(f => f.Key == expectedFacetValue.Key);
-            Assert.That(facetValue, Is.Not.Null);
-            Assert.That(facetValue.Count, Is.EqualTo(expectedFacetValue.Count));
+            var expectedFacetValues = new[]
+            {
+                new { Key = "One", Count = 3 },
+                new { Key = "Two", Count = 0 },
+                new { Key = "Three", Count = 0 },
+                new { Key = "Four", Count = 0 },
+            };
+
+            for (var i = 0; i < expectedFacetValues.Length; i++)
+            {
+                Assert.That(facetValues[i].Key, Is.EqualTo(expectedFacetValues[i].Key));
+                Assert.That(facetValues[i].Count, Is.EqualTo(expectedFacetValues[i].Count));
+            }
+        }
+        else
+        {
+            // by default, Examine filters before calculating facets, so we expect the facet results to vary
+            // between filtered and non-filtered search
+            var expectedFacetValues = Enumerable
+                .Range(1, 100)
+                .SelectMany(
+                    i => new[] { i }
+                        .Select(
+                            value => value switch
+                            {
+                                < 25 => "One",
+                                < 50 => "Two",
+                                < 75 => "Three",
+                                < 100 => "Four",
+                                _ => null
+                            })
+                        .WhereNotNull()
+                        .Distinct())
+                .GroupBy(key => key)
+                .Select(group => new { Key = group.Key, Count = group.Count() })
+                .WhereNotNull()
+                .ToArray();
+
+            foreach (var expectedFacetValue in expectedFacetValues)
+            {
+                DateTimeOffsetRangeFacetValue?
+                    facetValue = facetValues.FirstOrDefault(f => f.Key == expectedFacetValue.Key);
+                Assert.That(facetValue, Is.Not.Null);
+                Assert.That(facetValue.Count, Is.EqualTo(expectedFacetValue.Count));
+            }
         }
     }
 

@@ -141,7 +141,6 @@ public class VariousCasesTests : SearcherTestBase
     }
 
     [Test]
-    [Ignore("We cannot test this, until a facet field can be multi valued, hopefully this is fixed in a future version.")]
     public async Task CanCombineFacetsAcrossFields()
     {
         SearchResult result = await SearchAsync(
@@ -168,7 +167,7 @@ public class VariousCasesTests : SearcherTestBase
             () =>
             {
                 Assert.That(integerFacetValues, Has.Length.EqualTo(100));
-                Assert.That(keywordFacetValues, Has.Length.EqualTo(103));
+                Assert.That(keywordFacetValues, Has.Length.EqualTo(203));
             });
 
         Assert.Multiple(
