@@ -2,6 +2,7 @@ using Examine;
 using Examine.Lucene.Directories;
 using Examine.Lucene.Providers;
 using Microsoft.Extensions.DependencyInjection;
+using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Search.Provider.Examine.DependencyInjection;
 
 namespace Umbraco.Test.Search.Examine.Integration.Extensions;
@@ -14,6 +15,7 @@ internal static class ServiceCollectionExtensions
     {
 
         services.ConfigureOptions<TestIndexConfigureOptions>();
+        services.Configure<SearcherOptions>(options => options.MaxFacetValues = 250);
         services.AddSingleton<TDirectoryFactory>();
 
         // Register indexes with optional custom type and factory
@@ -34,7 +36,6 @@ internal static class ServiceCollectionExtensions
             _ => { });
 
         services.AddExamineSearchProviderServices();
-
 
         return services;
     }
