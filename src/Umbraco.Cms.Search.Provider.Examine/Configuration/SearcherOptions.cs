@@ -2,7 +2,7 @@
 
 public sealed class SearcherOptions
 {
-    public int MaxFacetValues { get; set; } = 250;
+    public int MaxFacetValues { get; set; } = 100;
 
     public float BoostFactorTextR1 { get; set; } = 6.0f;
 
