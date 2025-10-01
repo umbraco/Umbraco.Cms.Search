@@ -73,7 +73,14 @@ At this time, the backoffice and the Delivery API parts are built as individual 
 To include the backoffice search, run:
 
 ```bash
-dotnet add package Umbraco.Cms.Search.Backoffice
+dotnet add package Umbraco.Cms.Search.BackOffice
+```
+
+And add this to the composer:
+
+```csharp
+// use Umbraco Search for backoffice search
+builder.AddBackOfficeSearch();
 ```
 
 > [!TIP]
@@ -85,6 +92,13 @@ To include the Delivery API querying, run:
 
 ```bash
 dotnet add package Umbraco.Cms.Search.DeliveryApi
+```
+
+And add this to the composer:
+
+```csharp
+// use Umbraco Search for the Delivery API querying
+builder.AddDeliveryApiSearch();
 ```
 
 ## Searching with Umbraco Search
