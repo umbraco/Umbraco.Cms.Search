@@ -98,7 +98,6 @@ public class TextTests : SearcherTestBase
     }
 
     [Test]
-    [Ignore("Wildcard textual filtering is not supported at this point")]
     public async Task CanFilterAllDocumentsByWildcardText()
     {
         SearchResult result = await SearchAsync(
@@ -112,15 +111,46 @@ public class TextTests : SearcherTestBase
             });
     }
 
-    [TestCase(true)]
-    [TestCase(false)]
-    // TODO: Fix this up at some point.
-    [Ignore("We can't filter and do textual relevance for now")]
-    public async Task CanFilterAllDocumentsByWildcardTextSortedByTextualRelevance(bool ascending)
+    [Test]
+    public async Task CanFilterSpecificDocumentsByWildcardText()
     {
         SearchResult result = await SearchAsync(
-            filters: [new TextFilter(FieldTextRelevance, ["spec"], false)],
-            sorters: [new ScoreSorter(ascending ? Direction.Ascending : Direction.Descending)]);
+            filters: [new TextFilter(FieldMultipleValues, ["single2"], false)]);
+
+        // expect 2 and 20-29
+        Assert.That(result.Total, Is.EqualTo(11));
+        Assert.Multiple(
+            () =>
+            {
+                Assert.That(
+                    result.Documents.Select(d => d.Id),
+                    Is.EquivalentTo(
+                        new[]
+                        {
+                            DocumentIds[2],
+                            DocumentIds[20],
+                            DocumentIds[21],
+                            DocumentIds[22],
+                            DocumentIds[23],
+                            DocumentIds[24],
+                            DocumentIds[25],
+                            DocumentIds[26],
+                            DocumentIds[27],
+                            DocumentIds[28],
+                            DocumentIds[29],
+                        }));
+            });
+    }
+
+    [TestCase("spec", true)] // partial (wildcard) match
+    [TestCase("special", true)] // exact match
+    [TestCase("spec", false)]
+    [TestCase("special", false)]
+    [Ignore("We can't do textual relevance filtering at this time")]
+    public async Task CanFilterAllDocumentsByTextSortedByTextualRelevance(string query, bool ascending)
+    {
+        SearchResult result = await SearchAsync(
+            filters: [new TextFilter(FieldTextRelevance, [query], false)]);
 
         Assert.Multiple(
             () =>

@@ -292,12 +292,11 @@ internal sealed class Searcher : IExamineSearcher
 
                     break;
                 case TextFilter textFilter:
-                    // it would be nice to have wildcard search here. unfortunately, this requires the same workaround
-                    // as we currently have for free text search (see the comments for free text search elsewhere in
-                    // this implementation).
-                    // for now we will let the query analyzed handle text filters, and live with the lack of
-                    // wildcard filtering for text filters.
-                    string[] textFilterValue = textFilter.Values;
+                    // it would be nice to have correctly boosted wildcard search here. unfortunately, this requires the
+                    // same workaround as we currently have for free text search (see the comments for free text search
+                    // elsewhere in this service).
+                    // for now, we will make do with wildcard text filters across all textual relevance fields, and
+                    // live with not having correct relevance boost for the results.
                     string[] textFields =
                     [
                         FieldNameHelper.FieldName(filter.FieldName, Constants.FieldValues.Texts),
@@ -306,13 +305,20 @@ internal sealed class Searcher : IExamineSearcher
                         FieldNameHelper.FieldName(filter.FieldName, Constants.FieldValues.TextsR3)
                     ];
 
+                    IExamineValue[] query = textFilter.Values
+                        .SelectMany(value => new IExamineValue[]
+                        {
+                            new ExamineValue(Examineness.Explicit, value),
+                            new ExamineValue(Examineness.ComplexWildcard, value)
+                        })
+                        .ToArray();
                     if (textFilter.Negate)
                     {
-                        searchQuery.Not().GroupedOr(textFields, textFilterValue);
+                        searchQuery.Not().GroupedOr(textFields, query);
                     }
                     else
                     {
-                        searchQuery.And().GroupedOr(textFields, textFilterValue);
+                        searchQuery.And().GroupedOr(textFields, query);
                     }
 
                     break;
