@@ -512,10 +512,6 @@ The Examine search provider has a few known limitations you should be aware of.
 
 Segment variant content, that has _not_ been created in the targeted segment, will not be part of the search result. This is a bug which will be fixed as soon as possible.
 
-#### Partial matching in text filters
-
-Text filters do not support partial matching (wildcard search). This might limit the ability to perform field specific search queries. It is an upstream challenge which we are investigating.
-
 ## Appendix A: Indexed values of built-in property editors
 
 The following list shows how the built-in Umbraco property editors are indexed for Umbraco Search.
