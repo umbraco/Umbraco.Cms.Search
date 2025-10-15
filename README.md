@@ -83,9 +83,6 @@ And add this to the composer:
 builder.AddBackOfficeSearch();
 ```
 
-> [!TIP]
-> The backoffice search explicitly disables all updates of the current Examine indexes (i.e. `ExternalIndex`).
-
 ### The Delivery API querying
 
 To include the Delivery API querying, run:
