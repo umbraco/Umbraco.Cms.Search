@@ -137,7 +137,8 @@ public class MultiNodeTreePickerPropertyValueHandlerTests : ContentTestBase
                     "startNode",
                     new MultiNodePickerConfigurationTreeSource
                     {
-                        ObjectType = Constants.ObjectTypes.Strings.Document
+                        // hardcoded object type here - see notes in MultiNodeTreePickerPropertyValueHandler
+                        ObjectType = "content"
                     }
                 }
             },
@@ -156,7 +157,8 @@ public class MultiNodeTreePickerPropertyValueHandlerTests : ContentTestBase
                     "startNode",
                     new MultiNodePickerConfigurationTreeSource
                     {
-                        ObjectType = Constants.ObjectTypes.Strings.Media
+                        // hardcoded object type here - see notes in MultiNodeTreePickerPropertyValueHandler
+                        ObjectType = "media"
                     }
                 }
             },
@@ -175,7 +177,8 @@ public class MultiNodeTreePickerPropertyValueHandlerTests : ContentTestBase
                     "startNode",
                     new MultiNodePickerConfigurationTreeSource
                     {
-                        ObjectType = Constants.ObjectTypes.Strings.Member
+                        // hardcoded object type here - see notes in MultiNodeTreePickerPropertyValueHandler
+                        ObjectType = "member"
                     }
                 }
             },
