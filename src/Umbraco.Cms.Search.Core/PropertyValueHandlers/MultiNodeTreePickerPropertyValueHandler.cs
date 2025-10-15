@@ -23,7 +23,9 @@ internal sealed class MultiNodeTreePickerPropertyValueHandler : IPropertyValueHa
     {
         MultiNodePickerConfiguration? configuration = _dataTypeConfigurationCache.GetConfigurationAs<MultiNodePickerConfiguration>(property.PropertyType.DataTypeKey);
         // NOTE: the default configuration for MNTP has ObjectType null, which is inferred as a document picker
-        if (configuration?.TreeSource?.ObjectType is not (null or Umbraco.Cms.Core.Constants.ObjectTypes.Strings.Document))
+
+        // the DocumentObjectType is an internal constant in Umbraco 16 - value is "content"
+        if (configuration?.TreeSource?.ObjectType is not (null or "content"))
         {
             return [];
         }
