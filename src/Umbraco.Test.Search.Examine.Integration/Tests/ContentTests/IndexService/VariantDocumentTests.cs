@@ -177,8 +177,8 @@ public class VariantDocumentTests : IndexTestBase
             .WithCultureInfo("ja-JP")
             .Build();
 
-        LocalizationService.Save(langDk);
-        LocalizationService.Save(langJp);
+        await LanguageService.CreateAsync(langDk, Cms.Core.Constants.Security.SuperUserKey);
+        await LanguageService.CreateAsync(langJp, Cms.Core.Constants.Security.SuperUserKey);
 
         IContentType contentType = new ContentTypeBuilder()
             .WithAlias("variant")

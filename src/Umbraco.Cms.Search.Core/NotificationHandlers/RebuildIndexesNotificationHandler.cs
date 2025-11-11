@@ -5,7 +5,7 @@ using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 namespace Umbraco.Cms.Search.Core.NotificationHandlers;
 
-internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<UmbracoApplicationStartedNotification>
+internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<UmbracoApplicationStartedNotification>, INotificationHandler<LanguageDeletedNotification>
 {
     private readonly IContentIndexingService _contentIndexingService;
     private readonly ILogger<RebuildIndexesNotificationHandler> _logger;
@@ -19,6 +19,15 @@ internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<U
     }
 
     public void Handle(UmbracoApplicationStartedNotification notification)
+    {
+        _logger.LogInformation("Rebuilding core search indexes...");
+        _contentIndexingService.Rebuild(Constants.IndexAliases.PublishedContent);
+        _contentIndexingService.Rebuild(Constants.IndexAliases.DraftContent);
+        _contentIndexingService.Rebuild(Constants.IndexAliases.DraftMedia);
+        _contentIndexingService.Rebuild(Constants.IndexAliases.DraftMembers);
+    }
+
+    public void Handle(LanguageDeletedNotification notification)
     {
         _logger.LogInformation("Rebuilding core search indexes...");
         _contentIndexingService.Rebuild(Constants.IndexAliases.PublishedContent);

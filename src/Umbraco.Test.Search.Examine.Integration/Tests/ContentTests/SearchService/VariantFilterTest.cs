@@ -100,8 +100,8 @@ public class VariantFilterTest : SearcherTestBase
             .WithCultureInfo("ja-JP")
             .Build();
 
-        LocalizationService.Save(langDk);
-        LocalizationService.Save(langJp);
+        await LanguageService.CreateAsync(langDk, Constants.Security.SuperUserKey);
+        await LanguageService.CreateAsync(langJp, Constants.Security.SuperUserKey);
 
         IContentType contentType = new ContentTypeBuilder()
             .WithAlias("variant")
