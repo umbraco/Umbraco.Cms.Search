@@ -9,6 +9,8 @@ public sealed class IndexOptions
 {
     private readonly Dictionary<string, IndexRegistration> _register = [];
 
+    public required string[] IncludeRebuildWhenLanguageDeleted { get; set; } = [Constants.IndexAliases.DraftContent, Constants.IndexAliases.PublishedContent];
+
     public void RegisterIndex<TIndexer, TSearcher, TContentChangeStrategy>(string indexAlias, params UmbracoObjectTypes[] containedObjectTypes)
         where TIndexer : class, IIndexer
         where TSearcher : class, ISearcher

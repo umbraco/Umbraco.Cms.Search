@@ -11,12 +11,12 @@ internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<U
 {
     private readonly IContentIndexingService _contentIndexingService;
     private readonly ILogger<RebuildIndexesNotificationHandler> _logger;
-    private readonly IndexSettings _options;
+    private readonly IndexOptions _options;
 
     public RebuildIndexesNotificationHandler(
         IContentIndexingService contentIndexingService,
         ILogger<RebuildIndexesNotificationHandler> logger,
-        IOptions<IndexSettings> options)
+        IOptions<IndexOptions> options)
     {
         _contentIndexingService = contentIndexingService;
         _logger = logger;
