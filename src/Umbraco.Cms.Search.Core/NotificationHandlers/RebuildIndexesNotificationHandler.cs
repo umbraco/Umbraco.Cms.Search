@@ -2,12 +2,13 @@
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Core.Services.Changes;
 using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 namespace Umbraco.Cms.Search.Core.NotificationHandlers;
 
-internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<UmbracoApplicationStartedNotification>, INotificationHandler<LanguageDeletedNotification>
+internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<UmbracoApplicationStartedNotification>, INotificationHandler<LanguageDeletedNotification>, INotificationHandler<ContentTypeChangedNotification>
 {
     private readonly IContentIndexingService _contentIndexingService;
     private readonly ILogger<RebuildIndexesNotificationHandler> _logger;
@@ -39,6 +40,19 @@ internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<U
         foreach (var indexAlias in _options.IncludeRebuildWhenLanguageDeleted)
         {
             _contentIndexingService.Rebuild(indexAlias);
+        }
+    }
+
+    public void Handle(ContentTypeChangedNotification notification)
+    {
+        if (notification.Changes.Any(x => x.ChangeTypes == ContentTypeChangeTypes.RefreshMain))
+        {
+            _logger.LogInformation("Rebuilding search indexes after content type update...");
+
+            _contentIndexingService.Rebuild(Constants.IndexAliases.PublishedContent);
+            _contentIndexingService.Rebuild(Constants.IndexAliases.DraftContent);
+            _contentIndexingService.Rebuild(Constants.IndexAliases.DraftMedia);
+            _contentIndexingService.Rebuild(Constants.IndexAliases.DraftMembers);
         }
     }
 }
