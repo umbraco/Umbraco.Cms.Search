@@ -8,7 +8,9 @@ using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 namespace Umbraco.Cms.Search.Core.NotificationHandlers;
 
-internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<UmbracoApplicationStartedNotification>, INotificationHandler<LanguageDeletedNotification>, INotificationHandler<ContentTypeChangedNotification>
+internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<UmbracoApplicationStartedNotification>,
+    INotificationHandler<LanguageDeletedNotification>,
+    INotificationHandler<ContentTypeChangedNotification>
 {
     private readonly IContentIndexingService _contentIndexingService;
     private readonly ILogger<RebuildIndexesNotificationHandler> _logger;
@@ -45,7 +47,7 @@ internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<U
 
     public void Handle(ContentTypeChangedNotification notification)
     {
-        if (notification.Changes.Any(x => x.ChangeTypes == ContentTypeChangeTypes.RefreshMain))
+        if (notification.Changes.Any(x => x.ChangeTypes is ContentTypeChangeTypes.RefreshMain or ContentTypeChangeTypes.Remove ))
         {
             _logger.LogInformation("Rebuilding search indexes after content type update...");
 
