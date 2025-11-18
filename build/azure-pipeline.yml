@@ -238,7 +238,7 @@ stages:
     displayName: Dependency Track
     dependsOn:
       - Build
-    condition: and(succeeded() ${{parameters.uploadDependencyTrack}})
+    condition: and(succeeded(), ${{parameters.uploadDependencyTrack}})
     jobs:
       - job: sbom
         displayName: Upload SBOM to DependencyTrack
