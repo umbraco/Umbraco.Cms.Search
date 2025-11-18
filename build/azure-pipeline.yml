@@ -82,7 +82,7 @@ stages:
           - script: dotnet CycloneDX $(solution)
             displayName: 'Generate NuGet SBOM'
 
-          # This step optional. Allows download of artifact from pipeline run view in ADO.
+          # This is step optional. Allows download of artifact from pipeline run view in ADO.
           - publish: bom.xml
             artifact: sbom
             displayName: 'Publish NuGet SBOM Artifact'
