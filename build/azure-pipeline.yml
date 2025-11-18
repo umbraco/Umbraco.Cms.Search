@@ -76,7 +76,7 @@ stages:
               artifactName: build_output
       - job: sbom
         displayName: Upload SBOM to DependencyTrack
-        condition: ${{parameters.uploadDependencyTrack}}))
+        condition: ${{parameters.uploadDependencyTrack}}
         steps:
           - checkout: self
             fetchDepth: 0
