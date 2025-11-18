@@ -74,33 +74,6 @@ stages:
             inputs:
               targetPath: $(Build.SourcesDirectory)
               artifactName: build_output
-      - job: sbom
-        displayName: Upload SBOM to DependencyTrack
-        condition: ${{parameters.uploadDependencyTrack}}
-        steps:
-          - checkout: self
-            fetchDepth: 0
-
-          - script: dotnet tool install --global CycloneDX
-            displayName: 'Install CycloneDX .NET Tool'
-
-          - script: dotnet CycloneDX $(solution)
-            displayName: 'Generate NuGet SBOM'
-
-          # This is step optional. Allows download of artifact from pipeline run view in ADO.
-          - publish: bom.xml
-            artifact: sbom
-            displayName: 'Publish NuGet SBOM Artifact'
-
-          - task: upload-bom-dtrack@1
-            displayName: 'Upload SBOM to Dependency-Track'
-            inputs:
-              bomFilePath: bom.xml
-              dtrackProjName: $(Build.Repository.Name)
-              dtrackProjVersion: 'main'
-              dtrackAPIKey: $(DT_API_KEY)
-              dtrackURI: $(DT_API_URL)
-              dtrackProjAutoCreate: true
 
   - stage: UnitTests
     displayName: Unit Tests
@@ -260,3 +233,37 @@ stages:
           - pwsh: SqlLocalDB stop MSSQLLocalDB
             displayName: Stop SQL Server LocalDB (Windows)
             condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+
+  - stage: Dependency_Track
+    displayName: Dependency Track
+    dependsOn:
+      - Build
+    condition: and(succeeded() ${{parameters.uploadDependencyTrack}})
+    jobs:
+      - job: sbom
+        displayName: Upload SBOM to DependencyTrack
+        steps:
+          - checkout: self
+            fetchDepth: 0
+
+          - script: dotnet tool install --global CycloneDX
+            displayName: 'Install CycloneDX .NET Tool'
+
+          - script: dotnet CycloneDX $(solution)
+            displayName: 'Generate NuGet SBOM'
+
+          # This is step optional. Allows download of artifact from pipeline run view in ADO.
+          - publish: bom.xml
+            artifact: sbom
+            displayName: 'Publish NuGet SBOM Artifact'
+
+          - task: upload-bom-dtrack@1
+            displayName: 'Upload SBOM to Dependency-Track'
+            inputs:
+              bomFilePath: bom.xml
+              dtrackProjName: $(Build.Repository.Name)
+              dtrackProjVersion: 'main'
+              dtrackAPIKey: $(DT_API_KEY)
+              dtrackURI: $(DT_API_URL)
+              dtrackProjAutoCreate: true
+
