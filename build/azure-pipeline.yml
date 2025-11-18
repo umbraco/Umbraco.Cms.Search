@@ -5,6 +5,10 @@ parameters:
     displayName: Cache NuGet packages
     type: boolean
     default: false
+  - name: uploadDependencyTrack
+    displayName: Upload BOMs to Dependency Track
+    type: boolean
+    default: false
 
 variables:
   solution: src/Umbraco.Cms.Search.sln
@@ -72,6 +76,7 @@ stages:
               artifactName: build_output
       - job: sbom
         displayName: Upload SBOM to DependencyTrack
+        condition: ${{parameters.uploadDependencyTrack}}))
         steps:
           - checkout: self
             fetchDepth: 0
