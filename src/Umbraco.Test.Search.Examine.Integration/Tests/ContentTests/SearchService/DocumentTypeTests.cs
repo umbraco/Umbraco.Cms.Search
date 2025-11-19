@@ -54,19 +54,16 @@ public class DocumentTypeTests : UmbracoIntegrationTest
     public async Task CannotSearchForRemovedProperty()
     {
         await CreateDocuments();
-        // Act
+
         _childContentType.RemovePropertyType("title");
         await ContentTypeService.UpdateAsync(_childContentType, Constants.Security.SuperUserKey);
 
         await Task.Delay(3000);
-        IContentType? contentType = await ContentTypeService.GetAsync(_childContentType.Key);
-        // Assert.That(contentType!.PropertyTypes.Any(), Is.False);
 
         SearchResult finalResults = await Searcher.SearchAsync(
             Cms.Search.Core.Constants.IndexAliases.DraftContent,
             query: "Home Page");
 
-        // We should still find the
         Assert.That(finalResults.Total, Is.EqualTo(1));
     }
 
@@ -75,7 +72,6 @@ public class DocumentTypeTests : UmbracoIntegrationTest
     {
         await CreateDocuments();
 
-        // Act
         await ContentTypeService.DeleteAsync(_childContentType.Key, Constants.Security.SuperUserKey);
 
         await Task.Delay(3000);
