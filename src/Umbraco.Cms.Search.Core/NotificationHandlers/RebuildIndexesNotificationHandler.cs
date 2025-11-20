@@ -11,7 +11,10 @@ namespace Umbraco.Cms.Search.Core.NotificationHandlers;
 
 internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<UmbracoApplicationStartedNotification>,
     INotificationHandler<LanguageDeletedNotification>,
-    INotificationHandler<ContentTypeChangedNotification>
+    INotificationHandler<ContentTypeChangedNotification>,
+    INotificationHandler<MemberTypeChangedNotification>,
+    INotificationHandler<MediaTypeChangedNotification>
+
 {
     private readonly IContentIndexingService _contentIndexingService;
     private readonly ILogger<RebuildIndexesNotificationHandler> _logger;
@@ -51,14 +54,36 @@ internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<U
 
     public void Handle(ContentTypeChangedNotification notification)
     {
-        if (notification.Changes.Any(x => x.ChangeTypes is ContentTypeChangeTypes.RefreshMain or ContentTypeChangeTypes.Remove ))
-        {
-            _logger.LogInformation("Rebuilding search indexes after content type update...");
+        RebuildByObjectType(notification.Changes, UmbracoObjectTypes.Document);
+    }
 
-            _contentIndexingService.Rebuild(Constants.IndexAliases.PublishedContent);
-            _contentIndexingService.Rebuild(Constants.IndexAliases.DraftContent);
-            _contentIndexingService.Rebuild(Constants.IndexAliases.DraftMedia);
-            _contentIndexingService.Rebuild(Constants.IndexAliases.DraftMembers);
+    public void Handle(MemberTypeChangedNotification notification)
+    {
+        RebuildByObjectType(notification.Changes, UmbracoObjectTypes.Member);
+    }
+
+    public void Handle(MediaTypeChangedNotification notification)
+    {
+        RebuildByObjectType(notification.Changes, UmbracoObjectTypes.Media);
+    }
+
+    private void RebuildByObjectType<T>(IEnumerable<ContentTypeChange<T>> changes, UmbracoObjectTypes objectType)
+        where T : class, IContentTypeComposition
+    {
+        foreach (var change in changes)
+        {
+            if (change.ChangeTypes is not (ContentTypeChangeTypes.RefreshMain or ContentTypeChangeTypes.Remove))
+            {
+                continue;
+            }
+
+            foreach (var indexRegistration in _options.GetIndexRegistrations())
+            {
+                if (indexRegistration.ContainedObjectTypes.Contains(objectType))
+                {
+                    _contentIndexingService.Rebuild(indexRegistration.IndexAlias);
+                }
+            }
         }
     }
 }
