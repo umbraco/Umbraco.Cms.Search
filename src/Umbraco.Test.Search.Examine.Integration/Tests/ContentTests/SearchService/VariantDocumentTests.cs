@@ -9,7 +9,6 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.SearchServi
 
 public class VariantDocumentTests : SearcherTestBase
 {
-
     [TestCase(true, "en-US", "Name")]
     [TestCase(false, "en-US", "Name")]
     [TestCase(true, "da-DK", "Navn")]
@@ -83,20 +82,37 @@ public class VariantDocumentTests : SearcherTestBase
         Assert.That(results.Documents.First().Id, Is.EqualTo(RootKey));
     }
 
+    [TestCase(true, "da-DK", "Roden")]
+    [TestCase(true, "ja-JP", "ル-ト")]
+    public async Task CannotSearchNonExistingNameAfterLanguageDelete(bool publish, string culture, string name)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        SearchResult results = await Searcher.SearchAsync(indexAlias, name, null, null, null, culture, null, null, 0, 100);
+        Assert.That(results.Total, Is.EqualTo(1));
+
+        await LanguageService.DeleteAsync(culture, Constants.Security.SuperUserKey);
+
+        // We can't wait for indexing here, as it's an entire rebuild, not just a single action.
+        await Task.Delay(4000);
+
+        results = await Searcher.SearchAsync(indexAlias, name, null, null, null, culture, null, null, 0, 100);
+        Assert.That(results.Total, Is.EqualTo(0));
+    }
+
     [SetUp]
     public async Task CreateVariantDocument()
     {
 
         ILanguage langDk = new LanguageBuilder()
             .WithCultureInfo("da-DK")
-            .WithIsDefault(true)
             .Build();
         ILanguage langJp = new LanguageBuilder()
             .WithCultureInfo("ja-JP")
             .Build();
 
-        LocalizationService.Save(langDk);
-        LocalizationService.Save(langJp);
+        await LanguageService.CreateAsync(langDk, Constants.Security.SuperUserKey);
+        await LanguageService.CreateAsync(langJp, Constants.Security.SuperUserKey);
 
         IContentType contentType = new ContentTypeBuilder()
             .WithAlias("variant")
