@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Events;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
@@ -36,9 +37,12 @@ internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<U
     {
         _logger.LogInformation("Rebuilding search indexes after language deletion...");
 
-        foreach (var indexAlias in _options.IncludeRebuildWhenLanguageDeleted)
+        foreach (var indexRegistration in _options.GetIndexRegistrations())
         {
-            _contentIndexingService.Rebuild(indexAlias);
+            if (indexRegistration.ContainedObjectTypes.Contains(UmbracoObjectTypes.Document))
+            {
+                _contentIndexingService.Rebuild(indexRegistration.IndexAlias);
+            }
         }
     }
 }
