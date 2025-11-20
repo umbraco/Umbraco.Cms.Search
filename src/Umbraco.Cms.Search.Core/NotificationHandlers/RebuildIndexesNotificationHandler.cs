@@ -3,12 +3,19 @@ using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Core.Services.Changes;
 using Umbraco.Cms.Search.Core.Configuration;
+using Umbraco.Cms.Search.Core.Models.Configuration;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 namespace Umbraco.Cms.Search.Core.NotificationHandlers;
 
-internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<UmbracoApplicationStartedNotification>, INotificationHandler<LanguageDeletedNotification>
+internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<UmbracoApplicationStartedNotification>,
+    INotificationHandler<LanguageDeletedNotification>,
+    INotificationHandler<ContentTypeChangedNotification>,
+    INotificationHandler<MemberTypeChangedNotification>,
+    INotificationHandler<MediaTypeChangedNotification>
+
 {
     private readonly IContentIndexingService _contentIndexingService;
     private readonly ILogger<RebuildIndexesNotificationHandler> _logger;
@@ -37,11 +44,40 @@ internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<U
     {
         _logger.LogInformation("Rebuilding search indexes after language deletion...");
 
-        foreach (var indexRegistration in _options.GetIndexRegistrations())
+        foreach (IndexRegistration indexRegistration in _options.GetIndexRegistrations())
         {
             if (indexRegistration.ContainedObjectTypes.Contains(UmbracoObjectTypes.Document))
             {
                 _contentIndexingService.Rebuild(indexRegistration.IndexAlias);
+            }
+        }
+    }
+
+    public void Handle(ContentTypeChangedNotification notification)
+        => RebuildByObjectType(notification.Changes, UmbracoObjectTypes.Document);
+
+    public void Handle(MemberTypeChangedNotification notification)
+        => RebuildByObjectType(notification.Changes, UmbracoObjectTypes.Member);
+
+    public void Handle(MediaTypeChangedNotification notification)
+        => RebuildByObjectType(notification.Changes, UmbracoObjectTypes.Media);
+
+    private void RebuildByObjectType<T>(IEnumerable<ContentTypeChange<T>> changes, UmbracoObjectTypes objectType)
+        where T : class, IContentTypeComposition
+    {
+        foreach (ContentTypeChange<T> change in changes)
+        {
+            if (change.ChangeTypes is not (ContentTypeChangeTypes.RefreshMain or ContentTypeChangeTypes.Remove))
+            {
+                continue;
+            }
+
+            foreach (IndexRegistration indexRegistration in _options.GetIndexRegistrations())
+            {
+                if (indexRegistration.ContainedObjectTypes.Contains(objectType))
+                {
+                    _contentIndexingService.Rebuild(indexRegistration.IndexAlias);
+                }
             }
         }
     }
