@@ -5,7 +5,7 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services.Changes;
 using Umbraco.Cms.Search.Core.Configuration;
-using Umbraco.Cms.Search.Core.Configuration;
+using Umbraco.Cms.Search.Core.Models.Configuration;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 namespace Umbraco.Cms.Search.Core.NotificationHandlers;
@@ -44,7 +44,7 @@ internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<U
     {
         _logger.LogInformation("Rebuilding search indexes after language deletion...");
 
-        foreach (var indexRegistration in _options.GetIndexRegistrations())
+        foreach (IndexRegistration indexRegistration in _options.GetIndexRegistrations())
         {
             if (indexRegistration.ContainedObjectTypes.Contains(UmbracoObjectTypes.Document))
             {
@@ -54,31 +54,25 @@ internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<U
     }
 
     public void Handle(ContentTypeChangedNotification notification)
-    {
-        RebuildByObjectType(notification.Changes, UmbracoObjectTypes.Document);
-    }
+        => RebuildByObjectType(notification.Changes, UmbracoObjectTypes.Document);
 
     public void Handle(MemberTypeChangedNotification notification)
-    {
-        RebuildByObjectType(notification.Changes, UmbracoObjectTypes.Member);
-    }
+        => RebuildByObjectType(notification.Changes, UmbracoObjectTypes.Member);
 
     public void Handle(MediaTypeChangedNotification notification)
-    {
-        RebuildByObjectType(notification.Changes, UmbracoObjectTypes.Media);
-    }
+        => RebuildByObjectType(notification.Changes, UmbracoObjectTypes.Media);
 
     private void RebuildByObjectType<T>(IEnumerable<ContentTypeChange<T>> changes, UmbracoObjectTypes objectType)
         where T : class, IContentTypeComposition
     {
-        foreach (var change in changes)
+        foreach (ContentTypeChange<T> change in changes)
         {
             if (change.ChangeTypes is not (ContentTypeChangeTypes.RefreshMain or ContentTypeChangeTypes.Remove))
             {
                 continue;
             }
 
-            foreach (var indexRegistration in _options.GetIndexRegistrations())
+            foreach (IndexRegistration indexRegistration in _options.GetIndexRegistrations())
             {
                 if (indexRegistration.ContainedObjectTypes.Contains(objectType))
                 {
