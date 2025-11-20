@@ -88,12 +88,15 @@ public class VariantDocumentTests : SearcherTestBase
     {
         var indexAlias = GetIndexAlias(publish);
 
+        SearchResult results = await Searcher.SearchAsync(indexAlias, name, null, null, null, culture, null, null, 0, 100);
+        Assert.That(results.Total, Is.EqualTo(1));
+
         await LanguageService.DeleteAsync(culture, Constants.Security.SuperUserKey);
 
         // We can't wait for indexing here, as it's an entire rebuild, not just a single action.
         await Task.Delay(4000);
 
-        SearchResult results = await Searcher.SearchAsync(indexAlias, name, null, null, null, culture, null, null, 0, 100);
+        results = await Searcher.SearchAsync(indexAlias, name, null, null, null, culture, null, null, 0, 100);
         Assert.That(results.Total, Is.EqualTo(0));
     }
 
