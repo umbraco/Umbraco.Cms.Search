@@ -1,7 +1,5 @@
 ﻿using NUnit.Framework;
 using Umbraco.Cms.Core;
-using Umbraco.Cms.Core.Cache;
-using Umbraco.Cms.Core.HostedServices;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.ContentEditing;
 using Umbraco.Cms.Core.Models.ContentTypeEditing;
@@ -9,28 +7,18 @@ using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.ContentTypeEditing;
 using Umbraco.Cms.Core.Services.OperationStatus;
-using Umbraco.Cms.Core.Sync;
-using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
-using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.TestHelpers;
 using Umbraco.Cms.Tests.Common.Testing;
-using Umbraco.Cms.Tests.Integration.Testing;
-using Umbraco.Test.Search.Examine.Integration.Extensions;
-using Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.SearchService;
 
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
-public class DocumentTypeTests : UmbracoIntegrationTest
+public class DocumentTypeTests : SearcherTestBase
 {
-    private IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>();
-
-    private ISearcher Searcher => GetRequiredService<ISearcher>();
-
     private IContentTypeEditingService ContentTypeEditingService => GetRequiredService<IContentTypeEditingService>();
 
     private IContentEditingService ContentEditingService => GetRequiredService<IContentEditingService>();
@@ -38,52 +26,64 @@ public class DocumentTypeTests : UmbracoIntegrationTest
     private IContentType _parentContentType = null!;
     private IContentType _childContentType = null!;
 
-
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
-        builder.AddNotificationHandler<ContentTreeChangeNotification, ContentTreeChangeDistributedCacheNotificationHandler>();
-        builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
-        builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
-        builder.AddExamineSearchProviderForTest<TestIndex, TestInMemoryDirectoryFactory>();
-        builder.AddSearchCore();
+        base.CustomTestSetup(builder);
         builder.AddNotificationHandler<ContentTypeChangedNotification, RebuildIndexesNotificationHandler>();
-        builder.AddNotificationHandler<ContentTreeChangeNotification, ContentTreeChangeDistributedCacheNotificationHandler>();
     }
 
     [Test]
-    public async Task CannotSearchForRemovedProperty()
+    public async Task CannotSearchForRemovedPropertyType()
     {
-        await CreateDocuments();
+        await CreateDocumentsAndWaitForIndexing();
+
+        SearchResult results = await Searcher.SearchAsync(
+            Cms.Search.Core.Constants.IndexAliases.DraftContent,
+            query: "Home Page");
+
+        Assert.That(results.Total, Is.EqualTo(2));
 
         _childContentType.RemovePropertyType("title");
         await ContentTypeService.UpdateAsync(_childContentType, Constants.Security.SuperUserKey);
 
-        await Task.Delay(3000);
+        await WaitForIndexesToRebuild();
 
-        SearchResult finalResults = await Searcher.SearchAsync(
+        results = await Searcher.SearchAsync(
             Cms.Search.Core.Constants.IndexAliases.DraftContent,
             query: "Home Page");
 
-        Assert.That(finalResults.Total, Is.EqualTo(1));
+        Assert.That(results.Total, Is.EqualTo(1));
     }
 
     [Test]
-    public async Task CannotSearchForRemovedDocument()
+    public async Task CannotSearchForRemovedDocumentType()
     {
-        await CreateDocuments();
+        await CreateDocumentsAndWaitForIndexing();
 
-        await ContentTypeService.DeleteAsync(_childContentType.Key, Constants.Security.SuperUserKey);
-
-        await Task.Delay(3000);
-        IContentType? contentType = await ContentTypeService.GetAsync(_childContentType.Key);
-
-        SearchResult finalResults = await Searcher.SearchAsync(
+        SearchResult results = await Searcher.SearchAsync(
             Cms.Search.Core.Constants.IndexAliases.DraftContent,
             query: "Home Page");
 
-        Assert.That(finalResults.Total, Is.EqualTo(1));
+        Assert.That(results.Total, Is.EqualTo(2));
+
+        await ContentTypeService.DeleteAsync(_childContentType.Key, Constants.Security.SuperUserKey);
+
+        await WaitForIndexesToRebuild();
+
+        results = await Searcher.SearchAsync(
+            Cms.Search.Core.Constants.IndexAliases.DraftContent,
+            query: "Home Page");
+
+        Assert.That(results.Total, Is.EqualTo(1));
+
+        IContentType? contentType = await ContentTypeService.GetAsync(_childContentType.Key);
         Assert.That(contentType, Is.Null);
     }
+
+    private async Task CreateDocumentsAndWaitForIndexing()
+        => await WaitForIndexing(
+            Cms.Search.Core.Constants.IndexAliases.DraftContent,
+            async () => await CreateDocuments());
 
     private async Task CreateDocuments()
     {
@@ -93,7 +93,7 @@ public class DocumentTypeTests : UmbracoIntegrationTest
         Attempt<IContentType?, ContentTypeOperationStatus> parentContentTypeAttempt = await ContentTypeEditingService.CreateAsync(
             parentContentTypeCreateModel,
             Constants.Security.SuperUserKey);
-        Assert.IsTrue(parentContentTypeAttempt.Success);
+        Assert.That(parentContentTypeAttempt.Success, Is.True);
         _parentContentType = parentContentTypeAttempt.Result!;
 
         // Create Child ContentType
@@ -103,7 +103,7 @@ public class DocumentTypeTests : UmbracoIntegrationTest
         Attempt<IContentType?, ContentTypeOperationStatus> childContentTypeAttempt = await ContentTypeEditingService.CreateAsync(
             childContentTypeCreateModel,
             Constants.Security.SuperUserKey);
-        Assert.IsTrue(childContentTypeAttempt.Success);
+        Assert.That(childContentTypeAttempt.Success, Is.True);
         _childContentType = childContentTypeAttempt.Result!;
 
         // Update Parent ContentType to allow Child ContentType
@@ -116,12 +116,12 @@ public class DocumentTypeTests : UmbracoIntegrationTest
             _parentContentType,
             parentContentTypeUpdateModel,
             Constants.Security.SuperUserKey);
-        Assert.IsTrue(updatedParentResult.Success);
+        Assert.That(updatedParentResult.Success, Is.True);
 
         // Create Root Document (Parent)
         ContentCreateModel rootCreateModel = ContentEditingBuilder.CreateSimpleContent(_parentContentType.Key, "Root Document");
         Attempt<ContentCreateResult, ContentEditingOperationStatus> createRootResult = await ContentEditingService.CreateAsync(rootCreateModel, Constants.Security.SuperUserKey);
-        Assert.IsTrue(createRootResult.Success);
+        Assert.That(createRootResult.Success, Is.True);
         IContent? rootDocument = createRootResult.Result.Content;
 
         // Create Child Document under Root
@@ -130,6 +130,9 @@ public class DocumentTypeTests : UmbracoIntegrationTest
             "Child Document",
             rootDocument!.Key);
         Attempt<ContentCreateResult, ContentEditingOperationStatus> createChildResult = await ContentEditingService.CreateAsync(childCreateModel, Constants.Security.SuperUserKey);
-        Assert.IsTrue(createChildResult.Success);
+        Assert.That(createChildResult.Success, Is.True);
     }
+
+    private async Task WaitForIndexesToRebuild()
+        => await Task.Delay(3000);
 }
