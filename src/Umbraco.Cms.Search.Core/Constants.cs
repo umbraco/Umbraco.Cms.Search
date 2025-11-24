@@ -41,4 +41,9 @@ public static class Constants
 
         public const string Tags = $"{FieldPrefix}Tags";
     }
+
+    public static class Persistence
+    {
+        public const string DocumentTableName = Umbraco.Cms.Core.Constants.DatabaseSchema.TableNamePrefix + "SearchDocument";
+    }
 }
