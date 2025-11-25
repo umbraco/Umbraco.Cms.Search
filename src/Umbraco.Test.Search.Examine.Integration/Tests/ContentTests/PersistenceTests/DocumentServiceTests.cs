@@ -32,7 +32,7 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.Persistence
 
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
-public class RepositoryContentTests : UmbracoIntegrationTest
+public class DocumentServiceTests : UmbracoIntegrationTest
 {
     private bool _indexingComplete;
 
@@ -46,7 +46,7 @@ public class RepositoryContentTests : UmbracoIntegrationTest
 
     private IContentEditingService ContentEditingService => GetRequiredService<IContentEditingService>();
 
-    private IDocumentRepository DocumentRepository => GetRequiredService<IDocumentRepository>();
+    private Umbraco.Cms.Search.Core.Services.ContentIndexing.IDocumentService DocumentService => GetRequiredService<Umbraco.Cms.Search.Core.Services.ContentIndexing.IDocumentService>();
 
     private IContent _rootDocument = null!;
 
@@ -91,7 +91,7 @@ public class RepositoryContentTests : UmbracoIntegrationTest
     public async Task AddsEntryToDatabaseAfterIndexing()
     {
         await TestSetup();
-        Document doc = await DocumentRepository.Get(_rootDocument.Key, Constants.IndexAliases.DraftContent);
+        Document? doc = await DocumentService.GetAsync(_rootDocument.Key, Constants.IndexAliases.DraftContent);
         Assert.That(doc, Is.Not.Null);
     }
 

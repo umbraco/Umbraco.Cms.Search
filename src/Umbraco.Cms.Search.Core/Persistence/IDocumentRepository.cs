@@ -4,9 +4,9 @@ namespace Umbraco.Cms.Search.Core.Persistence;
 
 public interface IDocumentRepository
 {
-    public Task Add(Document document);
+    public Task AddAsync(Document document);
 
-    public Task<Document> Get(Guid id, string indexAlias);
+    public Task<Document?> GetAsync(Guid id, string indexAlias);
 
-    public Task Remove(Guid id);
+    public Task DeleteAsync(Guid id, string indexAlias);
 }

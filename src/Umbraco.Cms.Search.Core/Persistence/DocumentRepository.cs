@@ -12,7 +12,7 @@ public class DocumentRepository : IDocumentRepository
 
     public DocumentRepository(IScopeAccessor scopeAccessor) => _scopeAccessor = scopeAccessor;
 
-    public async Task Add(Document document)
+    public async Task AddAsync(Document document)
     {
         DocumentDto dto = ToDto(document);
 
@@ -24,7 +24,7 @@ public class DocumentRepository : IDocumentRepository
         await _scopeAccessor.AmbientScope.Database.InsertAsync(dto);
     }
 
-    public async Task<Document> Get(Guid id, string indexAlias)
+    public async Task<Document?> GetAsync(Guid id, string indexAlias)
     {
         Sql<ISqlContext>? sql = _scopeAccessor.AmbientScope?.Database.SqlContext.Sql()
             .Select<DocumentDto>()
@@ -41,7 +41,7 @@ public class DocumentRepository : IDocumentRepository
         return ToDocument(documentDto);
     }
 
-    public async Task Remove(Guid id)
+    public async Task DeleteAsync(Guid id, string indexAlias)
     {
         if (_scopeAccessor.AmbientScope is null)
         {
@@ -50,10 +50,9 @@ public class DocumentRepository : IDocumentRepository
 
         Sql<ISqlContext> sql = _scopeAccessor.AmbientScope!.Database.SqlContext.Sql()
             .Delete<DocumentDto>()
-            .Where<DocumentDto>(x => x.DocumentKey == id);
+            .Where<DocumentDto>(x => x.DocumentKey == id && x.Index == indexAlias);
 
         await _scopeAccessor.AmbientScope?.Database.ExecuteAsync(sql)!;
-
     }
 
 
@@ -65,8 +64,13 @@ public class DocumentRepository : IDocumentRepository
             Fields = document.Fields,
         };
 
-    private Document ToDocument(DocumentDto dto)
+    private Document? ToDocument(DocumentDto? dto)
     {
+        if (dto is null)
+        {
+            return null;
+        }
+
         return new()
         {
             DocumentKey = dto.DocumentKey,
