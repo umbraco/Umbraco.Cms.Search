@@ -12,12 +12,13 @@ public class DocumentDto
     [PrimaryKeyColumn(AutoIncrement = true)]
     public int Id { get; set; }
 
-    [Column("index")]
+    [Column("documentKey")]
     public required Guid DocumentKey { get; set; }
 
     [Column("index")]
     public required string Index { get; set; }
 
     [Column("fields")]
+    [SpecialDbType(SpecialDbTypes.NVARCHARMAX)]
     public required string Fields { get; set; }
 }
