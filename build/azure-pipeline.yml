@@ -250,7 +250,7 @@ stages:
                 $versionJson = Get-Content -Path "version.json" -Raw | ConvertFrom-Json
                 $version = $versionJson.version
                 Write-Host "Version from version.json: $version"
-                Write-Host "##vso[task.setvariable variable=AppVersion]$version"
+                Write-Host "##vso[task.setvariable variable=VersionNumber]$version"
 
           - script: dotnet tool install --global CycloneDX
             displayName: 'Install CycloneDX .NET Tool'
@@ -268,7 +268,7 @@ stages:
             inputs:
               bomFilePath: bom.xml
               dtrackProjName: $(Build.Repository.Name)
-              dtrackProjVersion: $(AppVersion)
+              dtrackProjVersion: $(VersionNumber)
               dtrackAPIKey: $(DT_API_KEY)
               dtrackURI: $(DT_API_URL)
               dtrackProjAutoCreate: true
