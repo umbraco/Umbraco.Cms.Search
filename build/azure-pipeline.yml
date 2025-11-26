@@ -229,3 +229,49 @@ stages:
           - pwsh: SqlLocalDB stop MSSQLLocalDB
             displayName: Stop SQL Server LocalDB (Windows)
             condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+
+  - stage: Dependency_Track
+    displayName: Dependency Track
+    dependsOn:
+      - Build
+      - IntegrationTests
+    # Only upload the SBOM when it's from the main branch, as we don't need to for every PR.
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: sbom
+        displayName: Upload SBOM to DependencyTrack
+        steps:
+          - checkout: self
+            fetchDepth: 0
+
+          - task: PowerShell@2
+            displayName: 'Read Version from version.json'
+            inputs:
+              targetType: 'inline'
+              script: |
+                $versionJson = Get-Content -Path "version.json" -Raw | ConvertFrom-Json
+                $version = $versionJson.version
+                Write-Host "Version from version.json: $version"
+                Write-Host "##vso[task.setvariable variable=VersionNumber]$version"
+
+          - script: dotnet tool install --global CycloneDX
+            displayName: 'Install CycloneDX .NET Tool'
+
+          - script: dotnet CycloneDX $(solution)
+            displayName: 'Generate NuGet SBOM'
+
+          # This is step optional. Allows download of artifact from pipeline run view in ADO.
+          - publish: bom.xml
+            artifact: sbom
+            displayName: 'Publish NuGet SBOM Artifact'
+
+          - task: upload-bom-dtrack@1
+            displayName: 'Upload SBOM to Dependency-Track'
+            inputs:
+              bomFilePath: bom.xml
+              dtrackProjName: $(Build.Repository.Name)
+              dtrackProjVersion: $(VersionNumber)
+              dtrackAPIKey: $(DT_API_KEY)
+              dtrackURI: $(DT_API_URL)
+              dtrackProjAutoCreate: true
+
