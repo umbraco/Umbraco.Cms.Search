@@ -234,13 +234,22 @@ stages:
     displayName: Dependency Track
     dependsOn:
       - Build
-    condition: and(succeeded())
+    # Only upload the SBOM when it's from the main branch, as we don't need to for every PR.
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - job: sbom
         displayName: Upload SBOM to DependencyTrack
         steps:
           - checkout: self
             fetchDepth: 0
+
+          - task: PowerShell@2
+            displayName: 'Read Version from version.json'
+            inputs:
+              targetType: 'inline'
+              script: |
+                $versionJson = Get-Content -Path "version.json" -Raw | ConvertFrom-Json
+                Write-Host "##vso[task.setvariable variable=VersionNumber]$versionJson.version"
 
           - script: dotnet tool install --global CycloneDX
             displayName: 'Install CycloneDX .NET Tool'
@@ -258,7 +267,7 @@ stages:
             inputs:
               bomFilePath: bom.xml
               dtrackProjName: $(Build.Repository.Name)
-              dtrackProjVersion: 'main'
+              dtrackProjVersion: $(VersionNumber)
               dtrackAPIKey: $(DT_API_KEY)
               dtrackURI: $(DT_API_URL)
               dtrackProjAutoCreate: true
