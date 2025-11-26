@@ -234,7 +234,6 @@ stages:
     displayName: Dependency Track
     dependsOn:
       - Build
-    condition: and(succeeded())
     jobs:
       - job: sbom
         displayName: Upload SBOM to DependencyTrack
