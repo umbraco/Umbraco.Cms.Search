@@ -234,6 +234,7 @@ stages:
     displayName: Dependency Track
     dependsOn:
       - Build
+      - IntegrationTests
     jobs:
       - job: sbom
         displayName: Upload SBOM to DependencyTrack
@@ -247,7 +248,9 @@ stages:
               targetType: 'inline'
               script: |
                 $versionJson = Get-Content -Path "version.json" -Raw | ConvertFrom-Json
-                Write-Host "##vso[task.setvariable variable=VersionNumber]$versionJson.version"
+                $version = $versionJson.version
+                Write-Host "Version from version.json: $version"
+                Write-Host "##vso[task.setvariable variable=AppVersion]$version"
 
           - script: dotnet tool install --global CycloneDX
             displayName: 'Install CycloneDX .NET Tool'
@@ -265,7 +268,7 @@ stages:
             inputs:
               bomFilePath: bom.xml
               dtrackProjName: $(Build.Repository.Name)
-              dtrackProjVersion: $(VersionNumber)
+              dtrackProjVersion: $(AppVersion)
               dtrackAPIKey: $(DT_API_KEY)
               dtrackURI: $(DT_API_URL)
               dtrackProjAutoCreate: true
