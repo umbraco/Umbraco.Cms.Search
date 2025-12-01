@@ -23,6 +23,14 @@ public class DocumentService : IDocumentService
         return document;
     }
 
+    public async Task<IReadOnlyDictionary<Guid, Document>> GetManyAsync(IEnumerable<Guid> ids, string indexAlias)
+    {
+        using ICoreScope scope = _scopeProvider.CreateCoreScope();
+        IReadOnlyDictionary<Guid, Document> documents = await _documentRepository.GetManyAsync(ids, indexAlias);
+        scope.Complete();
+        return documents;
+    }
+
     public async Task AddAsync(Document document)
     {
         using ICoreScope scope = _scopeProvider.CreateCoreScope();

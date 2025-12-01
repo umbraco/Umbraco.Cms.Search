@@ -14,13 +14,12 @@ public class DocumentRepository : IDocumentRepository
 
     public async Task AddAsync(Document document)
     {
-        DocumentDto dto = ToDto(document);
-
         if (_scopeAccessor.AmbientScope is null)
         {
             throw new InvalidOperationException("Cannot add document as there is no ambient scope.");
         }
 
+        DocumentDto dto = ToDto(document);
         await _scopeAccessor.AmbientScope.Database.InsertAsync(dto);
     }
 
@@ -39,6 +38,33 @@ public class DocumentRepository : IDocumentRepository
         DocumentDto? documentDto = await _scopeAccessor.AmbientScope.Database.FirstOrDefaultAsync<DocumentDto>(sql);
 
         return ToDocument(documentDto);
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, Document>> GetManyAsync(IEnumerable<Guid> ids, string indexAlias)
+    {
+        if (_scopeAccessor.AmbientScope is null)
+        {
+            throw new InvalidOperationException("Cannot get documents as there is no ambient scope.");
+        }
+
+        Guid[] idsArray = ids as Guid[] ?? ids.ToArray();
+        if (idsArray.Length == 0)
+        {
+            return new Dictionary<Guid, Document>();
+        }
+
+        Sql<ISqlContext> sql = _scopeAccessor.AmbientScope.Database.SqlContext.Sql()
+            .Select<DocumentDto>()
+            .From<DocumentDto>()
+            .Where<DocumentDto>(x => x.Index == indexAlias)
+            .WhereIn<DocumentDto>(x => x.DocumentKey, idsArray);
+
+        List<DocumentDto> documentDtos = await _scopeAccessor.AmbientScope.Database.FetchAsync<DocumentDto>(sql);
+
+        return documentDtos
+            .Select(ToDocument)
+            .Where(doc => doc is not null)
+            .ToDictionary(doc => doc!.DocumentKey, doc => doc!);
     }
 
     public async Task DeleteAsync(Guid id, string indexAlias)

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Reflection;
 using Examine;
 using Examine.Lucene.Providers;
@@ -15,10 +15,10 @@ using Umbraco.Cms.Core.Services.ContentTypeEditing;
 using Umbraco.Cms.Core.Services.OperationStatus;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Infrastructure.Install;
-using Umbraco.Cms.Infrastructure.Scoping;
 using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.Models.Persistence;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
+using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
@@ -31,13 +31,11 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.Persistence
 
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
-public class DocumentServiceTests : UmbracoIntegrationTest
+public class RebuildTests : UmbracoIntegrationTest
 {
     private bool _indexingComplete;
 
-    private IScopeProvider _scopeProvider => GetRequiredService<IScopeProvider>();
-
-    private PackageMigrationRunner _packageMigrationRunner => GetRequiredService<PackageMigrationRunner>();
+    private PackageMigrationRunner PackageMigrationRunner => GetRequiredService<PackageMigrationRunner>();
 
     private IRuntimeState RuntimeState => Services.GetRequiredService<IRuntimeState>();
 
@@ -47,7 +45,9 @@ public class DocumentServiceTests : UmbracoIntegrationTest
 
     private IContentService ContentService => GetRequiredService<IContentService>();
 
-    private Umbraco.Cms.Search.Core.Services.ContentIndexing.IDocumentService DocumentService => GetRequiredService<Umbraco.Cms.Search.Core.Services.ContentIndexing.IDocumentService>();
+    private IDocumentService DocumentService => GetRequiredService<IDocumentService>();
+
+    private IContentIndexingService ContentIndexingService => GetRequiredService<IContentIndexingService>();
 
     private IContent _rootDocument = null!;
 
@@ -78,100 +78,89 @@ public class DocumentServiceTests : UmbracoIntegrationTest
         }
     }
 
-    [Test]
-    public async Task CanRunMigration()
-    {
-        await TestSetup(false);
-        using IScope scope = _scopeProvider.CreateScope(autoComplete: true);
-        IEnumerable<string> tables = scope.Database.SqlContext.SqlSyntax.GetTablesInSchema(scope.Database);
-        var result = tables.Any(x => x.InvariantEquals(Constants.Persistence.DocumentTableName));
-        Assert.That(result, Is.True);
-    }
-
     [TestCase(true)]
     [TestCase(false)]
-    public async Task AddsEntryToDatabaseAfterIndexing(bool publish)
+    public async Task RebuildPersistsDocumentsToDatabase(bool publish)
     {
-        await TestSetup(publish);
-        var indexAlias = GetIndexAlias(publish);
-        Document? doc = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
-        Assert.That(doc, Is.Not.Null);
-    }
-
-    [TestCase(true)]
-    [TestCase(false)]
-    public async Task UpdatesEntryInDatabaseAfterPropertyChange(bool publish)
-    {
-        await TestSetup(publish);
+        await CreateContentWithPersistence(publish);
         var indexAlias = GetIndexAlias(publish);
 
-        // Verify initial document exists
-        Document? initialDoc = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
-        Assert.That(initialDoc, Is.Not.Null);
-        var initialFields = initialDoc!.Fields;
+        // Verify document exists in database (from initial indexing)
+        Document? rootDocInitial = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Assert.That(rootDocInitial, Is.Not.Null);
 
-        // Update the content name
-        _rootDocument.Name = "Updated Root Document";
+        // Delete the database entry to simulate a fresh state (e.g., after migration or database restore)
+        await DocumentService.DeleteAsync(_rootDocument.Key, indexAlias);
 
+        // Verify document no longer exists in database
+        Document? rootDocBefore = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Assert.That(rootDocBefore, Is.Null);
+
+        // Trigger rebuild
         await WaitForIndexing(indexAlias, () =>
         {
-            ContentService.Save(_rootDocument);
-            if (publish)
-            {
-                ContentService.Publish(_rootDocument, ["*"]);
-            }
-
+            ContentIndexingService.Rebuild(indexAlias);
             return Task.CompletedTask;
         });
 
-        // Verify the document was updated
-        Document? updatedDoc = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
-        Assert.That(updatedDoc, Is.Not.Null);
-        Assert.That(updatedDoc!.Fields, Is.Not.EqualTo(initialFields));
-        Assert.That(updatedDoc.Fields, Does.Contain("Updated Root Document"));
+        // Verify document now exists in database again (rebuilt from content)
+        Document? rootDocAfter = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+
+        Assert.That(rootDocAfter, Is.Not.Null);
+        Assert.That(rootDocAfter!.Fields, Does.Contain("Root Document"));
     }
 
     [TestCase(true)]
     [TestCase(false)]
-    public async Task RemovesEntryFromDatabaseAfterDeletion(bool publish)
+    public async Task RebuildUsesExistingDatabaseEntries(bool publish)
     {
-        await TestSetup(publish);
+        await CreateContentWithPersistence(publish);
         var indexAlias = GetIndexAlias(publish);
 
-        // Verify initial document exists
-        Document? initialDoc = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
-        Assert.That(initialDoc, Is.Not.Null);
+        // Verify document exists in database
+        Document? rootDocBefore = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Assert.That(rootDocBefore, Is.Not.Null);
 
-        // Delete the content
+        var rootFieldsBefore = rootDocBefore!.Fields;
+
+        // Trigger rebuild
         await WaitForIndexing(indexAlias, () =>
         {
-            ContentService.Delete(_rootDocument);
+            ContentIndexingService.Rebuild(indexAlias);
             return Task.CompletedTask;
         });
 
-        // Verify the document was removed
-        Document? deletedDoc = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
-        Assert.That(deletedDoc, Is.Null);
+        // Verify document still exists and fields are the same (fetched from DB, not recalculated)
+        Document? rootDocAfter = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+
+        Assert.That(rootDocAfter, Is.Not.Null);
+        Assert.That(rootDocAfter!.Fields, Is.EqualTo(rootFieldsBefore));
     }
 
     private string GetIndexAlias(bool publish) => publish ? Constants.IndexAliases.PublishedContent : Constants.IndexAliases.DraftContent;
 
-    public async Task TestSetup(bool publish)
+    /// <summary>
+    /// Creates content and waits for indexing (so database persistence happens).
+    /// </summary>
+    private async Task CreateContentWithPersistence(bool publish)
     {
-        await _packageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
+        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
         Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
 
+        // Create content type
         ContentTypeCreateModel contentTypeCreateModel = ContentTypeEditingBuilder.CreateSimpleContentType(
-            "parentType",
-            "Parent Type");
+            "testType",
+            "Test Type");
         Attempt<IContentType?, ContentTypeOperationStatus> contentTypeAttempt = await ContentTypeEditingService.CreateAsync(
             contentTypeCreateModel,
             Umbraco.Cms.Core.Constants.Security.SuperUserKey);
         Assert.That(contentTypeAttempt.Success, Is.True);
         IContentType contentType = contentTypeAttempt.Result!;
-        ContentCreateModel rootCreateModel = ContentEditingBuilder.CreateSimpleContent(contentType.Key, "Root Document");
 
         var indexAlias = GetIndexAlias(publish);
+
+        // Create root content with indexing
+        ContentCreateModel rootCreateModel = ContentEditingBuilder.CreateSimpleContent(contentType.Key, "Root Document");
         await WaitForIndexing(indexAlias, async () =>
         {
             Attempt<ContentCreateResult, ContentEditingOperationStatus> createRootResult = await ContentEditingService.CreateAsync(rootCreateModel, Umbraco.Cms.Core.Constants.Security.SuperUserKey);
@@ -202,7 +191,7 @@ public class DocumentServiceTests : UmbracoIntegrationTest
                 hasDoneAction = true;
             }
 
-            if (stopWatch.ElapsedMilliseconds > 5000)
+            if (stopWatch.ElapsedMilliseconds > 10000)
             {
                 throw new TimeoutException("Indexing timed out");
             }

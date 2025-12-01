@@ -6,6 +6,8 @@ public interface IDocumentService
 {
     Task<Document?> GetAsync(Guid id, string indexAlias);
 
+    Task<IReadOnlyDictionary<Guid, Document>> GetManyAsync(IEnumerable<Guid> ids, string indexAlias);
+
     Task AddAsync(Document document);
 
     Task DeleteAsync(Guid id, string indexAlias);

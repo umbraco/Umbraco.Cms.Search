@@ -8,5 +8,7 @@ public interface IDocumentRepository
 
     public Task<Document?> GetAsync(Guid id, string indexAlias);
 
+    public Task<IReadOnlyDictionary<Guid, Document>> GetManyAsync(IEnumerable<Guid> ids, string indexAlias);
+
     public Task DeleteAsync(Guid id, string indexAlias);
 }
