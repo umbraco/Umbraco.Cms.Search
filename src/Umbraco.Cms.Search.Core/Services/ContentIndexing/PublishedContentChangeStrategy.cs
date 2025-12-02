@@ -84,7 +84,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
         await RemoveFromIndexAsync(indexInfosAsArray, pendingRemovals);
     }
 
-    public async Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
+    public async Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken, bool useDatabase = false)
     {
         await indexInfo.Indexer.ResetAsync(indexInfo.IndexAlias);
 
@@ -96,7 +96,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
                 return;
             }
 
-            await RebuildContentFromStorageAsync(indexInfo, content, cancellationToken);
+            await RebuildContentAsync(indexInfo, content, useDatabase, cancellationToken);
         }
     }
 
@@ -202,11 +202,15 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
     /// <summary>
     /// Used by RebuildAsync: Rebuilds content and all descendants from storage.
     /// </summary>
-    private async Task RebuildContentFromStorageAsync(IndexInfo indexInfo, IContentBase content, CancellationToken cancellationToken)
+    private async Task RebuildContentAsync(IndexInfo indexInfo, IContentBase content, bool useDatabase, CancellationToken cancellationToken)
     {
-        // Rebuild this content item
-        Document? rootDocument = await _documentService.GetAsync(content.Key, indexInfo.IndexAlias);
-        await RebuildFromStorageAsync(indexInfo, content, rootDocument, cancellationToken);
+        Document? rootDocument = null;
+        if (useDatabase)
+        {
+            rootDocument = await _documentService.GetAsync(content.Key, indexInfo.IndexAlias);
+        }
+
+        await RebuildDocumentAsync(indexInfo, content, rootDocument, cancellationToken);
 
         // Rebuild all descendants
         var removedDescendantIds = new List<int>();
@@ -231,7 +235,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
                     }
 
                     documents.TryGetValue(descendant.Key, out Document? document);
-                    var indexed = await RebuildFromStorageAsync(indexInfo, descendant, document, cancellationToken);
+                    var indexed = await RebuildDocumentAsync(indexInfo, descendant, document, cancellationToken);
                     if (indexed is false)
                     {
                         removedDescendantIds.Add(descendant.Id);
@@ -243,7 +247,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
     /// <summary>
     /// Used by RebuildAsync: Uses pre-fetched document if available, falls back to calculating if not found.
     /// </summary>
-    private async Task<bool> RebuildFromStorageAsync(IndexInfo indexInfo, IContentBase content, Document? document, CancellationToken cancellationToken)
+    private async Task<bool> RebuildDocumentAsync(IndexInfo indexInfo, IContentBase content, Document? document, CancellationToken cancellationToken)
     {
         Variation[] variations = RoutablePublishedVariations(content);
         if (variations.Length is 0)

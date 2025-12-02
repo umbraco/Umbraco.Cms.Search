@@ -48,7 +48,7 @@ internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<U
         {
             if (indexRegistration.ContainedObjectTypes.Contains(UmbracoObjectTypes.Document))
             {
-                _contentIndexingService.Rebuild(indexRegistration.IndexAlias);
+                _contentIndexingService.Rebuild(indexRegistration.IndexAlias, false);
             }
         }
     }
@@ -76,7 +76,7 @@ internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<U
             {
                 if (indexRegistration.ContainedObjectTypes.Contains(objectType))
                 {
-                    _contentIndexingService.Rebuild(indexRegistration.IndexAlias);
+                    _contentIndexingService.Rebuild(indexRegistration.IndexAlias, false);
                 }
             }
         }

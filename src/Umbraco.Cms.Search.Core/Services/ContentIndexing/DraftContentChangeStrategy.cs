@@ -84,7 +84,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         await RemoveFromIndexAsync(indexInfosAsArray, pendingRemovals);
     }
 
-    public async Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
+    public async Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken, bool useDatabase = false)
     {
         await indexInfo.Indexer.ResetAsync(indexInfo.IndexAlias);
 
@@ -93,6 +93,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
             UmbracoObjectTypes.Document,
             () => _contentService.GetRootContent(),
             (pageIndex, pageSize) => _contentService.GetPagedChildren(Cms.Core.Constants.System.RecycleBinContent, pageIndex, pageSize, out _),
+            useDatabase,
             cancellationToken);
 
         if (cancellationToken.IsCancellationRequested)
@@ -106,6 +107,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
             UmbracoObjectTypes.Media,
             () => _mediaService.GetRootMedia(),
             (pageIndex, pageSize) => _mediaService.GetPagedChildren(Cms.Core.Constants.System.RecycleBinMedia, pageIndex, pageSize, out _),
+            useDatabase,
             cancellationToken);
 
         if (cancellationToken.IsCancellationRequested)
@@ -143,7 +145,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                 }
 
                 documents.TryGetValue(member.Key, out Document? document);
-                await RebuildFromStorageAsync(indexInfo, member, UmbracoObjectTypes.Member, document, cancellationToken);
+                await RebuildDocumentAsync(indexInfo, member, UmbracoObjectTypes.Member, document, cancellationToken);
             }
 
             pageIndex++;
@@ -206,7 +208,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
     }
 
     /// <summary>
-    /// Used by HandleAsync: Always calculates fields fresh, persists to DB, and adds to index.
+    /// Calculates fields from content, persists to DB, and adds to index.
     /// </summary>
     private async Task<bool> CalculateAndPersistAsync(IndexInfo[] indexInfos, IContentBase content, UmbracoObjectTypes objectType, CancellationToken cancellationToken)
     {
@@ -243,15 +245,19 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
     }
 
     /// <summary>
-    /// Used by RebuildAsync: Uses pre-fetched document if available, falls back to calculating if not found.
+    /// Uses pre-fetched document if available, falls back to calculating fields.
     /// </summary>
-    private async Task<bool> RebuildFromStorageAsync(IndexInfo indexInfo, IContentBase content, UmbracoObjectTypes objectType, Document? document, CancellationToken cancellationToken)
+    private async Task RebuildDocumentAsync(IndexInfo indexInfo, IContentBase content, UmbracoObjectTypes objectType, Document? document, CancellationToken cancellationToken)
     {
         IndexField[]? fields;
         if (document is not null)
         {
             // Deserialize fields from database
             fields = JsonSerializer.Deserialize<IndexField[]>(document.Fields);
+            if (fields is null)
+            {
+                return;
+            }
         }
         else
         {
@@ -259,7 +265,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
             fields = (await _contentIndexingDataCollectionService.CollectAsync(content, false, cancellationToken))?.ToArray();
             if (fields is null)
             {
-                return false;
+                return;
             }
 
             // Persist to database for future rebuilds
@@ -272,22 +278,15 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
             });
         }
 
-        if (fields is null)
-        {
-            return false;
-        }
-
         Variation[] variations = GetVariations(content);
 
         var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, variations, fields);
         if (await _eventAggregator.PublishCancelableAsync(notification))
         {
-            return true;
+            return;
         }
 
         await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, objectType, variations, notification.Fields, null);
-
-        return true;
     }
 
     private Variation[] GetVariations(IContentBase content)
@@ -344,6 +343,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         UmbracoObjectTypes objectType,
         Func<IEnumerable<IContentBase>> getContentAtRoot,
         Func<int, int, IEnumerable<IContentBase>> getPagedContentAtRecycleBinRoot,
+        bool useDatabase,
         CancellationToken cancellationToken)
     {
         if (indexInfo.ContainedObjectTypes.Contains(objectType) is false)
@@ -364,9 +364,15 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                 break;
             }
 
-            Document? rootDocument = await _documentService.GetAsync(rootContent.Key, indexInfo.IndexAlias);
-            await RebuildFromStorageAsync(indexInfo, rootContent, objectType, rootDocument, cancellationToken);
-            await RebuildDescendantsFromStorageAsync(indexInfo, rootContent, objectType, cancellationToken);
+            Document? rootDocument = null;
+
+            if (useDatabase)
+            {
+                rootDocument = await _documentService.GetAsync(rootContent.Key, indexInfo.IndexAlias);
+            }
+
+            await RebuildDocumentAsync(indexInfo, rootContent, objectType, rootDocument, cancellationToken);
+            await RebuildDescendantsAsync(indexInfo, rootContent, objectType, useDatabase, cancellationToken);
         }
 
         if (cancellationToken.IsCancellationRequested)
@@ -399,8 +405,8 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                 }
 
                 documents.TryGetValue(content.Key, out Document? document);
-                await RebuildFromStorageAsync(indexInfo, content, objectType, document, cancellationToken);
-                await RebuildDescendantsFromStorageAsync(indexInfo, content, objectType, cancellationToken);
+                await RebuildDocumentAsync(indexInfo, content, objectType, document, cancellationToken);
+                await RebuildDescendantsAsync(indexInfo, content, objectType, useDatabase, cancellationToken);
             }
 
             pageIndex++;
@@ -408,7 +414,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         while (contentInRecycleBin.Length == ContentEnumerationPageSize);
     }
 
-    private async Task RebuildDescendantsFromStorageAsync(IndexInfo indexInfo, IContentBase content, UmbracoObjectTypes objectType, CancellationToken cancellationToken)
+    private async Task RebuildDescendantsAsync(IndexInfo indexInfo, IContentBase content, UmbracoObjectTypes objectType, bool useDatabase, CancellationToken cancellationToken)
     {
         switch (objectType)
         {
@@ -421,15 +427,23 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                         .ToArray(),
                     async descendants =>
                     {
-                        // Batch fetch all documents for this page of descendants
-                        IReadOnlyDictionary<Guid, Document> documents = await _documentService.GetManyAsync(
-                            descendants.Select(d => d.Key),
-                            indexInfo.IndexAlias);
-
-                        foreach (IContent descendant in descendants)
+                        if (useDatabase)
                         {
-                            documents.TryGetValue(descendant.Key, out Document? document);
-                            await RebuildFromStorageAsync(indexInfo, descendant, objectType, document, cancellationToken);
+                            IReadOnlyDictionary<Guid, Document> documents = await _documentService.GetManyAsync(
+                                descendants.Select(d => d.Key),
+                                indexInfo.IndexAlias);
+                            foreach (IContent descendant in descendants)
+                            {
+                                documents.TryGetValue(descendant.Key, out Document? document);
+                                await RebuildDocumentAsync(indexInfo, descendant, objectType, document, cancellationToken);
+                            }
+                        }
+                        else
+                        {
+                            foreach (IContent descendant in descendants)
+                            {
+                                await RebuildDocumentAsync(indexInfo, descendant, objectType, null, cancellationToken);
+                            }
                         }
                     });
                 break;
@@ -442,15 +456,23 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                         .ToArray(),
                     async descendants =>
                     {
-                        // Batch fetch all documents for this page of descendants
-                        IReadOnlyDictionary<Guid, Document> documents = await _documentService.GetManyAsync(
-                            descendants.Select(d => d.Key),
-                            indexInfo.IndexAlias);
-
-                        foreach (IMedia descendant in descendants)
+                        if (useDatabase)
                         {
-                            documents.TryGetValue(descendant.Key, out Document? document);
-                            await RebuildFromStorageAsync(indexInfo, descendant, objectType, document, cancellationToken);
+                            IReadOnlyDictionary<Guid, Document> documents = await _documentService.GetManyAsync(
+                                descendants.Select(d => d.Key),
+                                indexInfo.IndexAlias);
+                            foreach (IMedia descendant in descendants)
+                            {
+                                documents.TryGetValue(descendant.Key, out Document? document);
+                                await RebuildDocumentAsync(indexInfo, descendant, objectType, document, cancellationToken);
+                            }
+                        }
+                        else
+                        {
+                            foreach (IMedia descendant in descendants)
+                            {
+                                await RebuildDocumentAsync(indexInfo, descendant, objectType, null, cancellationToken);
+                            }
                         }
                     });
                 break;
