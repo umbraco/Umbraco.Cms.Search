@@ -1,6 +1,7 @@
 ﻿using Examine;
 using Examine.Search;
 using NUnit.Framework;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using Umbraco.Cms.Tests.Common.Builders;
@@ -34,6 +35,13 @@ public class InvariantSortableIndexTests : IndexTestBase
             Assert.That(values.Skip(1).First(), Is.EqualTo("B Title"));
             Assert.That(values.Last(), Is.EqualTo("C Title"));
         });
+    }
+
+    [SetUp]
+    public async Task RunMigrations()
+    {
+        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
+        Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
     }
 
     private async Task CreateTitleDocType()

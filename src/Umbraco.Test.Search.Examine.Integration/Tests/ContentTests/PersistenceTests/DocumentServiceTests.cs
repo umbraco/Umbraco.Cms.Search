@@ -39,7 +39,7 @@ public class DocumentServiceTests : UmbracoIntegrationTest
 
     private PackageMigrationRunner _packageMigrationRunner => GetRequiredService<PackageMigrationRunner>();
 
-    private IRuntimeState RuntimeState => Services.GetRequiredService<IRuntimeState>();
+    private IRuntimeState RuntimeState => GetRequiredService<IRuntimeState>();
 
     private IContentTypeEditingService ContentTypeEditingService => GetRequiredService<IContentTypeEditingService>();
 
