@@ -137,6 +137,65 @@ public class RebuildTests : UmbracoIntegrationTest
         Assert.That(rootDocAfter!.Fields, Is.EqualTo(rootFieldsBefore));
     }
 
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task RebuildWithUseDatabaseFalse_RecalculatesFields(bool publish)
+    {
+        await CreateContentWithPersistence(publish);
+        var indexAlias = GetIndexAlias(publish);
+
+        // Verify document exists in database with original name
+        Document? rootDocBefore = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Assert.That(rootDocBefore, Is.Not.Null);
+        Assert.That(rootDocBefore!.Fields, Does.Contain("Root Document"));
+
+        // Update the content name directly (simulating a change)
+        _rootDocument.Name = "Updated Document Name";
+        await WaitForIndexing(indexAlias, () =>
+        {
+            ContentService.Save(_rootDocument);
+            if (publish)
+            {
+                ContentService.Publish(_rootDocument, ["*"]);
+            }
+
+            return Task.CompletedTask;
+        });
+
+        // Verify the database now has the updated name
+        Document? rootDocUpdated = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Assert.That(rootDocUpdated, Is.Not.Null);
+        Assert.That(rootDocUpdated!.Fields, Does.Contain("Updated Document Name"));
+
+        // Now simulate stale data by manually reverting the DB entry to old fields
+        await DocumentService.DeleteAsync(_rootDocument.Key, indexAlias);
+        await DocumentService.AddAsync(new Document
+        {
+            DocumentKey = _rootDocument.Key,
+            Index = indexAlias,
+            Fields = rootDocBefore.Fields, // Stale fields with "Root Document"
+        });
+
+        // Verify we have stale data in DB
+        Document? staleDoc = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Assert.That(staleDoc, Is.Not.Null);
+        Assert.That(staleDoc!.Fields, Does.Contain("Root Document"));
+        Assert.That(staleDoc.Fields, Does.Not.Contain("Updated Document Name"));
+
+        // Trigger rebuild with useDatabase=false (should recalculate, not use stale DB data)
+        await WaitForIndexing(indexAlias, () =>
+        {
+            ContentIndexingService.Rebuild(indexAlias, useDatabase: false);
+            return Task.CompletedTask;
+        });
+
+        // Verify the database now has fresh recalculated fields with the actual content name
+        Document? rootDocAfter = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Assert.That(rootDocAfter, Is.Not.Null);
+        Assert.That(rootDocAfter!.Fields, Does.Contain("Updated Document Name"));
+        Assert.That(rootDocAfter.Fields, Does.Not.Contain("Root Document"));
+    }
+
     private string GetIndexAlias(bool publish) => publish ? Constants.IndexAliases.PublishedContent : Constants.IndexAliases.DraftContent;
 
     /// <summary>
