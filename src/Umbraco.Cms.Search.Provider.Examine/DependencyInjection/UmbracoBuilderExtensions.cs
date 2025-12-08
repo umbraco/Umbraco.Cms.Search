@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Hosting;
-using Umbraco.Cms.Search.Provider.Examine.Services;
+using Umbraco.Cms.Infrastructure.Examine;
 
 namespace Umbraco.Cms.Search.Provider.Examine.DependencyInjection;
 
