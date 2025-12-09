@@ -1,6 +1,7 @@
 ﻿using Examine;
 using Examine.Search;
 using NUnit.Framework;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using Umbraco.Cms.Tests.Common.Builders;
@@ -154,6 +155,13 @@ public class VariantDocumentTests : IndexTestBase
         Assert.That(results, Is.Not.Empty);
         var fieldName = FieldNameHelper.FieldName("body", Constants.FieldValues.Texts);
         Assert.That(results.First().Values.First(x => x.Key == fieldName).Value, Is.EqualTo(expectedValue));
+    }
+
+    [SetUp]
+    public async Task RunMigrations()
+    {
+        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
+        Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
     }
 
     private async Task CreateVariantDocument()

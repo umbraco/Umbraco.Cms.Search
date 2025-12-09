@@ -31,7 +31,7 @@ internal sealed class ContentIndexingService : IContentIndexingService
     public void Handle(IEnumerable<ContentChange> changes)
         => _backgroundTaskQueue.QueueBackgroundWorkItem(async cancellationToken => await HandleAsync(changes, cancellationToken));
 
-    public void Rebuild(string indexAlias)
+    public void Rebuild(string indexAlias, bool useDatabase = false)
     {
         IndexRegistration? indexRegistration = _indexOptions.GetIndexRegistration(indexAlias);
         if (indexRegistration is null)
@@ -40,7 +40,7 @@ internal sealed class ContentIndexingService : IContentIndexingService
             return;
         }
 
-        _backgroundTaskQueue.QueueBackgroundWorkItem(async cancellationToken => await RebuildAsync(indexRegistration, cancellationToken));
+        _backgroundTaskQueue.QueueBackgroundWorkItem(async cancellationToken => await RebuildAsync(indexRegistration, cancellationToken, useDatabase));
     }
 
     private async Task HandleAsync(IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
@@ -76,7 +76,7 @@ internal sealed class ContentIndexingService : IContentIndexingService
         }
     }
 
-    private async Task RebuildAsync(IndexRegistration indexRegistration, CancellationToken cancellationToken)
+    private async Task RebuildAsync(IndexRegistration indexRegistration, CancellationToken cancellationToken, bool useDatabase)
     {
         if (TryGetContentChangeStrategy(indexRegistration.ContentChangeStrategy, out IContentChangeStrategy? contentChangeStrategy) is false
             || TryGetIndexer(indexRegistration.Indexer, out IIndexer? indexer) is false)
@@ -84,7 +84,7 @@ internal sealed class ContentIndexingService : IContentIndexingService
             return;
         }
 
-        await contentChangeStrategy.RebuildAsync(new IndexInfo(indexRegistration.IndexAlias, indexRegistration.ContainedObjectTypes, indexer), cancellationToken);
+        await contentChangeStrategy.RebuildAsync(new IndexInfo(indexRegistration.IndexAlias, indexRegistration.ContainedObjectTypes, indexer), cancellationToken, useDatabase);
     }
 
     private bool TryGetContentChangeStrategy(Type type, [NotNullWhen(true)] out IContentChangeStrategy? contentChangeStrategy)

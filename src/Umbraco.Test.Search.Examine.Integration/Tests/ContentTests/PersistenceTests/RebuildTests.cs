@@ -1,0 +1,269 @@
+using System.Diagnostics;
+using System.Reflection;
+using Examine;
+using Examine.Lucene.Providers;
+using Microsoft.Extensions.DependencyInjection;
+using NUnit.Framework;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.HostedServices;
+using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Models.ContentEditing;
+using Umbraco.Cms.Core.Models.ContentTypeEditing;
+using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Services.ContentTypeEditing;
+using Umbraco.Cms.Core.Services.OperationStatus;
+using Umbraco.Cms.Core.Sync;
+using Umbraco.Cms.Infrastructure.Install;
+using Umbraco.Cms.Search.Core.DependencyInjection;
+using Umbraco.Cms.Search.Core.Models.Persistence;
+using Umbraco.Cms.Search.Core.NotificationHandlers;
+using Umbraco.Cms.Search.Core.Services.ContentIndexing;
+using Umbraco.Cms.Tests.Common.Builders;
+using Umbraco.Cms.Tests.Common.Testing;
+using Umbraco.Cms.Tests.Integration.Testing;
+using Umbraco.Test.Search.Examine.Integration.Attributes;
+using Umbraco.Test.Search.Examine.Integration.Extensions;
+using Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
+using Constants = Umbraco.Cms.Search.Core.Constants;
+
+namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.PersistenceTests;
+
+[TestFixture]
+[UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
+public class RebuildTests : UmbracoIntegrationTest
+{
+    private bool _indexingComplete;
+
+    private PackageMigrationRunner PackageMigrationRunner => GetRequiredService<PackageMigrationRunner>();
+
+    private IRuntimeState RuntimeState => Services.GetRequiredService<IRuntimeState>();
+
+    private IContentTypeEditingService ContentTypeEditingService => GetRequiredService<IContentTypeEditingService>();
+
+    private IContentEditingService ContentEditingService => GetRequiredService<IContentEditingService>();
+
+    private IContentService ContentService => GetRequiredService<IContentService>();
+
+    private IDocumentService DocumentService => GetRequiredService<IDocumentService>();
+
+    private IContentIndexingService ContentIndexingService => GetRequiredService<IContentIndexingService>();
+
+    private IContent _rootDocument = null!;
+
+    protected override void CustomTestSetup(IUmbracoBuilder builder)
+    {
+        base.CustomTestSetup(builder);
+
+        builder.AddExamineSearchProviderForTest<TestIndex, TestInMemoryDirectoryFactory>();
+
+        builder.AddSearchCore();
+
+        builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
+        builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
+        builder.AddNotificationHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>();
+
+        // the core ConfigureBuilderAttribute won't execute from other assemblies at the moment, so this is a workaround
+        var testType = Type.GetType(TestContext.CurrentContext.Test.ClassName!);
+        if (testType is not null)
+        {
+            MethodInfo? methodInfo = testType.GetMethod(TestContext.CurrentContext.Test.Name);
+            if (methodInfo is not null)
+            {
+                foreach (ConfigureUmbracoBuilderAttribute attribute in methodInfo.GetCustomAttributes(typeof(ConfigureUmbracoBuilderAttribute), true).OfType<ConfigureUmbracoBuilderAttribute>())
+                {
+                    attribute.Execute(builder, testType);
+                }
+            }
+        }
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task RebuildPersistsDocumentsToDatabase(bool publish)
+    {
+        await CreateContentWithPersistence(publish);
+        var indexAlias = GetIndexAlias(publish);
+
+        // Verify document exists in database (from initial indexing)
+        Document? rootDocInitial = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Assert.That(rootDocInitial, Is.Not.Null);
+
+        // Delete the database entry to simulate a fresh state (e.g., after migration or database restore)
+        await DocumentService.DeleteAsync(_rootDocument.Key, indexAlias);
+
+        // Verify document no longer exists in database
+        Document? rootDocBefore = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Assert.That(rootDocBefore, Is.Null);
+
+        // Trigger rebuild
+        await WaitForIndexing(indexAlias, () =>
+        {
+            ContentIndexingService.Rebuild(indexAlias);
+            return Task.CompletedTask;
+        });
+
+        // Verify document now exists in database again (rebuilt from content)
+        Document? rootDocAfter = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+
+        Assert.That(rootDocAfter, Is.Not.Null);
+        Assert.That(rootDocAfter!.Fields, Does.Contain("Root Document"));
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task RebuildUsesExistingDatabaseEntries(bool publish)
+    {
+        await CreateContentWithPersistence(publish);
+        var indexAlias = GetIndexAlias(publish);
+
+        // Verify document exists in database
+        Document? rootDocBefore = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Assert.That(rootDocBefore, Is.Not.Null);
+
+        var rootFieldsBefore = rootDocBefore!.Fields;
+
+        // Trigger rebuild
+        await WaitForIndexing(indexAlias, () =>
+        {
+            ContentIndexingService.Rebuild(indexAlias);
+            return Task.CompletedTask;
+        });
+
+        // Verify document still exists and fields are the same (fetched from DB, not recalculated)
+        Document? rootDocAfter = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+
+        Assert.That(rootDocAfter, Is.Not.Null);
+        Assert.That(rootDocAfter!.Fields, Is.EqualTo(rootFieldsBefore));
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task RebuildWithUseDatabaseFalse_RecalculatesFields(bool publish)
+    {
+        await CreateContentWithPersistence(publish);
+        var indexAlias = GetIndexAlias(publish);
+
+        // Verify document exists in database with original name
+        Document? rootDocBefore = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Assert.That(rootDocBefore, Is.Not.Null);
+        Assert.That(rootDocBefore!.Fields, Does.Contain("Root Document"));
+
+        // Update the content name directly (simulating a change)
+        _rootDocument.Name = "Updated Document Name";
+        await WaitForIndexing(indexAlias, () =>
+        {
+            ContentService.Save(_rootDocument);
+            if (publish)
+            {
+                ContentService.Publish(_rootDocument, ["*"]);
+            }
+
+            return Task.CompletedTask;
+        });
+
+        // Verify the database now has the updated name
+        Document? rootDocUpdated = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Assert.That(rootDocUpdated, Is.Not.Null);
+        Assert.That(rootDocUpdated!.Fields, Does.Contain("Updated Document Name"));
+
+        // Now simulate stale data by manually reverting the DB entry to old fields
+        await DocumentService.DeleteAsync(_rootDocument.Key, indexAlias);
+        await DocumentService.AddAsync(new Document
+        {
+            DocumentKey = _rootDocument.Key,
+            Index = indexAlias,
+            Fields = rootDocBefore.Fields, // Stale fields with "Root Document"
+        });
+
+        // Verify we have stale data in DB
+        Document? staleDoc = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Assert.That(staleDoc, Is.Not.Null);
+        Assert.That(staleDoc!.Fields, Does.Contain("Root Document"));
+        Assert.That(staleDoc.Fields, Does.Not.Contain("Updated Document Name"));
+
+        // Trigger rebuild with useDatabase=false (should recalculate, not use stale DB data)
+        await WaitForIndexing(indexAlias, () =>
+        {
+            ContentIndexingService.Rebuild(indexAlias, useDatabase: false);
+            return Task.CompletedTask;
+        });
+
+        // Verify the database now has fresh recalculated fields with the actual content name
+        Document? rootDocAfter = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Assert.That(rootDocAfter, Is.Not.Null);
+        Assert.That(rootDocAfter!.Fields, Does.Contain("Updated Document Name"));
+        Assert.That(rootDocAfter.Fields, Does.Not.Contain("Root Document"));
+    }
+
+    private string GetIndexAlias(bool publish) => publish ? Constants.IndexAliases.PublishedContent : Constants.IndexAliases.DraftContent;
+
+    /// <summary>
+    /// Creates content and waits for indexing (so database persistence happens).
+    /// </summary>
+    private async Task CreateContentWithPersistence(bool publish)
+    {
+        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
+        Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
+
+        // Create content type
+        ContentTypeCreateModel contentTypeCreateModel = ContentTypeEditingBuilder.CreateSimpleContentType(
+            "testType",
+            "Test Type");
+        Attempt<IContentType?, ContentTypeOperationStatus> contentTypeAttempt = await ContentTypeEditingService.CreateAsync(
+            contentTypeCreateModel,
+            Umbraco.Cms.Core.Constants.Security.SuperUserKey);
+        Assert.That(contentTypeAttempt.Success, Is.True);
+        IContentType contentType = contentTypeAttempt.Result!;
+
+        var indexAlias = GetIndexAlias(publish);
+
+        // Create root content with indexing
+        ContentCreateModel rootCreateModel = ContentEditingBuilder.CreateSimpleContent(contentType.Key, "Root Document");
+        await WaitForIndexing(indexAlias, async () =>
+        {
+            Attempt<ContentCreateResult, ContentEditingOperationStatus> createRootResult = await ContentEditingService.CreateAsync(rootCreateModel, Umbraco.Cms.Core.Constants.Security.SuperUserKey);
+            Assert.That(createRootResult.Success, Is.True);
+            _rootDocument = createRootResult.Result.Content!;
+
+            if (publish)
+            {
+                ContentService.Publish(_rootDocument, ["*"]);
+            }
+        });
+    }
+
+    protected async Task WaitForIndexing(string indexAlias, Func<Task> indexUpdatingAction)
+    {
+        var index = (LuceneIndex)GetRequiredService<IExamineManager>().GetIndex(indexAlias);
+        index.IndexCommitted += IndexCommited;
+
+        var hasDoneAction = false;
+
+        var stopWatch = Stopwatch.StartNew();
+
+        while (_indexingComplete is false)
+        {
+            if (hasDoneAction is false)
+            {
+                await indexUpdatingAction();
+                hasDoneAction = true;
+            }
+
+            if (stopWatch.ElapsedMilliseconds > 10000)
+            {
+                throw new TimeoutException("Indexing timed out");
+            }
+
+            await Task.Delay(250);
+        }
+
+        _indexingComplete = false;
+        index.IndexCommitted -= IndexCommited;
+    }
+
+    private void IndexCommited(object? sender, EventArgs e)
+    {
+        _indexingComplete = true;
+    }
+}
