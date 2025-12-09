@@ -415,6 +415,10 @@ Umbraco Search uses a provider based approach to the underlying search technolog
 > [!NOTE]  
 > This section _only_ applies to the default Examine search provider. Alternative search providers might be available, and they might require a different configuration.
 
+### Directory factory configuration
+
+The Examine search provider automatically applies the [Examine directory configuration](https://docs.umbraco.com/umbraco-cms/reference/configuration/examinesettings) from Umbraco CMS.
+
 ### Configuring fields for faceting and/or sorting
 
 Fields that will be used for faceting and/or sorting must be explicitly configured for the Examine search provider, _before_ anything is added to the indexes. This is done by configuring the `FieldOptions` using the options pattern.

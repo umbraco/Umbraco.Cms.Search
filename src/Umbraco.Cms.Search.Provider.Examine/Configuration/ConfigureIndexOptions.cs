@@ -1,6 +1,8 @@
 ﻿using Examine;
 using Examine.Lucene;
+using Lucene.Net.Index;
 using Microsoft.Extensions.Options;
+using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using CoreConstants = Umbraco.Cms.Search.Core.Constants;
 
@@ -8,10 +10,14 @@ namespace Umbraco.Cms.Search.Provider.Examine.Configuration;
 
 internal sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirectoryIndexOptions>
 {
+    private readonly IndexCreatorSettings _indexCreatorSettings;
     private readonly FieldOptions _fieldOptions;
 
-    public ConfigureIndexOptions(IOptions<FieldOptions> options)
-        => _fieldOptions = options.Value;
+    public ConfigureIndexOptions(IOptions<FieldOptions> options, IOptions<IndexCreatorSettings> settings)
+    {
+        _indexCreatorSettings = settings.Value;
+        _fieldOptions = options.Value;
+    }
 
     public void Configure(string? name, LuceneDirectoryIndexOptions options)
         => AddOptions(options);
@@ -24,6 +30,12 @@ internal sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirec
         AddFields(options, ExamineSystemFieldsOptions(), (field, _) => field.PropertyName);
         AddFields(options, CoreSystemFieldsOptions(), (field, fieldValues) => FieldNameHelper.FieldName(field.PropertyName, fieldValues));
         AddFields(options, _fieldOptions.Fields, (field, fieldValues) => FieldNameHelper.FieldName(field.PropertyName, fieldValues));
+
+        if (_indexCreatorSettings.LuceneDirectoryFactory == LuceneDirectoryFactory.SyncedTempFileSystemDirectoryFactory)
+        {
+            // if this directory factory is enabled then a snapshot deletion policy is required
+            options.IndexDeletionPolicy = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
+        }
     }
 
     private void AddFields(LuceneDirectoryIndexOptions options, FieldOptions.Field[] fields, Func<FieldOptions.Field, string, string> getFieldName)
