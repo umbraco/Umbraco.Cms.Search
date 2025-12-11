@@ -6,5 +6,5 @@ public interface IContentIndexingService
 {
     void Handle(IEnumerable<ContentChange> changes);
 
-    void Rebuild(string indexAlias, bool useDatabase = true);
+    void Rebuild(string indexAlias, bool useDatabase = false);
 }

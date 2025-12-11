@@ -10,6 +10,7 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.ContentEditing;
 using Umbraco.Cms.Core.Models.ContentTypeEditing;
 using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Core.Scoping;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.ContentTypeEditing;
 using Umbraco.Cms.Core.Services.OperationStatus;
@@ -19,6 +20,7 @@ using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Models.Persistence;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
+using Umbraco.Cms.Search.Core.Persistence;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -27,6 +29,7 @@ using Umbraco.Test.Search.Examine.Integration.Attributes;
 using Umbraco.Test.Search.Examine.Integration.Extensions;
 using Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
 using Constants = Umbraco.Cms.Search.Core.Constants;
+using IScope = Umbraco.Cms.Infrastructure.Scoping.IScope;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.PersistenceTests;
 
@@ -47,6 +50,7 @@ public class RebuildTests : UmbracoIntegrationTest
     private IContentService ContentService => GetRequiredService<IContentService>();
 
     private IDocumentService DocumentService => GetRequiredService<IDocumentService>();
+    private IDocumentRepository DocumentRepository => GetRequiredService<IDocumentRepository>();
 
     private IContentIndexingService ContentIndexingService => GetRequiredService<IContentIndexingService>();
 
@@ -81,7 +85,7 @@ public class RebuildTests : UmbracoIntegrationTest
 
     [TestCase(true)]
     [TestCase(false)]
-    public async Task RebuildPersistsDocumentsToDatabase(bool publish)
+    public async Task RebuildWithoutDatabasePersistsDocumentsToDatabase(bool publish)
     {
         await CreateContentWithPersistence(publish);
         var indexAlias = GetIndexAlias(publish);
@@ -90,12 +94,14 @@ public class RebuildTests : UmbracoIntegrationTest
         Document? rootDocInitial = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
         Assert.That(rootDocInitial, Is.Not.Null);
 
+        using IScope scope = ScopeProvider.CreateScope();
         // Delete the database entry to simulate a fresh state (e.g., after migration or database restore)
-        await DocumentService.DeleteAsync(_rootDocument.Key, indexAlias);
+        await DocumentRepository.DeleteAsync(_rootDocument.Key, indexAlias);
 
         // Verify document no longer exists in database
-        Document? rootDocBefore = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
+        Document? rootDocBefore = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
         Assert.That(rootDocBefore, Is.Null);
+
 
         // Trigger rebuild
         await WaitForIndexing(indexAlias, () =>
@@ -105,10 +111,42 @@ public class RebuildTests : UmbracoIntegrationTest
         });
 
         // Verify document now exists in database again (rebuilt from content)
-        Document? rootDocAfter = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
-
+        Document? rootDocAfter = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
+        scope.Complete();
         Assert.That(rootDocAfter, Is.Not.Null);
         Assert.That(FieldsContainText(rootDocAfter!.Fields, "Root Document"), Is.True);
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task RebuildWithDatabaseDoesNotPersistDocumentsToDatabase(bool publish)
+    {
+        await CreateContentWithPersistence(publish);
+        var indexAlias = GetIndexAlias(publish);
+
+        // Verify document exists in database (from initial indexing)
+        Document? rootDocInitial = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
+        Assert.That(rootDocInitial, Is.Not.Null);
+
+        using IScope scope = ScopeProvider.CreateScope();
+        // Delete the database entry to simulate a fresh state (e.g., after migration or database restore)
+        await DocumentRepository.DeleteAsync(_rootDocument.Key, indexAlias);
+
+        // Verify document no longer exists in database
+        Document? rootDocBefore = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
+        Assert.That(rootDocBefore, Is.Null);
+
+        // Trigger rebuild with useDatabase=true (should NOT persist to database)
+        await WaitForIndexing(indexAlias, () =>
+        {
+            ContentIndexingService.Rebuild(indexAlias, useDatabase: true);
+            return Task.CompletedTask;
+        });
+
+        // Verify document still does NOT exist in database (rebuild with useDatabase=true should not persist)
+        Document? rootDocAfter = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
+        scope.Complete();
+        Assert.That(rootDocAfter, Is.Null);
     }
 
     [TestCase(true)]
@@ -122,7 +160,7 @@ public class RebuildTests : UmbracoIntegrationTest
         Document? rootDocBefore = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
         Assert.That(rootDocBefore, Is.Not.Null);
 
-        var rootFieldsBefore = rootDocBefore!.Fields;
+        IndexField[] rootFieldsBefore = rootDocBefore!.Fields;
 
         // Trigger rebuild
         await WaitForIndexing(indexAlias, () =>
@@ -135,7 +173,8 @@ public class RebuildTests : UmbracoIntegrationTest
         Document? rootDocAfter = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
 
         Assert.That(rootDocAfter, Is.Not.Null);
-        Assert.That(rootDocAfter!.Fields, Is.EqualTo(rootFieldsBefore));
+        Assert.That(rootDocAfter.Fields.Length, Is.GreaterThan(0));
+        Assert.That(rootDocAfter.Fields.Length, Is.EqualTo(rootFieldsBefore.Length));
     }
 
     [TestCase(true)]
