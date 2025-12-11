@@ -1,6 +1,8 @@
-﻿using NPoco;
+﻿using System.Text.Json;
+using NPoco;
 using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Infrastructure.Scoping;
+using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Models.Persistence;
 using Umbraco.Extensions;
 
@@ -87,7 +89,7 @@ public class DocumentRepository : IDocumentRepository
         {
             DocumentKey = document.DocumentKey,
             Index = document.Index,
-            Fields = document.Fields,
+            Fields = JsonSerializer.Serialize(document.Fields),
         };
 
     private Document? ToDocument(DocumentDto? dto)
@@ -101,7 +103,7 @@ public class DocumentRepository : IDocumentRepository
         {
             DocumentKey = dto.DocumentKey,
             Index = dto.Index,
-            Fields = dto.Fields,
+            Fields = JsonSerializer.Deserialize<IndexField[]>(dto.Fields) ?? [],
         };
     }
 }

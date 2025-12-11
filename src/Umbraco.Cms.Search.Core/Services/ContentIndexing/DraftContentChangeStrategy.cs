@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
@@ -15,7 +14,6 @@ namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, IDraftContentChangeStrategy
 {
-    private readonly IContentIndexingDataCollectionService _contentIndexingDataCollectionService;
     private readonly IContentService _contentService;
     private readonly IMediaService _mediaService;
     private readonly IMemberService _memberService;
@@ -25,7 +23,6 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
     protected override bool SupportsTrashedContent => true;
 
     public DraftContentChangeStrategy(
-        IContentIndexingDataCollectionService contentIndexingDataCollectionService,
         IContentService contentService,
         IMediaService mediaService,
         IMemberService memberService,
@@ -36,7 +33,6 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         ILogger<DraftContentChangeStrategy> logger)
         : base(umbracoDatabaseFactory, idKeyMap, logger)
     {
-        _contentIndexingDataCollectionService = contentIndexingDataCollectionService;
         _contentService = contentService;
         _mediaService = mediaService;
         _memberService = memberService;
@@ -134,8 +130,11 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
 
             // Batch fetch all documents for this page of members
             IReadOnlyDictionary<Guid, Document> documents = await _documentService.GetManyAsync(
-                members.Select(m => m.Key),
-                indexInfo.IndexAlias);
+                members,
+                indexInfo.IndexAlias,
+                false,
+                cancellationToken,
+                useDatabase);
 
             foreach (IMember member in members)
             {
@@ -145,7 +144,12 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                 }
 
                 documents.TryGetValue(member.Key, out Document? document);
-                await RebuildDocumentAsync(indexInfo, member, UmbracoObjectTypes.Member, document, cancellationToken);
+                if (document is null)
+                {
+                    continue;
+                }
+
+                await ReIndexDocumentAsync(indexInfo, member, UmbracoObjectTypes.Member, document, cancellationToken);
             }
 
             pageIndex++;
@@ -212,26 +216,23 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
     /// </summary>
     private async Task<bool> CalculateAndPersistAsync(IndexInfo[] indexInfos, IContentBase content, UmbracoObjectTypes objectType, CancellationToken cancellationToken)
     {
-        IndexField[]? fields = (await _contentIndexingDataCollectionService.CollectAsync(content, false, cancellationToken))?.ToArray();
-        if (fields is null)
-        {
-            return false;
-        }
-
         Variation[] variations = GetVariations(content);
 
         foreach (IndexInfo indexInfo in indexInfos)
         {
+            // fetch the doc from service, make sure not to use database here, as it will be deleted
+            Document? document = await _documentService.GetAsync(content, indexInfo.IndexAlias, false, cancellationToken, false);
+
+            if (document is null)
+            {
+                return false;
+            }
+
             // Delete old entry and persist new fields to database
             await _documentService.DeleteAsync(content.Key, indexInfo.IndexAlias);
-            await _documentService.AddAsync(new Document
-            {
-                DocumentKey = content.Key,
-                Index = indexInfo.IndexAlias,
-                Fields = JsonSerializer.Serialize(fields),
-            });
+            await _documentService.AddAsync(document);
 
-            var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, variations, fields);
+            var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, variations, document.Fields);
             if (await _eventAggregator.PublishCancelableAsync(notification))
             {
                 // the indexing operation was cancelled for this index; continue with the rest of the indexes
@@ -245,42 +246,16 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
     }
 
     /// <summary>
-    /// Uses pre-fetched document if available, falls back to calculating fields.
+    /// Used by RebuildAsync: Uses pre-fetched document to reindex content.
     /// </summary>
-    private async Task RebuildDocumentAsync(IndexInfo indexInfo, IContentBase content, UmbracoObjectTypes objectType, Document? document, CancellationToken cancellationToken)
+    private async Task ReIndexDocumentAsync(IndexInfo indexInfo, IContentBase content, UmbracoObjectTypes objectType, Document document, CancellationToken cancellationToken)
     {
-        IndexField[]? fields;
-        if (document is not null)
-        {
-            // Deserialize fields from database
-            fields = JsonSerializer.Deserialize<IndexField[]>(document.Fields);
-            if (fields is null)
-            {
-                return;
-            }
-        }
-        else
-        {
-            // Not in database, calculate fields and persist
-            fields = (await _contentIndexingDataCollectionService.CollectAsync(content, false, cancellationToken))?.ToArray();
-            if (fields is null)
-            {
-                return;
-            }
-
-            // Persist to database for future rebuilds
-            await _documentService.DeleteAsync(content.Key, indexInfo.IndexAlias);
-            await _documentService.AddAsync(new Document
-            {
-                DocumentKey = content.Key,
-                Index = indexInfo.IndexAlias,
-                Fields = JsonSerializer.Serialize(fields),
-            });
-        }
-
         Variation[] variations = GetVariations(content);
 
-        var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, variations, fields);
+        await _documentService.DeleteAsync(content.Key, indexInfo.IndexAlias);
+        await _documentService.AddAsync(document);
+
+        var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, variations, document.Fields);
         if (await _eventAggregator.PublishCancelableAsync(notification))
         {
             return;
@@ -364,14 +339,14 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                 break;
             }
 
-            Document? rootDocument = null;
+            Document? rootDocument = await _documentService.GetAsync(rootContent, indexInfo.IndexAlias, false, cancellationToken, useDatabase);
 
-            if (useDatabase)
+            if (rootDocument is null)
             {
-                rootDocument = await _documentService.GetAsync(rootContent.Key, indexInfo.IndexAlias);
+                continue;
             }
 
-            await RebuildDocumentAsync(indexInfo, rootContent, objectType, rootDocument, cancellationToken);
+            await ReIndexDocumentAsync(indexInfo, rootContent, objectType, rootDocument, cancellationToken);
             await RebuildDescendantsAsync(indexInfo, rootContent, objectType, useDatabase, cancellationToken);
         }
 
@@ -394,8 +369,11 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
 
             // Batch fetch all documents for this page of recycle bin content
             IReadOnlyDictionary<Guid, Document> documents = await _documentService.GetManyAsync(
-                contentInRecycleBin.Select(c => c.Key),
-                indexInfo.IndexAlias);
+                contentInRecycleBin,
+                indexInfo.IndexAlias,
+                false,
+                cancellationToken,
+                useDatabase);
 
             foreach (IContentBase content in contentInRecycleBin)
             {
@@ -405,7 +383,12 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                 }
 
                 documents.TryGetValue(content.Key, out Document? document);
-                await RebuildDocumentAsync(indexInfo, content, objectType, document, cancellationToken);
+                if (document is null)
+                {
+                    continue;
+                }
+
+                await ReIndexDocumentAsync(indexInfo, content, objectType, document, cancellationToken);
                 await RebuildDescendantsAsync(indexInfo, content, objectType, useDatabase, cancellationToken);
             }
 
@@ -427,23 +410,22 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                         .ToArray(),
                     async descendants =>
                     {
-                        if (useDatabase)
+                        IReadOnlyDictionary<Guid, Document> documents = await _documentService.GetManyAsync(
+                            descendants,
+                            indexInfo.IndexAlias,
+                            false,
+                            cancellationToken,
+                            useDatabase);
+
+                        foreach (IContent descendant in descendants)
                         {
-                            IReadOnlyDictionary<Guid, Document> documents = await _documentService.GetManyAsync(
-                                descendants.Select(d => d.Key),
-                                indexInfo.IndexAlias);
-                            foreach (IContent descendant in descendants)
+                            documents.TryGetValue(descendant.Key, out Document? document);
+                            if (document is null)
                             {
-                                documents.TryGetValue(descendant.Key, out Document? document);
-                                await RebuildDocumentAsync(indexInfo, descendant, objectType, document, cancellationToken);
+                                continue;
                             }
-                        }
-                        else
-                        {
-                            foreach (IContent descendant in descendants)
-                            {
-                                await RebuildDocumentAsync(indexInfo, descendant, objectType, null, cancellationToken);
-                            }
+
+                            await ReIndexDocumentAsync(indexInfo, descendant, objectType, document, cancellationToken);
                         }
                     });
                 break;
@@ -456,23 +438,22 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                         .ToArray(),
                     async descendants =>
                     {
-                        if (useDatabase)
+                        IReadOnlyDictionary<Guid, Document> documents = await _documentService.GetManyAsync(
+                            descendants,
+                            indexInfo.IndexAlias,
+                            false,
+                            cancellationToken,
+                            useDatabase);
+
+                        foreach (IMedia descendant in descendants)
                         {
-                            IReadOnlyDictionary<Guid, Document> documents = await _documentService.GetManyAsync(
-                                descendants.Select(d => d.Key),
-                                indexInfo.IndexAlias);
-                            foreach (IMedia descendant in descendants)
+                            documents.TryGetValue(descendant.Key, out Document? document);
+                            if (document is null)
                             {
-                                documents.TryGetValue(descendant.Key, out Document? document);
-                                await RebuildDocumentAsync(indexInfo, descendant, objectType, document, cancellationToken);
+                                continue;
                             }
-                        }
-                        else
-                        {
-                            foreach (IMedia descendant in descendants)
-                            {
-                                await RebuildDocumentAsync(indexInfo, descendant, objectType, null, cancellationToken);
-                            }
+
+                            await ReIndexDocumentAsync(indexInfo, descendant, objectType, document, cancellationToken);
                         }
                     });
                 break;

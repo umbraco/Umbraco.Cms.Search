@@ -12,6 +12,7 @@ using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Infrastructure.Install;
 using Umbraco.Cms.Search.Core.DependencyInjection;
+using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Models.Persistence;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
 using Umbraco.Cms.Tests.Common.Builders;
@@ -74,7 +75,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
     public async Task AddsEntryToDatabaseAfterIndexing()
     {
         await TestSetup();
-        Document? doc = await DocumentService.GetAsync(_member.Key, Constants.IndexAliases.DraftMembers);
+        Document? doc = await DocumentService.GetAsync(_member, Constants.IndexAliases.DraftMembers, false, CancellationToken.None, useDatabase: true);
         Assert.That(doc, Is.Not.Null);
     }
 
@@ -84,7 +85,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
         await TestSetup();
 
         // Verify initial document exists
-        Document? initialDoc = await DocumentService.GetAsync(_member.Key, Constants.IndexAliases.DraftMembers);
+        Document? initialDoc = await DocumentService.GetAsync(_member, Constants.IndexAliases.DraftMembers, false, CancellationToken.None, useDatabase: true);
         Assert.That(initialDoc, Is.Not.Null);
         var initialFields = initialDoc!.Fields;
 
@@ -98,10 +99,10 @@ public class MemberServiceTests : UmbracoIntegrationTest
         });
 
         // Verify the document was updated
-        Document? updatedDoc = await DocumentService.GetAsync(_member.Key, Constants.IndexAliases.DraftMembers);
+        Document? updatedDoc = await DocumentService.GetAsync(_member, Constants.IndexAliases.DraftMembers, false, CancellationToken.None, useDatabase: true);
         Assert.That(updatedDoc, Is.Not.Null);
         Assert.That(updatedDoc!.Fields, Is.Not.EqualTo(initialFields));
-        Assert.That(updatedDoc.Fields, Does.Contain("Updated Member Name"));
+        Assert.That(FieldsContainText(updatedDoc.Fields, "Updated Member Name"), Is.True);
     }
 
     [Test]
@@ -111,7 +112,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
         await TestSetup();
 
         // Verify initial document exists
-        Document? initialDoc = await DocumentService.GetAsync(_member.Key, Constants.IndexAliases.DraftMembers);
+        Document? initialDoc = await DocumentService.GetAsync(_member, Constants.IndexAliases.DraftMembers, false, CancellationToken.None, useDatabase: true);
         Assert.That(initialDoc, Is.Not.Null);
 
         // Delete the member
@@ -119,7 +120,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
         await Task.Delay(4000);
 
         // Verify the document was removed
-        Document? deletedDoc = await DocumentService.GetAsync(_member.Key, Constants.IndexAliases.DraftMembers);
+        Document? deletedDoc = await DocumentService.GetAsync(_member, Constants.IndexAliases.DraftMembers, false, CancellationToken.None, useDatabase: true);
         Assert.That(deletedDoc, Is.Null);
     }
 
@@ -189,4 +190,12 @@ public class MemberServiceTests : UmbracoIntegrationTest
     {
         _indexingComplete = true;
     }
+
+    private static bool FieldsContainText(IndexField[] fields, string text)
+        => fields.Any(f =>
+            (f.Value.Texts?.Any(t => t.Contains(text)) == true) ||
+            (f.Value.TextsR1?.Any(t => t.Contains(text)) == true) ||
+            (f.Value.TextsR2?.Any(t => t.Contains(text)) == true) ||
+            (f.Value.TextsR3?.Any(t => t.Contains(text)) == true) ||
+            (f.Value.Keywords?.Any(k => k.Contains(text)) == true));
 }

@@ -1,4 +1,6 @@
-﻿using Umbraco.Cms.Core.Scoping;
+﻿using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Scoping;
+using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Models.Persistence;
 using Umbraco.Cms.Search.Core.Persistence;
 
@@ -8,27 +10,56 @@ public class DocumentService : IDocumentService
 {
     private readonly ICoreScopeProvider _scopeProvider;
     private readonly IDocumentRepository _documentRepository;
+    private readonly IContentIndexingDataCollectionService _contentIndexingDataCollectionService;
 
-    public DocumentService(ICoreScopeProvider scopeProvider, IDocumentRepository documentRepository)
+    public DocumentService(ICoreScopeProvider scopeProvider, IDocumentRepository documentRepository, IContentIndexingDataCollectionService contentIndexingDataCollectionService)
     {
         _scopeProvider = scopeProvider;
         _documentRepository = documentRepository;
+        _contentIndexingDataCollectionService = contentIndexingDataCollectionService;
     }
 
-    public async Task<Document?> GetAsync(Guid id, string indexAlias)
+    public async Task<Document?> GetAsync(IContentBase content, string indexAlias, bool published, CancellationToken cancellationToken, bool useDatabase)
     {
         using ICoreScope scope = _scopeProvider.CreateCoreScope();
-        Document? document = await _documentRepository.GetAsync(id, indexAlias);
+        if (useDatabase)
+        {
+            scope.Complete();
+            return await _documentRepository.GetAsync(content.Key, indexAlias);
+        }
+
+        Document? document = await CalculateDocumentAsync(content, indexAlias, published, cancellationToken);
+
         scope.Complete();
+
         return document;
     }
 
-    public async Task<IReadOnlyDictionary<Guid, Document>> GetManyAsync(IEnumerable<Guid> ids, string indexAlias)
+    public async Task<IReadOnlyDictionary<Guid, Document>> GetManyAsync(IEnumerable<IContentBase> contents, string indexAlias, bool published, CancellationToken cancellationToken, bool useDatabase)
     {
         using ICoreScope scope = _scopeProvider.CreateCoreScope();
-        IReadOnlyDictionary<Guid, Document> documents = await _documentRepository.GetManyAsync(ids, indexAlias);
+
+        IContentBase[] contentsArray = contents as IContentBase[] ?? contents.ToArray();
+
+        if (useDatabase)
+        {
+            IReadOnlyDictionary<Guid, Document> documents = await _documentRepository.GetManyAsync(contentsArray.Select(content => content.Key), indexAlias);
+            scope.Complete();
+            return documents;
+        }
+
+        var result = new Dictionary<Guid, Document>();
+        foreach (IContentBase content in contentsArray)
+        {
+            Document? document = await CalculateDocumentAsync(content, indexAlias, published, cancellationToken);
+            if (document is not null)
+            {
+                result[content.Key] = document;
+            }
+        }
+
         scope.Complete();
-        return documents;
+        return result;
     }
 
     public async Task AddAsync(Document document)
@@ -43,5 +74,22 @@ public class DocumentService : IDocumentService
         using ICoreScope scope = _scopeProvider.CreateCoreScope();
         await _documentRepository.DeleteAsync(id, indexAlias);
         scope.Complete();
+    }
+
+    private async Task<Document?> CalculateDocumentAsync(IContentBase content, string indexAlias, bool published, CancellationToken cancellationToken)
+    {
+        // Not in database, calculate fields and persist
+        IEnumerable<IndexField>? fields = await _contentIndexingDataCollectionService.CollectAsync(content, published, cancellationToken);
+        if (fields is null)
+        {
+            return null;
+        }
+
+        return new Document
+        {
+            DocumentKey = content.Key,
+            Index = indexAlias,
+            Fields = fields.ToArray(),
+        };
     }
 }

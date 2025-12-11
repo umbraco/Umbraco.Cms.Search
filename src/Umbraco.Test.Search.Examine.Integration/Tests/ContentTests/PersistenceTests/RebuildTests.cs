@@ -16,6 +16,7 @@ using Umbraco.Cms.Core.Services.OperationStatus;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Infrastructure.Install;
 using Umbraco.Cms.Search.Core.DependencyInjection;
+using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Models.Persistence;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
@@ -86,14 +87,14 @@ public class RebuildTests : UmbracoIntegrationTest
         var indexAlias = GetIndexAlias(publish);
 
         // Verify document exists in database (from initial indexing)
-        Document? rootDocInitial = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Document? rootDocInitial = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
         Assert.That(rootDocInitial, Is.Not.Null);
 
         // Delete the database entry to simulate a fresh state (e.g., after migration or database restore)
         await DocumentService.DeleteAsync(_rootDocument.Key, indexAlias);
 
         // Verify document no longer exists in database
-        Document? rootDocBefore = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Document? rootDocBefore = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
         Assert.That(rootDocBefore, Is.Null);
 
         // Trigger rebuild
@@ -104,10 +105,10 @@ public class RebuildTests : UmbracoIntegrationTest
         });
 
         // Verify document now exists in database again (rebuilt from content)
-        Document? rootDocAfter = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Document? rootDocAfter = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
 
         Assert.That(rootDocAfter, Is.Not.Null);
-        Assert.That(rootDocAfter!.Fields, Does.Contain("Root Document"));
+        Assert.That(FieldsContainText(rootDocAfter!.Fields, "Root Document"), Is.True);
     }
 
     [TestCase(true)]
@@ -118,7 +119,7 @@ public class RebuildTests : UmbracoIntegrationTest
         var indexAlias = GetIndexAlias(publish);
 
         // Verify document exists in database
-        Document? rootDocBefore = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Document? rootDocBefore = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
         Assert.That(rootDocBefore, Is.Not.Null);
 
         var rootFieldsBefore = rootDocBefore!.Fields;
@@ -131,7 +132,7 @@ public class RebuildTests : UmbracoIntegrationTest
         });
 
         // Verify document still exists and fields are the same (fetched from DB, not recalculated)
-        Document? rootDocAfter = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Document? rootDocAfter = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
 
         Assert.That(rootDocAfter, Is.Not.Null);
         Assert.That(rootDocAfter!.Fields, Is.EqualTo(rootFieldsBefore));
@@ -145,9 +146,9 @@ public class RebuildTests : UmbracoIntegrationTest
         var indexAlias = GetIndexAlias(publish);
 
         // Verify document exists in database with original name
-        Document? rootDocBefore = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Document? rootDocBefore = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
         Assert.That(rootDocBefore, Is.Not.Null);
-        Assert.That(rootDocBefore!.Fields, Does.Contain("Root Document"));
+        Assert.That(FieldsContainText(rootDocBefore!.Fields, "Root Document"), Is.True);
 
         // Update the content name directly (simulating a change)
         _rootDocument.Name = "Updated Document Name";
@@ -163,9 +164,9 @@ public class RebuildTests : UmbracoIntegrationTest
         });
 
         // Verify the database now has the updated name
-        Document? rootDocUpdated = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Document? rootDocUpdated = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
         Assert.That(rootDocUpdated, Is.Not.Null);
-        Assert.That(rootDocUpdated!.Fields, Does.Contain("Updated Document Name"));
+        Assert.That(FieldsContainText(rootDocUpdated!.Fields, "Updated Document Name"), Is.True);
 
         // Now simulate stale data by manually reverting the DB entry to old fields
         await DocumentService.DeleteAsync(_rootDocument.Key, indexAlias);
@@ -177,10 +178,10 @@ public class RebuildTests : UmbracoIntegrationTest
         });
 
         // Verify we have stale data in DB
-        Document? staleDoc = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Document? staleDoc = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
         Assert.That(staleDoc, Is.Not.Null);
-        Assert.That(staleDoc!.Fields, Does.Contain("Root Document"));
-        Assert.That(staleDoc.Fields, Does.Not.Contain("Updated Document Name"));
+        Assert.That(FieldsContainText(staleDoc!.Fields, "Root Document"), Is.True);
+        Assert.That(FieldsContainText(staleDoc.Fields, "Updated Document Name"), Is.False);
 
         // Trigger rebuild with useDatabase=false (should recalculate, not use stale DB data)
         await WaitForIndexing(indexAlias, () =>
@@ -190,10 +191,10 @@ public class RebuildTests : UmbracoIntegrationTest
         });
 
         // Verify the database now has fresh recalculated fields with the actual content name
-        Document? rootDocAfter = await DocumentService.GetAsync(_rootDocument.Key, indexAlias);
+        Document? rootDocAfter = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
         Assert.That(rootDocAfter, Is.Not.Null);
-        Assert.That(rootDocAfter!.Fields, Does.Contain("Updated Document Name"));
-        Assert.That(rootDocAfter.Fields, Does.Not.Contain("Root Document"));
+        Assert.That(FieldsContainText(rootDocAfter!.Fields, "Updated Document Name"), Is.True);
+        Assert.That(FieldsContainText(rootDocAfter.Fields, "Root Document"), Is.False);
     }
 
     private string GetIndexAlias(bool publish) => publish ? Constants.IndexAliases.PublishedContent : Constants.IndexAliases.DraftContent;
@@ -266,4 +267,12 @@ public class RebuildTests : UmbracoIntegrationTest
     {
         _indexingComplete = true;
     }
+
+    private static bool FieldsContainText(IndexField[] fields, string text)
+        => fields.Any(f =>
+            (f.Value.Texts?.Any(t => t.Contains(text)) == true) ||
+            (f.Value.TextsR1?.Any(t => t.Contains(text)) == true) ||
+            (f.Value.TextsR2?.Any(t => t.Contains(text)) == true) ||
+            (f.Value.TextsR3?.Any(t => t.Contains(text)) == true) ||
+            (f.Value.Keywords?.Any(k => k.Contains(text)) == true));
 }

@@ -1,12 +1,13 @@
-﻿using Umbraco.Cms.Search.Core.Models.Persistence;
+﻿using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core.Models.Persistence;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 public interface IDocumentService
 {
-    Task<Document?> GetAsync(Guid id, string indexAlias);
+    Task<Document?> GetAsync(IContentBase content, string indexAlias, bool published, CancellationToken cancellationToken, bool useDatabase);
 
-    Task<IReadOnlyDictionary<Guid, Document>> GetManyAsync(IEnumerable<Guid> ids, string indexAlias);
+    Task<IReadOnlyDictionary<Guid, Document>> GetManyAsync(IEnumerable<IContentBase> contents, string indexAlias, bool published, CancellationToken cancellationToken, bool useDatabase);
 
     Task AddAsync(Document document);
 

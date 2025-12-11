@@ -14,7 +14,6 @@ namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase, IPublishedContentChangeStrategy
 {
-    private readonly IContentIndexingDataCollectionService _contentIndexingDataCollectionService;
     private readonly IContentProtectionProvider _contentProtectionProvider;
     private readonly IContentService _contentService;
     private readonly IEventAggregator _eventAggregator;
@@ -24,7 +23,6 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
     protected override bool SupportsTrashedContent => false;
 
     public PublishedContentChangeStrategy(
-        IContentIndexingDataCollectionService contentIndexingDataCollectionService,
         IContentProtectionProvider contentProtectionProvider,
         IContentService contentService,
         IEventAggregator eventAggregator,
@@ -34,7 +32,6 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
         ILogger<PublishedContentChangeStrategy> logger)
         : base(umbracoDatabaseFactory, idKeyMap, logger)
     {
-        _contentIndexingDataCollectionService = contentIndexingDataCollectionService;
         _contentProtectionProvider = contentProtectionProvider;
         _contentService = contentService;
         _logger = logger;
@@ -163,30 +160,23 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
             return [];
         }
 
-        IEnumerable<IndexField>? fields = await _contentIndexingDataCollectionService.CollectAsync(content, true, cancellationToken);
-        if (fields is null)
-        {
-            return [];
-        }
-
-        // the fields collection is for all published variants of the content - but it's not certain that a published
-        // variant is also routable, because the published routing state can be broken at ancestor level.
-        IndexField[] fieldsArray = fields.Where(field => variations.Any(v => (field.Culture is null || v.Culture == field.Culture) && (field.Segment is null || v.Segment == field.Segment))).ToArray();
-
         ContentProtection? contentProtection = await _contentProtectionProvider.GetContentProtectionAsync(content);
 
         foreach (IndexInfo indexInfo in indexInfos)
         {
+            // fetch the doc from service, make sure not to use database here, as it will be deleted
+            Document? document = await _documentService.GetAsync(content,  indexInfo.IndexAlias, true, cancellationToken, false);
+
+            if (document is null)
+            {
+                return [];
+            }
+
             // Delete old entry and persist new fields to database
             await _documentService.DeleteAsync(content.Key, indexInfo.IndexAlias);
-            await _documentService.AddAsync(new Document
-            {
-                DocumentKey = content.Key,
-                Index = indexInfo.IndexAlias,
-                Fields = JsonSerializer.Serialize(fieldsArray),
-            });
+            await _documentService.AddAsync(document);
 
-            var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, variations, fieldsArray);
+            var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, variations, document.Fields);
             if (await _eventAggregator.PublishCancelableAsync(notification))
             {
                 // the indexing operation was cancelled for this index; continue with the rest of the indexes
@@ -204,13 +194,15 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
     /// </summary>
     private async Task RebuildContentAsync(IndexInfo indexInfo, IContentBase content, bool useDatabase, CancellationToken cancellationToken)
     {
-        Document? rootDocument = null;
-        if (useDatabase)
+        Document? rootDocument = await _documentService.GetAsync(content, indexInfo.IndexAlias, true, cancellationToken, useDatabase);
+
+        // The content was not found, return..
+        if (rootDocument is null)
         {
-            rootDocument = await _documentService.GetAsync(content.Key, indexInfo.IndexAlias);
+            return;
         }
 
-        await RebuildDocumentAsync(indexInfo, content, rootDocument, cancellationToken);
+        await ReIndexDocumentAsync(indexInfo, content, rootDocument, cancellationToken);
 
         // Rebuild all descendants
         var removedDescendantIds = new List<int>();
@@ -224,8 +216,11 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
             {
                 // Batch fetch all documents for this page of descendants
                 IReadOnlyDictionary<Guid, Document> documents = await _documentService.GetManyAsync(
-                    descendants.Select(d => d.Key),
-                    indexInfo.IndexAlias);
+                    descendants,
+                    indexInfo.IndexAlias,
+                    true,
+                    cancellationToken,
+                    useDatabase);
 
                 foreach (IContent descendant in descendants)
                 {
@@ -235,7 +230,12 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
                     }
 
                     documents.TryGetValue(descendant.Key, out Document? document);
-                    var indexed = await RebuildDocumentAsync(indexInfo, descendant, document, cancellationToken);
+                    if (document is null)
+                    {
+                        continue;
+                    }
+
+                    var indexed = await ReIndexDocumentAsync(indexInfo, descendant, document, cancellationToken);
                     if (indexed is false)
                     {
                         removedDescendantIds.Add(descendant.Id);
@@ -247,7 +247,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
     /// <summary>
     /// Used by RebuildAsync: Uses pre-fetched document if available, falls back to calculating if not found.
     /// </summary>
-    private async Task<bool> RebuildDocumentAsync(IndexInfo indexInfo, IContentBase content, Document? document, CancellationToken cancellationToken)
+    private async Task<bool> ReIndexDocumentAsync(IndexInfo indexInfo, IContentBase content, Document document, CancellationToken cancellationToken)
     {
         Variation[] variations = RoutablePublishedVariations(content);
         if (variations.Length is 0)
@@ -255,46 +255,21 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
             return false;
         }
 
-        IndexField[]? fieldsArray;
-        if (document is not null)
-        {
-            // Deserialize fields from database
-            fieldsArray = JsonSerializer.Deserialize<IndexField[]>(document.Fields);
-        }
-        else
-        {
-            // Not in database, calculate fields and persist
-            IEnumerable<IndexField>? fields = await _contentIndexingDataCollectionService.CollectAsync(content, true, cancellationToken);
-            if (fields is null)
-            {
-                return false;
-            }
-
-            // Filter to routable variations only
-            fieldsArray = fields.Where(field => variations.Any(v => (field.Culture is null || v.Culture == field.Culture) && (field.Segment is null || v.Segment == field.Segment))).ToArray();
-
-            // Persist to database for future rebuilds
-            await _documentService.DeleteAsync(content.Key, indexInfo.IndexAlias);
-            await _documentService.AddAsync(new Document
-            {
-                DocumentKey = content.Key,
-                Index = indexInfo.IndexAlias,
-                Fields = JsonSerializer.Serialize(fieldsArray),
-            });
-        }
-
-        if (fieldsArray is null)
-        {
-            return false;
-        }
+        // the fields collection is for all published variants of the content - but it's not certain that a published
+        // variant is also routable, because the published routing state can be broken at ancestor level.
+        document.Fields = document.Fields.Where(field => variations.Any(v => (field.Culture is null || v.Culture == field.Culture) && (field.Segment is null || v.Segment == field.Segment))).ToArray();
 
         ContentProtection? contentProtection = await _contentProtectionProvider.GetContentProtectionAsync(content);
 
-        var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, variations, fieldsArray);
+        await _documentService.DeleteAsync(content.Key, indexInfo.IndexAlias);
+        await _documentService.AddAsync(document);
+
+        var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, variations, document.Fields);
         if (await _eventAggregator.PublishCancelableAsync(notification))
         {
             return true;
         }
+
 
         await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, UmbracoObjectTypes.Document, variations, notification.Fields, contentProtection);
 
