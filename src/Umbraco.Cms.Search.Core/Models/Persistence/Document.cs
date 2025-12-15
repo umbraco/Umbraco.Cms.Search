@@ -1,4 +1,5 @@
-﻿using Umbraco.Cms.Search.Core.Models.Indexing;
+﻿using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core.Models.Indexing;
 
 namespace Umbraco.Cms.Search.Core.Models.Persistence;
 
@@ -9,4 +10,8 @@ public class Document
     public required string Index { get; set; }
 
     public required IndexField[] Fields { get; set; }
+
+    public UmbracoObjectTypes ObjectType { get; set; }
+
+    public required Variation[] Variations { get; set; }
 }

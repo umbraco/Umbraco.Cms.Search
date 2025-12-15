@@ -12,4 +12,6 @@ public interface IDocumentService
     Task AddAsync(Document document);
 
     Task DeleteAsync(Guid id, string indexAlias);
+
+    Task<IEnumerable<Document>> GetByIndexAliasAsync(string indexAlias);
 }

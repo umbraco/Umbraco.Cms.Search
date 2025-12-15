@@ -21,4 +21,11 @@ public class DocumentDto
     [Column("fields")]
     [SpecialDbType(SpecialDbTypes.NVARCHARMAX)]
     public required string Fields { get; set; }
+
+    [Column("objectType")]
+    public required string ObjectType { get; set; }
+
+    [Column("variations")]
+    [SpecialDbType(SpecialDbTypes.NVARCHARMAX)]
+    public required string Variations { get; set; }
 }

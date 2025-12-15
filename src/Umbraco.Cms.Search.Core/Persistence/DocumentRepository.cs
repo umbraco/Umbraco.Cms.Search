@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using NPoco;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Infrastructure.Scoping;
 using Umbraco.Cms.Search.Core.Models.Indexing;
@@ -83,6 +84,23 @@ public class DocumentRepository : IDocumentRepository
         await _scopeAccessor.AmbientScope?.Database.ExecuteAsync(sql)!;
     }
 
+    public async Task<IEnumerable<Document>> GetByIndexAliasAsync(string indexAlias)
+    {
+        if (_scopeAccessor.AmbientScope is null)
+        {
+            throw new InvalidOperationException("Cannot get documents as there is no ambient scope.");
+        }
+
+        Sql<ISqlContext> sql = _scopeAccessor.AmbientScope.Database.SqlContext.Sql()
+            .Select<DocumentDto>()
+            .From<DocumentDto>()
+            .Where<DocumentDto>(x => x.Index == indexAlias);
+
+        List<DocumentDto> documentDtos = await _scopeAccessor.AmbientScope.Database.FetchAsync<DocumentDto>(sql);
+
+        return documentDtos.Select(ToDocument).WhereNotNull();
+    }
+
 
     private DocumentDto ToDto(Document document) =>
         new()
@@ -90,6 +108,8 @@ public class DocumentRepository : IDocumentRepository
             DocumentKey = document.DocumentKey,
             Index = document.Index,
             Fields = JsonSerializer.Serialize(document.Fields),
+            ObjectType = document.ObjectType.ToString(),
+            Variations = JsonSerializer.Serialize(document.Variations),
         };
 
     private Document? ToDocument(DocumentDto? dto)
@@ -104,6 +124,8 @@ public class DocumentRepository : IDocumentRepository
             DocumentKey = dto.DocumentKey,
             Index = dto.Index,
             Fields = JsonSerializer.Deserialize<IndexField[]>(dto.Fields) ?? [],
+            ObjectType = Enum.Parse<UmbracoObjectTypes>(dto.ObjectType),
+            Variations = JsonSerializer.Deserialize<Variation[]>(dto.Variations) ?? [],
         };
     }
 }

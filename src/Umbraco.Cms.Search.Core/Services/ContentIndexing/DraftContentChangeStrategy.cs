@@ -84,81 +84,25 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
     {
         await indexInfo.Indexer.ResetAsync(indexInfo.IndexAlias);
 
-        await RebuildContentAsync(
-            indexInfo,
-            UmbracoObjectTypes.Document,
-            () => _contentService.GetRootContent(),
-            (pageIndex, pageSize) => _contentService.GetPagedChildren(Cms.Core.Constants.System.RecycleBinContent, pageIndex, pageSize, out _),
-            useDatabase,
-            cancellationToken);
-
-        if (cancellationToken.IsCancellationRequested)
+        if (useDatabase)
         {
-            LogIndexRebuildCancellation(indexInfo);
-            return;
+           IEnumerable<Document> documents = await _documentService.GetByIndexAliasAsync(indexInfo.IndexAlias);
+
+           foreach (Document document in documents)
+           {
+               var notification = new IndexingNotification(indexInfo, document.DocumentKey, UmbracoObjectTypes.Document, document.Variations, document.Fields);
+               if (await _eventAggregator.PublishCancelableAsync(notification))
+               {
+                   return;
+               }
+
+               await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, document.DocumentKey, document.ObjectType, document.Variations, notification.Fields, null);
+           }
         }
 
-        await RebuildContentAsync(
-            indexInfo,
-            UmbracoObjectTypes.Media,
-            () => _mediaService.GetRootMedia(),
-            (pageIndex, pageSize) => _mediaService.GetPagedChildren(Cms.Core.Constants.System.RecycleBinMedia, pageIndex, pageSize, out _),
-            useDatabase,
-            cancellationToken);
-
-        if (cancellationToken.IsCancellationRequested)
+        else
         {
-            LogIndexRebuildCancellation(indexInfo);
-            return;
-        }
-
-        if (indexInfo.ContainedObjectTypes.Contains(UmbracoObjectTypes.Member) is false)
-        {
-            return;
-        }
-
-        IMember[] members;
-        var pageIndex = 0;
-        do
-        {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                break;
-            }
-
-            members = _memberService.GetAll(pageIndex, ContentEnumerationPageSize, out _, "sortOrder", Direction.Ascending).ToArray();
-
-            // Batch fetch all documents for this page of members
-            IReadOnlyDictionary<Guid, Document> documents = await _documentService.GetManyAsync(
-                members,
-                indexInfo.IndexAlias,
-                false,
-                cancellationToken,
-                useDatabase);
-
-            foreach (IMember member in members)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    break;
-                }
-
-                documents.TryGetValue(member.Key, out Document? document);
-                if (document is null)
-                {
-                    continue;
-                }
-
-                await ReIndexDocumentAsync(indexInfo, member, UmbracoObjectTypes.Member, document, cancellationToken);
-            }
-
-            pageIndex++;
-        }
-        while (members.Length == ContentEnumerationPageSize);
-
-        if (cancellationToken.IsCancellationRequested)
-        {
-            LogIndexRebuildCancellation(indexInfo);
+            await RebuildFromMemoryAsync(indexInfo, cancellationToken);
         }
     }
 
@@ -245,14 +189,11 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         return true;
     }
 
-    /// <summary>
-    /// Used by RebuildAsync: Uses pre-fetched document to reindex content.
-    /// </summary>
-    private async Task ReIndexDocumentAsync(IndexInfo indexInfo, IContentBase content, UmbracoObjectTypes objectType, Document document, CancellationToken cancellationToken)
+    private async Task IndexDocumentAsync(IndexInfo indexInfo, IContentBase content, UmbracoObjectTypes objectType, Document document, CancellationToken cancellationToken)
     {
         Variation[] variations = GetVariations(content);
 
-        await _documentService.DeleteAsync(content.Key, indexInfo.IndexAlias);
+        // Add to database and add all fields, these might be filtered later by end user.
         await _documentService.AddAsync(document);
 
         var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, variations, document.Fields);
@@ -261,6 +202,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
             return;
         }
 
+        // Add to index
         await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, objectType, variations, notification.Fields, null);
     }
 
@@ -318,7 +260,6 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         UmbracoObjectTypes objectType,
         Func<IEnumerable<IContentBase>> getContentAtRoot,
         Func<int, int, IEnumerable<IContentBase>> getPagedContentAtRecycleBinRoot,
-        bool useDatabase,
         CancellationToken cancellationToken)
     {
         if (indexInfo.ContainedObjectTypes.Contains(objectType) is false)
@@ -339,15 +280,15 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                 break;
             }
 
-            Document? rootDocument = await _documentService.GetAsync(rootContent, indexInfo.IndexAlias, false, cancellationToken, useDatabase);
+            Document? rootDocument = await _documentService.GetAsync(rootContent, indexInfo.IndexAlias, false, cancellationToken, false);
 
             if (rootDocument is null)
             {
                 continue;
             }
 
-            await ReIndexDocumentAsync(indexInfo, rootContent, objectType, rootDocument, cancellationToken);
-            await RebuildDescendantsAsync(indexInfo, rootContent, objectType, useDatabase, cancellationToken);
+            await IndexDocumentAsync(indexInfo, rootContent, objectType, rootDocument, cancellationToken);
+            await ReIndexDescendantsAsync(indexInfo, rootContent, objectType, cancellationToken);
         }
 
         if (cancellationToken.IsCancellationRequested)
@@ -373,7 +314,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                 indexInfo.IndexAlias,
                 false,
                 cancellationToken,
-                useDatabase);
+                false);
 
             foreach (IContentBase content in contentInRecycleBin)
             {
@@ -388,8 +329,8 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                     continue;
                 }
 
-                await ReIndexDocumentAsync(indexInfo, content, objectType, document, cancellationToken);
-                await RebuildDescendantsAsync(indexInfo, content, objectType, useDatabase, cancellationToken);
+                await IndexDocumentAsync(indexInfo, content, objectType, document, cancellationToken);
+                await ReIndexDescendantsAsync(indexInfo, content, objectType, cancellationToken);
             }
 
             pageIndex++;
@@ -397,7 +338,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         while (contentInRecycleBin.Length == ContentEnumerationPageSize);
     }
 
-    private async Task RebuildDescendantsAsync(IndexInfo indexInfo, IContentBase content, UmbracoObjectTypes objectType, bool useDatabase, CancellationToken cancellationToken)
+    private async Task ReIndexDescendantsAsync(IndexInfo indexInfo, IContentBase content, UmbracoObjectTypes objectType, CancellationToken cancellationToken)
     {
         switch (objectType)
         {
@@ -415,7 +356,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                             indexInfo.IndexAlias,
                             false,
                             cancellationToken,
-                            useDatabase);
+                            false);
 
                         foreach (IContent descendant in descendants)
                         {
@@ -425,7 +366,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                                 continue;
                             }
 
-                            await ReIndexDocumentAsync(indexInfo, descendant, objectType, document, cancellationToken);
+                            await IndexDocumentAsync(indexInfo, descendant, objectType, document, cancellationToken);
                         }
                     });
                 break;
@@ -443,7 +384,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                             indexInfo.IndexAlias,
                             false,
                             cancellationToken,
-                            useDatabase);
+                            false);
 
                         foreach (IMedia descendant in descendants)
                         {
@@ -453,10 +394,88 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                                 continue;
                             }
 
-                            await ReIndexDocumentAsync(indexInfo, descendant, objectType, document, cancellationToken);
+                            await IndexDocumentAsync(indexInfo, descendant, objectType, document, cancellationToken);
                         }
                     });
                 break;
+        }
+    }
+
+    private async Task RebuildFromMemoryAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
+    {
+        await RebuildContentAsync(
+            indexInfo,
+            UmbracoObjectTypes.Document,
+            () => _contentService.GetRootContent(),
+            (pageIndex, pageSize) => _contentService.GetPagedChildren(Cms.Core.Constants.System.RecycleBinContent, pageIndex, pageSize, out _),
+            cancellationToken);
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            LogIndexRebuildCancellation(indexInfo);
+            return;
+        }
+
+        await RebuildContentAsync(
+            indexInfo,
+            UmbracoObjectTypes.Media,
+            () => _mediaService.GetRootMedia(),
+            (pageIndex, pageSize) => _mediaService.GetPagedChildren(Cms.Core.Constants.System.RecycleBinMedia, pageIndex, pageSize, out _),
+            cancellationToken);
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            LogIndexRebuildCancellation(indexInfo);
+            return;
+        }
+
+        if (indexInfo.ContainedObjectTypes.Contains(UmbracoObjectTypes.Member) is false)
+        {
+            return;
+        }
+
+        IMember[] members;
+        var pageIndex = 0;
+        do
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+
+            members = _memberService.GetAll(pageIndex, ContentEnumerationPageSize, out _, "sortOrder", Direction.Ascending).ToArray();
+
+            // Batch fetch all documents for this page of members
+            IReadOnlyDictionary<Guid, Document> documents = await _documentService.GetManyAsync(
+                members,
+                indexInfo.IndexAlias,
+                false,
+                cancellationToken,
+                false);
+
+            foreach (IMember member in members)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                documents.TryGetValue(member.Key, out Document? document);
+                if (document is null)
+                {
+                    continue;
+                }
+
+                await IndexDocumentAsync(indexInfo, member, UmbracoObjectTypes.Member, document, cancellationToken);
+            }
+
+            pageIndex++;
+        }
+        while (members.Length == ContentEnumerationPageSize);
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            LogIndexRebuildCancellation(indexInfo);
         }
     }
 }

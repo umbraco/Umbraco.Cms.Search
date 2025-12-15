@@ -1,8 +1,10 @@
 ﻿using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Scoping;
+using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Models.Persistence;
 using Umbraco.Cms.Search.Core.Persistence;
+using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
@@ -76,6 +78,14 @@ public class DocumentService : IDocumentService
         scope.Complete();
     }
 
+    public async Task<IEnumerable<Document>> GetByIndexAliasAsync(string indexAlias)
+    {
+        using ICoreScope scope = _scopeProvider.CreateCoreScope();
+        IEnumerable<Document> documents = await _documentRepository.GetByIndexAliasAsync(indexAlias);
+        scope.Complete();
+        return documents;
+    }
+
     private async Task<Document?> CalculateDocumentAsync(IContentBase content, string indexAlias, bool published, CancellationToken cancellationToken)
     {
         // Not in database, calculate fields and persist
@@ -90,6 +100,25 @@ public class DocumentService : IDocumentService
             DocumentKey = content.Key,
             Index = indexAlias,
             Fields = fields.ToArray(),
+            ObjectType = UmbracoObjectTypes.Document,
+            Variations = GetVariations(content)
         };
+    }
+
+    private Variation[] GetVariations(IContentBase content)
+    {
+        string?[] cultures = content.AvailableCultures();
+
+        return content.ContentType.VariesBySegment()
+            ? cultures
+                .SelectMany(culture => content
+                    .Properties
+                    .SelectMany(property => property.Values.Where(value => value.Culture.InvariantEquals(culture)))
+                    .DistinctBy(value => value.Segment).Select(value => value.Segment)
+                    .Select(segment => new Variation(culture, segment)))
+                .ToArray()
+            : cultures
+                .Select(culture => new Variation(culture, null))
+                .ToArray();
     }
 }

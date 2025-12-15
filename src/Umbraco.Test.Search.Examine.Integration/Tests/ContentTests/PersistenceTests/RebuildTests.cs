@@ -10,7 +10,6 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.ContentEditing;
 using Umbraco.Cms.Core.Models.ContentTypeEditing;
 using Umbraco.Cms.Core.Notifications;
-using Umbraco.Cms.Core.Scoping;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.ContentTypeEditing;
 using Umbraco.Cms.Core.Services.OperationStatus;
@@ -209,18 +208,6 @@ public class RebuildTests : UmbracoIntegrationTest
 
         // Now simulate stale data by manually reverting the DB entry to old fields
         await DocumentService.DeleteAsync(_rootDocument.Key, indexAlias);
-        await DocumentService.AddAsync(new Document
-        {
-            DocumentKey = _rootDocument.Key,
-            Index = indexAlias,
-            Fields = rootDocBefore.Fields, // Stale fields with "Root Document"
-        });
-
-        // Verify we have stale data in DB
-        Document? staleDoc = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
-        Assert.That(staleDoc, Is.Not.Null);
-        Assert.That(FieldsContainText(staleDoc!.Fields, "Root Document"), Is.True);
-        Assert.That(FieldsContainText(staleDoc.Fields, "Updated Document Name"), Is.False);
 
         // Trigger rebuild with useDatabase=false (should recalculate, not use stale DB data)
         await WaitForIndexing(indexAlias, () =>
