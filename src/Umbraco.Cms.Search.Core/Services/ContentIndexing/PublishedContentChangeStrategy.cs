@@ -7,22 +7,20 @@ using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Models.Persistence;
 using Umbraco.Cms.Search.Core.Notifications;
-using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase, IPublishedContentChangeStrategy
 {
-    private readonly IContentProtectionProvider _contentProtectionProvider;
     private readonly IContentService _contentService;
     private readonly IEventAggregator _eventAggregator;
     private readonly IDocumentService _documentService;
     private readonly ILogger<PublishedContentChangeStrategy> _logger;
+    private const string StrategyName = "PublishedContentChangeStrategy";
 
     protected override bool SupportsTrashedContent => false;
 
     public PublishedContentChangeStrategy(
-        IContentProtectionProvider contentProtectionProvider,
         IContentService contentService,
         IEventAggregator eventAggregator,
         IDocumentService documentService,
@@ -31,7 +29,6 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
         ILogger<PublishedContentChangeStrategy> logger)
         : base(umbracoDatabaseFactory, idKeyMap, logger)
     {
-        _contentProtectionProvider = contentProtectionProvider;
         _contentService = contentService;
         _logger = logger;
         _eventAggregator = eventAggregator;
@@ -84,6 +81,29 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
     {
         await indexInfo.Indexer.ResetAsync(indexInfo.IndexAlias);
 
+        if (useDatabase)
+        {
+            IEnumerable<Document> documents = await _documentService.GetByChangeStrategyAsync(StrategyName);
+            foreach (Document document in documents)
+            {
+                var notification = new IndexingNotification(indexInfo, document.DocumentKey, UmbracoObjectTypes.Document, document.Variations, document.Fields);
+                if (await _eventAggregator.PublishCancelableAsync(notification))
+                {
+                    return;
+                }
+
+
+                await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, document.DocumentKey, UmbracoObjectTypes.Document, document.Variations, notification.Fields, document.Protection);
+            }
+        }
+        else
+        {
+            await RebuildFromMemoryAsync(indexInfo, cancellationToken);
+        }
+    }
+
+    private async Task RebuildFromMemoryAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
+    {
         foreach (IContent content in _contentService.GetRootContent())
         {
             if (cancellationToken.IsCancellationRequested)
@@ -153,39 +173,31 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
     /// </summary>
     private async Task<Variation[]> CalculateAndPersistAsync(IndexInfo[] indexInfos, IContentBase content, CancellationToken cancellationToken)
     {
-        Variation[] variations = RoutablePublishedVariations(content);
-        if (variations.Length is 0)
+        // fetch the doc from service, make sure not to use database here, as it will be deleted
+        Document? document = await _documentService.CalculateDocument(content, true, cancellationToken);
+
+        if (document is null || document.Variations.Length == 0)
         {
             return [];
         }
 
-        ContentProtection? contentProtection = await _contentProtectionProvider.GetContentProtectionAsync(content);
+        // Delete old entry and persist new fields to database
+        await _documentService.DeleteAsync(content.Key, StrategyName);
+        await _documentService.AddAsync(document, StrategyName);
 
         foreach (IndexInfo indexInfo in indexInfos)
         {
-            // fetch the doc from service, make sure not to use database here, as it will be deleted
-            Document? document = await _documentService.GetAsync(content,  indexInfo.IndexAlias, true, cancellationToken);
-
-            if (document is null)
-            {
-                return [];
-            }
-
-            // Delete old entry and persist new fields to database
-            await _documentService.DeleteAsync(content.Key, indexInfo.IndexAlias);
-            await _documentService.AddAsync(document);
-
-            var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, variations, document.Fields);
+            var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, document.Variations, document.Fields);
             if (await _eventAggregator.PublishCancelableAsync(notification))
             {
                 // the indexing operation was cancelled for this index; continue with the rest of the indexes
                 continue;
             }
 
-            await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, UmbracoObjectTypes.Document, variations, notification.Fields, contentProtection);
+            await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, UmbracoObjectTypes.Document, document.Variations, notification.Fields, document.Protection);
         }
 
-        return variations;
+        return document.Variations;
     }
 
     /// <summary>
@@ -193,7 +205,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
     /// </summary>
     private async Task RebuildContentAsync(IndexInfo indexInfo, IContentBase content, CancellationToken cancellationToken)
     {
-        Document? rootDocument = await _documentService.GetAsync(content, indexInfo.IndexAlias, true, cancellationToken);
+        Document? rootDocument = await _documentService.CalculateDocument(content, true, cancellationToken);
 
         // The content was not found, return..
         if (rootDocument is null)
@@ -201,7 +213,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
             return;
         }
 
-        await ReIndexDocumentAsync(indexInfo, content, rootDocument, cancellationToken);
+        await IndexDocumentAsync(indexInfo, content, rootDocument, cancellationToken);
 
         // Rebuild all descendants
         var removedDescendantIds = new List<int>();
@@ -213,13 +225,6 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
                 .ToArray(),
             async descendants =>
             {
-                // Batch fetch all documents for this page of descendants
-                IReadOnlyDictionary<Guid, Document> documents = await _documentService.GetManyAsync(
-                    descendants,
-                    indexInfo.IndexAlias,
-                    true,
-                    cancellationToken);
-
                 foreach (IContent descendant in descendants)
                 {
                     if (removedDescendantIds.Contains(descendant.ParentId))
@@ -227,13 +232,13 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
                         continue;
                     }
 
-                    documents.TryGetValue(descendant.Key, out Document? document);
+                    Document? document = await _documentService.CalculateDocument(descendant, true, cancellationToken);
                     if (document is null)
                     {
                         continue;
                     }
 
-                    var indexed = await ReIndexDocumentAsync(indexInfo, descendant, document, cancellationToken);
+                    var indexed = await IndexDocumentAsync(indexInfo, descendant, document, cancellationToken);
                     if (indexed is false)
                     {
                         removedDescendantIds.Add(descendant.Id);
@@ -245,31 +250,28 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
     /// <summary>
     /// Used by RebuildAsync: Uses pre-fetched document if available, falls back to calculating if not found.
     /// </summary>
-    private async Task<bool> ReIndexDocumentAsync(IndexInfo indexInfo, IContentBase content, Document document, CancellationToken cancellationToken)
+    private async Task<bool> IndexDocumentAsync(IndexInfo indexInfo, IContentBase content, Document document, CancellationToken cancellationToken)
     {
-        Variation[] variations = RoutablePublishedVariations(content);
-        if (variations.Length is 0)
+        if (document.Variations.Length is 0)
         {
             return false;
         }
 
         // the fields collection is for all published variants of the content - but it's not certain that a published
         // variant is also routable, because the published routing state can be broken at ancestor level.
-        document.Fields = document.Fields.Where(field => variations.Any(v => (field.Culture is null || v.Culture == field.Culture) && (field.Segment is null || v.Segment == field.Segment))).ToArray();
+        document.Fields = document.Fields.Where(field => document.Variations.Any(v => (field.Culture is null || v.Culture == field.Culture) && (field.Segment is null || v.Segment == field.Segment))).ToArray();
 
-        ContentProtection? contentProtection = await _contentProtectionProvider.GetContentProtectionAsync(content);
+        await _documentService.DeleteAsync(content.Key, StrategyName);
+        await _documentService.AddAsync(document, StrategyName);
 
-        await _documentService.DeleteAsync(content.Key, indexInfo.IndexAlias);
-        await _documentService.AddAsync(document);
-
-        var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, variations, document.Fields);
+        var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, document.Variations, document.Fields);
         if (await _eventAggregator.PublishCancelableAsync(notification))
         {
             return true;
         }
 
 
-        await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, UmbracoObjectTypes.Document, variations, notification.Fields, contentProtection);
+        await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, UmbracoObjectTypes.Document, document.Variations, notification.Fields, document.Protection);
 
         return true;
     }
@@ -291,61 +293,8 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
             // Remove from database
             foreach (Guid id in ids)
             {
-                await _documentService.DeleteAsync(id, indexInfo.IndexAlias);
+                await _documentService.DeleteAsync(id, StrategyName);
             }
         }
-    }
-
-    // NOTE: for the time being, segments are not individually publishable, but it will likely happen at some point,
-    //       so this method deals with variations - not cultures.
-    private Variation[] RoutablePublishedVariations(IContentBase content)
-    {
-        if (content.IsPublished() is false)
-        {
-            return [];
-        }
-
-        var variesByCulture = content.VariesByCulture();
-
-        // if the content varies by culture, the indexable cultures are the published
-        // cultures - otherwise "null" represents "no culture"
-        var cultures = content.PublishedCultures();
-
-        // now iterate all ancestors and make sure all cultures are published all the way up the tree
-        foreach (var ancestorId in content.AncestorIds())
-        {
-            IContent? ancestor = _contentService.GetById(ancestorId);
-            if (ancestor is null || ancestor.Published is false)
-            {
-                // no published ancestor => don't index anything
-                cultures = [];
-            }
-            else if (variesByCulture && ancestor.VariesByCulture())
-            {
-                // both the content and the ancestor are culture variant => only index the published cultures they have in common
-                cultures = cultures.Intersect(ancestor.PublishedCultures).ToArray();
-            }
-
-            // if we've already run out of cultures to index, there is no reason to iterate the ancestors any further
-            if (cultures.Any() == false)
-            {
-                break;
-            }
-        }
-
-        // for now, segments are not individually routable, so we only need to deal with cultures and append all known segments
-        if (content.Properties.Any(p => p.PropertyType.VariesBySegment()) is false)
-        {
-            // no segment variant properties - just return the found cultures
-            return cultures.Select(c => new Variation(c, null)).ToArray();
-        }
-
-        // segments are not "known" - we can only determine segment variation by looking at the property values
-        return cultures.SelectMany(culture => content
-                .Properties
-                .SelectMany(property => property.Values.Where(value => value.Culture.InvariantEquals(culture)))
-                .DistinctBy(value => value.Segment).Select(value => value.Segment)
-                .Select(segment => new Variation(culture, segment)))
-            .ToArray();
     }
 }

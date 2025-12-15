@@ -15,23 +15,23 @@ public class DocumentRepository : IDocumentRepository
 
     public DocumentRepository(IScopeAccessor scopeAccessor) => _scopeAccessor = scopeAccessor;
 
-    public async Task AddAsync(Document document)
+    public async Task AddAsync(Document document, string changeStrategy)
     {
         if (_scopeAccessor.AmbientScope is null)
         {
             throw new InvalidOperationException("Cannot add document as there is no ambient scope.");
         }
 
-        DocumentDto dto = ToDto(document);
+        DocumentDto dto = ToDto(document, changeStrategy);
         await _scopeAccessor.AmbientScope.Database.InsertAsync(dto);
     }
 
-    public async Task<Document?> GetAsync(Guid id, string indexAlias)
+    public async Task<Document?> GetAsync(Guid id, string changeStrategy)
     {
         Sql<ISqlContext>? sql = _scopeAccessor.AmbientScope?.Database.SqlContext.Sql()
             .Select<DocumentDto>()
             .From<DocumentDto>()
-            .Where<DocumentDto>(x => x.DocumentKey == id && x.Index == indexAlias);
+            .Where<DocumentDto>(x => x.DocumentKey == id && x.ChangeStrategy == changeStrategy);
 
         if (_scopeAccessor.AmbientScope is null)
         {
@@ -43,7 +43,7 @@ public class DocumentRepository : IDocumentRepository
         return ToDocument(documentDto);
     }
 
-    public async Task<IReadOnlyDictionary<Guid, Document>> GetManyAsync(IEnumerable<Guid> ids, string indexAlias)
+    public async Task<IReadOnlyDictionary<Guid, Document>> GetManyAsync(IEnumerable<Guid> ids, string changeStrategy)
     {
         if (_scopeAccessor.AmbientScope is null)
         {
@@ -59,7 +59,7 @@ public class DocumentRepository : IDocumentRepository
         Sql<ISqlContext> sql = _scopeAccessor.AmbientScope.Database.SqlContext.Sql()
             .Select<DocumentDto>()
             .From<DocumentDto>()
-            .Where<DocumentDto>(x => x.Index == indexAlias)
+            .Where<DocumentDto>(x => x.ChangeStrategy == changeStrategy)
             .WhereIn<DocumentDto>(x => x.DocumentKey, idsArray);
 
         List<DocumentDto> documentDtos = await _scopeAccessor.AmbientScope.Database.FetchAsync<DocumentDto>(sql);
@@ -70,7 +70,7 @@ public class DocumentRepository : IDocumentRepository
             .ToDictionary(doc => doc!.DocumentKey, doc => doc!);
     }
 
-    public async Task DeleteAsync(Guid id, string indexAlias)
+    public async Task DeleteAsync(Guid id, string changeStrategy)
     {
         if (_scopeAccessor.AmbientScope is null)
         {
@@ -79,12 +79,12 @@ public class DocumentRepository : IDocumentRepository
 
         Sql<ISqlContext> sql = _scopeAccessor.AmbientScope!.Database.SqlContext.Sql()
             .Delete<DocumentDto>()
-            .Where<DocumentDto>(x => x.DocumentKey == id && x.Index == indexAlias);
+            .Where<DocumentDto>(x => x.DocumentKey == id && x.ChangeStrategy == changeStrategy);
 
         await _scopeAccessor.AmbientScope?.Database.ExecuteAsync(sql)!;
     }
 
-    public async Task<IEnumerable<Document>> GetByIndexAliasAsync(string indexAlias)
+    public async Task<IEnumerable<Document>> GetByChangeStrategyAsync(string changeStrategy)
     {
         if (_scopeAccessor.AmbientScope is null)
         {
@@ -94,7 +94,7 @@ public class DocumentRepository : IDocumentRepository
         Sql<ISqlContext> sql = _scopeAccessor.AmbientScope.Database.SqlContext.Sql()
             .Select<DocumentDto>()
             .From<DocumentDto>()
-            .Where<DocumentDto>(x => x.Index == indexAlias);
+            .Where<DocumentDto>(x => x.ChangeStrategy == changeStrategy);
 
         List<DocumentDto> documentDtos = await _scopeAccessor.AmbientScope.Database.FetchAsync<DocumentDto>(sql);
 
@@ -102,11 +102,11 @@ public class DocumentRepository : IDocumentRepository
     }
 
 
-    private DocumentDto ToDto(Document document) =>
+    private DocumentDto ToDto(Document document, string changeStrategy) =>
         new()
         {
             DocumentKey = document.DocumentKey,
-            Index = document.Index,
+            ChangeStrategy = changeStrategy,
             Fields = JsonSerializer.Serialize(document.Fields),
             ObjectType = document.ObjectType.ToString(),
             Variations = JsonSerializer.Serialize(document.Variations),
@@ -122,7 +122,6 @@ public class DocumentRepository : IDocumentRepository
         return new()
         {
             DocumentKey = dto.DocumentKey,
-            Index = dto.Index,
             Fields = JsonSerializer.Deserialize<IndexField[]>(dto.Fields) ?? [],
             ObjectType = Enum.Parse<UmbracoObjectTypes>(dto.ObjectType),
             Variations = JsonSerializer.Deserialize<Variation[]>(dto.Variations) ?? [],

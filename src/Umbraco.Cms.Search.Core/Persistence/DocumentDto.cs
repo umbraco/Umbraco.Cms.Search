@@ -15,8 +15,8 @@ public class DocumentDto
     [Column("documentKey")]
     public required Guid DocumentKey { get; set; }
 
-    [Column("index")]
-    public required string Index { get; set; }
+    [Column("changeStrategy")]
+    public required string ChangeStrategy { get; set; }
 
     [Column("fields")]
     [SpecialDbType(SpecialDbTypes.NVARCHARMAX)]

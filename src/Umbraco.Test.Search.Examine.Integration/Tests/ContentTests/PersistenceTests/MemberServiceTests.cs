@@ -78,7 +78,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
     {
         await TestSetup();
         using IScope scope = ScopeProvider.CreateScope(autoComplete: true);
-        Document? doc = await DocumentRepository.GetAsync(_member.Key, Constants.IndexAliases.DraftMembers);
+        Document? doc = await DocumentRepository.GetAsync(_member.Key, "DraftContentChangeStrategy");
         Assert.That(doc, Is.Not.Null);
     }
 
@@ -91,7 +91,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify initial document exists
-            Document? initialDoc = await DocumentRepository.GetAsync(_member.Key, Constants.IndexAliases.DraftMembers);
+            Document? initialDoc = await DocumentRepository.GetAsync(_member.Key, "DraftContentChangeStrategy");
             Assert.That(initialDoc, Is.Not.Null);
             initialFields = initialDoc!.Fields;
         }
@@ -108,7 +108,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify the document was updated
-            Document? updatedDoc = await DocumentRepository.GetAsync(_member.Key, Constants.IndexAliases.DraftMembers);
+            Document? updatedDoc = await DocumentRepository.GetAsync(_member.Key, "DraftContentChangeStrategy");
             Assert.That(updatedDoc, Is.Not.Null);
             Assert.That(updatedDoc!.Fields, Is.Not.EqualTo(initialFields));
             Assert.That(FieldsContainText(updatedDoc.Fields, "Updated Member Name"), Is.True);
@@ -124,7 +124,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify initial document exists
-            Document? initialDoc = await DocumentRepository.GetAsync(_member.Key, Constants.IndexAliases.DraftMembers);
+            Document? initialDoc = await DocumentRepository.GetAsync(_member.Key, "DraftContentChangeStrategy");
             Assert.That(initialDoc, Is.Not.Null);
         }
 
@@ -135,7 +135,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify the document was removed
-            Document? deletedDoc = await DocumentRepository.GetAsync(_member.Key, Constants.IndexAliases.DraftMembers);
+            Document? deletedDoc = await DocumentRepository.GetAsync(_member.Key, "DraftContentChangeStrategy");
             Assert.That(deletedDoc, Is.Null);
         }
     }

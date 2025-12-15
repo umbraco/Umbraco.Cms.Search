@@ -87,18 +87,19 @@ public class RebuildTests : UmbracoIntegrationTest
     {
         await CreateContentWithPersistence(publish);
         var indexAlias = GetIndexAlias(publish);
+        var changeStrategy = GetStrategy(publish);
 
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify document exists in database (from initial indexing)
-            Document? rootDocInitial = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
+            Document? rootDocInitial = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
             Assert.That(rootDocInitial, Is.Not.Null);
 
             // Delete the database entry to simulate a fresh state (e.g., after migration or database restore)
-            await DocumentRepository.DeleteAsync(_rootDocument.Key, indexAlias);
+            await DocumentRepository.DeleteAsync(_rootDocument.Key, changeStrategy);
 
             // Verify document no longer exists in database
-            Document? rootDocBefore = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
+            Document? rootDocBefore = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
             Assert.That(rootDocBefore, Is.Null);
         }
 
@@ -112,7 +113,7 @@ public class RebuildTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify document now exists in database again (rebuilt from content)
-            Document? rootDocAfter = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
+            Document? rootDocAfter = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
             Assert.That(rootDocAfter, Is.Not.Null);
             Assert.That(FieldsContainText(rootDocAfter!.Fields, "Root Document"), Is.True);
         }
@@ -124,18 +125,19 @@ public class RebuildTests : UmbracoIntegrationTest
     {
         await CreateContentWithPersistence(publish);
         var indexAlias = GetIndexAlias(publish);
+        var changeStrategy = GetStrategy(publish);
 
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify document exists in database (from initial indexing)
-            Document? rootDocInitial = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
+            Document? rootDocInitial = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
             Assert.That(rootDocInitial, Is.Not.Null);
 
             // Delete the database entry to simulate a fresh state (e.g., after migration or database restore)
-            await DocumentRepository.DeleteAsync(_rootDocument.Key, indexAlias);
+            await DocumentRepository.DeleteAsync(_rootDocument.Key, changeStrategy);
 
             // Verify document no longer exists in database
-            Document? rootDocBefore = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
+            Document? rootDocBefore = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
             Assert.That(rootDocBefore, Is.Null);
         }
 
@@ -149,7 +151,7 @@ public class RebuildTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify document still does NOT exist in database (rebuild with useDatabase=true should not persist)
-            Document? rootDocAfter = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
+            Document? rootDocAfter = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
             Assert.That(rootDocAfter, Is.Null);
         }
     }
@@ -160,12 +162,13 @@ public class RebuildTests : UmbracoIntegrationTest
     {
         await CreateContentWithPersistence(publish);
         var indexAlias = GetIndexAlias(publish);
+        var changeStrategy = GetStrategy(publish);
 
         IndexField[] rootFieldsBefore;
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify document exists in database
-            Document? rootDocBefore = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
+            Document? rootDocBefore = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
             Assert.That(rootDocBefore, Is.Not.Null);
 
             rootFieldsBefore = rootDocBefore!.Fields;
@@ -181,7 +184,7 @@ public class RebuildTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify document still exists and fields are the same (fetched from DB, not recalculated)
-            Document? rootDocAfter = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
+            Document? rootDocAfter = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
 
             Assert.That(rootDocAfter, Is.Not.Null);
             Assert.That(rootDocAfter.Fields.Length, Is.GreaterThan(0));
@@ -195,11 +198,12 @@ public class RebuildTests : UmbracoIntegrationTest
     {
         await CreateContentWithPersistence(publish);
         var indexAlias = GetIndexAlias(publish);
+        var changeStrategy = GetStrategy(publish);
 
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify document exists in database with original name
-            Document? rootDocBefore = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
+            Document? rootDocBefore = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
             Assert.That(rootDocBefore, Is.Not.Null);
             Assert.That(FieldsContainText(rootDocBefore!.Fields, "Root Document"), Is.True);
         }
@@ -220,11 +224,11 @@ public class RebuildTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify the database now has the updated name
-            Document? rootDocUpdated = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
+            Document? rootDocUpdated = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
             Assert.That(rootDocUpdated, Is.Not.Null);
             Assert.That(FieldsContainText(rootDocUpdated!.Fields, "Updated Document Name"), Is.True);
 
-            await DocumentRepository.DeleteAsync(_rootDocument.Key, indexAlias);
+            await DocumentRepository.DeleteAsync(_rootDocument.Key, changeStrategy);
         }
 
         // Trigger rebuild with useDatabase=false (should recalculate, not use stale DB data)
@@ -237,7 +241,7 @@ public class RebuildTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify the database now has fresh recalculated fields with the actual content name
-            Document? rootDocAfter = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
+            Document? rootDocAfter = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
             Assert.That(rootDocAfter, Is.Not.Null);
             Assert.That(FieldsContainText(rootDocAfter!.Fields, "Updated Document Name"), Is.True);
             Assert.That(FieldsContainText(rootDocAfter.Fields, "Root Document"), Is.False);
@@ -245,6 +249,8 @@ public class RebuildTests : UmbracoIntegrationTest
     }
 
     private string GetIndexAlias(bool publish) => publish ? Constants.IndexAliases.PublishedContent : Constants.IndexAliases.DraftContent;
+
+    private string GetStrategy(bool publish) => publish ? "PublishedContentChangeStrategy" : "DraftContentChangeStrategy";
 
     /// <summary>
     /// Creates content and waits for indexing (so database persistence happens).

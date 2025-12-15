@@ -4,13 +4,13 @@ namespace Umbraco.Cms.Search.Core.Persistence;
 
 public interface IDocumentRepository
 {
-    public Task AddAsync(Document document);
+    public Task AddAsync(Document document, string changeStrategy);
 
-    public Task<Document?> GetAsync(Guid id, string indexAlias);
+    public Task<Document?> GetAsync(Guid id, string changeStrategy);
 
-    public Task<IReadOnlyDictionary<Guid, Document>> GetManyAsync(IEnumerable<Guid> ids, string indexAlias);
+    public Task<IReadOnlyDictionary<Guid, Document>> GetManyAsync(IEnumerable<Guid> ids, string changeStrategy);
 
-    public Task DeleteAsync(Guid id, string indexAlias);
+    public Task DeleteAsync(Guid id, string changeStrategy);
 
-    public Task<IEnumerable<Document>> GetByIndexAliasAsync(string indexAlias);
+    public Task<IEnumerable<Document>> GetByChangeStrategyAsync(string changeStrategy);
 }
