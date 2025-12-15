@@ -11,10 +11,12 @@ using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Infrastructure.Install;
+using Umbraco.Cms.Infrastructure.Scoping;
 using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Models.Persistence;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
+using Umbraco.Cms.Search.Core.Persistence;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -39,8 +41,7 @@ public class MediaServiceTests : UmbracoIntegrationTest
     private IMediaTypeService MediaTypeService => GetRequiredService<IMediaTypeService>();
 
     private IMediaService MediaService => GetRequiredService<IMediaService>();
-
-    private Umbraco.Cms.Search.Core.Services.ContentIndexing.IDocumentService DocumentService => GetRequiredService<Umbraco.Cms.Search.Core.Services.ContentIndexing.IDocumentService>();
+    private IDocumentRepository DocumentRepository => GetRequiredService<IDocumentRepository>();
 
     private IMedia _rootMedia = null!;
 
@@ -75,7 +76,8 @@ public class MediaServiceTests : UmbracoIntegrationTest
     public async Task AddsEntryToDatabaseAfterIndexing()
     {
         await TestSetup();
-        Document? doc = await DocumentService.GetAsync(_rootMedia, Constants.IndexAliases.DraftMedia, false, CancellationToken.None, useDatabase: true);
+        using IScope scope = ScopeProvider.CreateScope(autoComplete: true);
+        Document? doc = await DocumentRepository.GetAsync(_rootMedia.Key, Constants.IndexAliases.DraftMedia);
         Assert.That(doc, Is.Not.Null);
     }
 
@@ -84,10 +86,14 @@ public class MediaServiceTests : UmbracoIntegrationTest
     {
         await TestSetup();
 
-        // Verify initial document exists
-        Document? initialDoc = await DocumentService.GetAsync(_rootMedia, Constants.IndexAliases.DraftMedia, false, CancellationToken.None, useDatabase: true);
-        Assert.That(initialDoc, Is.Not.Null);
-        var initialFields = initialDoc!.Fields;
+        IndexField[] initialFields;
+        using (ScopeProvider.CreateScope(autoComplete: true))
+        {
+            // Verify initial document exists
+            Document? initialDoc = await DocumentRepository.GetAsync(_rootMedia.Key, Constants.IndexAliases.DraftMedia);
+            Assert.That(initialDoc, Is.Not.Null);
+            initialFields = initialDoc!.Fields;
+        }
 
         // Update the media name
         _rootMedia.Name = "Updated Root Media";
@@ -98,11 +104,14 @@ public class MediaServiceTests : UmbracoIntegrationTest
             return Task.CompletedTask;
         });
 
-        // Verify the document was updated
-        Document? updatedDoc = await DocumentService.GetAsync(_rootMedia, Constants.IndexAliases.DraftMedia, false, CancellationToken.None, useDatabase: true);
-        Assert.That(updatedDoc, Is.Not.Null);
-        Assert.That(updatedDoc!.Fields, Is.Not.EqualTo(initialFields));
-        Assert.That(FieldsContainText(updatedDoc.Fields, "Updated Root Media"), Is.True);
+        using (ScopeProvider.CreateScope(autoComplete: true))
+        {
+            // Verify the document was updated
+            Document? updatedDoc = await DocumentRepository.GetAsync(_rootMedia.Key, Constants.IndexAliases.DraftMedia);
+            Assert.That(updatedDoc, Is.Not.Null);
+            Assert.That(updatedDoc!.Fields, Is.Not.EqualTo(initialFields));
+            Assert.That(FieldsContainText(updatedDoc.Fields, "Updated Root Media"), Is.True);
+        }
     }
 
     [Test]
@@ -110,9 +119,12 @@ public class MediaServiceTests : UmbracoIntegrationTest
     {
         await TestSetup();
 
-        // Verify initial document exists
-        Document? initialDoc = await DocumentService.GetAsync(_rootMedia, Constants.IndexAliases.DraftMedia, false, CancellationToken.None, useDatabase: true);
-        Assert.That(initialDoc, Is.Not.Null);
+        using (ScopeProvider.CreateScope(autoComplete: true))
+        {
+            // Verify initial document exists
+            Document? initialDoc = await DocumentRepository.GetAsync(_rootMedia.Key, Constants.IndexAliases.DraftMedia);
+            Assert.That(initialDoc, Is.Not.Null);
+        }
 
         // Delete the media
         await WaitForIndexing(Constants.IndexAliases.DraftMedia, () =>
@@ -121,9 +133,12 @@ public class MediaServiceTests : UmbracoIntegrationTest
             return Task.CompletedTask;
         });
 
-        // Verify the document was removed
-        Document? deletedDoc = await DocumentService.GetAsync(_rootMedia, Constants.IndexAliases.DraftMedia, false, CancellationToken.None, useDatabase: true);
-        Assert.That(deletedDoc, Is.Null);
+        using (ScopeProvider.CreateScope(autoComplete: true))
+        {
+            // Verify the document was removed
+            Document? deletedDoc = await DocumentRepository.GetAsync(_rootMedia.Key, Constants.IndexAliases.DraftMedia);
+            Assert.That(deletedDoc, Is.Null);
+        }
     }
 
     private async Task TestSetup()

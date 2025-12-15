@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
@@ -93,7 +92,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
                 return;
             }
 
-            await RebuildContentAsync(indexInfo, content, useDatabase, cancellationToken);
+            await RebuildContentAsync(indexInfo, content, cancellationToken);
         }
     }
 
@@ -165,7 +164,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
         foreach (IndexInfo indexInfo in indexInfos)
         {
             // fetch the doc from service, make sure not to use database here, as it will be deleted
-            Document? document = await _documentService.GetAsync(content,  indexInfo.IndexAlias, true, cancellationToken, false);
+            Document? document = await _documentService.GetAsync(content,  indexInfo.IndexAlias, true, cancellationToken);
 
             if (document is null)
             {
@@ -192,9 +191,9 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
     /// <summary>
     /// Used by RebuildAsync: Rebuilds content and all descendants from storage.
     /// </summary>
-    private async Task RebuildContentAsync(IndexInfo indexInfo, IContentBase content, bool useDatabase, CancellationToken cancellationToken)
+    private async Task RebuildContentAsync(IndexInfo indexInfo, IContentBase content, CancellationToken cancellationToken)
     {
-        Document? rootDocument = await _documentService.GetAsync(content, indexInfo.IndexAlias, true, cancellationToken, useDatabase);
+        Document? rootDocument = await _documentService.GetAsync(content, indexInfo.IndexAlias, true, cancellationToken);
 
         // The content was not found, return..
         if (rootDocument is null)
@@ -219,8 +218,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
                     descendants,
                     indexInfo.IndexAlias,
                     true,
-                    cancellationToken,
-                    useDatabase);
+                    cancellationToken);
 
                 foreach (IContent descendant in descendants)
                 {

@@ -11,10 +11,12 @@ using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Infrastructure.Install;
+using Umbraco.Cms.Infrastructure.Scoping;
 using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Models.Persistence;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
+using Umbraco.Cms.Search.Core.Persistence;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -40,7 +42,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
 
     private IMemberService MemberService => GetRequiredService<IMemberService>();
 
-    private Umbraco.Cms.Search.Core.Services.ContentIndexing.IDocumentService DocumentService => GetRequiredService<Umbraco.Cms.Search.Core.Services.ContentIndexing.IDocumentService>();
+    private IDocumentRepository DocumentRepository => GetRequiredService<IDocumentRepository>();
 
     private IMember _member = null!;
 
@@ -75,7 +77,8 @@ public class MemberServiceTests : UmbracoIntegrationTest
     public async Task AddsEntryToDatabaseAfterIndexing()
     {
         await TestSetup();
-        Document? doc = await DocumentService.GetAsync(_member, Constants.IndexAliases.DraftMembers, false, CancellationToken.None, useDatabase: true);
+        using IScope scope = ScopeProvider.CreateScope(autoComplete: true);
+        Document? doc = await DocumentRepository.GetAsync(_member.Key, Constants.IndexAliases.DraftMembers);
         Assert.That(doc, Is.Not.Null);
     }
 
@@ -84,10 +87,14 @@ public class MemberServiceTests : UmbracoIntegrationTest
     {
         await TestSetup();
 
-        // Verify initial document exists
-        Document? initialDoc = await DocumentService.GetAsync(_member, Constants.IndexAliases.DraftMembers, false, CancellationToken.None, useDatabase: true);
-        Assert.That(initialDoc, Is.Not.Null);
-        var initialFields = initialDoc!.Fields;
+        IndexField[] initialFields;
+        using (ScopeProvider.CreateScope(autoComplete: true))
+        {
+            // Verify initial document exists
+            Document? initialDoc = await DocumentRepository.GetAsync(_member.Key, Constants.IndexAliases.DraftMembers);
+            Assert.That(initialDoc, Is.Not.Null);
+            initialFields = initialDoc!.Fields;
+        }
 
         // Update the member name
         _member.Name = "Updated Member Name";
@@ -98,11 +105,14 @@ public class MemberServiceTests : UmbracoIntegrationTest
             return Task.CompletedTask;
         });
 
-        // Verify the document was updated
-        Document? updatedDoc = await DocumentService.GetAsync(_member, Constants.IndexAliases.DraftMembers, false, CancellationToken.None, useDatabase: true);
-        Assert.That(updatedDoc, Is.Not.Null);
-        Assert.That(updatedDoc!.Fields, Is.Not.EqualTo(initialFields));
-        Assert.That(FieldsContainText(updatedDoc.Fields, "Updated Member Name"), Is.True);
+        using (ScopeProvider.CreateScope(autoComplete: true))
+        {
+            // Verify the document was updated
+            Document? updatedDoc = await DocumentRepository.GetAsync(_member.Key, Constants.IndexAliases.DraftMembers);
+            Assert.That(updatedDoc, Is.Not.Null);
+            Assert.That(updatedDoc!.Fields, Is.Not.EqualTo(initialFields));
+            Assert.That(FieldsContainText(updatedDoc.Fields, "Updated Member Name"), Is.True);
+        }
     }
 
     [Test]
@@ -111,17 +121,23 @@ public class MemberServiceTests : UmbracoIntegrationTest
     {
         await TestSetup();
 
-        // Verify initial document exists
-        Document? initialDoc = await DocumentService.GetAsync(_member, Constants.IndexAliases.DraftMembers, false, CancellationToken.None, useDatabase: true);
-        Assert.That(initialDoc, Is.Not.Null);
+        using (ScopeProvider.CreateScope(autoComplete: true))
+        {
+            // Verify initial document exists
+            Document? initialDoc = await DocumentRepository.GetAsync(_member.Key, Constants.IndexAliases.DraftMembers);
+            Assert.That(initialDoc, Is.Not.Null);
+        }
 
         // Delete the member
         MemberService.Delete(_member);
         await Task.Delay(4000);
 
-        // Verify the document was removed
-        Document? deletedDoc = await DocumentService.GetAsync(_member, Constants.IndexAliases.DraftMembers, false, CancellationToken.None, useDatabase: true);
-        Assert.That(deletedDoc, Is.Null);
+        using (ScopeProvider.CreateScope(autoComplete: true))
+        {
+            // Verify the document was removed
+            Document? deletedDoc = await DocumentRepository.GetAsync(_member.Key, Constants.IndexAliases.DraftMembers);
+            Assert.That(deletedDoc, Is.Null);
+        }
     }
 
     private async Task TestSetup()

@@ -21,34 +21,16 @@ public class DocumentService : IDocumentService
         _contentIndexingDataCollectionService = contentIndexingDataCollectionService;
     }
 
-    public async Task<Document?> GetAsync(IContentBase content, string indexAlias, bool published, CancellationToken cancellationToken, bool useDatabase)
+    public async Task<Document?> GetAsync(IContentBase content, string indexAlias, bool published, CancellationToken cancellationToken)
     {
-        using ICoreScope scope = _scopeProvider.CreateCoreScope();
-        if (useDatabase)
-        {
-            scope.Complete();
-            return await _documentRepository.GetAsync(content.Key, indexAlias);
-        }
-
         Document? document = await CalculateDocumentAsync(content, indexAlias, published, cancellationToken);
-
-        scope.Complete();
 
         return document;
     }
 
-    public async Task<IReadOnlyDictionary<Guid, Document>> GetManyAsync(IEnumerable<IContentBase> contents, string indexAlias, bool published, CancellationToken cancellationToken, bool useDatabase)
+    public async Task<IReadOnlyDictionary<Guid, Document>> GetManyAsync(IEnumerable<IContentBase> contents, string indexAlias, bool published, CancellationToken cancellationToken)
     {
-        using ICoreScope scope = _scopeProvider.CreateCoreScope();
-
         IContentBase[] contentsArray = contents as IContentBase[] ?? contents.ToArray();
-
-        if (useDatabase)
-        {
-            IReadOnlyDictionary<Guid, Document> documents = await _documentRepository.GetManyAsync(contentsArray.Select(content => content.Key), indexAlias);
-            scope.Complete();
-            return documents;
-        }
 
         var result = new Dictionary<Guid, Document>();
         foreach (IContentBase content in contentsArray)
@@ -60,7 +42,6 @@ public class DocumentService : IDocumentService
             }
         }
 
-        scope.Complete();
         return result;
     }
 

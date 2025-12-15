@@ -19,6 +19,7 @@ using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Models.Persistence;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
+using Umbraco.Cms.Search.Core.Persistence;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
@@ -35,8 +36,6 @@ public class DocumentServiceTests : UmbracoIntegrationTest
 {
     private bool _indexingComplete;
 
-    private IScopeProvider _scopeProvider => GetRequiredService<IScopeProvider>();
-
     private PackageMigrationRunner _packageMigrationRunner => GetRequiredService<PackageMigrationRunner>();
 
     private IRuntimeState RuntimeState => GetRequiredService<IRuntimeState>();
@@ -48,6 +47,8 @@ public class DocumentServiceTests : UmbracoIntegrationTest
     private IContentService ContentService => GetRequiredService<IContentService>();
 
     private Umbraco.Cms.Search.Core.Services.ContentIndexing.IDocumentService DocumentService => GetRequiredService<Umbraco.Cms.Search.Core.Services.ContentIndexing.IDocumentService>();
+
+    private IDocumentRepository DocumentRepository => GetRequiredService<IDocumentRepository>();
 
     private IContent _rootDocument = null!;
 
@@ -82,7 +83,7 @@ public class DocumentServiceTests : UmbracoIntegrationTest
     public async Task CanRunMigration()
     {
         await TestSetup(false);
-        using IScope scope = _scopeProvider.CreateScope(autoComplete: true);
+        using IScope scope = ScopeProvider.CreateScope(autoComplete: true);
         IEnumerable<string> tables = scope.Database.SqlContext.SqlSyntax.GetTablesInSchema(scope.Database);
         var result = tables.Any(x => x.InvariantEquals(Constants.Persistence.DocumentTableName));
         Assert.That(result, Is.True);
@@ -94,7 +95,8 @@ public class DocumentServiceTests : UmbracoIntegrationTest
     {
         await TestSetup(publish);
         var indexAlias = GetIndexAlias(publish);
-        Document? doc = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
+        using IScope scope = ScopeProvider.CreateScope(autoComplete: true);
+        Document? doc = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
         Assert.That(doc, Is.Not.Null);
     }
 
@@ -105,10 +107,15 @@ public class DocumentServiceTests : UmbracoIntegrationTest
         await TestSetup(publish);
         var indexAlias = GetIndexAlias(publish);
 
+        IndexField[] initialFields;
         // Verify initial document exists
-        Document? initialDoc = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
-        Assert.That(initialDoc, Is.Not.Null);
-        var initialFields = initialDoc!.Fields;
+        using (ScopeProvider.CreateScope(autoComplete: true))
+        {
+            Document? initialDoc = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
+            Assert.That(initialDoc, Is.Not.Null);
+            initialFields = initialDoc!.Fields;
+        }
+
 
         // Update the content name
         _rootDocument.Name = "Updated Root Document";
@@ -124,11 +131,14 @@ public class DocumentServiceTests : UmbracoIntegrationTest
             return Task.CompletedTask;
         });
 
-        // Verify the document was updated
-        Document? updatedDoc = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
-        Assert.That(updatedDoc, Is.Not.Null);
-        Assert.That(updatedDoc!.Fields, Is.Not.EqualTo(initialFields));
-        Assert.That(FieldsContainText(updatedDoc.Fields, "Updated Root Document"), Is.True);
+        using (ScopeProvider.CreateScope(autoComplete: true))
+        {
+            // Verify the document was updated
+            Document? updatedDoc = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
+            Assert.That(updatedDoc, Is.Not.Null);
+            Assert.That(updatedDoc!.Fields, Is.Not.EqualTo(initialFields));
+            Assert.That(FieldsContainText(updatedDoc.Fields, "Updated Root Document"), Is.True);
+        }
     }
 
     [TestCase(true)]
@@ -139,8 +149,11 @@ public class DocumentServiceTests : UmbracoIntegrationTest
         var indexAlias = GetIndexAlias(publish);
 
         // Verify initial document exists
-        Document? initialDoc = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
-        Assert.That(initialDoc, Is.Not.Null);
+        using (ScopeProvider.CreateScope(autoComplete: true))
+        {
+            Document? initialDoc = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
+            Assert.That(initialDoc, Is.Not.Null);
+        }
 
         // Delete the content
         await WaitForIndexing(indexAlias, () =>
@@ -149,9 +162,12 @@ public class DocumentServiceTests : UmbracoIntegrationTest
             return Task.CompletedTask;
         });
 
-        // Verify the document was removed
-        Document? deletedDoc = await DocumentService.GetAsync(_rootDocument, indexAlias, publish, CancellationToken.None, useDatabase: true);
-        Assert.That(deletedDoc, Is.Null);
+        using (ScopeProvider.CreateScope(autoComplete: true))
+        {
+            // Verify the document was removed
+            Document? deletedDoc = await DocumentRepository.GetAsync(_rootDocument.Key, indexAlias);
+            Assert.That(deletedDoc, Is.Null);
+        }
     }
 
     private string GetIndexAlias(bool publish) => publish ? Constants.IndexAliases.PublishedContent : Constants.IndexAliases.DraftContent;

@@ -99,7 +99,6 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, document.DocumentKey, document.ObjectType, document.Variations, notification.Fields, null);
            }
         }
-
         else
         {
             await RebuildFromMemoryAsync(indexInfo, cancellationToken);
@@ -165,7 +164,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         foreach (IndexInfo indexInfo in indexInfos)
         {
             // fetch the doc from service, make sure not to use database here, as it will be deleted
-            Document? document = await _documentService.GetAsync(content, indexInfo.IndexAlias, false, cancellationToken, false);
+            Document? document = await _documentService.GetAsync(content, indexInfo.IndexAlias, false, cancellationToken);
 
             if (document is null)
             {
@@ -192,6 +191,11 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
     private async Task IndexDocumentAsync(IndexInfo indexInfo, IContentBase content, UmbracoObjectTypes objectType, Document document, CancellationToken cancellationToken)
     {
         Variation[] variations = GetVariations(content);
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            LogIndexRebuildCancellation(indexInfo);
+        }
 
         // Add to database and add all fields, these might be filtered later by end user.
         await _documentService.AddAsync(document);
@@ -255,7 +259,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
             _ => throw new ArgumentOutOfRangeException(nameof(change.ObjectType))
         };
 
-    private async Task RebuildContentAsync(
+    private async Task RebuildContentFromMemoryAsync(
         IndexInfo indexInfo,
         UmbracoObjectTypes objectType,
         Func<IEnumerable<IContentBase>> getContentAtRoot,
@@ -280,15 +284,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                 break;
             }
 
-            Document? rootDocument = await _documentService.GetAsync(rootContent, indexInfo.IndexAlias, false, cancellationToken, false);
-
-            if (rootDocument is null)
-            {
-                continue;
-            }
-
-            await IndexDocumentAsync(indexInfo, rootContent, objectType, rootDocument, cancellationToken);
-            await ReIndexDescendantsAsync(indexInfo, rootContent, objectType, cancellationToken);
+            await CalculateAndPersistAsync([indexInfo], rootContent, objectType, cancellationToken);
         }
 
         if (cancellationToken.IsCancellationRequested)
@@ -308,14 +304,6 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
 
             contentInRecycleBin = getPagedContentAtRecycleBinRoot(pageIndex, ContentEnumerationPageSize).ToArray();
 
-            // Batch fetch all documents for this page of recycle bin content
-            IReadOnlyDictionary<Guid, Document> documents = await _documentService.GetManyAsync(
-                contentInRecycleBin,
-                indexInfo.IndexAlias,
-                false,
-                cancellationToken,
-                false);
-
             foreach (IContentBase content in contentInRecycleBin)
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -323,14 +311,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                     break;
                 }
 
-                documents.TryGetValue(content.Key, out Document? document);
-                if (document is null)
-                {
-                    continue;
-                }
-
-                await IndexDocumentAsync(indexInfo, content, objectType, document, cancellationToken);
-                await ReIndexDescendantsAsync(indexInfo, content, objectType, cancellationToken);
+                await CalculateAndPersistAsync([indexInfo], content, objectType, cancellationToken);
             }
 
             pageIndex++;
@@ -355,8 +336,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                             descendants,
                             indexInfo.IndexAlias,
                             false,
-                            cancellationToken,
-                            false);
+                            cancellationToken);
 
                         foreach (IContent descendant in descendants)
                         {
@@ -383,8 +363,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                             descendants,
                             indexInfo.IndexAlias,
                             false,
-                            cancellationToken,
-                            false);
+                            cancellationToken);
 
                         foreach (IMedia descendant in descendants)
                         {
@@ -403,7 +382,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
 
     private async Task RebuildFromMemoryAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
     {
-        await RebuildContentAsync(
+        await RebuildContentFromMemoryAsync(
             indexInfo,
             UmbracoObjectTypes.Document,
             () => _contentService.GetRootContent(),
@@ -416,7 +395,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
             return;
         }
 
-        await RebuildContentAsync(
+        await RebuildContentFromMemoryAsync(
             indexInfo,
             UmbracoObjectTypes.Media,
             () => _mediaService.GetRootMedia(),
@@ -450,8 +429,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                 members,
                 indexInfo.IndexAlias,
                 false,
-                cancellationToken,
-                false);
+                cancellationToken);
 
             foreach (IMember member in members)
             {
