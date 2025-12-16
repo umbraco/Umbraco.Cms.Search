@@ -7,11 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Umbraco.Cms.Search.Core\Umbraco.Cms.Search.Core.csproj"/>
+    <ProjectReference Include="..\Umbraco.Cms.Search.Core\Umbraco.Cms.Search.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Examine"/>
+    <PackageReference Include="Examine" />
     <PackageReference Include="Umbraco.Cms.Examine.Lucene" />
   </ItemGroup>
 

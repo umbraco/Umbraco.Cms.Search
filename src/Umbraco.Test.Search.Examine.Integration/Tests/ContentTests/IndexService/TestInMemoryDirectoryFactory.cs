@@ -1,22 +1,29 @@
-﻿using Examine.Lucene.Directories;
+using Examine.Lucene.Directories;
 using Examine.Lucene.Providers;
 using Directory = Lucene.Net.Store.Directory;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
 
-public class TestInMemoryDirectoryFactory : DirectoryFactoryBase
+public class TestInMemoryDirectoryFactory : IDirectoryFactory
 {
-    private RandomIdRAMDirectory _randomIdRamDirectory = null!;
+    private RandomIdRAMDirectory? _mainDir;
+    private RandomIdRAMDirectory? _taxonomyDir;
 
-    protected override Directory CreateDirectory(LuceneIndex luceneIndex, bool forceUnlock)
+    public Directory CreateDirectory(LuceneIndex luceneIndex, bool forceUnlock)
     {
-        _randomIdRamDirectory = new RandomIdRAMDirectory();
-        return _randomIdRamDirectory;
+        _mainDir ??= new RandomIdRAMDirectory();
+        return _mainDir;
     }
 
-    protected override void Dispose(bool disposing)
+    public Directory CreateTaxonomyDirectory(LuceneIndex luceneIndex, bool forceUnlock)
     {
-        base.Dispose(disposing);
-        _randomIdRamDirectory.Dispose();
+        _taxonomyDir ??= new RandomIdRAMDirectory();
+        return _taxonomyDir;
+    }
+
+    public void Dispose()
+    {
+        _mainDir?.Dispose();
+        _taxonomyDir?.Dispose();
     }
 }
