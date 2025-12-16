@@ -6,4 +6,6 @@ namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 public interface IIndexingService
 {
     Task<bool> IndexContentAsync(IndexInfo[] indexInfos, IContentBase content, string changeStrategy,  bool published, CancellationToken cancellationToken);
+
+    Task RemoveAsync(IndexInfo [] indexInfos, string changeStrategy, Guid[] documentKeys);
 }

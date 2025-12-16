@@ -169,13 +169,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                 .Where(change => indexInfo.ContainedObjectTypes.Contains(change.ObjectType))
                 .Select(change => change.Id)
                 .ToArray();
-            await indexInfo.Indexer.DeleteAsync(indexInfo.IndexAlias, keys);
-
-            // Remove from database
-            foreach (Guid key in keys)
-            {
-                await _documentService.DeleteAsync(key, StrategyName);
-            }
+            await _indexingService.RemoveAsync([indexInfo], StrategyName, keys);
         }
     }
 

@@ -56,9 +56,21 @@ public class IndexingService : IIndexingService
         return document.Variations.Length != 0;
     }
 
+    public async Task RemoveAsync(IndexInfo[] indexInfos, string changeStrategy, Guid[] documentKeys)
+    {
+        foreach (IndexInfo indexInfo in indexInfos)
+        {
+            await indexInfo.Indexer.DeleteAsync(indexInfo.IndexAlias, documentKeys);
+        }
+
+        foreach (Guid documentKey in documentKeys)
+        {
+            await _documentService.DeleteAsync(documentKey, changeStrategy);
+        }
+    }
+
     private async Task<Document?> CalculateDocumentAsync(IContentBase content, bool published, CancellationToken cancellationToken)
     {
-        // Not in database, calculate fields and persist
         IEnumerable<IndexField>? fields = await _contentIndexingDataCollectionService.CollectAsync(content, published, cancellationToken);
         if (fields is null)
         {

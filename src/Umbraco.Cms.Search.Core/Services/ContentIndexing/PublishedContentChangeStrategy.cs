@@ -216,15 +216,6 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
             return;
         }
 
-        foreach (IndexInfo indexInfo in indexInfos)
-        {
-            await indexInfo.Indexer.DeleteAsync(indexInfo.IndexAlias, ids);
-
-            // Remove from database
-            foreach (Guid id in ids)
-            {
-                await _documentService.DeleteAsync(id, StrategyName);
-            }
-        }
+        await _indexingService.RemoveAsync(indexInfos, StrategyName, ids.ToArray());
     }
 }
