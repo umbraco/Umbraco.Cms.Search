@@ -4,11 +4,9 @@ using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Infrastructure.Persistence;
-using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Models.Persistence;
 using Umbraco.Cms.Search.Core.Notifications;
-using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
@@ -19,6 +17,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
     private readonly IMemberService _memberService;
     private readonly IEventAggregator _eventAggregator;
     private readonly IDocumentService _documentService;
+    private readonly IIndexingService _indexingService;
     private const string StrategyName = "DraftContentChangeStrategy";
 
     protected override bool SupportsTrashedContent => true;
@@ -31,7 +30,8 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         IDocumentService documentService,
         IUmbracoDatabaseFactory umbracoDatabaseFactory,
         IIdKeyMap idKeyMap,
-        ILogger<DraftContentChangeStrategy> logger)
+        ILogger<DraftContentChangeStrategy> logger,
+        IIndexingService indexingService)
         : base(umbracoDatabaseFactory, idKeyMap, logger)
     {
         _contentService = contentService;
@@ -39,6 +39,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         _memberService = memberService;
         _eventAggregator = eventAggregator;
         _documentService = documentService;
+        _indexingService = indexingService;
     }
 
     public async Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
@@ -114,7 +115,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
             return true;
         }
 
-        var result = await CalculateAndPersistAsync(applicableIndexInfos, content, change.ObjectType, cancellationToken);
+        var result = await _indexingService.IndexContentAsync(indexInfos, content, StrategyName, false, cancellationToken);
 
         if (change.ChangeImpact is ChangeImpact.RefreshWithDescendants)
         {
@@ -128,7 +129,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                             .GetPagedDescendants(id, pageIndex, pageSize, out _, query, ordering)
                             .ToArray(),
                         async descendants =>
-                            await HandleDescendantChangesAsync(applicableIndexInfos, descendants, change.ObjectType, cancellationToken));
+                            await HandleDescendantChangesAsync(applicableIndexInfos, descendants, cancellationToken));
                     break;
                 case UmbracoObjectTypes.Media:
                     await EnumerateDescendantsByPath<IMedia>(
@@ -138,7 +139,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                             .GetPagedDescendants(id, pageIndex, pageSize, out _, query, ordering)
                             .ToArray(),
                         async descendants =>
-                            await HandleDescendantChangesAsync(applicableIndexInfos, descendants, change.ObjectType, cancellationToken));
+                            await HandleDescendantChangesAsync(applicableIndexInfos, descendants, cancellationToken));
                     break;
             }
         }
@@ -146,65 +147,13 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         return result;
     }
 
-    private async Task HandleDescendantChangesAsync<T>(IndexInfo[] indexInfos, T[] descendants, UmbracoObjectTypes objectType, CancellationToken cancellationToken)
+    private async Task HandleDescendantChangesAsync<T>(IndexInfo[] indexInfos, T[] descendants, CancellationToken cancellationToken)
         where T : IContentBase
     {
         foreach (T descendant in descendants)
         {
-            await CalculateAndPersistAsync(indexInfos, descendant, objectType, cancellationToken);
+            await _indexingService.IndexContentAsync(indexInfos, descendant, StrategyName, false, cancellationToken);
         }
-    }
-
-    /// <summary>
-    /// Calculates fields from content, persists to DB, and adds to index.
-    /// </summary>
-    private async Task<bool> CalculateAndPersistAsync(IndexInfo[] indexInfos, IContentBase content, UmbracoObjectTypes objectType, CancellationToken cancellationToken)
-    {
-        // fetch the doc from service, make sure not to use database here, as it will be deleted
-        Document? document = await _documentService.CalculateDocument(content, false, cancellationToken);
-
-        if (document is null)
-        {
-            return false;
-        }
-
-        // Delete old entry and persist new fields to database
-        await _documentService.DeleteAsync(content.Key, StrategyName);
-        await _documentService.AddAsync(document, StrategyName);
-
-        foreach (IndexInfo indexInfo in indexInfos)
-        {
-            var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, document.Variations, document.Fields);
-            if (await _eventAggregator.PublishCancelableAsync(notification))
-            {
-                // the indexing operation was cancelled for this index; continue with the rest of the indexes
-                continue;
-            }
-
-            await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, objectType, document.Variations, notification.Fields, null);
-        }
-
-        return true;
-    }
-
-    private async Task IndexDocumentAsync(IndexInfo indexInfo, Document document, CancellationToken cancellationToken)
-    {
-        if (cancellationToken.IsCancellationRequested)
-        {
-            LogIndexRebuildCancellation(indexInfo);
-        }
-
-        // Add to database and add all fields, these might be filtered later by end user.
-        await _documentService.AddAsync(document, StrategyName);
-
-        var notification = new IndexingNotification(indexInfo, document.DocumentKey, UmbracoObjectTypes.Document, document.Variations, document.Fields);
-        if (await _eventAggregator.PublishCancelableAsync(notification))
-        {
-            return;
-        }
-
-        // Add to index
-        await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, document.DocumentKey, document.ObjectType, document.Variations, notification.Fields, null);
     }
 
     private async Task RemoveFromIndexAsync(IndexInfo[] indexInfos, IReadOnlyCollection<ContentChange> contentChanges)
@@ -264,7 +213,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                 break;
             }
 
-            await CalculateAndPersistAsync([indexInfo], rootContent, objectType, cancellationToken);
+            await _indexingService.IndexContentAsync([indexInfo], rootContent, StrategyName, false, cancellationToken);
             await IndexDescendantsAsync(indexInfo, rootContent, objectType, cancellationToken);
         }
 
@@ -292,7 +241,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                     break;
                 }
 
-                await CalculateAndPersistAsync([indexInfo], content, objectType, cancellationToken);
+                await _indexingService.IndexContentAsync([indexInfo], content, StrategyName, false, cancellationToken);
             }
 
             pageIndex++;
@@ -315,13 +264,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                     {
                         foreach (IContent descendant in descendants)
                         {
-                            Document? document = await _documentService.CalculateDocument(descendant, false, cancellationToken);
-                            if (document is null)
-                            {
-                                continue;
-                            }
-
-                            await IndexDocumentAsync(indexInfo, document, cancellationToken);
+                            await _indexingService.IndexContentAsync([indexInfo], descendant, StrategyName, false, cancellationToken);
                         }
                     });
                 break;
@@ -336,13 +279,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                     {
                         foreach (IMedia descendant in descendants)
                         {
-                            Document? document = await _documentService.CalculateDocument(descendant, false, cancellationToken);
-                            if (document is null)
-                            {
-                                continue;
-                            }
-
-                            await IndexDocumentAsync(indexInfo, document, cancellationToken);
+                            await _indexingService.IndexContentAsync([indexInfo], descendant, StrategyName, false, cancellationToken);
                         }
                     });
                 break;
@@ -400,13 +337,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                     break;
                 }
 
-                Document? document = await _documentService.CalculateDocument(member, false, cancellationToken);
-                if (document is null)
-                {
-                    continue;
-                }
-
-                await IndexDocumentAsync(indexInfo, document, cancellationToken);
+                await _indexingService.IndexContentAsync([indexInfo], member, StrategyName, false, cancellationToken);
             }
 
             pageIndex++;

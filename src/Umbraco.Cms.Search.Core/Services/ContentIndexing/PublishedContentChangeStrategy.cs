@@ -3,7 +3,6 @@ using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Infrastructure.Persistence;
-using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Models.Persistence;
 using Umbraco.Cms.Search.Core.Notifications;
@@ -16,6 +15,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
     private readonly IEventAggregator _eventAggregator;
     private readonly IDocumentService _documentService;
     private readonly ILogger<PublishedContentChangeStrategy> _logger;
+    private readonly IIndexingService _indexingService;
     private const string StrategyName = "PublishedContentChangeStrategy";
 
     protected override bool SupportsTrashedContent => false;
@@ -26,11 +26,13 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
         IDocumentService documentService,
         IUmbracoDatabaseFactory umbracoDatabaseFactory,
         IIdKeyMap idKeyMap,
-        ILogger<PublishedContentChangeStrategy> logger)
+        ILogger<PublishedContentChangeStrategy> logger,
+        IIndexingService indexingService)
         : base(umbracoDatabaseFactory, idKeyMap, logger)
     {
         _contentService = contentService;
         _logger = logger;
+        _indexingService = indexingService;
         _eventAggregator = eventAggregator;
         _documentService = documentService;
     }
@@ -112,7 +114,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
                 return;
             }
 
-            await RebuildContentAsync(indexInfo, content, cancellationToken);
+            await RebuildContentFromMemoryAsync(indexInfo, content, cancellationToken);
         }
     }
 
@@ -122,8 +124,8 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
     private async Task HandleContentChangeAsync(IndexInfo[] indexInfos, IContentBase content, bool forceReindexDescendants, CancellationToken cancellationToken)
     {
         // index the content
-        Variation[] indexedVariants = await CalculateAndPersistAsync(indexInfos, content, cancellationToken);
-        if (indexedVariants.Any() is false)
+        var result = await _indexingService.IndexContentAsync(indexInfos, content, StrategyName, true, cancellationToken);
+        if (result is false)
         {
             // we likely got here because a removal triggered a "refresh branch" notification, now we
             // need to delete every last culture of this content and all descendants
@@ -156,8 +158,8 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
                         continue;
                     }
 
-                    Variation[] indexedVariants = await CalculateAndPersistAsync(indexInfos, descendant, cancellationToken);
-                    if (indexedVariants.Any() is false)
+                    var result = await _indexingService.IndexContentAsync(indexInfos, descendant, StrategyName, true, cancellationToken);
+                    if (result is false)
                     {
                         // no variants to index, make sure this is removed from the index and skip any descendants moving forward
                         // (the index implementation is responsible for deleting descendants at index level)
@@ -168,52 +170,14 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
             });
     }
 
-    /// <summary>
-    /// Used by HandleAsync: Always calculates fields fresh, persists to DB, and adds to index.
-    /// </summary>
-    private async Task<Variation[]> CalculateAndPersistAsync(IndexInfo[] indexInfos, IContentBase content, CancellationToken cancellationToken)
+    private async Task RebuildContentFromMemoryAsync(IndexInfo indexInfo, IContentBase content, CancellationToken cancellationToken)
     {
-        // fetch the doc from service, make sure not to use database here, as it will be deleted
-        Document? document = await _documentService.CalculateDocument(content, true, cancellationToken);
+        var result = await _indexingService.IndexContentAsync([indexInfo], content, StrategyName, true, cancellationToken);
 
-        if (document is null || document.Variations.Length == 0)
-        {
-            return [];
-        }
-
-        // Delete old entry and persist new fields to database
-        await _documentService.DeleteAsync(content.Key, StrategyName);
-        await _documentService.AddAsync(document, StrategyName);
-
-        foreach (IndexInfo indexInfo in indexInfos)
-        {
-            var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, document.Variations, document.Fields);
-            if (await _eventAggregator.PublishCancelableAsync(notification))
-            {
-                // the indexing operation was cancelled for this index; continue with the rest of the indexes
-                continue;
-            }
-
-            await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, UmbracoObjectTypes.Document, document.Variations, notification.Fields, document.Protection);
-        }
-
-        return document.Variations;
-    }
-
-    /// <summary>
-    /// Used by RebuildAsync: Rebuilds content and all descendants from storage.
-    /// </summary>
-    private async Task RebuildContentAsync(IndexInfo indexInfo, IContentBase content, CancellationToken cancellationToken)
-    {
-        Document? rootDocument = await _documentService.CalculateDocument(content, true, cancellationToken);
-
-        // The content was not found, return..
-        if (rootDocument is null)
+        if (result is false)
         {
             return;
         }
-
-        await IndexDocumentAsync(indexInfo, content, rootDocument, cancellationToken);
 
         // Rebuild all descendants
         var removedDescendantIds = new List<int>();
@@ -232,48 +196,14 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
                         continue;
                     }
 
-                    Document? document = await _documentService.CalculateDocument(descendant, true, cancellationToken);
-                    if (document is null)
-                    {
-                        continue;
-                    }
+                    var descendantResult = await _indexingService.IndexContentAsync([indexInfo], content, StrategyName, true, cancellationToken);
 
-                    var indexed = await IndexDocumentAsync(indexInfo, descendant, document, cancellationToken);
-                    if (indexed is false)
+                    if (descendantResult is false)
                     {
                         removedDescendantIds.Add(descendant.Id);
                     }
                 }
             });
-    }
-
-    /// <summary>
-    /// Used by RebuildAsync: Uses pre-fetched document if available, falls back to calculating if not found.
-    /// </summary>
-    private async Task<bool> IndexDocumentAsync(IndexInfo indexInfo, IContentBase content, Document document, CancellationToken cancellationToken)
-    {
-        if (document.Variations.Length is 0)
-        {
-            return false;
-        }
-
-        // the fields collection is for all published variants of the content - but it's not certain that a published
-        // variant is also routable, because the published routing state can be broken at ancestor level.
-        document.Fields = document.Fields.Where(field => document.Variations.Any(v => (field.Culture is null || v.Culture == field.Culture) && (field.Segment is null || v.Segment == field.Segment))).ToArray();
-
-        await _documentService.DeleteAsync(content.Key, StrategyName);
-        await _documentService.AddAsync(document, StrategyName);
-
-        var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, document.Variations, document.Fields);
-        if (await _eventAggregator.PublishCancelableAsync(notification))
-        {
-            return true;
-        }
-
-
-        await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, content.Key, UmbracoObjectTypes.Document, document.Variations, notification.Fields, document.Protection);
-
-        return true;
     }
 
     private async Task RemoveFromIndexAsync(IndexInfo[] indexInfos, Guid id)

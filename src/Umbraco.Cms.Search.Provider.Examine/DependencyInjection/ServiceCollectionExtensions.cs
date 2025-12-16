@@ -22,6 +22,7 @@ internal static class ServiceCollectionExtensions
         services.AddTransient<IExamineSearcher, Searcher>();
         services.AddSingleton<IDocumentRepository, DocumentRepository>();
         services.AddSingleton<IDocumentService, DocumentService>();
+        services.AddSingleton<IIndexingService, IndexingService>();
 
         services.AddTransient<IIndexer, Indexer>();
         services.AddTransient<ISearcher, Searcher>();
