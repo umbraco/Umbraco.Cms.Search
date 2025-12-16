@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Hosting;
 using Umbraco.Cms.Infrastructure.Examine;
+using Umbraco.Cms.Search.Provider.Examine.Compat;
 
 namespace Umbraco.Cms.Search.Provider.Examine.DependencyInjection;
 
@@ -13,13 +14,13 @@ public static class UmbracoBuilderExtensions
 {
     public static IUmbracoBuilder AddExamineSearchProvider(this IUmbracoBuilder builder)
     {
-        builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.DraftContent, _ => { });
+        builder.Services.AddExamineLuceneIndex<LuceneIndex, CompatConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.DraftContent, _ => { });
 
-        builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.PublishedContent, _ => { });
+        builder.Services.AddExamineLuceneIndex<LuceneIndex, CompatConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.PublishedContent, _ => { });
 
-        builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.DraftMedia, _ => { });
+        builder.Services.AddExamineLuceneIndex<LuceneIndex, CompatConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.DraftMedia, _ => { });
 
-        builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.DraftMembers, _ => { });
+        builder.Services.AddExamineLuceneIndex<LuceneIndex, CompatConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.DraftMembers, _ => { });
 
         // This is needed, due to locking of indexes on Azure, to read more on this issue go here: https://github.com/umbraco/Umbraco-CMS/pull/15571
         builder.Services.AddSingleton<UmbracoTempEnvFileSystemDirectoryFactory>();
