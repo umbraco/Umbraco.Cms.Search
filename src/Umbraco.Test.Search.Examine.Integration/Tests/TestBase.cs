@@ -8,6 +8,7 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
+using Umbraco.Cms.Infrastructure.Install;
 using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -40,6 +41,10 @@ public abstract class TestBase : UmbracoIntegrationTest
     protected IDataTypeService DataTypeService => GetRequiredService<IDataTypeService>();
 
     protected ILanguageService LanguageService => GetRequiredService<ILanguageService>();
+
+    protected PackageMigrationRunner PackageMigrationRunner => GetRequiredService<PackageMigrationRunner>();
+
+    protected IRuntimeState RuntimeState => GetRequiredService<IRuntimeState>();
 
 
     protected void SaveAndPublish(IContent content)

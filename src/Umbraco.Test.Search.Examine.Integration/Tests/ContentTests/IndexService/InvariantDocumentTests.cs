@@ -1,11 +1,12 @@
 ﻿using Examine;
 using Examine.Search;
 using NUnit.Framework;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
-using Umbraco.Cms.Search.Provider.Examine;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
+using Constants = Umbraco.Cms.Search.Provider.Examine.Constants;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
 
@@ -148,6 +149,9 @@ public class InvariantDocumentTests : IndexTestBase
     [SetUp]
     public async Task CreateInvariantDocument()
     {
+        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
+        Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
+
         DataType dataType = new DataTypeBuilder()
             .WithId(0)
             .WithoutIdentity()
