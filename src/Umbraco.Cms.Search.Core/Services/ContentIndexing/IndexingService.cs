@@ -69,6 +69,22 @@ public class IndexingService : IIndexingService
         }
     }
 
+    public async Task RebuildFromRepositoryAsync(IndexInfo indexInfo, string changeStrategy, CancellationToken cancellationToken)
+    {
+        IEnumerable<Document> documents = await _documentService.GetByChangeStrategyAsync(changeStrategy);
+        foreach (Document document in documents)
+        {
+            var notification = new IndexingNotification(indexInfo, document.DocumentKey, UmbracoObjectTypes.Document, document.Variations, document.Fields);
+            if (await _eventAggregator.PublishCancelableAsync(notification))
+            {
+                return;
+            }
+
+
+            await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, document.DocumentKey, UmbracoObjectTypes.Document, document.Variations, notification.Fields, document.Protection);
+        }
+    }
+
     private async Task<Document?> CalculateDocumentAsync(IContentBase content, bool published, CancellationToken cancellationToken)
     {
         IEnumerable<IndexField>? fields = await _contentIndexingDataCollectionService.CollectAsync(content, published, cancellationToken);

@@ -1,12 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core;
-using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Search.Core.Models.Indexing;
-using Umbraco.Cms.Search.Core.Models.Persistence;
-using Umbraco.Cms.Search.Core.Notifications;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
@@ -15,8 +12,6 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
     private readonly IContentService _contentService;
     private readonly IMediaService _mediaService;
     private readonly IMemberService _memberService;
-    private readonly IEventAggregator _eventAggregator;
-    private readonly IDocumentService _documentService;
     private readonly IIndexingService _indexingService;
     private const string StrategyName = "DraftContentChangeStrategy";
 
@@ -26,8 +21,6 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         IContentService contentService,
         IMediaService mediaService,
         IMemberService memberService,
-        IEventAggregator eventAggregator,
-        IDocumentService documentService,
         IUmbracoDatabaseFactory umbracoDatabaseFactory,
         IIdKeyMap idKeyMap,
         ILogger<DraftContentChangeStrategy> logger,
@@ -37,8 +30,6 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         _contentService = contentService;
         _mediaService = mediaService;
         _memberService = memberService;
-        _eventAggregator = eventAggregator;
-        _documentService = documentService;
         _indexingService = indexingService;
     }
 
@@ -88,18 +79,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
 
         if (useDatabase)
         {
-           IEnumerable<Document> documents = await _documentService.GetByChangeStrategyAsync(StrategyName);
-
-           foreach (Document document in documents)
-           {
-               var notification = new IndexingNotification(indexInfo, document.DocumentKey, UmbracoObjectTypes.Document, document.Variations, document.Fields);
-               if (await _eventAggregator.PublishCancelableAsync(notification))
-               {
-                   return;
-               }
-
-               await indexInfo.Indexer.AddOrUpdateAsync(indexInfo.IndexAlias, document.DocumentKey, document.ObjectType, document.Variations, notification.Fields, null);
-           }
+            await _indexingService.RebuildFromRepositoryAsync(indexInfo, StrategyName, cancellationToken);
         }
         else
         {
