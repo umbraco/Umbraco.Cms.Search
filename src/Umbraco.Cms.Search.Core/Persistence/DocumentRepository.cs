@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using MessagePack;
+using MessagePack.Resolvers;
 using NPoco;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Infrastructure.Persistence;
@@ -12,8 +13,19 @@ namespace Umbraco.Cms.Search.Core.Persistence;
 public class DocumentRepository : IDocumentRepository
 {
     private readonly IScopeAccessor _scopeAccessor;
+    private readonly MessagePackSerializerOptions _options;
 
-    public DocumentRepository(IScopeAccessor scopeAccessor) => _scopeAccessor = scopeAccessor;
+    public DocumentRepository(IScopeAccessor scopeAccessor)
+    {
+        _scopeAccessor = scopeAccessor;
+
+        MessagePackSerializerOptions defaultOptions = ContractlessStandardResolver.Options;
+        IFormatterResolver resolver = CompositeResolver.Create(defaultOptions.Resolver);
+        _options = defaultOptions
+            .WithResolver(resolver)
+            .WithCompression(MessagePackCompression.Lz4BlockArray)
+            .WithSecurity(MessagePackSecurity.UntrustedData);
+    }
 
     public async Task AddAsync(Document document, string changeStrategy)
     {
@@ -107,9 +119,9 @@ public class DocumentRepository : IDocumentRepository
         {
             DocumentKey = document.DocumentKey,
             ChangeStrategy = changeStrategy,
-            Fields = JsonSerializer.Serialize(document.Fields),
+            Fields = MessagePackSerializer.Serialize(document.Fields, _options),
             ObjectType = document.ObjectType.ToString(),
-            Variations = JsonSerializer.Serialize(document.Variations),
+            Variations = MessagePackSerializer.Serialize(document.Variations, _options),
         };
 
     private Document? ToDocument(DocumentDto? dto)
@@ -122,9 +134,9 @@ public class DocumentRepository : IDocumentRepository
         return new()
         {
             DocumentKey = dto.DocumentKey,
-            Fields = JsonSerializer.Deserialize<IndexField[]>(dto.Fields) ?? [],
+            Fields = MessagePackSerializer.Deserialize<IndexField[]>(dto.Fields, _options) ?? [],
             ObjectType = Enum.Parse<UmbracoObjectTypes>(dto.ObjectType),
-            Variations = JsonSerializer.Deserialize<Variation[]>(dto.Variations) ?? [],
+            Variations = MessagePackSerializer.Deserialize<Variation[]>(dto.Variations, _options) ?? [],
         };
     }
 }

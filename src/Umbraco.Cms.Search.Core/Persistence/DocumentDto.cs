@@ -19,13 +19,11 @@ public class DocumentDto
     public required string ChangeStrategy { get; set; }
 
     [Column("fields")]
-    [SpecialDbType(SpecialDbTypes.NVARCHARMAX)]
-    public required string Fields { get; set; }
+    public required byte[] Fields { get; set; }
 
     [Column("objectType")]
     public required string ObjectType { get; set; }
 
     [Column("variations")]
-    [SpecialDbType(SpecialDbTypes.NVARCHARMAX)]
-    public required string Variations { get; set; }
+    public required byte[] Variations { get; set; }
 }
