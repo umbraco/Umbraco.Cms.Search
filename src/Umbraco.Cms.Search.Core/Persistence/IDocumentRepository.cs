@@ -8,8 +8,6 @@ public interface IDocumentRepository
 
     public Task<Document?> GetAsync(Guid id, string changeStrategy);
 
-    public Task<IReadOnlyDictionary<Guid, Document>> GetManyAsync(IEnumerable<Guid> ids, string changeStrategy);
-
     public Task DeleteAsync(Guid id, string changeStrategy);
 
     public Task<IEnumerable<Document>> GetByChangeStrategyAsync(string changeStrategy);
