@@ -1,5 +1,7 @@
 using Examine;
 using Umbraco.Cms.Core.DependencyInjection;
+using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Search.Provider.Examine.NotificationHandlers;
 
 namespace Umbraco.Cms.Search.Provider.Examine.DependencyInjection;
 
@@ -14,6 +16,8 @@ public static class UmbracoBuilderExtensions
         builder.Services.AddExamineLuceneIndex(Core.Constants.IndexAliases.DraftMedia, _ => { });
 
         builder.Services.AddExamineLuceneIndex(Core.Constants.IndexAliases.DraftMembers, _ => { });
+
+        builder.AddNotificationHandler<UmbracoApplicationStartedNotification, RebuildNotificationHandler>();
 
         builder.Services.AddExamineSearchProviderServices();
 
