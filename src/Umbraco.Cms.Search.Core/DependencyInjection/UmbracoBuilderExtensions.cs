@@ -37,6 +37,11 @@ public static class UmbracoBuilderExtensions
 
         builder.Services.AddTransient<IPublishedContentChangeStrategy, PublishedContentChangeStrategy>();
         builder.Services.AddTransient<IDraftContentChangeStrategy, DraftContentChangeStrategy>();
+        builder
+            .AddNotificationHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationHandler<ContentTypeChangedNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationHandler<MemberTypeChangedNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationHandler<MediaTypeChangedNotification, RebuildIndexesNotificationHandler>();
 
         builder
             .AddNotificationHandler<DraftContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
