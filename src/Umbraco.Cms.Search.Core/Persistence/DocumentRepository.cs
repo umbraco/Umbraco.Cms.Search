@@ -27,23 +27,23 @@ public class DocumentRepository : IDocumentRepository
             .WithSecurity(MessagePackSecurity.UntrustedData);
     }
 
-    public async Task AddAsync(Document document, string changeStrategy)
+    public async Task AddAsync(Document document)
     {
         if (_scopeAccessor.AmbientScope is null)
         {
             throw new InvalidOperationException("Cannot add document as there is no ambient scope.");
         }
 
-        DocumentDto dto = ToDto(document, changeStrategy);
+        DocumentDto dto = ToDto(document);
         await _scopeAccessor.AmbientScope.Database.InsertAsync(dto);
     }
 
-    public async Task<Document?> GetAsync(Guid id, string changeStrategy)
+    public async Task<Document?> GetAsync(Guid id, bool published)
     {
         Sql<ISqlContext>? sql = _scopeAccessor.AmbientScope?.Database.SqlContext.Sql()
             .Select<DocumentDto>()
             .From<DocumentDto>()
-            .Where<DocumentDto>(x => x.DocumentKey == id && x.ChangeStrategy == changeStrategy);
+            .Where<DocumentDto>(x => x.DocumentKey == id && x.Published == published);
 
         if (_scopeAccessor.AmbientScope is null)
         {
@@ -55,46 +55,27 @@ public class DocumentRepository : IDocumentRepository
         return ToDocument(documentDto);
     }
 
-    public async Task DeleteAsync(Guid id, string changeStrategy)
+    public async Task DeleteAsync(Guid[] ids, bool published)
     {
         if (_scopeAccessor.AmbientScope is null)
         {
-            throw new InvalidOperationException("Cannot add document as there is no ambient scope.");
-        }
-
-        Sql<ISqlContext> sql = _scopeAccessor.AmbientScope!.Database.SqlContext.Sql()
-            .Delete<DocumentDto>()
-            .Where<DocumentDto>(x => x.DocumentKey == id && x.ChangeStrategy == changeStrategy);
-
-        await _scopeAccessor.AmbientScope?.Database.ExecuteAsync(sql)!;
-    }
-
-    public async Task<IEnumerable<Document>> GetByChangeStrategyAsync(string changeStrategy)
-    {
-        if (_scopeAccessor.AmbientScope is null)
-        {
-            throw new InvalidOperationException("Cannot get documents as there is no ambient scope.");
+            throw new InvalidOperationException("Cannot delete document as there is no ambient scope.");
         }
 
         Sql<ISqlContext> sql = _scopeAccessor.AmbientScope.Database.SqlContext.Sql()
-            .Select<DocumentDto>()
-            .From<DocumentDto>()
-            .Where<DocumentDto>(x => x.ChangeStrategy == changeStrategy);
+            .Delete<DocumentDto>()
+            .Where<DocumentDto>(x => ids.Contains(x.DocumentKey) && x.Published == published);
 
-        List<DocumentDto> documentDtos = await _scopeAccessor.AmbientScope.Database.FetchAsync<DocumentDto>(sql);
-
-        return documentDtos.Select(ToDocument).WhereNotNull();
+        await _scopeAccessor.AmbientScope.Database.ExecuteAsync(sql);
     }
 
 
-    private DocumentDto ToDto(Document document, string changeStrategy) =>
+    private DocumentDto ToDto(Document document) =>
         new()
         {
             DocumentKey = document.DocumentKey,
-            ChangeStrategy = changeStrategy,
+            Published = document.Published,
             Fields = MessagePackSerializer.Serialize(document.Fields, _options),
-            ObjectType = document.ObjectType.ToString(),
-            Variations = MessagePackSerializer.Serialize(document.Variations, _options),
         };
 
     private Document? ToDocument(DocumentDto? dto)
@@ -104,12 +85,11 @@ public class DocumentRepository : IDocumentRepository
             return null;
         }
 
-        return new()
+        return new Document
         {
             DocumentKey = dto.DocumentKey,
             Fields = MessagePackSerializer.Deserialize<IndexField[]>(dto.Fields, _options) ?? [],
-            ObjectType = Enum.Parse<UmbracoObjectTypes>(dto.ObjectType),
-            Variations = MessagePackSerializer.Deserialize<Variation[]>(dto.Variations, _options) ?? [],
+            Published = dto.Published,
         };
     }
 }

@@ -29,6 +29,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         IEventAggregator eventAggregator,
         IUmbracoDatabaseFactory umbracoDatabaseFactory,
         IIdKeyMap idKeyMap,
+        IDocumentService documentService,
         ILogger<DraftContentChangeStrategy> logger)
         : base(umbracoDatabaseFactory, idKeyMap, logger)
     {
@@ -79,7 +80,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         await RemoveFromIndexAsync(indexInfosAsArray, pendingRemovals);
     }
 
-    public async Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken, bool useDatabase)
+    public async Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
     {
         await indexInfo.Indexer.ResetAsync(indexInfo.IndexAlias);
 

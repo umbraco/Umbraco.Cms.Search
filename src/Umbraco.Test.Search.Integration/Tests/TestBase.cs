@@ -6,6 +6,8 @@ using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Cms.Search.Core.DependencyInjection;
+using Umbraco.Cms.Search.Core.Models.Persistence;
+using Umbraco.Cms.Search.Core.Persistence;
 using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Tests.Integration.Testing;
@@ -33,6 +35,8 @@ public abstract class TestBase : UmbracoIntegrationTest
 
         builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
+        builder.Services.AddUnique<IDocumentService, DocumentService>();
+        builder.Services.AddUnique<IDocumentRepository, DocumentRepository>();
 
         builder.Services.AddTransient<IIndexer>(_ => Indexer);
         builder.Services.AddTransient<ISearcher>(_ => Indexer);
@@ -49,5 +53,14 @@ public abstract class TestBase : UmbracoIntegrationTest
         builder.AddNotificationHandler<MediaTreeChangeNotification, MediaTreeChangeDistributedCacheNotificationHandler>();
         builder.AddNotificationHandler<MemberSavedNotification, MemberSavedDistributedCacheNotificationHandler>();
         builder.AddNotificationHandler<MemberDeletedNotification, MemberDeletedDistributedCacheNotificationHandler>();
+    }
+
+    private class DocumentRepository : IDocumentRepository
+    {
+        public Task AddAsync(Document document) => Task.CompletedTask;
+
+        public Task<Document?> GetAsync(Guid id, bool published) => Task.FromResult<Document?>(null);
+
+        public Task DeleteAsync(Guid[] ids, bool published) => Task.CompletedTask;
     }
 }

@@ -9,9 +9,5 @@ public class Document
 
     public required IndexField[] Fields { get; set; }
 
-    public UmbracoObjectTypes ObjectType { get; set; }
-
-    public required Variation[] Variations { get; set; }
-
-    public ContentProtection? Protection { get; set; }
+    public required bool Published { get; set; }
 }

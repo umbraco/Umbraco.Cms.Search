@@ -10,31 +10,32 @@ public class DocumentService : IDocumentService
     private readonly ICoreScopeProvider _scopeProvider;
     private readonly IDocumentRepository _documentRepository;
 
-    public DocumentService(ICoreScopeProvider scopeProvider, IDocumentRepository documentRepository, IContentIndexingDataCollectionService contentIndexingDataCollectionService, IContentProtectionProvider contentProtectionProvider, IContentService contentService)
+    public DocumentService(ICoreScopeProvider scopeProvider, IDocumentRepository documentRepository)
     {
         _scopeProvider = scopeProvider;
         _documentRepository = documentRepository;
     }
 
-    public async Task AddAsync(Document document, string changeStrategy)
+    public async Task AddAsync(Document document)
     {
         using ICoreScope scope = _scopeProvider.CreateCoreScope();
-        await _documentRepository.AddAsync(document, changeStrategy);
+        await _documentRepository.AddAsync(document);
         scope.Complete();
     }
 
-    public async Task DeleteAsync(Guid id, string changeStrategy)
+    public async Task DeleteAsync(Guid[] ids, bool published)
     {
         using ICoreScope scope = _scopeProvider.CreateCoreScope();
-        await _documentRepository.DeleteAsync(id, changeStrategy);
+        await _documentRepository.DeleteAsync(ids, published);
         scope.Complete();
     }
 
-    public async Task<IEnumerable<Document>> GetByChangeStrategyAsync(string changeStrategy)
+    public async Task<Document?> GetAsync(Guid id, bool published)
     {
         using ICoreScope scope = _scopeProvider.CreateCoreScope();
-        IEnumerable<Document> documents = await _documentRepository.GetByChangeStrategyAsync(changeStrategy);
+        Document? document = await _documentRepository.GetAsync(id, published);
         scope.Complete();
-        return documents;
+
+        return document;
     }
 }

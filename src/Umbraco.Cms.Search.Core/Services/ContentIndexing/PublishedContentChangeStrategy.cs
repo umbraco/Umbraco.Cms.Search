@@ -79,7 +79,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
         await RemoveFromIndexAsync(indexInfosAsArray, pendingRemovals);
     }
 
-    public async Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken, bool useDatabase)
+    public async Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
     {
         await indexInfo.Indexer.ResetAsync(indexInfo.IndexAlias);
 

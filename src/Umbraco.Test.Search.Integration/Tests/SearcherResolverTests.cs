@@ -101,7 +101,7 @@ public class SearcherResolverTests : UmbracoIntegrationTest
         public Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
             => throw new NotImplementedException();
 
-        public Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken, bool useDatabase = false)
+        public Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
             => throw new NotImplementedException();
     }
 

@@ -77,7 +77,7 @@ public class MediaServiceTests : UmbracoIntegrationTest
     {
         await TestSetup();
         using IScope scope = ScopeProvider.CreateScope(autoComplete: true);
-        Document? doc = await DocumentRepository.GetAsync(_rootMedia.Key, "DraftContentChangeStrategy");
+        Document? doc = await DocumentRepository.GetAsync(_rootMedia.Key, false);
         Assert.That(doc, Is.Not.Null);
     }
 
@@ -90,7 +90,7 @@ public class MediaServiceTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify initial document exists
-            Document? initialDoc = await DocumentRepository.GetAsync(_rootMedia.Key, "DraftContentChangeStrategy");
+            Document? initialDoc = await DocumentRepository.GetAsync(_rootMedia.Key, false);
             Assert.That(initialDoc, Is.Not.Null);
             initialFields = initialDoc!.Fields;
         }
@@ -107,7 +107,7 @@ public class MediaServiceTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify the document was updated
-            Document? updatedDoc = await DocumentRepository.GetAsync(_rootMedia.Key, "DraftContentChangeStrategy");
+            Document? updatedDoc = await DocumentRepository.GetAsync(_rootMedia.Key, false);
             Assert.That(updatedDoc, Is.Not.Null);
             Assert.That(updatedDoc!.Fields, Is.Not.EqualTo(initialFields));
             Assert.That(FieldsContainText(updatedDoc.Fields, "Updated Root Media"), Is.True);
@@ -122,7 +122,7 @@ public class MediaServiceTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify initial document exists
-            Document? initialDoc = await DocumentRepository.GetAsync(_rootMedia.Key, "DraftContentChangeStrategy");
+            Document? initialDoc = await DocumentRepository.GetAsync(_rootMedia.Key, false);
             Assert.That(initialDoc, Is.Not.Null);
         }
 
@@ -136,7 +136,7 @@ public class MediaServiceTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify the document was removed
-            Document? deletedDoc = await DocumentRepository.GetAsync(_rootMedia.Key, "DraftContentChangeStrategy");
+            Document? deletedDoc = await DocumentRepository.GetAsync(_rootMedia.Key, false);
             Assert.That(deletedDoc, Is.Null);
         }
     }

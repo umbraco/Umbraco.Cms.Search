@@ -96,7 +96,7 @@ public class DocumentServiceTests : UmbracoIntegrationTest
         await TestSetup(publish);
         var changeStrategy = GetStrategy(publish);
         using IScope scope = ScopeProvider.CreateScope(autoComplete: true);
-        Document? doc = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
+        Document? doc = await DocumentRepository.GetAsync(_rootDocument.Key, publish);
         Assert.That(doc, Is.Not.Null);
     }
 
@@ -112,7 +112,7 @@ public class DocumentServiceTests : UmbracoIntegrationTest
         // Verify initial document exists
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
-            Document? initialDoc = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
+            Document? initialDoc = await DocumentRepository.GetAsync(_rootDocument.Key, publish);
             Assert.That(initialDoc, Is.Not.Null);
             initialFields = initialDoc!.Fields;
         }
@@ -135,7 +135,7 @@ public class DocumentServiceTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify the document was updated
-            Document? updatedDoc = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
+            Document? updatedDoc = await DocumentRepository.GetAsync(_rootDocument.Key, publish);
             Assert.That(updatedDoc, Is.Not.Null);
             Assert.That(updatedDoc!.Fields, Is.Not.EqualTo(initialFields));
             Assert.That(FieldsContainText(updatedDoc.Fields, "Updated Root Document"), Is.True);
@@ -153,7 +153,7 @@ public class DocumentServiceTests : UmbracoIntegrationTest
         // Verify initial document exists
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
-            Document? initialDoc = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
+            Document? initialDoc = await DocumentRepository.GetAsync(_rootDocument.Key, publish);
             Assert.That(initialDoc, Is.Not.Null);
         }
 
@@ -167,7 +167,7 @@ public class DocumentServiceTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify the document was removed
-            Document? deletedDoc = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
+            Document? deletedDoc = await DocumentRepository.GetAsync(_rootDocument.Key, publish);
             Assert.That(deletedDoc, Is.Null);
         }
     }

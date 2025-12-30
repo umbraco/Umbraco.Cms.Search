@@ -4,9 +4,9 @@ namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 public interface IDocumentService
 {
-    Task AddAsync(Document document, string changeStrategy);
+    Task AddAsync(Document document);
 
-    Task DeleteAsync(Guid id, string changeStrategy);
+    Task DeleteAsync(Guid[] ids, bool published);
 
-    Task<IEnumerable<Document>> GetByChangeStrategyAsync(string changeStrategy);
+    Task<Document?> GetAsync(Guid id, bool published);
 }
