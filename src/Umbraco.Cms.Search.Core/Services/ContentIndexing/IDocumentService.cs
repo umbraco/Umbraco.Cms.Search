@@ -9,4 +9,6 @@ public interface IDocumentService
     Task DeleteAsync(Guid[] ids, bool published);
 
     Task<Document?> GetAsync(Guid id, bool published);
+
+    Task DeleteAllAsync();
 }

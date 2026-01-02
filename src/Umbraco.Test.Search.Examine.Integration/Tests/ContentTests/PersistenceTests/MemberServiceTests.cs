@@ -56,7 +56,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
 
         builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
-        builder.AddNotificationHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>();
+        builder.AddNotificationAsyncHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>();
 
         // the core ConfigureBuilderAttribute won't execute from other assemblies at the moment, so this is a workaround
         var testType = Type.GetType(TestContext.CurrentContext.Test.ClassName!);

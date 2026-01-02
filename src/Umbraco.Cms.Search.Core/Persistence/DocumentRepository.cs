@@ -69,6 +69,19 @@ public class DocumentRepository : IDocumentRepository
         await _scopeAccessor.AmbientScope.Database.ExecuteAsync(sql);
     }
 
+    public async Task DeleteAllAsync()
+    {
+        if (_scopeAccessor.AmbientScope is null)
+        {
+            throw new InvalidOperationException("Cannot delete document as there is no ambient scope.");
+        }
+
+        Sql<ISqlContext> sql = _scopeAccessor.AmbientScope.Database.SqlContext.Sql()
+            .Delete<DocumentDto>();
+
+        await _scopeAccessor.AmbientScope.Database.ExecuteAsync(sql);
+    }
+
 
     private DocumentDto ToDto(Document document) =>
         new()

@@ -62,5 +62,6 @@ public abstract class TestBase : UmbracoIntegrationTest
         public Task<Document?> GetAsync(Guid id, bool published) => Task.FromResult<Document?>(null);
 
         public Task DeleteAsync(Guid[] ids, bool published) => Task.CompletedTask;
+        public Task DeleteAllAsync() => Task.CompletedTask;
     }
 }

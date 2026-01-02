@@ -11,22 +11,25 @@ using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 namespace Umbraco.Cms.Search.Core.NotificationHandlers;
 
 internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<UmbracoApplicationStartedNotification>,
-    INotificationHandler<LanguageDeletedNotification>,
-    INotificationHandler<ContentTypeChangedNotification>,
-    INotificationHandler<MemberTypeChangedNotification>,
-    INotificationHandler<MediaTypeChangedNotification>
+    INotificationAsyncHandler<LanguageDeletedNotification>,
+    INotificationAsyncHandler<ContentTypeChangedNotification>,
+    INotificationAsyncHandler<MemberTypeChangedNotification>,
+    INotificationAsyncHandler<MediaTypeChangedNotification>
 
 {
     private readonly IContentIndexingService _contentIndexingService;
+    private readonly IDocumentService _documentService;
     private readonly ILogger<RebuildIndexesNotificationHandler> _logger;
     private readonly IndexOptions _options;
 
     public RebuildIndexesNotificationHandler(
         IContentIndexingService contentIndexingService,
+        IDocumentService documentService,
         ILogger<RebuildIndexesNotificationHandler> logger,
         IOptions<IndexOptions> options)
     {
         _contentIndexingService = contentIndexingService;
+        _documentService = documentService;
         _logger = logger;
         _options = options.Value;
     }
@@ -40,9 +43,10 @@ internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<U
         _contentIndexingService.Rebuild(Constants.IndexAliases.DraftMembers);
     }
 
-    public void Handle(LanguageDeletedNotification notification)
+    public async Task HandleAsync(LanguageDeletedNotification notification, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Rebuilding search indexes after language deletion...");
+        await _documentService.DeleteAllAsync();
 
         foreach (IndexRegistration indexRegistration in _options.GetIndexRegistrations())
         {
@@ -53,16 +57,16 @@ internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<U
         }
     }
 
-    public void Handle(ContentTypeChangedNotification notification)
-        => RebuildByObjectType(notification.Changes, UmbracoObjectTypes.Document);
+    public async Task HandleAsync(ContentTypeChangedNotification notification, CancellationToken cancellationToken)
+        => await RebuildByObjectType(notification.Changes, UmbracoObjectTypes.Document);
 
-    public void Handle(MemberTypeChangedNotification notification)
-        => RebuildByObjectType(notification.Changes, UmbracoObjectTypes.Member);
+    public async Task HandleAsync(MemberTypeChangedNotification notification, CancellationToken cancellationToken)
+        => await RebuildByObjectType(notification.Changes, UmbracoObjectTypes.Member);
 
-    public void Handle(MediaTypeChangedNotification notification)
-        => RebuildByObjectType(notification.Changes, UmbracoObjectTypes.Media);
+    public async Task HandleAsync(MediaTypeChangedNotification notification, CancellationToken cancellationToken)
+        => await RebuildByObjectType(notification.Changes, UmbracoObjectTypes.Media);
 
-    private void RebuildByObjectType<T>(IEnumerable<ContentTypeChange<T>> changes, UmbracoObjectTypes objectType)
+    private async Task RebuildByObjectType<T>(IEnumerable<ContentTypeChange<T>> changes, UmbracoObjectTypes objectType)
         where T : class, IContentTypeComposition
     {
         foreach (ContentTypeChange<T> change in changes)
@@ -76,6 +80,7 @@ internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<U
             {
                 if (indexRegistration.ContainedObjectTypes.Contains(objectType))
                 {
+                    await _documentService.DeleteAllAsync();
                     _contentIndexingService.Rebuild(indexRegistration.IndexAlias);
                 }
             }

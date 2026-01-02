@@ -1,5 +1,4 @@
 ﻿using Umbraco.Cms.Core.Scoping;
-using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Models.Persistence;
 using Umbraco.Cms.Search.Core.Persistence;
 
@@ -37,5 +36,12 @@ public class DocumentService : IDocumentService
         scope.Complete();
 
         return document;
+    }
+
+    public async Task DeleteAllAsync()
+    {
+        using ICoreScope scope = _scopeProvider.CreateCoreScope();
+        await _documentRepository.DeleteAllAsync();
+        scope.Complete();
     }
 }
