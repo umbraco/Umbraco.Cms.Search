@@ -61,9 +61,10 @@ public class IndexDocumentRepository : IIndexDocumentRepository
             throw new InvalidOperationException("Cannot delete document as there is no ambient scope.");
         }
 
+        List<Guid> idsAsList = [..ids];
         Sql<ISqlContext> sql = _scopeAccessor.AmbientScope.Database.SqlContext.Sql()
             .Delete<IndexDocumentDto>()
-            .Where<IndexDocumentDto>(x => ids.Contains(x.Key) && x.Published == published);
+            .Where<IndexDocumentDto>(x => idsAsList.Contains(x.Key) && x.Published == published);
 
         await _scopeAccessor.AmbientScope.Database.ExecuteAsync(sql);
     }
