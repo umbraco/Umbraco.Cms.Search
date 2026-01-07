@@ -9,5 +9,6 @@ public interface IDocumentRepository
     public Task<Document?> GetAsync(Guid id, bool published);
 
     public Task DeleteAsync(Guid[] ids, bool published);
+
     public Task DeleteAllAsync();
 }

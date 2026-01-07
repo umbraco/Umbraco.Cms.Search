@@ -29,10 +29,7 @@ internal sealed class ContentIndexingService : IContentIndexingService
     }
 
     public void Handle(IEnumerable<ContentChange> changes)
-        => _backgroundTaskQueue.QueueBackgroundWorkItem(async cancellationToken =>
-        {
-            await HandleAsync(changes, cancellationToken);
-        });
+        => _backgroundTaskQueue.QueueBackgroundWorkItem(async cancellationToken => await HandleAsync(changes, cancellationToken));
 
     public void Rebuild(string indexAlias)
     {

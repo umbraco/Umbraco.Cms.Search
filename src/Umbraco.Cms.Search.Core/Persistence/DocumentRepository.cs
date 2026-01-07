@@ -47,7 +47,7 @@ public class DocumentRepository : IDocumentRepository
 
         if (_scopeAccessor.AmbientScope is null)
         {
-            throw new InvalidOperationException("Cannot add document as there is no ambient scope.");
+            throw new InvalidOperationException("Cannot get document as there is no ambient scope.");
         }
 
         DocumentDto? documentDto = await _scopeAccessor.AmbientScope.Database.FirstOrDefaultAsync<DocumentDto>(sql);
@@ -73,7 +73,7 @@ public class DocumentRepository : IDocumentRepository
     {
         if (_scopeAccessor.AmbientScope is null)
         {
-            throw new InvalidOperationException("Cannot delete document as there is no ambient scope.");
+            throw new InvalidOperationException("Cannot delete all documents as there is no ambient scope.");
         }
 
         Sql<ISqlContext> sql = _scopeAccessor.AmbientScope.Database.SqlContext.Sql()
