@@ -36,7 +36,7 @@ public class ContentServiceTests : UmbracoIntegrationTest
 {
     private bool _indexingComplete;
 
-    private PackageMigrationRunner _packageMigrationRunner => GetRequiredService<PackageMigrationRunner>();
+    private PackageMigrationRunner PackageMigrationRunner => GetRequiredService<PackageMigrationRunner>();
 
     private IRuntimeState RuntimeState => GetRequiredService<IRuntimeState>();
 
@@ -45,8 +45,6 @@ public class ContentServiceTests : UmbracoIntegrationTest
     private IContentEditingService ContentEditingService => GetRequiredService<IContentEditingService>();
 
     private IContentService ContentService => GetRequiredService<IContentService>();
-
-    private Umbraco.Cms.Search.Core.Services.ContentIndexing.IIndexDocumentService IndexDocumentService => GetRequiredService<Umbraco.Cms.Search.Core.Services.ContentIndexing.IIndexDocumentService>();
 
     private IIndexDocumentRepository IndexDocumentRepository => GetRequiredService<IIndexDocumentRepository>();
 
@@ -94,7 +92,6 @@ public class ContentServiceTests : UmbracoIntegrationTest
     public async Task AddsEntryToDatabaseAfterIndexing(bool publish)
     {
         await TestSetup(publish);
-        var changeStrategy = GetStrategy(publish);
         using IScope scope = ScopeProvider.CreateScope(autoComplete: true);
         IndexDocument? doc = await IndexDocumentRepository.GetAsync(_rootDocument.Key, publish);
         Assert.That(doc, Is.Not.Null);
@@ -106,7 +103,6 @@ public class ContentServiceTests : UmbracoIntegrationTest
     {
         await TestSetup(publish);
         var indexAlias = GetIndexAlias(publish);
-        var changeStrategy = GetStrategy(publish);
 
         IndexField[] initialFields;
         // Verify initial document exists
@@ -148,7 +144,6 @@ public class ContentServiceTests : UmbracoIntegrationTest
     {
         await TestSetup(publish);
         var indexAlias = GetIndexAlias(publish);
-        var changeStrategy = GetStrategy(publish);
 
         // Verify initial document exists
         using (ScopeProvider.CreateScope(autoComplete: true))
@@ -174,11 +169,9 @@ public class ContentServiceTests : UmbracoIntegrationTest
 
     private string GetIndexAlias(bool publish) => publish ? Constants.IndexAliases.PublishedContent : Constants.IndexAliases.DraftContent;
 
-    private string GetStrategy(bool publish) => publish ? "PublishedContentChangeStrategy" : "DraftContentChangeStrategy";
-
     public async Task TestSetup(bool publish)
     {
-        await _packageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
+        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
         Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
 
         ContentTypeCreateModel contentTypeCreateModel = ContentTypeEditingBuilder.CreateSimpleContentType(
@@ -234,10 +227,7 @@ public class ContentServiceTests : UmbracoIntegrationTest
         index.IndexCommitted -= IndexCommited;
     }
 
-    private void IndexCommited(object? sender, EventArgs e)
-    {
-        _indexingComplete = true;
-    }
+    private void IndexCommited(object? sender, EventArgs e) => _indexingComplete = true;
 
     private static bool FieldsContainText(IndexField[] fields, string text)
         => fields.Any(f =>

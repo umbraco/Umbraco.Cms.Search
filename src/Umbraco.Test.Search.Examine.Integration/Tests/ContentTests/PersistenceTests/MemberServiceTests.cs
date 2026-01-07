@@ -202,10 +202,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
         index.IndexCommitted -= IndexCommited;
     }
 
-    private void IndexCommited(object? sender, EventArgs e)
-    {
-        _indexingComplete = true;
-    }
+    private void IndexCommited(object? sender, EventArgs e) => _indexingComplete = true;
 
     private static bool FieldsContainText(IndexField[] fields, string text)
         => fields.Any(f =>
