@@ -12,8 +12,8 @@ public class IndexDocumentDto
     [PrimaryKeyColumn(AutoIncrement = true)]
     public int Id { get; set; }
 
-    [Column("documentKey")]
-    public required Guid DocumentKey { get; set; }
+    [Column("key")]
+    public required Guid Key { get; set; }
 
     [Column("published")]
     public required bool Published { get; set; }

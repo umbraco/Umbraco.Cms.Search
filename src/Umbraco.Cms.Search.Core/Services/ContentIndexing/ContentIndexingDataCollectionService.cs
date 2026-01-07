@@ -67,7 +67,7 @@ internal sealed class ContentIndexingDataCollectionService : IContentIndexingDat
 
         await _indexDocumentService.AddAsync(new IndexDocument()
         {
-            DocumentKey = content.Key,
+            Key = content.Key,
             Fields = fieldsArray,
             Published = published,
         });

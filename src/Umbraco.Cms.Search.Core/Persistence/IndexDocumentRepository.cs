@@ -42,7 +42,7 @@ public class IndexDocumentRepository : IIndexDocumentRepository
         Sql<ISqlContext>? sql = _scopeAccessor.AmbientScope?.Database.SqlContext.Sql()
             .Select<IndexDocumentDto>()
             .From<IndexDocumentDto>()
-            .Where<IndexDocumentDto>(x => x.DocumentKey == id && x.Published == published);
+            .Where<IndexDocumentDto>(x => x.Key == id && x.Published == published);
 
         if (_scopeAccessor.AmbientScope is null)
         {
@@ -63,7 +63,7 @@ public class IndexDocumentRepository : IIndexDocumentRepository
 
         Sql<ISqlContext> sql = _scopeAccessor.AmbientScope.Database.SqlContext.Sql()
             .Delete<IndexDocumentDto>()
-            .Where<IndexDocumentDto>(x => ids.Contains(x.DocumentKey) && x.Published == published);
+            .Where<IndexDocumentDto>(x => ids.Contains(x.Key) && x.Published == published);
 
         await _scopeAccessor.AmbientScope.Database.ExecuteAsync(sql);
     }
@@ -85,7 +85,7 @@ public class IndexDocumentRepository : IIndexDocumentRepository
     private IndexDocumentDto ToDto(IndexDocument indexDocument) =>
         new()
         {
-            DocumentKey = indexDocument.DocumentKey,
+            Key = indexDocument.Key,
             Published = indexDocument.Published,
             Fields = MessagePackSerializer.Serialize(indexDocument.Fields, _options),
         };
@@ -99,7 +99,7 @@ public class IndexDocumentRepository : IIndexDocumentRepository
 
         return new IndexDocument
         {
-            DocumentKey = dto.DocumentKey,
+            Key = dto.Key,
             Fields = MessagePackSerializer.Deserialize<IndexField[]>(dto.Fields, _options) ?? [],
             Published = dto.Published,
         };
