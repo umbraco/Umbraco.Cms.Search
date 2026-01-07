@@ -10,18 +10,18 @@ internal sealed class ContentIndexingDataCollectionService : IContentIndexingDat
 {
     private readonly ISet<IContentIndexer> _contentIndexers;
     private readonly ILogger<ContentIndexingDataCollectionService> _logger;
-    private readonly IDocumentService _documentService;
+    private readonly IIndexDocumentService _indexDocumentService;
 
-    public ContentIndexingDataCollectionService(IEnumerable<IContentIndexer> contentIndexers, ILogger<ContentIndexingDataCollectionService> logger, IDocumentService documentService)
+    public ContentIndexingDataCollectionService(IEnumerable<IContentIndexer> contentIndexers, ILogger<ContentIndexingDataCollectionService> logger, IIndexDocumentService indexDocumentService)
     {
         _contentIndexers = contentIndexers.ToHashSet();
         _logger = logger;
-        _documentService = documentService;
+        _indexDocumentService = indexDocumentService;
     }
 
     public async Task<IEnumerable<IndexField>?> CollectAsync(IContentBase content, bool published, CancellationToken cancellationToken)
     {
-        Document? document = await _documentService.GetAsync(content.Key, published);
+        IndexDocument? document = await _indexDocumentService.GetAsync(content.Key, published);
         if (document is not null)
         {
             return document.Fields;
@@ -65,7 +65,7 @@ internal sealed class ContentIndexingDataCollectionService : IContentIndexingDat
 
         IndexField[] fieldsArray = fieldsByIdentifier.Values.ToArray();
 
-        await _documentService.AddAsync(new Document()
+        await _indexDocumentService.AddAsync(new IndexDocument()
         {
             DocumentKey = content.Key,
             Fields = fieldsArray,

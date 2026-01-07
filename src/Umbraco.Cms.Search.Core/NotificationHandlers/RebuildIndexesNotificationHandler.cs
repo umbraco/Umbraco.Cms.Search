@@ -18,18 +18,18 @@ internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<U
 
 {
     private readonly IContentIndexingService _contentIndexingService;
-    private readonly IDocumentService _documentService;
+    private readonly IIndexDocumentService _indexDocumentService;
     private readonly ILogger<RebuildIndexesNotificationHandler> _logger;
     private readonly IndexOptions _options;
 
     public RebuildIndexesNotificationHandler(
         IContentIndexingService contentIndexingService,
-        IDocumentService documentService,
+        IIndexDocumentService indexDocumentService,
         ILogger<RebuildIndexesNotificationHandler> logger,
         IOptions<IndexOptions> options)
     {
         _contentIndexingService = contentIndexingService;
-        _documentService = documentService;
+        _indexDocumentService = indexDocumentService;
         _logger = logger;
         _options = options.Value;
     }
@@ -46,7 +46,7 @@ internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<U
     public async Task HandleAsync(LanguageDeletedNotification notification, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Rebuilding search indexes after language deletion...");
-        await _documentService.DeleteAllAsync();
+        await _indexDocumentService.DeleteAllAsync();
 
         foreach (IndexRegistration indexRegistration in _options.GetIndexRegistrations())
         {
@@ -80,7 +80,7 @@ internal sealed class RebuildIndexesNotificationHandler : INotificationHandler<U
             {
                 if (indexRegistration.ContainedObjectTypes.Contains(objectType))
                 {
-                    await _documentService.DeleteAllAsync();
+                    await _indexDocumentService.DeleteAllAsync();
                     _contentIndexingService.Rebuild(indexRegistration.IndexAlias);
                 }
             }

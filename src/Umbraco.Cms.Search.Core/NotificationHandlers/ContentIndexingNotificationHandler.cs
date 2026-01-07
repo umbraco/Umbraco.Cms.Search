@@ -25,21 +25,21 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
 {
     private readonly IContentIndexingService _contentIndexingService;
     private readonly IIdKeyMap _idKeyMap;
-    private readonly IDocumentService _documentService;
+    private readonly IIndexDocumentService _indexDocumentService;
     private readonly ILogger<ContentIndexingNotificationHandler> _logger;
 
     public ContentIndexingNotificationHandler(
         ICoreScopeProvider coreScopeProvider,
         IContentIndexingService contentIndexingService,
         IIdKeyMap idKeyMap,
-        IDocumentService documentService,
+        IIndexDocumentService indexDocumentService,
         ILogger<ContentIndexingNotificationHandler> logger)
         : base(coreScopeProvider)
     {
         _contentIndexingService = contentIndexingService;
         _logger = logger;
         _idKeyMap = idKeyMap;
-        _documentService = documentService;
+        _indexDocumentService = indexDocumentService;
     }
 
     public void Handle(PublishedContentCacheRefresherNotification notification)
@@ -51,7 +51,7 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
 
         ExecuteDeferred(() =>
         {
-            _documentService.DeleteAsync(changes.Select(x => x.Id).ToArray(), true);
+            _indexDocumentService.DeleteAsync(changes.Select(x => x.Id).ToArray(), true);
             _contentIndexingService.Handle(changes);
         });
     }
@@ -65,7 +65,7 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
 
         ExecuteDeferred(() =>
         {
-            _documentService.DeleteAsync(changes.Select(x => x.Id).ToArray(), false);
+            _indexDocumentService.DeleteAsync(changes.Select(x => x.Id).ToArray(), false);
             _contentIndexingService.Handle(changes);
         });
     }
@@ -79,7 +79,7 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
 
         ExecuteDeferred(() =>
         {
-            _documentService.DeleteAsync(changes.Select(x => x.Id).ToArray(), false);
+            _indexDocumentService.DeleteAsync(changes.Select(x => x.Id).ToArray(), false);
             _contentIndexingService.Handle(changes);
         });
     }
@@ -105,7 +105,7 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
 
         ExecuteDeferred(() =>
         {
-            _documentService.DeleteAsync(changes.Select(x => x.Id).ToArray(), false);
+            _indexDocumentService.DeleteAsync(changes.Select(x => x.Id).ToArray(), false);
             _contentIndexingService.Handle(changes);
         });
     }

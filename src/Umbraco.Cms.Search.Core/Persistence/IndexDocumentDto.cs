@@ -3,10 +3,10 @@ using Umbraco.Cms.Infrastructure.Persistence.DatabaseAnnotations;
 
 namespace Umbraco.Cms.Search.Core.Persistence;
 
-[TableName(Constants.Persistence.DocumentTableName)]
+[TableName(Constants.Persistence.IndexDocumentTableName)]
 [PrimaryKey("id")]
 [ExplicitColumns]
-public class DocumentDto
+public class IndexDocumentDto
 {
     [Column("id")]
     [PrimaryKeyColumn(AutoIncrement = true)]

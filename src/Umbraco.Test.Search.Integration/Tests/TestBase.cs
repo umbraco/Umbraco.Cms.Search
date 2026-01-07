@@ -35,8 +35,8 @@ public abstract class TestBase : UmbracoIntegrationTest
 
         builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
-        builder.Services.AddUnique<IDocumentService, DocumentService>();
-        builder.Services.AddUnique<IDocumentRepository, DocumentRepository>();
+        builder.Services.AddUnique<IIndexDocumentService, IndexDocumentService>();
+        builder.Services.AddUnique<IIndexDocumentRepository, IndexDocumentRepository>();
 
         builder.Services.AddTransient<IIndexer>(_ => Indexer);
         builder.Services.AddTransient<ISearcher>(_ => Indexer);
@@ -55,11 +55,11 @@ public abstract class TestBase : UmbracoIntegrationTest
         builder.AddNotificationHandler<MemberDeletedNotification, MemberDeletedDistributedCacheNotificationHandler>();
     }
 
-    private class DocumentRepository : IDocumentRepository
+    private class IndexDocumentRepository : IIndexDocumentRepository
     {
-        public Task AddAsync(Document document) => Task.CompletedTask;
+        public Task AddAsync(IndexDocument indexDocument) => Task.CompletedTask;
 
-        public Task<Document?> GetAsync(Guid id, bool published) => Task.FromResult<Document?>(null);
+        public Task<IndexDocument?> GetAsync(Guid id, bool published) => Task.FromResult<IndexDocument?>(null);
 
         public Task DeleteAsync(Guid[] ids, bool published) => Task.CompletedTask;
         public Task DeleteAllAsync() => Task.CompletedTask;

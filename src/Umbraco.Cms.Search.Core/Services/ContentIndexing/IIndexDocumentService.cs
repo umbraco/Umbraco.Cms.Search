@@ -2,13 +2,13 @@
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
-public interface IDocumentService
+public interface IIndexDocumentService
 {
-    Task AddAsync(Document document);
+    Task AddAsync(IndexDocument indexDocument);
 
     Task DeleteAsync(Guid[] ids, bool published);
 
-    Task<Document?> GetAsync(Guid id, bool published);
+    Task<IndexDocument?> GetAsync(Guid id, bool published);
 
     Task DeleteAllAsync();
 }

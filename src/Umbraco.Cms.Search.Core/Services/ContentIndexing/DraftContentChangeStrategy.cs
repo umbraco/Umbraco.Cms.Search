@@ -29,7 +29,6 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         IEventAggregator eventAggregator,
         IUmbracoDatabaseFactory umbracoDatabaseFactory,
         IIdKeyMap idKeyMap,
-        IDocumentService documentService,
         ILogger<DraftContentChangeStrategy> logger)
         : base(umbracoDatabaseFactory, idKeyMap, logger)
     {

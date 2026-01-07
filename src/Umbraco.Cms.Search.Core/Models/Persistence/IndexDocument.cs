@@ -1,9 +1,8 @@
-﻿using Umbraco.Cms.Core.Models;
-using Umbraco.Cms.Search.Core.Models.Indexing;
+﻿using Umbraco.Cms.Search.Core.Models.Indexing;
 
 namespace Umbraco.Cms.Search.Core.Models.Persistence;
 
-public class Document
+public class IndexDocument
 {
     public required Guid DocumentKey { get; set; }
 
