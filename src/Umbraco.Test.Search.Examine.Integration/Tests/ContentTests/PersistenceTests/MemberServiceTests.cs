@@ -42,7 +42,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
 
     private IMemberService MemberService => GetRequiredService<IMemberService>();
 
-    private IDocumentRepository DocumentRepository => GetRequiredService<IDocumentRepository>();
+    private IIndexDocumentRepository IndexDocumentRepository => GetRequiredService<IIndexDocumentRepository>();
 
     private IMember _member = null!;
 
@@ -56,6 +56,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
 
         builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
+        builder.AddNotificationAsyncHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>();
 
         // the core ConfigureBuilderAttribute won't execute from other assemblies at the moment, so this is a workaround
         var testType = Type.GetType(TestContext.CurrentContext.Test.ClassName!);
@@ -77,7 +78,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
     {
         await TestSetup();
         using IScope scope = ScopeProvider.CreateScope(autoComplete: true);
-        Document? doc = await DocumentRepository.GetAsync(_member.Key, "DraftContentChangeStrategy");
+        IndexDocument? doc = await IndexDocumentRepository.GetAsync(_member.Key, false);
         Assert.That(doc, Is.Not.Null);
     }
 
@@ -90,7 +91,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify initial document exists
-            Document? initialDoc = await DocumentRepository.GetAsync(_member.Key, "DraftContentChangeStrategy");
+            IndexDocument? initialDoc = await IndexDocumentRepository.GetAsync(_member.Key, false);
             Assert.That(initialDoc, Is.Not.Null);
             initialFields = initialDoc!.Fields;
         }
@@ -107,7 +108,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify the document was updated
-            Document? updatedDoc = await DocumentRepository.GetAsync(_member.Key, "DraftContentChangeStrategy");
+            IndexDocument? updatedDoc = await IndexDocumentRepository.GetAsync(_member.Key, false);
             Assert.That(updatedDoc, Is.Not.Null);
             Assert.That(updatedDoc!.Fields, Is.Not.EqualTo(initialFields));
             Assert.That(FieldsContainText(updatedDoc.Fields, "Updated Member Name"), Is.True);
@@ -123,7 +124,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify initial document exists
-            Document? initialDoc = await DocumentRepository.GetAsync(_member.Key, "DraftContentChangeStrategy");
+            IndexDocument? initialDoc = await IndexDocumentRepository.GetAsync(_member.Key, false);
             Assert.That(initialDoc, Is.Not.Null);
         }
 
@@ -134,7 +135,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify the document was removed
-            Document? deletedDoc = await DocumentRepository.GetAsync(_member.Key, "DraftContentChangeStrategy");
+            IndexDocument? deletedDoc = await IndexDocumentRepository.GetAsync(_member.Key, false);
             Assert.That(deletedDoc, Is.Null);
         }
     }
@@ -201,10 +202,7 @@ public class MemberServiceTests : UmbracoIntegrationTest
         index.IndexCommitted -= IndexCommited;
     }
 
-    private void IndexCommited(object? sender, EventArgs e)
-    {
-        _indexingComplete = true;
-    }
+    private void IndexCommited(object? sender, EventArgs e) => _indexingComplete = true;
 
     private static bool FieldsContainText(IndexField[] fields, string text)
         => fields.Any(f =>

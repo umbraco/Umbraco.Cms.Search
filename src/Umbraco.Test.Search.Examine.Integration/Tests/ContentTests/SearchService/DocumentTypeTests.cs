@@ -26,6 +26,12 @@ public class DocumentTypeTests : SearcherTestBase
     private IContentType _parentContentType = null!;
     private IContentType _childContentType = null!;
 
+    protected override void CustomTestSetup(IUmbracoBuilder builder)
+    {
+        base.CustomTestSetup(builder);
+        builder.AddNotificationAsyncHandler<ContentTypeChangedNotification, RebuildIndexesNotificationHandler>();
+    }
+
     [Test]
     public async Task CannotSearchForRemovedPropertyType()
     {

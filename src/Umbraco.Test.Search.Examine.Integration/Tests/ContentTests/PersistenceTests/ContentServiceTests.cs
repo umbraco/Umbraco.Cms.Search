@@ -32,11 +32,11 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.Persistence
 
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
-public class DocumentServiceTests : UmbracoIntegrationTest
+public class ContentServiceTests : UmbracoIntegrationTest
 {
     private bool _indexingComplete;
 
-    private PackageMigrationRunner _packageMigrationRunner => GetRequiredService<PackageMigrationRunner>();
+    private PackageMigrationRunner PackageMigrationRunner => GetRequiredService<PackageMigrationRunner>();
 
     private IRuntimeState RuntimeState => GetRequiredService<IRuntimeState>();
 
@@ -46,9 +46,7 @@ public class DocumentServiceTests : UmbracoIntegrationTest
 
     private IContentService ContentService => GetRequiredService<IContentService>();
 
-    private Umbraco.Cms.Search.Core.Services.ContentIndexing.IDocumentService DocumentService => GetRequiredService<Umbraco.Cms.Search.Core.Services.ContentIndexing.IDocumentService>();
-
-    private IDocumentRepository DocumentRepository => GetRequiredService<IDocumentRepository>();
+    private IIndexDocumentRepository IndexDocumentRepository => GetRequiredService<IIndexDocumentRepository>();
 
     private IContent _rootDocument = null!;
 
@@ -62,6 +60,7 @@ public class DocumentServiceTests : UmbracoIntegrationTest
 
         builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
+        builder.AddNotificationAsyncHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>();
 
         // the core ConfigureBuilderAttribute won't execute from other assemblies at the moment, so this is a workaround
         var testType = Type.GetType(TestContext.CurrentContext.Test.ClassName!);
@@ -84,7 +83,7 @@ public class DocumentServiceTests : UmbracoIntegrationTest
         await TestSetup(false);
         using IScope scope = ScopeProvider.CreateScope(autoComplete: true);
         IEnumerable<string> tables = scope.Database.SqlContext.SqlSyntax.GetTablesInSchema(scope.Database);
-        var result = tables.Any(x => x.InvariantEquals(Constants.Persistence.DocumentTableName));
+        var result = tables.Any(x => x.InvariantEquals(Constants.Persistence.IndexDocumentTableName));
         Assert.That(result, Is.True);
     }
 
@@ -93,9 +92,8 @@ public class DocumentServiceTests : UmbracoIntegrationTest
     public async Task AddsEntryToDatabaseAfterIndexing(bool publish)
     {
         await TestSetup(publish);
-        var changeStrategy = GetStrategy(publish);
         using IScope scope = ScopeProvider.CreateScope(autoComplete: true);
-        Document? doc = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
+        IndexDocument? doc = await IndexDocumentRepository.GetAsync(_rootDocument.Key, publish);
         Assert.That(doc, Is.Not.Null);
     }
 
@@ -105,13 +103,12 @@ public class DocumentServiceTests : UmbracoIntegrationTest
     {
         await TestSetup(publish);
         var indexAlias = GetIndexAlias(publish);
-        var changeStrategy = GetStrategy(publish);
 
         IndexField[] initialFields;
         // Verify initial document exists
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
-            Document? initialDoc = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
+            IndexDocument? initialDoc = await IndexDocumentRepository.GetAsync(_rootDocument.Key, publish);
             Assert.That(initialDoc, Is.Not.Null);
             initialFields = initialDoc!.Fields;
         }
@@ -134,7 +131,7 @@ public class DocumentServiceTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify the document was updated
-            Document? updatedDoc = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
+            IndexDocument? updatedDoc = await IndexDocumentRepository.GetAsync(_rootDocument.Key, publish);
             Assert.That(updatedDoc, Is.Not.Null);
             Assert.That(updatedDoc!.Fields, Is.Not.EqualTo(initialFields));
             Assert.That(FieldsContainText(updatedDoc.Fields, "Updated Root Document"), Is.True);
@@ -147,12 +144,11 @@ public class DocumentServiceTests : UmbracoIntegrationTest
     {
         await TestSetup(publish);
         var indexAlias = GetIndexAlias(publish);
-        var changeStrategy = GetStrategy(publish);
 
         // Verify initial document exists
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
-            Document? initialDoc = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
+            IndexDocument? initialDoc = await IndexDocumentRepository.GetAsync(_rootDocument.Key, publish);
             Assert.That(initialDoc, Is.Not.Null);
         }
 
@@ -166,18 +162,16 @@ public class DocumentServiceTests : UmbracoIntegrationTest
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
             // Verify the document was removed
-            Document? deletedDoc = await DocumentRepository.GetAsync(_rootDocument.Key, changeStrategy);
+            IndexDocument? deletedDoc = await IndexDocumentRepository.GetAsync(_rootDocument.Key, publish);
             Assert.That(deletedDoc, Is.Null);
         }
     }
 
     private string GetIndexAlias(bool publish) => publish ? Constants.IndexAliases.PublishedContent : Constants.IndexAliases.DraftContent;
 
-    private string GetStrategy(bool publish) => publish ? "PublishedContentChangeStrategy" : "DraftContentChangeStrategy";
-
     public async Task TestSetup(bool publish)
     {
-        await _packageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
+        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
         Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
 
         ContentTypeCreateModel contentTypeCreateModel = ContentTypeEditingBuilder.CreateSimpleContentType(
@@ -233,10 +227,7 @@ public class DocumentServiceTests : UmbracoIntegrationTest
         index.IndexCommitted -= IndexCommited;
     }
 
-    private void IndexCommited(object? sender, EventArgs e)
-    {
-        _indexingComplete = true;
-    }
+    private void IndexCommited(object? sender, EventArgs e) => _indexingComplete = true;
 
     private static bool FieldsContainText(IndexField[] fields, string text)
         => fields.Any(f =>

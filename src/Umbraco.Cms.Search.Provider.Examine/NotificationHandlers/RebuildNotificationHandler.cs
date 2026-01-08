@@ -50,7 +50,7 @@ public class RebuildNotificationHandler : INotificationHandler<UmbracoApplicatio
             }
 
             _logger.LogInformation("Rebuilding index {IndexRegistrationIndexAlias}", indexRegistration.IndexAlias);
-            _contentIndexingService.Rebuild(indexRegistration.IndexAlias, true);
+            _contentIndexingService.Rebuild(indexRegistration.IndexAlias);
         }
     }
 }

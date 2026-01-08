@@ -35,13 +35,13 @@ public class CustomPackageMigration : AsyncPackageMigrationBase
 
     protected override Task MigrateAsync()
     {
-        if (TableExists(Constants.Persistence.DocumentTableName) == false)
+        if (TableExists(Constants.Persistence.IndexDocumentTableName) == false)
         {
-            Create.Table<DocumentDto>().Do();
+            Create.Table<IndexDocumentDto>().Do();
         }
         else
         {
-            Logger.LogDebug("The database table {DbTable} already exists, skipping", Constants.Persistence.DocumentTableName);
+            Logger.LogDebug("The database table {DbTable} already exists, skipping", Constants.Persistence.IndexDocumentTableName);
         }
 
         return Task.CompletedTask;
