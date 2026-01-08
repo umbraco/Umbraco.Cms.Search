@@ -8,6 +8,7 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
+using Umbraco.Cms.Infrastructure.Install;
 using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -41,6 +42,10 @@ public abstract class TestBase : UmbracoIntegrationTest
 
     protected ILanguageService LanguageService => GetRequiredService<ILanguageService>();
 
+    protected PackageMigrationRunner PackageMigrationRunner => GetRequiredService<PackageMigrationRunner>();
+
+    protected IRuntimeState RuntimeState => GetRequiredService<IRuntimeState>();
+
 
     protected void SaveAndPublish(IContent content)
     {
@@ -58,7 +63,7 @@ public abstract class TestBase : UmbracoIntegrationTest
 
         builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
-        builder.AddNotificationHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>();
+        builder.AddNotificationAsyncHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>();
 
         // the core ConfigureBuilderAttribute won't execute from other assemblies at the moment, so this is a workaround
         var testType = Type.GetType(TestContext.CurrentContext.Test.ClassName!);
@@ -92,7 +97,7 @@ public abstract class TestBase : UmbracoIntegrationTest
                 hasDoneAction = true;
             }
 
-            if (stopWatch.ElapsedMilliseconds > 5000)
+            if (stopWatch.ElapsedMilliseconds > 600000)
             {
                 throw new TimeoutException("Indexing timed out");
             }

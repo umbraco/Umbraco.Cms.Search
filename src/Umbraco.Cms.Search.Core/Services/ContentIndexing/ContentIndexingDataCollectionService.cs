@@ -2,6 +2,7 @@
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
+using Umbraco.Cms.Search.Core.Models.Persistence;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
@@ -9,15 +10,23 @@ internal sealed class ContentIndexingDataCollectionService : IContentIndexingDat
 {
     private readonly ISet<IContentIndexer> _contentIndexers;
     private readonly ILogger<ContentIndexingDataCollectionService> _logger;
+    private readonly IIndexDocumentService _indexDocumentService;
 
-    public ContentIndexingDataCollectionService(IEnumerable<IContentIndexer> contentIndexers, ILogger<ContentIndexingDataCollectionService> logger)
+    public ContentIndexingDataCollectionService(IEnumerable<IContentIndexer> contentIndexers, ILogger<ContentIndexingDataCollectionService> logger, IIndexDocumentService indexDocumentService)
     {
         _contentIndexers = contentIndexers.ToHashSet();
         _logger = logger;
+        _indexDocumentService = indexDocumentService;
     }
 
     public async Task<IEnumerable<IndexField>?> CollectAsync(IContentBase content, bool published, CancellationToken cancellationToken)
     {
+        IndexDocument? document = await _indexDocumentService.GetAsync(content.Key, published);
+        if (document is not null)
+        {
+            return document.Fields;
+        }
+
         ISystemFieldsContentIndexer[] systemFieldsIndexers = _contentIndexers.OfType<ISystemFieldsContentIndexer>().ToArray();
         if (systemFieldsIndexers.Length != 1)
         {
@@ -54,6 +63,15 @@ internal sealed class ContentIndexingDataCollectionService : IContentIndexingDat
             }
         }
 
-        return fieldsByIdentifier.Values;
+        IndexField[] fieldsArray = fieldsByIdentifier.Values.ToArray();
+
+        await _indexDocumentService.AddAsync(new IndexDocument()
+        {
+            Key = content.Key,
+            Fields = fieldsArray,
+            Published = published,
+        });
+
+        return fieldsArray;
     }
 }

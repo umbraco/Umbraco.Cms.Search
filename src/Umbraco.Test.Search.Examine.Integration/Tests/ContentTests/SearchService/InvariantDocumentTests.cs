@@ -33,6 +33,23 @@ public class InvariantDocumentTests : SearcherTestBase
 
     [TestCase(true)]
     [TestCase(false)]
+    public async Task CanNotSearchDeletedName(bool publish)
+    {
+        await WaitForIndexing(GetIndexAlias(true), () =>
+        {
+            IContent? content = ContentService.GetById(RootKey);
+            ContentService.Delete(content!);
+            return Task.CompletedTask;
+        });
+
+        var indexAlias = GetIndexAlias(publish);
+
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "Test", null, null, null, null, null, null, 0, 100);
+        Assert.That(results.Total, Is.EqualTo(0));
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
     public async Task CanSearchTextProperty(bool publish)
     {
         var indexAlias = GetIndexAlias(publish);
