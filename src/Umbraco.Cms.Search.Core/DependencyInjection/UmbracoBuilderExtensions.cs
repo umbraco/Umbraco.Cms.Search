@@ -58,10 +58,4 @@ public static class UmbracoBuilderExtensions
 
         return builder;
     }
-
-    public static IUmbracoBuilder RebuildIndexesAfterStartup(this IUmbracoBuilder builder)
-    {
-        builder.AddNotificationHandler<UmbracoApplicationStartedNotification, RebuildIndexesNotificationHandler>();
-        return builder;
-    }
 }
