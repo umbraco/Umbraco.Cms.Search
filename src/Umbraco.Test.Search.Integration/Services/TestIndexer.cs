@@ -45,6 +45,8 @@ public class TestIndexer : IIndexer, ISearcher
         return Task.CompletedTask;
     }
 
+    public async Task<long> GetDocumentCountAsync(string indexAlias) => await Task.FromResult(GetIndex(indexAlias).Count);
+
     public IReadOnlyList<TestIndexDocument> Dump(string indexAlias) => GetIndex(indexAlias).Values.ToList();
 
     public void Reset() => _indexes.Clear();

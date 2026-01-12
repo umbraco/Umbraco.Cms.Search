@@ -10,4 +10,6 @@ public interface IIndexer
     Task DeleteAsync(string indexAlias, IEnumerable<Guid> ids);
 
     Task ResetAsync(string indexAlias);
+
+    Task<long> GetDocumentCountAsync(string indexAlias);
 }

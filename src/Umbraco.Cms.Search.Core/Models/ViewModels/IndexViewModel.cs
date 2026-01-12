@@ -2,7 +2,7 @@
 
 public class IndexViewModel
 {
-    public required string Name { get; set; }
+    public required string IndexAlias { get; set; }
 
-    public int DocumentCount { get; set; }
+    public long DocumentCount { get; set; }
 }

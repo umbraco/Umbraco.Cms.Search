@@ -115,6 +115,9 @@ public class SearcherResolverTests : UmbracoIntegrationTest
 
         public Task ResetAsync(string indexAlias)
             => throw new NotImplementedException();
+
+        public Task<long> GetDocumentCountAsync(string indexAlias)
+            => throw new NotImplementedException();
     }
 
     private abstract class SearcherBase : ISearcher
