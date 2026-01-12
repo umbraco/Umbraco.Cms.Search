@@ -9,6 +9,7 @@ using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Cms.Search.Core.Models.Configuration;
 using Umbraco.Cms.Search.Core.Models.ViewModels;
 using Umbraco.Cms.Search.Core.Services;
+using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 namespace Umbraco.Cms.Search.Core.Controllers;
 
@@ -18,12 +19,14 @@ public class SearchApiController : SearchApiControllerBase
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<SearchApiController> _logger;
+    private readonly IContentIndexingService _contentIndexingService;
     private readonly IndexOptions _options;
 
-    public SearchApiController(IOptions<IndexOptions> options, IServiceProvider serviceProvider, ILogger<SearchApiController> logger)
+    public SearchApiController(IOptions<IndexOptions> options, IServiceProvider serviceProvider, ILogger<SearchApiController> logger, IContentIndexingService contentIndexingService)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
+        _contentIndexingService = contentIndexingService;
         _options = options.Value;
     }
 
@@ -49,6 +52,13 @@ public class SearchApiController : SearchApiControllerBase
         }
 
         return Ok(new PagedViewModel<IndexViewModel> { Items = indexes, Total = indexes.Count });
+    }
+
+    [HttpPut("rebuild")]
+    public IActionResult Rebuild(string indexAlias)
+    {
+        _contentIndexingService.Rebuild(indexAlias);
+        return Ok();
     }
 
     private bool TryGetIndexer(Type type, [NotNullWhen(true)] out IIndexer? indexer)
