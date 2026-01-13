@@ -1,0 +1,280 @@
+using NUnit.Framework;
+using Umbraco.Cms.Core;
+using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core.Models.Searching;
+using Umbraco.Cms.Tests.Common.Builders;
+using Umbraco.Cms.Tests.Common.Builders.Extensions;
+
+namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.SearchService;
+
+public class ExplicitSegmentSearchTests : SearcherTestBase
+{
+    private static readonly Guid DocumentWithAllSegmentsKey = Guid.NewGuid();
+    private static readonly Guid DocumentWithOnlyNullSegmentKey = Guid.NewGuid();
+    private static readonly Guid DocumentWithOnlySegment1Key = Guid.NewGuid();
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    [TestCase(true, "en-US", "segment-2")]
+    [TestCase(false, "en-US", "segment-2")]
+    [TestCase(true, "da-DK", "segment-1")]
+    [TestCase(false, "da-DK", "segment-1")]
+    public async Task ExplicitSegmentSearch_FindsContentInThatSegment(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // "InSegment1Only" only exists in segment-1, "InSegment2Only" only exists in segment-2
+        var searchTerm = segment == "segment-1" ? "InSegment1Only" : "InSegment2Only";
+
+        SearchResult results = await Searcher.SearchAsync(indexAlias, searchTerm, null, null, null, culture, segment, null, 0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US")]
+    [TestCase(false, "en-US")]
+    public async Task NullSegmentSearch_FindsContentInNullSegment(bool publish, string culture)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // "InNullSegmentOnly" only exists in the null segment
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "InNullSegmentOnly", null, null, null, culture, null, null, 0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US", "InSegment1Only")]
+    [TestCase(false, "en-US", "InSegment1Only")]
+    [TestCase(true, "en-US", "InSegment2Only")]
+    [TestCase(false, "en-US", "InSegment2Only")]
+    public async Task NullSegmentSearch_DoesNotFindSegmentSpecificContent(bool publish, string culture, string segmentSpecificTerm)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // These terms only exist in specific segments, not in null segment
+        // Null segment search should NOT include segment-specific content (no "upward" lookup)
+        SearchResult results = await Searcher.SearchAsync(indexAlias, segmentSpecificTerm, null, null, null, culture, null, null, 0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(0));
+    }
+
+    [TestCase(true, "en-US", "segment-1", "InSegment2Only")]
+    [TestCase(false, "en-US", "segment-1", "InSegment2Only")]
+    [TestCase(true, "en-US", "segment-2", "InSegment1Only")]
+    [TestCase(false, "en-US", "segment-2", "InSegment1Only")]
+    public async Task ExplicitSegmentSearch_DoesNotFindContentFromOtherSegment(bool publish, string culture, string segment, string searchTerm)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching segment-1 for segment-2's content (and vice versa) should find nothing
+        // (the term doesn't exist in the searched segment OR in null segment)
+        SearchResult results = await Searcher.SearchAsync(indexAlias, searchTerm, null, null, null, culture, segment, null, 0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(0));
+    }
+
+    [TestCase(true, "en-US")]
+    [TestCase(false, "en-US")]
+    public async Task ExplicitSegmentSearch_DocumentWithOnlyThatSegment_IsFound(bool publish, string culture)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Document that ONLY has segment-1 content (no null segment content)
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "OnlyInSegment1Document", null, null, null, culture, "segment-1", null, 0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithOnlySegment1Key));
+    }
+
+    [TestCase(true, "en-US")]
+    [TestCase(false, "en-US")]
+    public async Task NullSegmentSearch_DocumentWithOnlyNullSegment_IsFound(bool publish, string culture)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "OnlyInNullSegmentDocument", null, null, null, culture, null, null, 0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithOnlyNullSegmentKey));
+    }
+
+    [TestCase(true, "en-US")]
+    [TestCase(false, "en-US")]
+    public async Task NullSegmentSearch_DocumentWithOnlyExplicitSegment_NotFound(bool publish, string culture)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Document only has segment-1 content, searching null segment should not find it
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "OnlyInSegment1Document", null, null, null, culture, null, null, 0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(0));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    [TestCase(true, "da-DK", "segment-1")]
+    [TestCase(false, "da-DK", "segment-1")]
+    public async Task ExplicitSegmentSearch_NoMatchInSegment_FallsBackToNullSegment(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // "InNullSegmentOnly" exists ONLY in null segment, NOT in segment-1
+        // Since segment-1 has no match, should fall back to null segment
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "InNullSegmentOnly", null, null, null, culture, segment, null, 0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(1), "Should fall back to null segment when explicit segment has no match");
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US")]
+    [TestCase(false, "en-US")]
+    public async Task ExplicitSegmentSearch_DocumentWithOnlyNullSegment_FoundViaFallback(bool publish, string culture)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Document only has null-segment content, searching with segment-1 should find it via fallback
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "OnlyInNullSegmentDocument", null, null, null, culture, "segment-1", null, 0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(1), "Document with only null-segment content should be found via fallback");
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithOnlyNullSegmentKey));
+    }
+
+    [TestCase(true, "en-US")]
+    [TestCase(false, "en-US")]
+    [TestCase(true, "da-DK")]
+    [TestCase(false, "da-DK")]
+    public async Task ExplicitSegmentSearch_NonExistentSegment_FallsBackToNullSegment(bool publish, string culture)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Segment "non-existent" doesn't exist, should fall back to null segment
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "InNullSegmentOnly", null, null, null, culture, "non-existent-segment", null, 0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(1), "Non-existent segment should fall back to null segment");
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US")]
+    [TestCase(false, "en-US")]
+    public async Task ExplicitSegmentSearch_NonExistentSegment_FindsNullSegmentOnlyDocument(bool publish, string culture)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Non-existent segment, document only has null-segment content
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "OnlyInNullSegmentDocument", null, null, null, culture, "non-existent-segment", null, 0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(1), "Non-existent segment should find null-segment-only document via fallback");
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithOnlyNullSegmentKey));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    public async Task ExplicitSegmentSearch_TermExistsInBothSegmentAndNullSegment_ReturnsDocumentOnce(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // "SharedTerm" exists in BOTH segment-1 AND null segment of the SAME document
+        // Even if the implementation searches both, we should only get 1 document back, not 2
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "SharedTerm", null, null, null, culture, segment, null, 0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(1), "Same document should only appear once, even if term exists in multiple segments");
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US")]
+    [TestCase(false, "en-US")]
+    public async Task ExplicitSegmentSearch_MatchInSegmentAndFallback_ReturnsDocumentOnce(bool publish, string culture)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Search for "SharedTerm" with segment-1
+        // - DocumentWithAllSegmentsKey has "SharedTerm" in segment-1 (direct match, no fallback needed)
+        // - If fallback were to incorrectly also run, it would find the same doc again in null-segment
+        // Result must be exactly 1 document
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "SharedTerm", null, null, null, culture, "segment-1", null, 0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(1), "Document matched in segment should not be duplicated");
+        Assert.That(results.Documents.Count(), Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [SetUp]
+    public async Task CreateTestDocuments()
+    {
+        ILanguage langDk = new LanguageBuilder()
+            .WithCultureInfo("da-DK")
+            .Build();
+        await LanguageService.CreateAsync(langDk, Constants.Security.SuperUserKey);
+
+        IContentType contentType = new ContentTypeBuilder()
+            .WithAlias("segmentTestType")
+            .WithContentVariation(ContentVariation.CultureAndSegment)
+            .AddPropertyType()
+            .WithAlias("segmentedProperty")
+            .WithVariations(ContentVariation.CultureAndSegment)
+            .WithDataTypeId(Constants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+            .Done()
+            .Build();
+        ContentTypeService.Save(contentType);
+
+        // Document 1: Has distinct values in null-segment, segment-1, and segment-2
+        // This allows us to test that searches are isolated to the correct segment
+        Content docWithAllSegments = new ContentBuilder()
+            .WithKey(DocumentWithAllSegmentsKey)
+            .WithContentType(contentType)
+            .WithCultureName("en-US", "DocWithAllSegments")
+            .WithCultureName("da-DK", "DokMedAlleSegmenter")
+            .Build();
+
+        // Null segment: unique term "InNullSegmentOnly" + shared term "SharedTerm"
+        docWithAllSegments.SetValue("segmentedProperty", "InNullSegmentOnly SharedTerm", "en-US");
+        docWithAllSegments.SetValue("segmentedProperty", "InNullSegmentOnly SharedTerm", "da-DK");
+
+        // Segment-1: unique term "InSegment1Only" + shared term "SharedTerm"
+        docWithAllSegments.SetValue("segmentedProperty", "InSegment1Only SharedTerm", "en-US", "segment-1");
+        docWithAllSegments.SetValue("segmentedProperty", "InSegment1Only SharedTerm", "da-DK", "segment-1");
+
+        // Segment-2: unique term "InSegment2Only" (no shared term to keep it simple)
+        docWithAllSegments.SetValue("segmentedProperty", "InSegment2Only", "en-US", "segment-2");
+        docWithAllSegments.SetValue("segmentedProperty", "InSegment2Only", "da-DK", "segment-2");
+
+        // Document 2: Only has null-segment values (tests fallback for documents without segment-specific content)
+        Content docWithOnlyNullSegment = new ContentBuilder()
+            .WithKey(DocumentWithOnlyNullSegmentKey)
+            .WithContentType(contentType)
+            .WithCultureName("en-US", "DocWithOnlyNullSegment")
+            .WithCultureName("da-DK", "DokMedKunNulSegment")
+            .Build();
+
+        docWithOnlyNullSegment.SetValue("segmentedProperty", "OnlyInNullSegmentDocument", "en-US");
+        docWithOnlyNullSegment.SetValue("segmentedProperty", "OnlyInNullSegmentDocument", "da-DK");
+
+        // Document 3: Only has segment-1 values (no null-segment fallback available)
+        Content docWithOnlySegment1 = new ContentBuilder()
+            .WithKey(DocumentWithOnlySegment1Key)
+            .WithContentType(contentType)
+            .WithCultureName("en-US", "DocWithOnlySegment1")
+            .WithCultureName("da-DK", "DokMedKunSegment1")
+            .Build();
+
+        docWithOnlySegment1.SetValue("segmentedProperty", "OnlyInSegment1Document", "en-US", "segment-1");
+        docWithOnlySegment1.SetValue("segmentedProperty", "OnlyInSegment1Document", "da-DK", "segment-1");
+
+        await WaitForIndexing(GetIndexAlias(true), () =>
+        {
+            ContentService.Save(docWithAllSegments);
+            ContentService.Publish(docWithAllSegments, ["*"]);
+
+            ContentService.Save(docWithOnlyNullSegment);
+            ContentService.Publish(docWithOnlyNullSegment, ["*"]);
+
+            ContentService.Save(docWithOnlySegment1);
+            ContentService.Publish(docWithOnlySegment1, ["*"]);
+
+            return Task.CompletedTask;
+        });
+    }
+}
