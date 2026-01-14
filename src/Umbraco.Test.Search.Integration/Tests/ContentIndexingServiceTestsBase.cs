@@ -1,4 +1,5 @@
-﻿using Umbraco.Cms.Core.HostedServices;
+﻿using Microsoft.Extensions.DependencyInjection.Extensions;
+using Umbraco.Cms.Core.HostedServices;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.Models.Indexing;
@@ -21,8 +22,8 @@ public abstract class ContentIndexingServiceTestsBase : UmbracoIntegrationTest
 
         builder.AddSearchCore();
 
-        builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
-        builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
+        builder.Services.TryAddSingleton<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
+        builder.Services.TryAddSingleton<IServerMessenger, LocalServerMessenger>();
     }
 
     protected class TestContentChangeStrategy : IPublishedContentChangeStrategy, IDraftContentChangeStrategy

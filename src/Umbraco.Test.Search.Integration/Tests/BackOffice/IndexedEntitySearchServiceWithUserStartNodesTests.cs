@@ -1,4 +1,5 @@
-﻿using Moq;
+﻿using Microsoft.Extensions.DependencyInjection.Extensions;
+using Moq;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Entities;
@@ -34,7 +35,7 @@ public class IndexedEntitySearchServiceWithUserStartNodesTests : BackOfficeTestB
             .SetupGet(b => b.BackOfficeSecurity)
             .Returns(backOfficeSecurity.Object);
 
-        builder.Services.AddUnique(backOfficeSecurityAccessor.Object);
+        builder.Services.TryAddSingleton(backOfficeSecurityAccessor.Object);
     }
 
     public override async Task SetupTest()

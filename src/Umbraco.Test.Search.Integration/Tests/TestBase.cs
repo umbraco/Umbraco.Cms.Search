@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.HostedServices;
 using Umbraco.Cms.Core.Models;
@@ -33,10 +34,10 @@ public abstract class TestBase : UmbracoIntegrationTest
 
         builder.AddSearchCore();
 
-        builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
-        builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
-        builder.Services.AddUnique<IIndexDocumentService, IndexDocumentService>();
-        builder.Services.AddUnique<IIndexDocumentRepository, IndexDocumentRepository>();
+        builder.Services.TryAddSingleton<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
+        builder.Services.TryAddSingleton<IServerMessenger, LocalServerMessenger>();
+        builder.Services.TryAddSingleton<IIndexDocumentService, IndexDocumentService>();
+        builder.Services.TryAddSingleton<IIndexDocumentRepository, IndexDocumentRepository>();
 
         builder.Services.AddTransient<IIndexer>(_ => Indexer);
         builder.Services.AddTransient<ISearcher>(_ => Indexer);

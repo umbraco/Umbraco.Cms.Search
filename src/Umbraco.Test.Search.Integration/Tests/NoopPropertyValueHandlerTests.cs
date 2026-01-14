@@ -1,4 +1,5 @@
-﻿using Moq;
+﻿using Microsoft.Extensions.DependencyInjection.Extensions;
+using Moq;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.PublishedContent;
@@ -187,7 +188,7 @@ public class NoopPropertyValueHandlerTests : ContentTestBase
         base.CustomTestSetup(builder);
 
         // short circuit URL generation (i.e. for picked media)
-        builder.Services.AddUnique(Mock.Of<IPublishedUrlProvider>());
+        builder.Services.TryAddSingleton(Mock.Of<IPublishedUrlProvider>());
     }
 
     private IContentType GetContentType() => ContentTypeService.Get("allEditors")

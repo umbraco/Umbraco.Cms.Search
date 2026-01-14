@@ -2,6 +2,7 @@
 using System.Reflection;
 using Examine;
 using Examine.Lucene.Providers;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.HostedServices;
@@ -58,8 +59,8 @@ public class ContentServiceTests : UmbracoIntegrationTest
 
         builder.AddSearchCore();
 
-        builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
-        builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
+        builder.Services.TryAddSingleton<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
+        builder.Services.TryAddSingleton<IServerMessenger, LocalServerMessenger>();
         builder.AddNotificationAsyncHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>();
 
         // the core ConfigureBuilderAttribute won't execute from other assemblies at the moment, so this is a workaround

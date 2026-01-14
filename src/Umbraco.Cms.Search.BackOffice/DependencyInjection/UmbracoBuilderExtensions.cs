@@ -1,7 +1,7 @@
-﻿using Umbraco.Cms.Core.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection.Extensions;
+using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.BackOffice.Services;
-using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.BackOffice.DependencyInjection;
 
@@ -9,9 +9,9 @@ public static class UmbracoBuilderExtensions
 {
     public static IUmbracoBuilder AddBackOfficeSearch(this IUmbracoBuilder builder)
     {
-        builder.Services.AddUnique<IIndexedEntitySearchService, IndexedEntitySearchService>();
-        builder.Services.AddUnique<IContentSearchService, ContentSearchService>();
-        builder.Services.AddUnique<IMediaSearchService, MediaSearchService>();
+        builder.Services.TryAddSingleton<IIndexedEntitySearchService, IndexedEntitySearchService>();
+        builder.Services.TryAddSingleton<IContentSearchService, ContentSearchService>();
+        builder.Services.TryAddSingleton<IMediaSearchService, MediaSearchService>();
 
         return builder;
     }
