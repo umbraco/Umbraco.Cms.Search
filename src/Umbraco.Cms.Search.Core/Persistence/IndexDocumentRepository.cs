@@ -39,15 +39,15 @@ public class IndexDocumentRepository : IIndexDocumentRepository
 
     public async Task<IndexDocument?> GetAsync(Guid id, bool published)
     {
-        Sql<ISqlContext>? sql = _scopeAccessor.AmbientScope?.Database.SqlContext.Sql()
-            .Select<IndexDocumentDto>()
-            .From<IndexDocumentDto>()
-            .Where<IndexDocumentDto>(x => x.Key == id && x.Published == published);
-
         if (_scopeAccessor.AmbientScope is null)
         {
             throw new InvalidOperationException("Cannot get document as there is no ambient scope.");
         }
+
+        Sql<ISqlContext> sql = _scopeAccessor.AmbientScope.Database.SqlContext.Sql()
+            .Select<IndexDocumentDto>()
+            .From<IndexDocumentDto>()
+            .Where<IndexDocumentDto>(x => x.Key == id && x.Published == published);
 
         IndexDocumentDto? documentDto = await _scopeAccessor.AmbientScope.Database.FirstOrDefaultAsync<IndexDocumentDto>(sql);
 
