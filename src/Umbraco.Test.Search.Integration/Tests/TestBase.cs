@@ -34,8 +34,8 @@ public abstract class TestBase : UmbracoIntegrationTest
 
         builder.AddSearchCore();
 
-        builder.Services.TryAddSingleton<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
-        builder.Services.TryAddSingleton<IServerMessenger, LocalServerMessenger>();
+        builder.Services.Replace(ServiceDescriptor.Singleton<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>());
+        builder.Services.Replace(ServiceDescriptor.Singleton<IServerMessenger, LocalServerMessenger>());
         builder.Services.TryAddSingleton<IIndexDocumentService, IndexDocumentService>();
         builder.Services.TryAddSingleton<IIndexDocumentRepository, IndexDocumentRepository>();
 

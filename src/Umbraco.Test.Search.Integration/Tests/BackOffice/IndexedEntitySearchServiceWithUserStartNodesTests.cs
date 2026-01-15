@@ -35,7 +35,7 @@ public class IndexedEntitySearchServiceWithUserStartNodesTests : BackOfficeTestB
             .SetupGet(b => b.BackOfficeSecurity)
             .Returns(backOfficeSecurity.Object);
 
-        builder.Services.TryAddSingleton(backOfficeSecurityAccessor.Object);
+        builder.Services.Replace(Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton(backOfficeSecurityAccessor.Object));
     }
 
     public override async Task SetupTest()

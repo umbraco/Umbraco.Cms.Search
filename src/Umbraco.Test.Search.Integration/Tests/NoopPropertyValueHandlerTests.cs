@@ -188,7 +188,7 @@ public class NoopPropertyValueHandlerTests : ContentTestBase
         base.CustomTestSetup(builder);
 
         // short circuit URL generation (i.e. for picked media)
-        builder.Services.TryAddSingleton(Mock.Of<IPublishedUrlProvider>());
+        builder.Services.Replace(Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton(Mock.Of<IPublishedUrlProvider>()));
     }
 
     private IContentType GetContentType() => ContentTypeService.Get("allEditors")

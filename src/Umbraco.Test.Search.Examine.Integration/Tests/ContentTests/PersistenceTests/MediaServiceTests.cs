@@ -54,8 +54,8 @@ public class MediaServiceTests : UmbracoIntegrationTest
 
         builder.AddSearchCore();
 
-        builder.Services.TryAddSingleton<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
-        builder.Services.TryAddSingleton<IServerMessenger, LocalServerMessenger>();
+        builder.Services.Replace(ServiceDescriptor.Singleton<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>());
+        builder.Services.Replace(ServiceDescriptor.Singleton<IServerMessenger, LocalServerMessenger>());
         builder.AddNotificationAsyncHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>();
 
         // the core ConfigureBuilderAttribute won't execute from other assemblies at the moment, so this is a workaround
