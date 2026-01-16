@@ -37,6 +37,11 @@ public static class UmbracoBuilderExtensions
 
         builder.Services.AddTransient<IPublishedContentChangeStrategy, PublishedContentChangeStrategy>();
         builder.Services.AddTransient<IDraftContentChangeStrategy, DraftContentChangeStrategy>();
+        builder
+            .AddNotificationAsyncHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationAsyncHandler<ContentTypeChangedNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationAsyncHandler<MemberTypeChangedNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationAsyncHandler<MediaTypeChangedNotification, RebuildIndexesNotificationHandler>();
 
         builder
             .AddNotificationHandler<DraftContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
@@ -51,12 +56,6 @@ public static class UmbracoBuilderExtensions
 
         builder.AddCustomCacheRefresherNotificationHandlers();
 
-        return builder;
-    }
-
-    public static IUmbracoBuilder RebuildIndexesAfterStartup(this IUmbracoBuilder builder)
-    {
-        builder.AddNotificationHandler<UmbracoApplicationStartedNotification, RebuildIndexesNotificationHandler>();
         return builder;
     }
 }

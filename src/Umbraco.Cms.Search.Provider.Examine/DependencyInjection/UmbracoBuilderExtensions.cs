@@ -5,7 +5,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Hosting;
+using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Infrastructure.Examine;
+using Umbraco.Cms.Search.Provider.Examine.NotificationHandlers;
 
 namespace Umbraco.Cms.Search.Provider.Examine.DependencyInjection;
 
@@ -33,6 +35,8 @@ public static class UmbracoBuilderExtensions
                 return ActivatorUtilities.CreateInstance<SyncedFileSystemDirectoryFactory>(
                     s, new DirectoryInfo(tempDir), s.GetRequiredService<IApplicationRoot>().ApplicationRoot);
             });
+
+        builder.AddNotificationHandler<UmbracoApplicationStartedNotification, RebuildNotificationHandler>();
 
         builder.Services.AddExamineSearchProviderServices();
 
