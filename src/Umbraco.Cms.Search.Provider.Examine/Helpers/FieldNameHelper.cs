@@ -5,10 +5,22 @@ namespace Umbraco.Cms.Search.Provider.Examine.Helpers;
 internal static class FieldNameHelper
 {
     public static string FieldName(IndexField field, string fieldValues)
-        => FieldName(field.FieldName, fieldValues);
+        => FieldName(field.FieldName, fieldValues, field.Segment);
 
     public static string FieldName(string fieldName, string fieldValues)
         => $"Field_{fieldName}_{fieldValues}";
+
+    public static string FieldName(string fieldName, string fieldValues, string? segment)
+    {
+        var result = $"Field_{fieldName}_{fieldValues}";
+
+        if (segment is not null)
+        {
+            result += $"_{segment}";
+        }
+
+        return result;
+    }
 
     public static string QueryableKeywordFieldName(string fieldName)
         => $"__Query_{fieldName}";

@@ -34,14 +34,17 @@ internal sealed class Indexer : IExamineIndexer
 
         var valuesToIndex = new List<ValueSet>();
 
-        foreach (Variation variation in variations)
+        IEnumerable<IGrouping<string?, Variation>> variationGroups = variations.GroupBy(x => x.Culture);
+
+        foreach (IGrouping<string?, Variation> variationGroup in variationGroups)
         {
-            var indexKey = CalculateIndexKey(key, variation);
-            IEnumerable<IndexField> fieldsToMap = MapFields(fields, variation);
+            var indexKey = CalculateIndexKey(key, variationGroup.Key);
+            // IEnumerable<IndexField> fieldsToMap = MapFields(fields, variation.Culture);
+
             valuesToIndex.Add(new ValueSet(
                 indexKey,
                 objectType.ToString(),
-                MapToDictionary(fieldsToMap, variation.Culture, variation.Segment, protection)));
+                MapToDictionary(fields.Where(x => x.Culture is null || x.Culture == variationGroup.Key), variationGroup.Key, variationGroup.Select(x => x.Segment), protection)));
         }
 
         index.IndexItems(valuesToIndex);
@@ -49,36 +52,36 @@ internal sealed class Indexer : IExamineIndexer
         return Task.CompletedTask;
     }
 
-    private IEnumerable<IndexField> MapFields(IEnumerable<IndexField> fields, Variation variation)
-    {
-        var results = new Dictionary<string, IndexField>();
-        foreach (IndexField field in fields)
-        {
-            if (field.Culture is null && field.Segment is null)
-            {
-                if (results.TryGetValue(field.FieldName, out IndexField? indexField))
-                {
-                    results[field.FieldName] = new IndexField(field.FieldName, MergeIndexValue(indexField.Value, field.Value), variation.Culture, variation.Segment);
-                    continue;
-                }
-
-                results.Add(field.FieldName, field);
-            }
-
-            if (field.Culture == variation.Culture && field.Segment == variation.Segment)
-            {
-                if (results.TryGetValue(field.FieldName, out IndexField? indexField))
-                {
-                    results[field.FieldName] = new IndexField(field.FieldName, MergeIndexValue(indexField.Value, field.Value), variation.Culture, variation.Segment);
-                    continue;
-                }
-
-                results[field.FieldName] = field;
-            }
-        }
-
-        return results.Select(x => x.Value);
-    }
+    // private IEnumerable<IndexField> MapFields(IEnumerable<IndexField> fields, string? culture)
+    // {
+    //     var results = new Dictionary<string, IndexField>();
+    //     foreach (IndexField field in fields)
+    //     {
+    //         if (field.Culture is null)
+    //         {
+    //             if (results.TryGetValue(field.FieldName, out IndexField? indexField))
+    //             {
+    //                 results[field.FieldName] = field with { Value = MergeIndexValue(indexField.Value, field.Value), Culture = culture };
+    //                 continue;
+    //             }
+    //
+    //             results.Add(field.FieldName, field);
+    //         }
+    //
+    //         if (field.Culture == culture)
+    //         {
+    //             if (results.TryGetValue(field.FieldName, out IndexField? indexField))
+    //             {
+    //                 results[field.FieldName] = field with { Value = MergeIndexValue(indexField.Value, field.Value) };
+    //                 continue;
+    //             }
+    //
+    //             results[field.FieldName] = field;
+    //         }
+    //     }
+    //
+    //     return results.Select(x => x.Value);
+    // }
 
     private IndexValue MergeIndexValue(IndexValue original, IndexValue toMerge) =>
         new()
@@ -122,17 +125,13 @@ internal sealed class Indexer : IExamineIndexer
         return Task.CompletedTask;
     }
 
-    private static string CalculateIndexKey(Guid key, Variation variation)
+    private static string CalculateIndexKey(Guid key, string? culture)
     {
         var result = key.ToString().ToLowerInvariant();
 
-        if (variation.Culture is not null)
+        if (culture is not null)
         {
-            result += $"_{variation.Culture}";
-        }
-        if (variation.Segment is not null)
-        {
-            result += $"_{variation.Segment}";
+            result += $"_{culture}";
         }
 
         return result;
@@ -174,7 +173,7 @@ internal sealed class Indexer : IExamineIndexer
         return Task.CompletedTask;
     }
 
-    private Dictionary<string, IEnumerable<object>> MapToDictionary(IEnumerable<IndexField> fields, string? culture, string? segment, ContentProtection? protection)
+    private Dictionary<string, IEnumerable<object>> MapToDictionary(IEnumerable<IndexField> fields, string? culture, IEnumerable<string?> segments, ContentProtection? protection)
     {
         var result = new Dictionary<string, IEnumerable<object>>();
         List<string> aggregatedTexts = [];
@@ -263,7 +262,6 @@ internal sealed class Indexer : IExamineIndexer
 
         // Cannot add null values, so we have to just say "none" here, so we can filter on variant / invariant content
         result.Add(Constants.SystemFields.Culture, [culture ?? Constants.Variance.Invariant]);
-        result.Add(Constants.SystemFields.Segment, [segment ?? Constants.Variance.Invariant]);
         IEnumerable<Guid> protectionIds = protection?.AccessIds ?? new List<Guid> {Guid.Empty};
         result.Add(Constants.SystemFields.Protection, protectionIds.Select(x => x.AsKeyword()));
 
