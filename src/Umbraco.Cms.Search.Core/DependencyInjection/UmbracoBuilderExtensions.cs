@@ -71,7 +71,7 @@ public static class UmbracoBuilderExtensions
                 Version = "1.0",
             });
 
-            // Enable Umbraco authentication for the "Example" Swagger document
+            // Enable Umbraco authentication for the "Search" Swagger document
             // PR: https://github.com/umbraco/Umbraco-CMS/pull/15699
             opt.OperationFilter<UnusedMediaOperationSecurityFilter>();
         });
