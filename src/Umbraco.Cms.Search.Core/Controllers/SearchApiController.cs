@@ -56,12 +56,22 @@ public class SearchApiController : SearchApiControllerBase
 
     [HttpPut("rebuild")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult Rebuild(string indexAlias)
     {
         if (string.IsNullOrWhiteSpace(indexAlias))
         {
             return BadRequest("The indexAlias parameter must be provided and cannot be empty.");
         }
+
+        // Check if the index exists before calling the service
+        IndexRegistration? indexRegistration = _options.GetIndexRegistration(indexAlias);
+        if (indexRegistration is null)
+        {
+            return NotFound($"No index registration found for alias: {indexAlias}");
+        }
+
         _contentIndexingService.Rebuild(indexAlias);
         return Ok();
     }
