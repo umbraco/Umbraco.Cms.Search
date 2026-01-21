@@ -32,4 +32,8 @@
     </AssemblyAttribute>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Umbraco.Cms.Search.BackOffice.Client\Umbraco.Cms.Search.BackOffice.Client.csproj" />
+  </ItemGroup>
+
 </Project>
