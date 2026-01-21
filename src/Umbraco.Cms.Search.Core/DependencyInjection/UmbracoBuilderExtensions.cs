@@ -73,7 +73,7 @@ public static class UmbracoBuilderExtensions
 
             // Enable Umbraco authentication for the "Search" Swagger document
             // PR: https://github.com/umbraco/Umbraco-CMS/pull/15699
-            opt.OperationFilter<UnusedMediaOperationSecurityFilter>();
+            opt.OperationFilter<SearchOperationSecurityFilter>();
         });
 
         return builder;
@@ -85,7 +85,7 @@ public static class UmbracoBuilderExtensions
         return builder;
     }
 
-    public class UnusedMediaOperationSecurityFilter : BackOfficeSecurityRequirementsOperationFilterBase
+    public class SearchOperationSecurityFilter : BackOfficeSecurityRequirementsOperationFilterBase
     {
         protected override string ApiName => Constants.Api.Name;
     }
