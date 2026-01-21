@@ -1,5 +1,5 @@
 {
-  "name": "umbraco-cms-search-back-office-client",
+  "name": "@umbraco-cms/backoffice/search",
   "private": true,
   "version": "0.0.0",
   "type": "module",

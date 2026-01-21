@@ -1,0 +1,14 @@
+{
+  "id": "Umbraco.Cms.Search.Core.Client",
+  "name": "Umbraco.Cms.Search.Core.Client",
+  "version": "0.0.0",
+  "allowTelemetry": true,
+  "extensions": [
+    {
+      "name": "Umbraco Search Bundle",
+      "alias": "Umbraco.Cms.Search.Core.Client.Bundle",
+      "type": "bundle",
+      "js": "/App_Plugins/UmbracoSearch/umbraco-search.js"
+    }
+  ]
+}

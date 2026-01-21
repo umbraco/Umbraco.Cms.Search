@@ -36,7 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Umbraco.Cms.Search.BackOffice.Client\Umbraco.Cms.Search.BackOffice.Client.csproj" />
+    <ProjectReference Include="..\Umbraco.Cms.Search.Core.Client\Umbraco.Cms.Search.Core.Client.csproj" />
   </ItemGroup>
 
 </Project>
