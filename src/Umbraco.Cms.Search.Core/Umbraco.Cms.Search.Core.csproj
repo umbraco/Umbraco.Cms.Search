@@ -14,7 +14,10 @@
 
   <ItemGroup>
     <PackageReference Include="MessagePack" />
+    <PackageReference Include="Umbraco.Cms.Api.Common" />
+    <PackageReference Include="Umbraco.Cms.Api.Management" />
     <PackageReference Include="Umbraco.Cms.Infrastructure"/>
+    <PackageReference Include="Umbraco.Cms.Web.Common" />
   </ItemGroup>
 
   <ItemGroup>

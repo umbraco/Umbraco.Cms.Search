@@ -12,8 +12,11 @@
     <PackageVersion Include="NUnit" Version="3.14.0" />
     <PackageVersion Include="NUnit.Analyzers" Version="3.9.0" />
     <PackageVersion Include="NUnit3TestAdapter" Version="4.5.0" />
+    <PackageVersion Include="Umbraco.Cms.Api.Common" Version="17.0.0" />
+    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="17.0.0" />
     <PackageVersion Include="Umbraco.Cms.Examine.Lucene" Version="17.0.0" />
     <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="17.0.0" />
     <PackageVersion Include="Umbraco.Cms.Tests.Integration" Version="17.0.0" />
+    <PackageVersion Include="Umbraco.Cms.Web.Common" Version="17.0.0" />
   </ItemGroup>
 </Project>
