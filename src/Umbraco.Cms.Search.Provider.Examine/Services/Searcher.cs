@@ -70,10 +70,10 @@ internal sealed class Searcher : IExamineSearcher
             {
                 IBooleanOperation facetSearchQuery = CreateBaseQuery();
                 Filter[] effectiveFilters = filtersAsArray!.Where(filter => filter.FieldName != facet.FieldName).ToArray();
-                facetFilterResults.AddRange(Search(facetSearchQuery, effectiveFilters, [facet], null, 0, 0).Facets);
+                facetFilterResults.AddRange(Search(facetSearchQuery, effectiveFilters, [facet], null, segment, 0, 0).Facets);
             }
 
-            SearchResult documentsSearchResult = Search(CreateBaseQuery(), filtersAsArray, facetsAsArray?.Except(filterFacets), sorters, skip, take);
+            SearchResult documentsSearchResult = Search(CreateBaseQuery(), filtersAsArray, facetsAsArray?.Except(filterFacets), sorters, segment, skip, take);
             searchResult = documentsSearchResult with
             {
                 Facets = facetFilterResults.Union(documentsSearchResult.Facets)
@@ -81,7 +81,7 @@ internal sealed class Searcher : IExamineSearcher
         }
         else
         {
-            searchResult = Search(CreateBaseQuery(), filters, facets, sorters, skip, take);
+            searchResult = Search(CreateBaseQuery(), filters, facets, sorters, segment, skip, take);
         }
 
         return Task.FromResult(searchResult);
@@ -90,9 +90,7 @@ internal sealed class Searcher : IExamineSearcher
         {
             IBooleanOperation searchQuery = index.Searcher
                 .CreateQuery()
-                .GroupedOr([Constants.SystemFields.Culture], culture is null ? [Constants.Variance.Invariant] : [culture, Constants.Variance.Invariant])
-                .And()
-                .GroupedOr([Constants.SystemFields.Segment], segment is null ? [Constants.Variance.Invariant] : [segment, Constants.Variance.Invariant]);
+                .GroupedOr([Constants.SystemFields.Culture], culture is null ? [Constants.Variance.Invariant] : [culture, Constants.Variance.Invariant]);
 
             if (query is not null)
             {
@@ -112,38 +110,7 @@ internal sealed class Searcher : IExamineSearcher
                     // TODO: figure out a way to combine these into one query - i.e. something like:
                     //       IExamineValue BoostedWildcardValue(string q, float boost)
                     //          => new ExamineValue(Examineness.ComplexWildcard, q, boost);
-                    searchQuery.And().Group(nestedQuery => nestedQuery
-                        .Field(
-                            Constants.SystemFields.AggregatedTextsR1,
-                            term.Boost(_searcherOptions.BoostFactorTextR1))
-                        .Or()
-                        .Field(
-                            Constants.SystemFields.AggregatedTextsR1,
-                            term.MultipleCharacterWildcard())
-                        .Or()
-                        .Field(
-                            Constants.SystemFields.AggregatedTextsR2,
-                            term.Boost(_searcherOptions.BoostFactorTextR2))
-                        .Or()
-                        .Field(
-                            Constants.SystemFields.AggregatedTextsR2,
-                            term.MultipleCharacterWildcard())
-                        .Or()
-                        .Field(
-                            Constants.SystemFields.AggregatedTextsR3,
-                            term.Boost(_searcherOptions.BoostFactorTextR3))
-                        .Or()
-                        .Field(
-                            Constants.SystemFields.AggregatedTextsR3,
-                            term.MultipleCharacterWildcard())
-                        .Or()
-                        .Field(
-                            Constants.SystemFields.AggregatedTexts,
-                            term.Boost(1.0f))
-                        .Or()
-                        .Field(
-                            Constants.SystemFields.AggregatedTexts,
-                            term.MultipleCharacterWildcard()));
+                    searchQuery.And().Group(nestedQuery => CreateAggregatedTextQuery(nestedQuery, term, segment));
                 }
             }
 
@@ -158,6 +125,7 @@ internal sealed class Searcher : IExamineSearcher
         IEnumerable<Filter>? filters,
         IEnumerable<Facet>? facets,
         IEnumerable<Sorter>? sorters,
+        string? segment,
         int skip,
         int take)
     {
@@ -167,7 +135,7 @@ internal sealed class Searcher : IExamineSearcher
         Sorter[]? sortersAsArray = sorters as Sorter[] ?? sorters?.ToArray();
 
         // Add facets and filters
-        AddFilters(searchQuery, filters);
+        AddFilters(searchQuery, filters, segment);
         AddFacets(searchQuery, deduplicateFacets);
         AddSorters(searchQuery, sortersAsArray);
 
@@ -267,7 +235,7 @@ internal sealed class Searcher : IExamineSearcher
             _ => throw new ArgumentOutOfRangeException(nameof(sorter))
         };
 
-    private void AddFilters(IBooleanOperation searchQuery, IEnumerable<Filter>? filters)
+    private void AddFilters(IBooleanOperation searchQuery, IEnumerable<Filter>? filters, string? segment)
     {
         if (filters is null)
         {
@@ -297,13 +265,21 @@ internal sealed class Searcher : IExamineSearcher
                     // elsewhere in this service).
                     // for now, we will make do with wildcard text filters across all textual relevance fields, and
                     // live with not having correct relevance boost for the results.
-                    string[] textFields =
+                    List<string> textFields =
                     [
                         FieldNameHelper.FieldName(filter.FieldName, Constants.FieldValues.Texts),
                         FieldNameHelper.FieldName(filter.FieldName, Constants.FieldValues.TextsR1),
                         FieldNameHelper.FieldName(filter.FieldName, Constants.FieldValues.TextsR2),
                         FieldNameHelper.FieldName(filter.FieldName, Constants.FieldValues.TextsR3)
                     ];
+
+                    if (segment is not null)
+                    {
+                        textFields.Add(FieldNameHelper.FieldName(filter.FieldName, Constants.FieldValues.Texts, segment));
+                        textFields.Add(FieldNameHelper.FieldName(filter.FieldName, Constants.FieldValues.TextsR1, segment));
+                        textFields.Add(FieldNameHelper.FieldName(filter.FieldName, Constants.FieldValues.TextsR2, segment));
+                        textFields.Add(FieldNameHelper.FieldName(filter.FieldName, Constants.FieldValues.TextsR3, segment));
+                    }
 
                     IExamineValue[] query = textFilter.Values
                         .SelectMany(value => new IExamineValue[]
@@ -591,4 +567,80 @@ internal sealed class Searcher : IExamineSearcher
 
     private static int GetFacetCount(string fieldName, string key, ISearchResults results)
         => (int?)results.GetFacet(fieldName)?.Facet(key)?.Value ?? 0;
+
+    private INestedBooleanOperation CreateAggregatedTextQuery(INestedQuery nestedQuery, string term, string? searchSegment)
+    {
+        INestedBooleanOperation result = nestedQuery
+            .Field(
+                Constants.SystemFields.AggregatedTextsR1,
+                term.Boost(_searcherOptions.BoostFactorTextR1))
+            .Or()
+            .Field(
+                Constants.SystemFields.AggregatedTextsR1,
+                term.MultipleCharacterWildcard())
+            .Or()
+            .Field(
+                Constants.SystemFields.AggregatedTextsR2,
+                term.Boost(_searcherOptions.BoostFactorTextR2))
+            .Or()
+            .Field(
+                Constants.SystemFields.AggregatedTextsR2,
+                term.MultipleCharacterWildcard())
+            .Or()
+            .Field(
+                Constants.SystemFields.AggregatedTextsR3,
+                term.Boost(_searcherOptions.BoostFactorTextR3))
+            .Or()
+            .Field(
+                Constants.SystemFields.AggregatedTextsR3,
+                term.MultipleCharacterWildcard())
+            .Or()
+            .Field(
+                Constants.SystemFields.AggregatedTexts,
+                term.Boost(1.0f))
+            .Or()
+            .Field(
+                Constants.SystemFields.AggregatedTexts,
+                term.MultipleCharacterWildcard());
+
+        // If segment is specified, search in segment-specific fields first
+        if (searchSegment is not null)
+        {
+            result
+                .Or()
+                .Field(
+                    FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTextsR1, searchSegment),
+                    term.Boost(_searcherOptions.BoostFactorTextR1))
+                .Or()
+                .Field(
+                    FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTextsR1, searchSegment),
+                    term.MultipleCharacterWildcard())
+                .Or()
+                .Field(
+                    FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTextsR2, searchSegment),
+                    term.Boost(_searcherOptions.BoostFactorTextR2))
+                .Or()
+                .Field(
+                    FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTextsR2, searchSegment),
+                    term.MultipleCharacterWildcard())
+                .Or()
+                .Field(
+                    FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTextsR3, searchSegment),
+                    term.Boost(_searcherOptions.BoostFactorTextR3))
+                .Or()
+                .Field(
+                    FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTextsR3, searchSegment),
+                    term.MultipleCharacterWildcard())
+                .Or()
+                .Field(
+                    FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTexts, searchSegment),
+                    term.Boost(1.0f))
+                .Or()
+                .Field(
+                    FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTexts, searchSegment),
+                    term.MultipleCharacterWildcard());
+        }
+
+        return result;
+    }
 }

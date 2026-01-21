@@ -27,8 +27,8 @@ public class VariantContentTreeTests : IndexTestBase
         IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
-        // 3 roots with 3 children with 3 grandchildren
-        Assert.That(results.Count(), Is.EqualTo(3 * 3 * 3));
+        // 3 documents (root, child, grandchild) x 3 cultures = 9 documents
+        Assert.That(results.Count(), Is.EqualTo(3 * 3));
     }
 
     [Test]

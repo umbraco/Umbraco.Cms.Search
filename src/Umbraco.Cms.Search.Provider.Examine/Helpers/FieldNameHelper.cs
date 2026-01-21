@@ -24,4 +24,7 @@ internal static class FieldNameHelper
 
     public static string QueryableKeywordFieldName(string fieldName)
         => $"__Query_{fieldName}";
+
+    public static string SegmentedSystemFieldName(string systemFieldName, string? segment)
+        => segment is null ? systemFieldName : $"{systemFieldName}_{segment}";
 }
