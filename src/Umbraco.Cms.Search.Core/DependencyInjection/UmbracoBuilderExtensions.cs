@@ -79,15 +79,15 @@ public static class UmbracoBuilderExtensions
         return builder;
     }
 
+    private class SearchOperationSecurityFilter : BackOfficeSecurityRequirementsOperationFilterBase
+    {
+        protected override string ApiName => Constants.Api.Name;
+    }
+
     public static IUmbracoBuilder RebuildIndexesAfterStartup(this IUmbracoBuilder builder)
     {
         builder.AddNotificationHandler<UmbracoApplicationStartedNotification, RebuildIndexesNotificationHandler>();
         return builder;
-    }
-
-    public class SearchOperationSecurityFilter : BackOfficeSecurityRequirementsOperationFilterBase
-    {
-        protected override string ApiName => Constants.Api.Name;
     }
 
     // This is used to generate nice operation IDs in our swagger json file
