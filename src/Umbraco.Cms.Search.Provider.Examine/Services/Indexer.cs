@@ -119,17 +119,17 @@ internal sealed class Indexer : IExamineIndexer
             return Task.CompletedTask;
         }
         index.CreateIndex();
-        return Task.CompletedTask;
-    }
-
-    public async Task<long> GetDocumentCountAsync(string indexAlias)
+    public Task<long> GetDocumentCountAsync(string indexAlias)
     {
-        if (_examineManager.TryGetIndex(indexAlias, out var index) && index is IIndexStats stats)
+        if (_examineManager.TryGetIndex(indexAlias, out var index))
         {
-            return stats.GetDocumentCount();
+            if (index is IIndexStats stats)
+            {
+                return Task.FromResult(stats.GetDocumentCount());
+            }
         }
 
-        return 0;
+        return Task.FromResult(0L);
     }
 
     private static string CalculateIndexKey(Guid key, Variation variation)
