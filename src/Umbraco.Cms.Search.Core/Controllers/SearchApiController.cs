@@ -55,6 +55,7 @@ public class SearchApiController : SearchApiControllerBase
     }
 
     [HttpPut("rebuild")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult Rebuild(string indexAlias)
     {
         _contentIndexingService.Rebuild(indexAlias);
