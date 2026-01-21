@@ -13,5 +13,7 @@ public sealed class FieldOptions
         public bool Sortable { get; init; }
 
         public bool Facetable { get; init; }
+
+        public string[] Segments { get; init; } = [];
     }
 }

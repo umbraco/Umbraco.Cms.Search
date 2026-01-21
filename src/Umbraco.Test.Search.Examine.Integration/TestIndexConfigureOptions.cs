@@ -104,6 +104,7 @@ public class TestIndexConfigureOptions : IConfigureOptions<FieldOptions>
                 PropertyName = "count",
                 FieldValues = FieldValues.Integers,
                 Facetable = true,
+                Segments = ["segment-1", "segment-2"],
             },
             new FieldOptions.Field
             {
