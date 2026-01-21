@@ -37,11 +37,7 @@ fetch(swaggerUrl).then(async (response) => {
     plugins: [
       ...defaultPlugins,
       '@hey-api/client-fetch',
-      {
-        name: '@hey-api/sdk',
-        asClass: true,
-        classNameBuilder: '{{name}}Service',
-      }
+      '@hey-api/sdk',
     ],
   });
 
