@@ -58,6 +58,10 @@ public class SearchApiController : SearchApiControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult Rebuild(string indexAlias)
     {
+        if (string.IsNullOrWhiteSpace(indexAlias))
+        {
+            return BadRequest("The indexAlias parameter must be provided and cannot be empty.");
+        }
         _contentIndexingService.Rebuild(indexAlias);
         return Ok();
     }
