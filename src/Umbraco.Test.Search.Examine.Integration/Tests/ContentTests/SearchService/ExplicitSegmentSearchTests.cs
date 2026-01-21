@@ -395,6 +395,407 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
 
     #endregion
 
+    #region Decimal Segment Filter Tests
+
+    [TestCase(true, "en-US", "segment-1", 200.5)]
+    [TestCase(false, "en-US", "segment-1", 200.5)]
+    [TestCase(true, "en-US", "segment-2", 300.5)]
+    [TestCase(false, "en-US", "segment-2", 300.5)]
+    [TestCase(true, "da-DK", "segment-1", 200.5)]
+    [TestCase(false, "da-DK", "segment-1", 200.5)]
+    public async Task DecimalExactFilter_WithSegment_FindsContentInThatSegment(bool publish, string culture, string segment, double expectedValue)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DecimalExactFilter("decimalproperty", [(decimal)expectedValue], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    [TestCase(true, "da-DK", "segment-1")]
+    [TestCase(false, "da-DK", "segment-1")]
+    public async Task DecimalExactFilter_WithSegment_FallsBackToNullSegment(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching for 100.5m which only exists in null segment, should fall back
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DecimalExactFilter("decimalproperty", [100.5m], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1), "Should fall back to null segment when explicit segment has no match");
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    public async Task DecimalExactFilter_WithSegment_FindsDocumentWithOnlyNullSegmentViaFallback(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching for 500.5m which only exists in null segment of DocumentWithOnlyNullSegmentKey
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DecimalExactFilter("decimalproperty", [500.5m], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1), "Document with only null-segment decimal value should be found via fallback");
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithOnlyNullSegmentKey));
+    }
+
+    [TestCase(true, "en-US", "segment-1", 700.5)]
+    [TestCase(false, "en-US", "segment-1", 700.5)]
+    public async Task DecimalExactFilter_WithSegment_FindsDocumentWithOnlyThatSegment(bool publish, string culture, string segment, double expectedValue)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching for 700.5m which only exists in segment-1 of DocumentWithOnlySegment1Key
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DecimalExactFilter("decimalproperty", [(decimal)expectedValue], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithOnlySegment1Key));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    public async Task DecimalRangeFilter_WithSegment_FindsContentInThatSegment(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Range 150.0-250.0 should match segment-1's value of 200.5m
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DecimalRangeFilter("decimalproperty", [new DecimalRangeFilterRange(150.0m, 250.0m)], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    public async Task DecimalRangeFilter_WithSegment_FallsBackToNullSegment(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Range 50.0-150.0 should match null segment's value of 100.5m via fallback
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DecimalRangeFilter("decimalproperty", [new DecimalRangeFilterRange(50.0m, 150.0m)], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1), "Should fall back to null segment when explicit segment has no match in range");
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    public async Task DecimalRangeFilter_WithSegment_MatchesBothSegmentAndFallback(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Range 50.0-250.0 should match both segment-1's value (200.5m) and null segment's value (100.5m)
+        // but for the SAME document, so we should get 1 result
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DecimalRangeFilter("decimalproperty", [new DecimalRangeFilterRange(50.0m, 250.0m)], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1), "Same document should only appear once even if both segment and null-segment values match");
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US")]
+    [TestCase(false, "en-US")]
+    public async Task DecimalExactFilter_WithNullSegment_DoesNotFindSegmentSpecificValues(bool publish, string culture)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching for 200.5m (segment-1 value) or 300.5m (segment-2 value) with null segment should find nothing
+        // because null segment search should not include segment-specific content (no "upward" lookup)
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DecimalExactFilter("decimalproperty", [200.5m, 300.5m], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: null,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(0));
+    }
+
+    #endregion
+
+    #region DateTimeOffset Segment Filter Tests
+
+    private static readonly DateTimeOffset BaseDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+    [TestCase(true, "en-US", "segment-1", 31)] // 2025-02-01 is 31 days after 2025-01-01
+    [TestCase(false, "en-US", "segment-1", 31)]
+    [TestCase(true, "en-US", "segment-2", 59)] // 2025-03-01 is 59 days after 2025-01-01
+    [TestCase(false, "en-US", "segment-2", 59)]
+    [TestCase(true, "da-DK", "segment-1", 31)]
+    [TestCase(false, "da-DK", "segment-1", 31)]
+    public async Task DateTimeOffsetExactFilter_WithSegment_FindsContentInThatSegment(bool publish, string culture, string segment, int daysFromBase)
+    {
+        var indexAlias = GetIndexAlias(publish);
+        var expectedDate = BaseDate.AddDays(daysFromBase);
+
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DateTimeOffsetExactFilter("datetime", [expectedDate], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    [TestCase(true, "da-DK", "segment-1")]
+    [TestCase(false, "da-DK", "segment-1")]
+    public async Task DateTimeOffsetExactFilter_WithSegment_FallsBackToNullSegment(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching for 2025-01-01 which only exists in null segment, should fall back
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DateTimeOffsetExactFilter("datetime", [BaseDate], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1), "Should fall back to null segment when explicit segment has no match");
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    public async Task DateTimeOffsetExactFilter_WithSegment_FindsDocumentWithOnlyNullSegmentViaFallback(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching for 2025-05-01 which only exists in null segment of DocumentWithOnlyNullSegmentKey
+        var targetDate = new DateTimeOffset(2025, 5, 1, 0, 0, 0, TimeSpan.Zero);
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DateTimeOffsetExactFilter("datetime", [targetDate], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1), "Document with only null-segment datetime value should be found via fallback");
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithOnlyNullSegmentKey));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    public async Task DateTimeOffsetExactFilter_WithSegment_FindsDocumentWithOnlyThatSegment(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching for 2025-07-01 which only exists in segment-1 of DocumentWithOnlySegment1Key
+        var targetDate = new DateTimeOffset(2025, 7, 1, 0, 0, 0, TimeSpan.Zero);
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DateTimeOffsetExactFilter("datetime", [targetDate], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithOnlySegment1Key));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    public async Task DateTimeOffsetRangeFilter_WithSegment_FindsContentInThatSegment(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Range 2025-01-15 to 2025-02-15 should match segment-1's value of 2025-02-01
+        var rangeStart = new DateTimeOffset(2025, 1, 15, 0, 0, 0, TimeSpan.Zero);
+        var rangeEnd = new DateTimeOffset(2025, 2, 15, 0, 0, 0, TimeSpan.Zero);
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DateTimeOffsetRangeFilter("datetime", [new DateTimeOffsetRangeFilterRange(rangeStart, rangeEnd)], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    public async Task DateTimeOffsetRangeFilter_WithSegment_FallsBackToNullSegment(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Range 2024-12-15 to 2025-01-15 should match null segment's value of 2025-01-01 via fallback
+        var rangeStart = new DateTimeOffset(2024, 12, 15, 0, 0, 0, TimeSpan.Zero);
+        var rangeEnd = new DateTimeOffset(2025, 1, 15, 0, 0, 0, TimeSpan.Zero);
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DateTimeOffsetRangeFilter("datetime", [new DateTimeOffsetRangeFilterRange(rangeStart, rangeEnd)], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1), "Should fall back to null segment when explicit segment has no match in range");
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    public async Task DateTimeOffsetRangeFilter_WithSegment_MatchesBothSegmentAndFallback(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Range 2024-12-15 to 2025-02-15 should match both segment-1's value (2025-02-01) and null segment's value (2025-01-01)
+        // but for the SAME document, so we should get 1 result
+        var rangeStart = new DateTimeOffset(2024, 12, 15, 0, 0, 0, TimeSpan.Zero);
+        var rangeEnd = new DateTimeOffset(2025, 2, 15, 0, 0, 0, TimeSpan.Zero);
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DateTimeOffsetRangeFilter("datetime", [new DateTimeOffsetRangeFilterRange(rangeStart, rangeEnd)], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1), "Same document should only appear once even if both segment and null-segment values match");
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US")]
+    [TestCase(false, "en-US")]
+    public async Task DateTimeOffsetExactFilter_WithNullSegment_DoesNotFindSegmentSpecificValues(bool publish, string culture)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching for 2025-02-01 (segment-1 value) or 2025-03-01 (segment-2 value) with null segment should find nothing
+        // because null segment search should not include segment-specific content (no "upward" lookup)
+        var segment1Date = new DateTimeOffset(2025, 2, 1, 0, 0, 0, TimeSpan.Zero);
+        var segment2Date = new DateTimeOffset(2025, 3, 1, 0, 0, 0, TimeSpan.Zero);
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DateTimeOffsetExactFilter("datetime", [segment1Date, segment2Date], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: null,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(0));
+    }
+
+    #endregion
+
     [SetUp]
     public async Task CreateTestDocuments()
     {
@@ -402,6 +803,16 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
             .WithCultureInfo("da-DK")
             .Build();
         await LanguageService.CreateAsync(langDk, Constants.Security.SuperUserKey);
+
+        DataType decimalDataType = new DataTypeBuilder()
+            .WithId(0)
+            .WithoutIdentity()
+            .WithDatabaseType(ValueStorageType.Decimal)
+            .AddEditor()
+            .WithAlias(Constants.PropertyEditors.Aliases.Decimal)
+            .Done()
+            .Build();
+        DataTypeService.Save(decimalDataType);
 
         IContentType contentType = new ContentTypeBuilder()
             .WithAlias("segmentTestType")
@@ -418,6 +829,18 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
             .WithDataTypeId(-51)
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
             .Done()
+            .AddPropertyType()
+            .WithAlias("decimalproperty")
+            .WithVariations(ContentVariation.CultureAndSegment)
+            .WithDataTypeId(decimalDataType.Id)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Decimal)
+            .Done()
+            .AddPropertyType()
+            .WithAlias("datetime")
+            .WithVariations(ContentVariation.CultureAndSegment)
+            .WithDataTypeId(Constants.DataTypes.DateTime)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.DateTime)
+            .Done()
             .Build();
         ContentTypeService.Save(contentType);
 
@@ -430,26 +853,32 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
             .WithCultureName("da-DK", "DokMedAlleSegmenter")
             .Build();
 
-        // Null segment: unique term "InNullSegmentOnly" + shared term "SharedTerm"
         docWithAllSegments.SetValue("segmentedProperty", "InNullSegmentOnly SharedTerm", "en-US");
         docWithAllSegments.SetValue("segmentedProperty", "InNullSegmentOnly SharedTerm", "da-DK");
-        // Integer value for null segment: 100
         docWithAllSegments.SetValue("count", 100, "en-US");
         docWithAllSegments.SetValue("count", 100, "da-DK");
+        docWithAllSegments.SetValue("decimalproperty", 100.5m, "en-US");
+        docWithAllSegments.SetValue("decimalproperty", 100.5m, "da-DK");
+        docWithAllSegments.SetValue("datetime", new DateTime(2025, 1, 1), "en-US");
+        docWithAllSegments.SetValue("datetime", new DateTime(2025, 1, 1), "da-DK");
 
-        // Segment-1: unique term "InSegment1Only" + shared term "SharedTerm"
         docWithAllSegments.SetValue("segmentedProperty", "InSegment1Only SharedTerm", "en-US", "segment-1");
         docWithAllSegments.SetValue("segmentedProperty", "InSegment1Only SharedTerm", "da-DK", "segment-1");
-        // Integer value for segment-1: 200
         docWithAllSegments.SetValue("count", 200, "en-US", "segment-1");
         docWithAllSegments.SetValue("count", 200, "da-DK", "segment-1");
+        docWithAllSegments.SetValue("decimalproperty", 200.5m, "en-US", "segment-1");
+        docWithAllSegments.SetValue("decimalproperty", 200.5m, "da-DK", "segment-1");
+        docWithAllSegments.SetValue("datetime", new DateTime(2025, 2, 1), "en-US", "segment-1");
+        docWithAllSegments.SetValue("datetime", new DateTime(2025, 2, 1), "da-DK", "segment-1");
 
-        // Segment-2: unique term "InSegment2Only" (no shared term to keep it simple)
         docWithAllSegments.SetValue("segmentedProperty", "InSegment2Only", "en-US", "segment-2");
         docWithAllSegments.SetValue("segmentedProperty", "InSegment2Only", "da-DK", "segment-2");
-        // Integer value for segment-2: 300
         docWithAllSegments.SetValue("count", 300, "en-US", "segment-2");
         docWithAllSegments.SetValue("count", 300, "da-DK", "segment-2");
+        docWithAllSegments.SetValue("decimalproperty", 300.5m, "en-US", "segment-2");
+        docWithAllSegments.SetValue("decimalproperty", 300.5m, "da-DK", "segment-2");
+        docWithAllSegments.SetValue("datetime", new DateTime(2025, 3, 1), "en-US", "segment-2");
+        docWithAllSegments.SetValue("datetime", new DateTime(2025, 3, 1), "da-DK", "segment-2");
 
         // Document 2: Only has null-segment values (tests fallback for documents without segment-specific content)
         Content docWithOnlyNullSegment = new ContentBuilder()
@@ -461,9 +890,12 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
 
         docWithOnlyNullSegment.SetValue("segmentedProperty", "OnlyInNullSegmentDocument", "en-US");
         docWithOnlyNullSegment.SetValue("segmentedProperty", "OnlyInNullSegmentDocument", "da-DK");
-        // Integer value for null segment: 500
         docWithOnlyNullSegment.SetValue("count", 500, "en-US");
         docWithOnlyNullSegment.SetValue("count", 500, "da-DK");
+        docWithOnlyNullSegment.SetValue("decimalproperty", 500.5m, "en-US");
+        docWithOnlyNullSegment.SetValue("decimalproperty", 500.5m, "da-DK");
+        docWithOnlyNullSegment.SetValue("datetime", new DateTime(2025, 5, 1), "en-US");
+        docWithOnlyNullSegment.SetValue("datetime", new DateTime(2025, 5, 1), "da-DK");
 
         // Document 3: Only has segment-1 values (no null-segment fallback available)
         Content docWithOnlySegment1 = new ContentBuilder()
@@ -475,9 +907,12 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
 
         docWithOnlySegment1.SetValue("segmentedProperty", "OnlyInSegment1Document", "en-US", "segment-1");
         docWithOnlySegment1.SetValue("segmentedProperty", "OnlyInSegment1Document", "da-DK", "segment-1");
-        // Integer value for segment-1: 700
         docWithOnlySegment1.SetValue("count", 700, "en-US", "segment-1");
         docWithOnlySegment1.SetValue("count", 700, "da-DK", "segment-1");
+        docWithOnlySegment1.SetValue("decimalproperty", 700.5m, "en-US", "segment-1");
+        docWithOnlySegment1.SetValue("decimalproperty", 700.5m, "da-DK", "segment-1");
+        docWithOnlySegment1.SetValue("datetime", new DateTime(2025, 7, 1), "en-US", "segment-1");
+        docWithOnlySegment1.SetValue("datetime", new DateTime(2025, 7, 1), "da-DK", "segment-1");
 
         await WaitForIndexing(GetIndexAlias(true), () =>
         {

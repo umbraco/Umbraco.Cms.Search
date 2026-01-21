@@ -86,6 +86,7 @@ public class TestIndexConfigureOptions : IConfigureOptions<FieldOptions>
                 PropertyName = "decimalproperty",
                 FieldValues = FieldValues.Decimals,
                 Facetable = true,
+                Segments = ["segment-1", "segment-2"],
             },
             new FieldOptions.Field
             {
@@ -98,6 +99,7 @@ public class TestIndexConfigureOptions : IConfigureOptions<FieldOptions>
                 PropertyName = "datetime",
                 FieldValues = FieldValues.DateTimeOffsets,
                 Facetable = true,
+                Segments = ["segment-1", "segment-2"],
             },
             new FieldOptions.Field
             {
