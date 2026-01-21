@@ -119,6 +119,9 @@ internal sealed class Indexer : IExamineIndexer
             return Task.CompletedTask;
         }
         index.CreateIndex();
+        return Task.CompletedTask;
+    }
+    
     public Task<long> GetDocumentCountAsync(string indexAlias)
     {
         if (_examineManager.TryGetIndex(indexAlias, out var index))
