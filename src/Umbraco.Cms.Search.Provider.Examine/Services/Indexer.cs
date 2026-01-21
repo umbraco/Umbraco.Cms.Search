@@ -124,12 +124,9 @@ internal sealed class Indexer : IExamineIndexer
 
     public async Task<long> GetDocumentCountAsync(string indexAlias)
     {
-        if (_examineManager.TryGetIndex(indexAlias, out var index))
+        if (_examineManager.TryGetIndex(indexAlias, out var index) && index is IIndexStats stats)
         {
-            if (index is IIndexStats stats)
-            {
-                return stats.GetDocumentCount();
-            }
+            return stats.GetDocumentCount();
         }
 
         return 0;
