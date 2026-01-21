@@ -31,7 +31,7 @@ public class SearchApiController : SearchApiControllerBase
     }
 
     [HttpGet("indexes")]
-    [ProducesResponseType<IndexViewModel>(StatusCodes.Status200OK)]
+    [ProducesResponseType<PagedViewModel<IndexViewModel>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> Indexes()
     {
         List<IndexViewModel> indexes = [];
