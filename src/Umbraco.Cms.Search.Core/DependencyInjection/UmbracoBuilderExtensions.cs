@@ -91,7 +91,7 @@ public static class UmbracoBuilderExtensions
     }
 
     // This is used to generate nice operation IDs in our swagger json file
-    // So that the gnerated TypeScript client has nice method names and not too verbose
+    // So that the generated TypeScript client has nice method names and not too verbose
     // https://docs.umbraco.com/umbraco-cms/tutorials/creating-a-backoffice-api/umbraco-schema-and-operation-ids#operation-ids
     public class CustomOperationHandler(IOptions<ApiVersioningOptions> apiVersioningOptions)
         : OperationIdHandler(apiVersioningOptions)
