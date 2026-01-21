@@ -2,6 +2,7 @@ using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Searching;
+using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 
@@ -200,6 +201,200 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
         Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
     }
 
+    #region Integer Segment Filter Tests
+
+    [TestCase(true, "en-US", "segment-1", 200)]
+    [TestCase(false, "en-US", "segment-1", 200)]
+    [TestCase(true, "en-US", "segment-2", 300)]
+    [TestCase(false, "en-US", "segment-2", 300)]
+    [TestCase(true, "da-DK", "segment-1", 200)]
+    [TestCase(false, "da-DK", "segment-1", 200)]
+    public async Task IntegerExactFilter_WithSegment_FindsContentInThatSegment(bool publish, string culture, string segment, int expectedValue)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new IntegerExactFilter("count", [expectedValue], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    [TestCase(true, "da-DK", "segment-1")]
+    [TestCase(false, "da-DK", "segment-1")]
+    public async Task IntegerExactFilter_WithSegment_FallsBackToNullSegment(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching for 100 which only exists in null segment, should fall back
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new IntegerExactFilter("count", [100], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1), "Should fall back to null segment when explicit segment has no match");
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    public async Task IntegerExactFilter_WithSegment_FindsDocumentWithOnlyNullSegmentViaFallback(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching for 500 which only exists in null segment of DocumentWithOnlyNullSegmentKey
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new IntegerExactFilter("count", [500], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1), "Document with only null-segment integer value should be found via fallback");
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithOnlyNullSegmentKey));
+    }
+
+    [TestCase(true, "en-US", "segment-1", 700)]
+    [TestCase(false, "en-US", "segment-1", 700)]
+    public async Task IntegerExactFilter_WithSegment_FindsDocumentWithOnlyThatSegment(bool publish, string culture, string segment, int expectedValue)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching for 700 which only exists in segment-1 of DocumentWithOnlySegment1Key
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new IntegerExactFilter("count", [expectedValue], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithOnlySegment1Key));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    public async Task IntegerRangeFilter_WithSegment_FindsContentInThatSegment(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Range 150-250 should match segment-1's value of 200
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new IntegerRangeFilter("count", [new IntegerRangeFilterRange(150, 250)], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    public async Task IntegerRangeFilter_WithSegment_FallsBackToNullSegment(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Range 50-150 should match null segment's value of 100 via fallback
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new IntegerRangeFilter("count", [new IntegerRangeFilterRange(50, 150)], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1), "Should fall back to null segment when explicit segment has no match in range");
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-1")]
+    public async Task IntegerRangeFilter_WithSegment_MatchesBothSegmentAndFallback(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Range 50-250 should match both segment-1's value (200) and null segment's value (100)
+        // but for the SAME document, so we should get 1 result
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new IntegerRangeFilter("count", [new IntegerRangeFilterRange(50, 250)], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1), "Same document should only appear once even if both segment and null-segment values match");
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+    }
+
+    [TestCase(true, "en-US")]
+    [TestCase(false, "en-US")]
+    public async Task IntegerExactFilter_WithNullSegment_DoesNotFindSegmentSpecificValues(bool publish, string culture)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching for 200 (segment-1 value) or 300 (segment-2 value) with null segment should find nothing
+        // because null segment search should not include segment-specific content (no "upward" lookup)
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new IntegerExactFilter("count", [200, 300], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: null,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(0));
+    }
+
+    #endregion
+
     [SetUp]
     public async Task CreateTestDocuments()
     {
@@ -217,6 +412,12 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
             .WithDataTypeId(Constants.DataTypes.Textbox)
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
             .Done()
+            .AddPropertyType()
+            .WithAlias("count")
+            .WithVariations(ContentVariation.CultureAndSegment)
+            .WithDataTypeId(-51)
+            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Integer)
+            .Done()
             .Build();
         ContentTypeService.Save(contentType);
 
@@ -232,14 +433,23 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
         // Null segment: unique term "InNullSegmentOnly" + shared term "SharedTerm"
         docWithAllSegments.SetValue("segmentedProperty", "InNullSegmentOnly SharedTerm", "en-US");
         docWithAllSegments.SetValue("segmentedProperty", "InNullSegmentOnly SharedTerm", "da-DK");
+        // Integer value for null segment: 100
+        docWithAllSegments.SetValue("count", 100, "en-US");
+        docWithAllSegments.SetValue("count", 100, "da-DK");
 
         // Segment-1: unique term "InSegment1Only" + shared term "SharedTerm"
         docWithAllSegments.SetValue("segmentedProperty", "InSegment1Only SharedTerm", "en-US", "segment-1");
         docWithAllSegments.SetValue("segmentedProperty", "InSegment1Only SharedTerm", "da-DK", "segment-1");
+        // Integer value for segment-1: 200
+        docWithAllSegments.SetValue("count", 200, "en-US", "segment-1");
+        docWithAllSegments.SetValue("count", 200, "da-DK", "segment-1");
 
         // Segment-2: unique term "InSegment2Only" (no shared term to keep it simple)
         docWithAllSegments.SetValue("segmentedProperty", "InSegment2Only", "en-US", "segment-2");
         docWithAllSegments.SetValue("segmentedProperty", "InSegment2Only", "da-DK", "segment-2");
+        // Integer value for segment-2: 300
+        docWithAllSegments.SetValue("count", 300, "en-US", "segment-2");
+        docWithAllSegments.SetValue("count", 300, "da-DK", "segment-2");
 
         // Document 2: Only has null-segment values (tests fallback for documents without segment-specific content)
         Content docWithOnlyNullSegment = new ContentBuilder()
@@ -251,6 +461,9 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
 
         docWithOnlyNullSegment.SetValue("segmentedProperty", "OnlyInNullSegmentDocument", "en-US");
         docWithOnlyNullSegment.SetValue("segmentedProperty", "OnlyInNullSegmentDocument", "da-DK");
+        // Integer value for null segment: 500
+        docWithOnlyNullSegment.SetValue("count", 500, "en-US");
+        docWithOnlyNullSegment.SetValue("count", 500, "da-DK");
 
         // Document 3: Only has segment-1 values (no null-segment fallback available)
         Content docWithOnlySegment1 = new ContentBuilder()
@@ -262,6 +475,9 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
 
         docWithOnlySegment1.SetValue("segmentedProperty", "OnlyInSegment1Document", "en-US", "segment-1");
         docWithOnlySegment1.SetValue("segmentedProperty", "OnlyInSegment1Document", "da-DK", "segment-1");
+        // Integer value for segment-1: 700
+        docWithOnlySegment1.SetValue("count", 700, "en-US", "segment-1");
+        docWithOnlySegment1.SetValue("count", 700, "da-DK", "segment-1");
 
         await WaitForIndexing(GetIndexAlias(true), () =>
         {

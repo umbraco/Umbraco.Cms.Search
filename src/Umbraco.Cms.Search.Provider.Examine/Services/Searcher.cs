@@ -300,38 +300,44 @@ internal sealed class Searcher : IExamineSearcher
                     break;
                 case IntegerRangeFilter integerRangeFilter:
                     var integerRangeFieldName = FieldNameHelper.FieldName(integerRangeFilter.FieldName, Constants.FieldValues.Integers);
+                    var integerRangeSegmentFieldName = segment is not null ? FieldNameHelper.FieldName(integerRangeFilter.FieldName, Constants.FieldValues.Integers, segment) : null;
                     FilterRange<int>[] integerRanges = integerRangeFilter.Ranges
                         .Select(r => new FilterRange<int>(r.MinValue ?? int.MinValue, r.MaxValue ?? int.MaxValue))
                         .ToArray();
-                    searchQuery.AddRangeFilter(integerRangeFieldName, integerRangeFilter.Negate, integerRanges);
+                    searchQuery.AddRangeFilter(integerRangeFieldName, integerRangeSegmentFieldName, integerRangeFilter.Negate, integerRanges);
                     break;
                 case IntegerExactFilter integerExactFilter:
                     var integerExactFieldName = FieldNameHelper.FieldName(integerExactFilter.FieldName, Constants.FieldValues.Integers);
-                    searchQuery.AddExactFilter(integerExactFieldName, integerExactFilter);
+                    var integerExactSegmentFieldName = segment is not null ? FieldNameHelper.FieldName(integerExactFilter.FieldName, Constants.FieldValues.Integers, segment) : null;
+                    searchQuery.AddExactFilter(integerExactFieldName, integerExactSegmentFieldName, integerExactFilter);
                     break;
                 case DecimalRangeFilter decimalRangeFilter:
                     var decimalRangeFieldName = FieldNameHelper.FieldName(decimalRangeFilter.FieldName, Constants.FieldValues.Decimals);
+                    var decimalRangeSegmentFieldName = segment is not null ? FieldNameHelper.FieldName(decimalRangeFilter.FieldName, Constants.FieldValues.Decimals, segment) : null;
                     FilterRange<double>[] doubleRanges = decimalRangeFilter.Ranges
                         .Select(r => new FilterRange<double>(Convert.ToDouble(r.MinValue ?? decimal.MinValue), Convert.ToDouble(r.MaxValue ?? decimal.MaxValue)))
                         .ToArray();
-                    searchQuery.AddRangeFilter(decimalRangeFieldName, decimalRangeFilter.Negate, doubleRanges);
+                    searchQuery.AddRangeFilter(decimalRangeFieldName, decimalRangeSegmentFieldName, decimalRangeFilter.Negate, doubleRanges);
                     break;
                 case DecimalExactFilter decimalExactFilter:
                     var decimalExactFieldName = FieldNameHelper.FieldName(decimalExactFilter.FieldName, Constants.FieldValues.Decimals);
+                    var decimalExactSegmentFieldName = segment is not null ? FieldNameHelper.FieldName(decimalExactFilter.FieldName, Constants.FieldValues.Decimals, segment) : null;
                     var doubleExactFilter = new DoubleExactFilter(filter.FieldName, decimalExactFilter.Values.Select(xx => (double)xx).ToArray(), filter.Negate);
-                    searchQuery.AddExactFilter(decimalExactFieldName, doubleExactFilter);
+                    searchQuery.AddExactFilter(decimalExactFieldName, decimalExactSegmentFieldName, doubleExactFilter);
                     break;
                 case DateTimeOffsetRangeFilter dateTimeOffsetRangeFilter:
                     var dateTimeOffsetRangeFieldName = FieldNameHelper.FieldName(dateTimeOffsetRangeFilter.FieldName, Constants.FieldValues.DateTimeOffsets);
+                    var dateTimeOffsetRangeSegmentFieldName = segment is not null ? FieldNameHelper.FieldName(dateTimeOffsetRangeFilter.FieldName, Constants.FieldValues.DateTimeOffsets, segment) : null;
                     FilterRange<DateTime>[] dateTimeRanges = dateTimeOffsetRangeFilter.Ranges
                         .Select(r => new FilterRange<DateTime>(r.MinValue?.DateTime ?? DateTime.MinValue, r.MaxValue?.DateTime ?? DateTime.MaxValue))
                         .ToArray();
-                    searchQuery.AddRangeFilter(dateTimeOffsetRangeFieldName, dateTimeOffsetRangeFilter.Negate, dateTimeRanges);
+                    searchQuery.AddRangeFilter(dateTimeOffsetRangeFieldName, dateTimeOffsetRangeSegmentFieldName, dateTimeOffsetRangeFilter.Negate, dateTimeRanges);
                     break;
                 case DateTimeOffsetExactFilter dateTimeOffsetExactFilter:
                     var dateTimeOffsetExactFieldName = FieldNameHelper.FieldName(dateTimeOffsetExactFilter.FieldName, Constants.FieldValues.DateTimeOffsets);
+                    var dateTimeOffsetExactSegmentFieldName = segment is not null ? FieldNameHelper.FieldName(dateTimeOffsetExactFilter.FieldName, Constants.FieldValues.DateTimeOffsets, segment) : null;
                     var datetimeExactFilter = new DateTimeExactFilter(filter.FieldName, dateTimeOffsetExactFilter.Values.Select(value => value.DateTime).ToArray(), filter.Negate);
-                    searchQuery.AddExactFilter(dateTimeOffsetExactFieldName, datetimeExactFilter);
+                    searchQuery.AddExactFilter(dateTimeOffsetExactFieldName, dateTimeOffsetExactSegmentFieldName, datetimeExactFilter);
                     break;
             }
         }
