@@ -69,7 +69,7 @@ public class SearchApiController : SearchApiControllerBase
         IndexRegistration? indexRegistration = _options.GetIndexRegistration(indexAlias);
         if (indexRegistration is null)
         {
-            return NotFound($"No index registration found for alias: {indexAlias}");
+            return NotFound("The specified index alias was not found.");
         }
 
         _contentIndexingService.Rebuild(indexAlias);
