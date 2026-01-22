@@ -1,5 +1,5 @@
 import { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
-import {HealthStatusModel} from "../api";
+import { HealthStatusModel } from '../api';
 
 export default {
   search: {
