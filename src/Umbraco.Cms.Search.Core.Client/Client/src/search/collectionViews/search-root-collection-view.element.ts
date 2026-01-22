@@ -1,9 +1,10 @@
-import { IndexModel } from '../../api/index.js';
+import { IndexModel } from '../../api';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { html, customElement, state } from '@umbraco-cms/backoffice/external/lit';
-import {UMB_COLLECTION_CONTEXT} from '@umbraco-cms/backoffice/collection';
+import { UMB_COLLECTION_CONTEXT, UmbDefaultCollectionContext } from '@umbraco-cms/backoffice/collection';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
 import { UmbTableColumn, UmbTableConfig, UmbTableItem } from '@umbraco-cms/backoffice/components';
+import { UmbSearchIndex } from '../types.js';
 
 @customElement('umb-search-root-collection-view')
 export default class UmbSearchRootCollectionView extends UmbLitElement {
@@ -34,11 +35,14 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
     },
   ];
 
+  #collectionContext?: UmbDefaultCollectionContext<UmbSearchIndex, never>;
+
   constructor() {
     super();
 
     this.consumeContext(UMB_COLLECTION_CONTEXT, (instance) => {
-      this.#observeCollectionItems(instance);
+      this.#collectionContext = instance;
+      this.#observeCollectionItems();
     })
   }
 
@@ -48,8 +52,8 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
     `;
   }
 
-  #observeCollectionItems(context) {
-    this.observe(context?.items, (items) => {
+  #observeCollectionItems() {
+    this.observe(this.#collectionContext?.items, (items) => {
       this.#createTable(items);
     }, '_itemsObserver')
   }
@@ -66,7 +70,7 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
           },
           {
             columnAlias: 'healthStatus',
-            value: item.healthStatus
+            value: this.localize.term('search_healthStatus', item.healthStatus),
           },
           {
             columnAlias: 'documentCount',
