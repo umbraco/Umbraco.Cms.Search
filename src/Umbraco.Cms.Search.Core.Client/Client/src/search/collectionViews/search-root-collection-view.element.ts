@@ -16,12 +16,12 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
 
   private _tableColumns: Array<UmbTableColumn> = [
     {
-      name: '#search_tableColumnHealthStatus',
-      alias: 'healthStatus'
-    },
-    {
       name: '#search_tableColumnAlias',
       alias: 'indexAlias',
+    },
+    {
+      name: '#search_tableColumnHealthStatus',
+      alias: 'healthStatus'
     },
     {
       name: '#search_tableColumnDocumentCount',
@@ -70,7 +70,7 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
           },
           {
             columnAlias: 'documentCount',
-            value: item.documentCount
+            value: this.localize.term('search_documentCount', this.localize.number(item.documentCount)),
           },
           // TODO: Extension point?
           /*{
