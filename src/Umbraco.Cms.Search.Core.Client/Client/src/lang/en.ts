@@ -17,6 +17,7 @@ export default {
         default:
           return `${cnt} documents`;
       }
-    }
+    },
+    collectionActionReload: 'Reload indexes',
   }
 } satisfies UmbLocalizationDictionary;
