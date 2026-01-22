@@ -1,13 +1,22 @@
+import { client } from '../api/client.gen.js';
+import { UMB_AUTH_CONTEXT } from '@umbraco-cms/backoffice/auth';
 import type {
   UmbEntryPointOnInit,
   UmbEntryPointOnUnload,
-} from "@umbraco-cms/backoffice/extension-api";
+} from '@umbraco-cms/backoffice/extension-api';
 
-// load up the manifests here
-export const onInit: UmbEntryPointOnInit = (_host, _extensionRegistry) => {
-  console.log("Hello from my extension 🎉");
+export const onInit: UmbEntryPointOnInit = (host, _extensionRegistry) => {
+  host.consumeContext(UMB_AUTH_CONTEXT, authContext => {
+    const config = authContext?.getOpenApiConfiguration();
+    // Set the auth token on the generated client
+    client.setConfig({
+      baseUrl: config?.base,
+      credentials: config?.credentials ?? 'include',
+      auth: config?.token
+    });
+  })
 };
 
 export const onUnload: UmbEntryPointOnUnload = (_host, _extensionRegistry) => {
-  console.log("Goodbye from my extension 👋");
+  // Empty
 };
