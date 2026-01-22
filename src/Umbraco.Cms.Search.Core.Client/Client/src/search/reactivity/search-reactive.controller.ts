@@ -14,14 +14,16 @@ export class UmbSearchReactiveController extends UmbControllerBase {
 
     this.consumeContext(UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT, (instance) => {
       this.#context = instance;
-      this.#watchForSearchIndexChanges();
+      this.#observeSearchIndexChanges();
     });
   }
 
-  #watchForSearchIndexChanges() {
+  #observeSearchIndexChanges() {
     console.log('Watching for search index changes');
     this.observe(this.#context?.byEventSource('IndexRebuildCompleted'), (indexAlias) => {
       console.log('index updated', indexAlias);
+
+      if (!indexAlias) return;
 
       // Try and get latest collection context and reload
       this.#reloadActiveContext();
