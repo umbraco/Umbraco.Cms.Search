@@ -1,10 +1,11 @@
 import { IndexModel } from '../../api';
+import { UmbSearchIndex } from '../types.js';
+import { UmbSearchReactiveController } from "../reactivity/search-reactive.controller.ts";
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { html, customElement, state } from '@umbraco-cms/backoffice/external/lit';
 import { UMB_COLLECTION_CONTEXT, UmbDefaultCollectionContext } from '@umbraco-cms/backoffice/collection';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
 import { UmbTableColumn, UmbTableConfig, UmbTableItem } from '@umbraco-cms/backoffice/components';
-import { UmbSearchIndex } from '../types.js';
 
 @customElement('umb-search-root-collection-view')
 export default class UmbSearchRootCollectionView extends UmbLitElement {
@@ -43,7 +44,9 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
     this.consumeContext(UMB_COLLECTION_CONTEXT, (instance) => {
       this.#collectionContext = instance;
       this.#observeCollectionItems();
-    })
+    });
+
+    new UmbSearchReactiveController(this);
   }
 
   override render() {
