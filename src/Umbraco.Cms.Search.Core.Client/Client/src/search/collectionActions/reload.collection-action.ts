@@ -1,6 +1,6 @@
 import { UMB_COLLECTION_CONTEXT, UmbCollectionActionBase } from '@umbraco-cms/backoffice/collection';
 
-export default class UmbSearchCollectionReloadAction extends UmbCollectionActionBase {
+export class UmbSearchCollectionReloadAction extends UmbCollectionActionBase {
     async execute(): Promise<void> {
       // Try to get the collection context
       const collectionContext = await this.getContext(UMB_COLLECTION_CONTEXT);

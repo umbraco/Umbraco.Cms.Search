@@ -1,5 +1,5 @@
-import {UMB_SEARCH_ROOT_COLLECTION_ALIAS} from "../constants.ts";
-import UmbSearchCollectionReloadAction from "./reload.collection-action.ts";
+import { UMB_SEARCH_ROOT_COLLECTION_ALIAS } from '../constants.js';
+import { UmbSearchCollectionReloadAction } from './reload.collection-action.js';
 
 export const manifests: Array<UmbExtensionManifest> = [
   {
