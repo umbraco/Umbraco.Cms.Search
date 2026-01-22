@@ -1,0 +1,102 @@
+import { IndexModel } from '../../api/index.js';
+import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
+import { html, customElement, state } from '@umbraco-cms/backoffice/external/lit';
+import {UMB_COLLECTION_CONTEXT} from '@umbraco-cms/backoffice/collection';
+import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
+import { UmbTableColumn, UmbTableConfig, UmbTableItem } from '@umbraco-cms/backoffice/components';
+
+@customElement('umb-search-root-collection-view')
+export default class UmbSearchRootCollectionView extends UmbLitElement {
+  @state()
+  private _tableItems: Array<UmbTableItem> = [];
+
+  private _tableConfig: UmbTableConfig = {
+    allowSelection: false,
+  };
+
+  private _tableColumns: Array<UmbTableColumn> = [
+    {
+      name: '#search_tableColumnHealthStatus',
+      alias: 'healthStatus'
+    },
+    {
+      name: '#search_tableColumnAlias',
+      alias: 'indexAlias',
+    },
+    {
+      name: '#search_tableColumnDocumentCount',
+      alias: 'documentCount',
+    },
+    {
+      name: '',
+      alias: 'actions',
+      align: 'right'
+    },
+  ];
+
+  constructor() {
+    super();
+
+    this.consumeContext(UMB_COLLECTION_CONTEXT, (instance) => {
+      this.#observeCollectionItems(instance);
+    })
+  }
+
+  override render() {
+    return html`
+      <umb-table .config=${this._tableConfig} .columns=${this._tableColumns} .items=${this._tableItems}></umb-table>
+    `;
+  }
+
+  #observeCollectionItems(context) {
+    this.observe(context?.items, (items) => {
+      this.#createTable(items);
+    }, '_itemsObserver')
+  }
+
+  #createTable(items: IndexModel[]) {
+    this._tableItems = items.map(item => {
+      return {
+        id: item.indexAlias,
+        icon: this.#healthStatusIcon(item),
+        data: [
+          {
+            columnAlias: 'indexAlias',
+            value: item.indexAlias
+          },
+          {
+            columnAlias: 'healthStatus',
+            value: item.healthStatus
+          },
+          {
+            columnAlias: 'documentCount',
+            value: item.documentCount
+          },
+          // TODO: Extension point?
+          /*{
+            columnAlias: 'actions',
+            value: html`<uui-copy-text-button .text="${item.key}" label="Copy key"></uui-copy-text-button>`
+          }*/
+        ]
+      }
+    })
+  }
+
+  #healthStatusIcon(item: IndexModel) {
+    switch (item.healthStatus) {
+      case 'Healthy':
+        return 'icon-check color-green';
+      case 'Rebuilding':
+        return 'icon-time color-yellow';
+      case 'Empty':
+        return 'icon-check color-yellow';
+      default:
+        // Corrupted or any other status
+        return 'icon-alert color-red';
+    }
+  }
+
+  static override readonly styles = [
+    UmbTextStyles,
+  ];
+}
