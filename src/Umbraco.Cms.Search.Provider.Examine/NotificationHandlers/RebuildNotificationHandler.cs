@@ -38,7 +38,7 @@ public class RebuildNotificationHandler : INotificationHandler<UmbracoApplicatio
             if (_examineManager.TryGetIndex(indexRegistration.IndexAlias, out IIndex? index))
             {
                 // Check if index exists, if it does AND it has items in, we can skip rebuilding
-                if (index.IndexExists() && (index is IIndexStats stats && stats.GetDocumentCount() != 0))
+                if (index.IndexExists())
                 {
                     continue;
                 }
