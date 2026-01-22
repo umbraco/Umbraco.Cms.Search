@@ -57,12 +57,16 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
 
   #observeCollectionItems() {
     this.observe(this.#collectionContext?.items, (items) => {
+      // Make sure we are connected to the DOM, otherwise we might update state when not needed
+      // or when changing to another workspace with similar context.
+      if (!this.isConnected) return;
+
       this.#createTable(items);
     }, '_itemsObserver')
   }
 
   #createTable(items: IndexModel[]) {
-    this._tableItems = items.map(item => {
+    this._tableItems = items?.map(item => {
       return {
         id: item.indexAlias,
         icon: this.#healthStatusIcon(item),
