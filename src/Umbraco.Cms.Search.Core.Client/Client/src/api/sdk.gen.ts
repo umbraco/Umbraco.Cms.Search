@@ -18,13 +18,13 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
     meta?: Record<string, unknown>;
 };
 
-export const indexes = <ThrowOnError extends boolean = false>(options?: Options<IndexesData, ThrowOnError>) => (options?.client ?? client).get<IndexesResponses, IndexesErrors, ThrowOnError>({
+export const indexes = <ThrowOnError extends boolean = true>(options?: Options<IndexesData, ThrowOnError>) => (options?.client ?? client).get<IndexesResponses, IndexesErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/search/api/v1/indexes',
     ...options
 });
 
-export const rebuild = <ThrowOnError extends boolean = false>(options?: Options<RebuildData, ThrowOnError>) => (options?.client ?? client).put<RebuildResponses, RebuildErrors, ThrowOnError>({
+export const rebuild = <ThrowOnError extends boolean = true>(options?: Options<RebuildData, ThrowOnError>) => (options?.client ?? client).put<RebuildResponses, RebuildErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/search/api/v1/rebuild',
     ...options
