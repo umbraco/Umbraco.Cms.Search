@@ -6,9 +6,12 @@ export type ClientOptions = {
 
 export type EventMessageTypeModel = 'Default' | 'Info' | 'Error' | 'Success' | 'Warning';
 
+export type HealthStatusModel = 'Healthy' | 'Rebuilding' | 'Corrupted' | 'Empty' | 'Unknown';
+
 export type IndexModel = {
     indexAlias: string;
     documentCount: number;
+    healthStatus: HealthStatusModel;
 };
 
 export type NotificationHeaderModel = {
