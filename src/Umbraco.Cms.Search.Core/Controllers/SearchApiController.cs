@@ -48,7 +48,7 @@ public class SearchApiController : SearchApiControllerBase
                 {
                     IndexAlias = indexRegistration.IndexAlias,
                     DocumentCount = await indexer.GetDocumentCountAsync(indexRegistration.IndexAlias),
-                    HealthStatus = HealthStatus.Healthy,
+                    HealthStatus = await indexer.GetHealthStatus(indexRegistration.IndexAlias),
                 });
         }
 
