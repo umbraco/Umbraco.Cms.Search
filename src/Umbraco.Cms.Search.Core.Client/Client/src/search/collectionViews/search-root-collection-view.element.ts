@@ -17,15 +17,15 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
 
   private _tableColumns: Array<UmbTableColumn> = [
     {
-      name: '#search_tableColumnAlias',
+      name: this.localize.term('search_tableColumnAlias'),
       alias: 'indexAlias',
     },
     {
-      name: '#search_tableColumnHealthStatus',
+      name: this.localize.term('search_tableColumnHealthStatus'),
       alias: 'healthStatus'
     },
     {
-      name: '#search_tableColumnDocumentCount',
+      name: this.localize.term('search_tableColumnDocumentCount'),
       alias: 'documentCount',
     },
     {
