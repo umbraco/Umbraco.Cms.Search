@@ -1,5 +1,6 @@
 ﻿using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Indexing;
+using Umbraco.Cms.Search.Core.Models.ViewModels;
 
 namespace Umbraco.Cms.Search.Core.Services;
 
@@ -12,4 +13,6 @@ public interface IIndexer
     Task ResetAsync(string indexAlias);
 
     Task<long> GetDocumentCountAsync(string indexAlias);
+
+    Task<HealthStatus> GetHealthStatus(string indexAlias);
 }
