@@ -13,6 +13,7 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
     private static readonly Guid DocumentWithAllSegmentsKey = Guid.NewGuid();
     private static readonly Guid DocumentWithOnlyNullSegmentKey = Guid.NewGuid();
     private static readonly Guid DocumentWithOnlySegment1Key = Guid.NewGuid();
+    private static readonly Guid DocumentWithOverlappingValuesKey = Guid.NewGuid();
 
     [TestCase(true, "en-US", "segment-1")]
     [TestCase(false, "en-US", "segment-1")]
@@ -201,6 +202,19 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
         Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
     }
 
+    [TestCase(true, "en-US", "segment-1", 123)]
+    [TestCase(false, "en-US", "segment-2", 123)]
+    public async Task ExplicitSegmentSearch_WithOverlappingValues_FindsSingleDocumentForAllSegments(bool publish, string culture, string segment, int expectedValue)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching for "Overlapping" which exists in null segment and segment-1 of DocumentWithOverlappingValuesKey
+        SearchResult results = await Searcher.SearchAsync(indexAlias, "Overlapping", null, null, null, culture, segment, null, 0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithOverlappingValuesKey));
+    }
+
     #region Integer Segment Filter Tests
 
     [TestCase(true, "en-US", "segment-1", 200)]
@@ -300,6 +314,29 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
         Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithOnlySegment1Key));
     }
 
+    [TestCase(true, "en-US", "segment-1", 123)]
+    [TestCase(false, "en-US", "segment-2", 123)]
+    public async Task IntegerExactFilter_WithOverlappingValues_FindsSingleDocumentForAllSegments(bool publish, string culture, string segment, int expectedValue)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching for 123 which exists in null segment and segment-1 of DocumentWithOverlappingValuesKey
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new IntegerExactFilter("count", [expectedValue], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithOverlappingValuesKey));
+    }
+
     [TestCase(true, "en-US", "segment-1")]
     [TestCase(false, "en-US", "segment-1")]
     public async Task IntegerRangeFilter_WithSegment_FindsContentInThatSegment(bool publish, string culture, string segment)
@@ -342,8 +379,8 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
             skip: 0,
             take: 100);
 
-        Assert.That(results.Total, Is.EqualTo(1), "Should fall back to null segment when explicit segment has no match in range");
-        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+        Assert.That(results.Total, Is.EqualTo(2), "Should fall back to null segment when explicit segment has no match in range");
+        CollectionAssert.AreEquivalent(new[] { DocumentWithAllSegmentsKey, DocumentWithOverlappingValuesKey }, results.Documents.Select(d => d.Id));
     }
 
     [TestCase(true, "en-US", "segment-1")]
@@ -353,7 +390,7 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
         var indexAlias = GetIndexAlias(publish);
 
         // Range 50-250 should match both segment-1's value (200) and null segment's value (100)
-        // but for the SAME document, so we should get 1 result
+        // but for the SAME document, so that document should only count as one result
         SearchResult results = await Searcher.SearchAsync(
             indexAlias,
             query: null,
@@ -366,8 +403,8 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
             skip: 0,
             take: 100);
 
-        Assert.That(results.Total, Is.EqualTo(1), "Same document should only appear once even if both segment and null-segment values match");
-        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithAllSegmentsKey));
+        Assert.That(results.Total, Is.EqualTo(2), "Same document should only appear once even if both segment and null-segment values match");
+        CollectionAssert.AreEquivalent(new[] { DocumentWithAllSegmentsKey, DocumentWithOverlappingValuesKey }, results.Documents.Select(d => d.Id));
     }
 
     [TestCase(true, "en-US")]
@@ -391,6 +428,29 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
             take: 100);
 
         Assert.That(results.Total, Is.EqualTo(0));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-2")]
+    public async Task IntegerRangeFilter_WithOverlappingValues_FindsSingleDocumentForAllSegments(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Should find 123 in null segment and segment-1 of DocumentWithOverlappingValuesKey
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new IntegerRangeFilter("count", [new IntegerRangeFilterRange(122, 124)], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithOverlappingValuesKey));
     }
 
     #endregion
@@ -495,6 +555,29 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
     }
 
     [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-2")]
+    public async Task DecimalExactFilter_WithOverlappingValues_FindsSingleDocumentForAllSegments(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching for 1234.5 which exists in null-segment and segment-1 of DocumentWithOverlappingValuesKey
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DecimalExactFilter("decimalproperty", [1234.5m], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithOverlappingValuesKey));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
     [TestCase(false, "en-US", "segment-1")]
     public async Task DecimalRangeFilter_WithSegment_FindsContentInThatSegment(bool publish, string culture, string segment)
     {
@@ -585,6 +668,29 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
             take: 100);
 
         Assert.That(results.Total, Is.EqualTo(0));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-2")]
+    public async Task DecimalRangeFilter_WithOverlappingValues_FindsSingleDocumentForAllSegments(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching for 1234.5 which exists in null-segment and segment-1 of DocumentWithOverlappingValuesKey
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DecimalRangeFilter("decimalproperty", [new DecimalRangeFilterRange(1234m, 1235m)], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithOverlappingValuesKey));
     }
 
     #endregion
@@ -694,6 +800,30 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
     }
 
     [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-2")]
+    public async Task DateTimeOffsetExactFilter_WithOverlappingValues_FindsSingleDocumentForAllSegments(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching for 2025-08-01 which exists in null-segment and segment-1 of DocumentWithOverlappingValuesKey
+        var targetDate = new DateTimeOffset(2025, 8, 1, 0, 0, 0, TimeSpan.Zero);
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DateTimeOffsetExactFilter("datetime", [targetDate], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithOverlappingValuesKey));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
     [TestCase(false, "en-US", "segment-1")]
     public async Task DateTimeOffsetRangeFilter_WithSegment_FindsContentInThatSegment(bool publish, string culture, string segment)
     {
@@ -792,6 +922,31 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
             take: 100);
 
         Assert.That(results.Total, Is.EqualTo(0));
+    }
+
+    [TestCase(true, "en-US", "segment-1")]
+    [TestCase(false, "en-US", "segment-2")]
+    public async Task DateTimeOffsetRangeFilter_WithOverlappingValues_FindsSingleDocumentForAllSegments(bool publish, string culture, string segment)
+    {
+        var indexAlias = GetIndexAlias(publish);
+
+        // Searching for 2025-08-01 which exists in null-segment and segment-1 of DocumentWithOverlappingValuesKey
+        var rangeStart = new DateTimeOffset(2025, 07, 30, 0, 0, 0, TimeSpan.Zero);
+        var rangeEnd = new DateTimeOffset(2025, 8, 02, 0, 0, 0, TimeSpan.Zero);
+        SearchResult results = await Searcher.SearchAsync(
+            indexAlias,
+            query: null,
+            filters: [new DateTimeOffsetRangeFilter("datetime", [new DateTimeOffsetRangeFilterRange(rangeStart, rangeEnd)], false)],
+            facets: null,
+            sorters: null,
+            culture: culture,
+            segment: segment,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+        Assert.That(results.Documents.First().Id, Is.EqualTo(DocumentWithOverlappingValuesKey));
     }
 
     #endregion
@@ -914,6 +1069,22 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
         docWithOnlySegment1.SetValue("datetime", new DateTime(2025, 7, 1), "en-US", "segment-1");
         docWithOnlySegment1.SetValue("datetime", new DateTime(2025, 7, 1), "da-DK", "segment-1");
 
+        // Document 4: Has overlapping values for null-segment and segment-1
+        Content docWithOverlappingValues = new ContentBuilder()
+            .WithKey(DocumentWithOverlappingValuesKey)
+            .WithContentType(contentType)
+            .WithCultureName("en-US", "DocWithOverlappingValues")
+            .Build();
+
+        docWithOverlappingValues.SetValue("segmentedProperty", "Overlapping", "en-US");
+        docWithOverlappingValues.SetValue("segmentedProperty", "Overlapping", "en-US", "segment-1");
+        docWithOverlappingValues.SetValue("count", 123, "en-US", null);
+        docWithOverlappingValues.SetValue("count", 123, "en-US", "segment-1");
+        docWithOverlappingValues.SetValue("decimalproperty", 1234.5m, "en-US");
+        docWithOverlappingValues.SetValue("decimalproperty", 1234.5m, "en-US", "segment-1");
+        docWithOverlappingValues.SetValue("datetime", new DateTime(2025, 8, 1), "en-US");
+        docWithOverlappingValues.SetValue("datetime", new DateTime(2025, 8, 1), "en-US", "segment-1");
+
         await WaitForIndexing(GetIndexAlias(true), () =>
         {
             ContentService.Save(docWithAllSegments);
@@ -924,6 +1095,9 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
 
             ContentService.Save(docWithOnlySegment1);
             ContentService.Publish(docWithOnlySegment1, ["*"]);
+
+            ContentService.Save(docWithOverlappingValues);
+            ContentService.Publish(docWithOverlappingValues, ["*"]);
 
             return Task.CompletedTask;
         });
