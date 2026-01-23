@@ -36,15 +36,17 @@ internal sealed class Indexer : IExamineIndexer
 
         IEnumerable<IGrouping<string?, Variation>> variationGroups = variations.GroupBy(x => x.Culture);
 
+        IndexField[] fieldsAsArray = fields as IndexField[] ?? fields.ToArray();
+
         foreach (IGrouping<string?, Variation> variationGroup in variationGroups)
         {
             var indexKey = CalculateIndexKey(key, variationGroup.Key);
-            IEnumerable<IndexField> fieldsToMap = MapFields(fields.Where(x => x.Culture is null || x.Culture == variationGroup.Key), variationGroup.Key);
+            IEnumerable<IndexField> fieldsToMap = MapFields(fieldsAsArray.Where(x => x.Culture is null || x.Culture == variationGroup.Key), variationGroup.Key);
 
             valuesToIndex.Add(new ValueSet(
                 indexKey,
                 objectType.ToString(),
-                MapToDictionary(fieldsToMap, variationGroup.Key, variationGroup.Select(x => x.Segment), protection)));
+                MapToDictionary(fieldsToMap, variationGroup.Key, variationGroup.Select(x => x.Segment).Distinct(), protection)));
         }
 
         index.IndexItems(valuesToIndex);

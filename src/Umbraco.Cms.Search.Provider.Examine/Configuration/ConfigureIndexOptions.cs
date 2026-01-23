@@ -4,6 +4,7 @@ using Lucene.Net.Index;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
+using Umbraco.Extensions;
 using CoreConstants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Configuration;
@@ -75,7 +76,7 @@ internal sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirec
             var fieldName = getFieldName(field, fieldValues);
             AddFieldDefinition(options, field, fieldName, fieldDefinitionType);
 
-            foreach (var segment in field.Segments)
+            foreach (var segment in field.Segments.Distinct().Where(segment => segment.IsNullOrWhiteSpace() is false))
             {
                 var segmentFieldName = FieldNameHelper.FieldName(field.PropertyName, fieldValues, segment);
                 AddFieldDefinition(options, field, segmentFieldName, fieldDefinitionType);
