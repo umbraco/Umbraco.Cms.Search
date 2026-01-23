@@ -1,5 +1,4 @@
 import type { UmbSearchIndex } from '../types.js';
-import { UmbSearchReactiveController } from "../reactivity/search-reactive.controller.ts";
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { html, customElement, state, when } from '@umbraco-cms/backoffice/external/lit';
 import { UMB_COLLECTION_CONTEXT, type UmbDefaultCollectionContext } from '@umbraco-cms/backoffice/collection';
@@ -44,8 +43,6 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
       this.#collectionContext = instance;
       this.#observeCollectionItems();
     });
-
-    new UmbSearchReactiveController(this);
   }
 
   override render() {
