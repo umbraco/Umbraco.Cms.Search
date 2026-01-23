@@ -1,4 +1,5 @@
 ﻿using Umbraco.Cms.Search.Core.Models.Indexing;
+using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Helpers;
 
@@ -8,23 +9,14 @@ internal static class FieldNameHelper
         => FieldName(field.FieldName, fieldValues, field.Segment);
 
     public static string FieldName(string fieldName, string fieldValues)
-        => $"Field_{fieldName}_{fieldValues}";
+        => FieldName(fieldName, fieldValues, null);
 
     public static string FieldName(string fieldName, string fieldValues, string? segment)
-    {
-        var result = $"Field_{fieldName}_{fieldValues}";
-
-        if (segment is not null)
-        {
-            result += $"_{segment}";
-        }
-
-        return result;
-    }
+        => $"Field_{fieldName}_{fieldValues}{(segment.IsNullOrWhiteSpace() ? string.Empty : $"_{segment}")}";
 
     public static string QueryableKeywordFieldName(string fieldName)
         => $"__Query_{fieldName}";
 
     public static string SegmentedSystemFieldName(string systemFieldName, string? segment)
-        => segment is null ? systemFieldName : $"{systemFieldName}_{segment}";
+        => segment.IsNullOrWhiteSpace() ? systemFieldName : $"{systemFieldName}_{segment}";
 }
