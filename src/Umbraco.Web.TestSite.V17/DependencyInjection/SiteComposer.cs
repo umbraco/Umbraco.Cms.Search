@@ -4,7 +4,7 @@ using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.DeliveryApi.DependencyInjection;
 using Umbraco.Cms.Search.Provider.Examine.DependencyInjection;
 
-namespace Umbraco.Web.TestSite.V17.Composers;
+namespace Site.DependencyInjection;
 
 public sealed class SiteComposer : IComposer
 {
@@ -19,9 +19,14 @@ public sealed class SiteComposer : IComposer
             .AddDeliveryApi()
             .AddDeliveryApiSearch()
             // add the backoffice search implementation
-            .AddBackOfficeSearch();
+            .AddBackOfficeSearch()
+            // force rebuild indexes after startup (awaiting a better solution from Core)
+            .RebuildIndexesAfterStartup();
 
-        // force rebuild indexes after startup (awaiting a better solution from Core)
-        builder.RebuildIndexesAfterStartup();
+        builder
+            // configure the Examine search provider for this site
+            .ConfigureExamineSearchProvider()
+            // configure System.Text.Json to allow serializing output models
+            .ConfigureJsonOptions();
     }
 }
