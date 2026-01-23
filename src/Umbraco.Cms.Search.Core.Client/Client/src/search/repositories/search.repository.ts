@@ -1,10 +1,10 @@
 import { rebuild } from '../../api';
 import type { UmbSearchIndex } from '../types.js';
+import { UmbSearchCollectionContext } from '../search-collection.context.js';
 import { UmbSearchCollectionServerDataSource } from './search-collection.server.data-source.js';
 import { UmbRepositoryBase} from '@umbraco-cms/backoffice/repository';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
-import {UMB_COLLECTION_CONTEXT, UmbCollectionRepository} from '@umbraco-cms/backoffice/collection';
-import {UmbSearchCollectionContext} from "../search-collection.context.ts";
+import { UMB_COLLECTION_CONTEXT, type UmbCollectionRepository } from '@umbraco-cms/backoffice/collection';
 
 export class UmbSearchCollectionRepository extends UmbRepositoryBase implements UmbCollectionRepository<UmbSearchIndex, never> {
   #collectionSource = new UmbSearchCollectionServerDataSource(this);
@@ -21,6 +21,7 @@ export class UmbSearchCollectionRepository extends UmbRepositoryBase implements 
     const collectionContext = await this.getContext(UMB_COLLECTION_CONTEXT);
     if (collectionContext instanceof UmbSearchCollectionContext) {
       collectionContext.setIndexState(indexAlias, 'loading');
+      collectionContext.setUserWaitingForIndexUpdate(indexAlias, true);
     }
   }
 }

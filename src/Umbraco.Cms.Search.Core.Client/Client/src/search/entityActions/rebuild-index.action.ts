@@ -1,6 +1,8 @@
 import { UmbSearchCollectionRepository } from '../repositories/index.js';
 import { UmbEntityActionBase } from '@umbraco-cms/backoffice/entity-action';
+import { umbConfirmModal } from "@umbraco-cms/backoffice/modal";
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
+import {UmbLocalizationController} from "@umbraco-cms/backoffice/localization-api";
 
 export class UmbSearchRebuildIndexEntityAction extends UmbEntityActionBase<never> {
   #searchRepository = new UmbSearchCollectionRepository(this);
@@ -10,16 +12,28 @@ export class UmbSearchRebuildIndexEntityAction extends UmbEntityActionBase<never
       throw new Error('Index alias is not provided');
     }
 
-    const notificationContext = await this.getContext(UMB_NOTIFICATION_CONTEXT);
+    try {
+      await umbConfirmModal(this, {
+        color: 'warning',
+        headline: '#search_rebuildConfirmHeadline',
+        content: '#search_rebuildConfirmMessage',
+        confirmLabel: '#search_rebuildConfirmLabel',
+      });
 
-    notificationContext?.peek('warning', {
-      data: {
-        title: 'Search Index Rebuild',
-        message: `Rebuilding search index "${this.args.unique}" has started. This may take a while depending on the size of your content.`,
-      }
-    });
+      const localize = new UmbLocalizationController(this);
+      const notificationContext = await this.getContext(UMB_NOTIFICATION_CONTEXT);
 
-    await this.#searchRepository.rebuildIndex(this.args.unique);
+      notificationContext?.peek('warning', {
+        data: {
+          title: localize.term('search_rebuildConfirmHeadline'),
+          message: localize.term('search_rebuildStartedMessage', this.args.unique),
+        }
+      });
+
+      await this.#searchRepository.rebuildIndex(this.args.unique);
+    } catch {
+      // Ignore errors
+    }
   }
 }
 
