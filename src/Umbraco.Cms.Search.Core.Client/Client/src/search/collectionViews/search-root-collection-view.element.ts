@@ -31,7 +31,7 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
     },
     {
       name: '',
-      alias: 'actions',
+      alias: 'entityActions',
       align: 'right'
     },
   ];
@@ -65,7 +65,7 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
     }, '_itemsObserver')
   }
 
-  #createTable(items: IndexModel[]) {
+  #createTable(items: UmbSearchIndex[]) {
     this._tableItems = items?.map(item => {
       return {
         id: item.indexAlias,
@@ -83,11 +83,15 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
             columnAlias: 'documentCount',
             value: this.localize.term('search_documentCount', this.localize.number(item.documentCount)),
           },
-          // TODO: Extension point?
-          /*{
-            columnAlias: 'actions',
-            value: html`<uui-copy-text-button .text="${item.key}" label="Copy key"></uui-copy-text-button>`
-          }*/
+          {
+            columnAlias: 'entityActions',
+            value: html`<umb-entity-actions-table-column-view
+							.value=${{
+              entityType: item.entityType,
+              unique: item.unique,
+              name: item.indexAlias,
+            }}></umb-entity-actions-table-column-view>`,
+          },
         ]
       }
     })
