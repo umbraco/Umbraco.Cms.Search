@@ -3,3 +3,4 @@ export const UMB_SEARCH_INDEX_ENTITY_TYPE = 'search-index';
 export const UMB_SEARCH_COLLECTION_REPOSITORY_ALIAS = 'UMB_SEARCH_COLLECTION_REPOSITORY';
 export const UMB_SEARCH_ROOT_COLLECTION_ALIAS = 'UMB_SEARCH_ROOT_COLLECTION';
 export const UMB_SEARCH_ROOT_WORKSPACE_ALIAS = 'Umbraco.Search.Workspace.Root';
+export const UMB_SEARCH_COLLECTION_VIEW_ALIAS = 'Umbraco.Search.CollectionView.Root';

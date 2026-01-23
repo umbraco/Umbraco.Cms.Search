@@ -1,11 +1,10 @@
-import { IndexModel } from '../../api';
-import { UmbSearchIndex } from '../types.js';
+import type { UmbSearchIndex } from '../types.js';
 import { UmbSearchReactiveController } from "../reactivity/search-reactive.controller.ts";
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
-import { html, customElement, state } from '@umbraco-cms/backoffice/external/lit';
-import { UMB_COLLECTION_CONTEXT, UmbDefaultCollectionContext } from '@umbraco-cms/backoffice/collection';
+import { html, customElement, state, when } from '@umbraco-cms/backoffice/external/lit';
+import { UMB_COLLECTION_CONTEXT, type UmbDefaultCollectionContext } from '@umbraco-cms/backoffice/collection';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
-import { UmbTableColumn, UmbTableConfig, UmbTableItem } from '@umbraco-cms/backoffice/components';
+import type { UmbTableColumn, UmbTableConfig, UmbTableItem } from '@umbraco-cms/backoffice/components';
 
 @customElement('umb-search-root-collection-view')
 export default class UmbSearchRootCollectionView extends UmbLitElement {
@@ -77,7 +76,12 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
           },
           {
             columnAlias: 'healthStatus',
-            value: this.localize.term('search_healthStatus', item.healthStatus),
+            value:
+              when(
+                item.state === 'loading',
+                () => html`<uui-loader-bar></uui-loader-bar>`,
+                () => this.localize.term('search_healthStatus', item.healthStatus)
+              )
           },
           {
             columnAlias: 'documentCount',
@@ -97,7 +101,10 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
     })
   }
 
-  #healthStatusIcon(item: IndexModel) {
+  #healthStatusIcon(item: UmbSearchIndex) {
+    if (item.state === 'loading') {
+      return 'icon-loading color-blue';
+    }
     switch (item.healthStatus) {
       case 'Healthy':
         return 'icon-check color-green';
