@@ -1,7 +1,7 @@
 ﻿@using Umbraco.Extensions
 @inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage<Umbraco.Cms.Core.Models.Blocks.BlockGridItem>
 @{
-    if (Model?.Areas.Any() != true)
+    if (Model == null || !Model.Areas.Any())
     {
         return;
     }

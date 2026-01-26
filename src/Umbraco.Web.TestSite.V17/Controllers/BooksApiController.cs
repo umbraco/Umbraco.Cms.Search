@@ -3,6 +3,7 @@ using Site.Models;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.DeliveryApi;
 using Umbraco.Cms.Core.PublishedCache;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
@@ -15,20 +16,28 @@ namespace Site.Controllers;
 [ApiController]
 public class BooksApiController : ControllerBase
 {
+    /// <summary>
+    /// The content type alias for the Book document type.
+    /// </summary>
+    private const string BookContentTypeAlias = "book";
+
     private readonly ISearcherResolver _searcherResolver;
     private readonly IApiContentBuilder _apiContentBuilder;
     private readonly ICacheManager _cacheManager;
+    private readonly IContentTypeService _contentTypeService;
     private readonly ILogger<BooksApiController> _logger;
 
     public BooksApiController(
         ISearcherResolver searcherResolver,
         IApiContentBuilder apiContentBuilder,
         ICacheManager cacheManager,
+        IContentTypeService contentTypeService,
         ILogger<BooksApiController> logger)
     {
         _searcherResolver = searcherResolver;
         _apiContentBuilder = apiContentBuilder;
         _cacheManager = cacheManager;
+        _contentTypeService = contentTypeService;
         _logger = logger;
     }
 
@@ -40,7 +49,7 @@ public class BooksApiController : ControllerBase
 
         // get the filters, facets and sorters
         // - filters and sorters are influenced by the active request, facets are fixed
-        var filters = GetFilters(request);
+        var filters = GetFilters(request).ToArray();
         var facets = GetFacets();
         var sorters = GetSorters(request);
 
@@ -84,10 +93,15 @@ public class BooksApiController : ControllerBase
         );
     }
 
-    private static IEnumerable<Filter> GetFilters(BooksSearchRequest request)
+    private IEnumerable<Filter> GetFilters(BooksSearchRequest request)
     {
-        // only include the "book" document type in the results (the document type ID is hardcoded here for simplicity)
-        yield return new KeywordFilter(SearchConstants.FieldNames.ContentTypeId, ["3acd95a1-b9bd-4392-be67-0281dbbe125f"], false);
+        // only include the "book" document type in the results
+        // resolve the content type dynamically to avoid hardcoded GUIDs that break with uSync imports
+        var bookContentType = _contentTypeService.Get(BookContentTypeAlias);
+        if (bookContentType is not null)
+        {
+            yield return new KeywordFilter(SearchConstants.FieldNames.ContentTypeId, [bookContentType.Key.ToString()], false);
+        }
 
         var publishYearFilters = (request.PublishYear ?? []).Select(ParseIntegerRangeFilter).WhereNotNull().ToArray();
         if (publishYearFilters.Length is not 0)
