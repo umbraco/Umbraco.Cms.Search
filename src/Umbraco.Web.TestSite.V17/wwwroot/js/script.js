@@ -1,217 +1,494 @@
-const searchParams = new URLSearchParams();
+/**
+ * Books Search Interface
+ * Provides client-side search functionality for the Umbraco Books demo.
+ */
+(function() {
+    'use strict';
 
-// default pagination values
-searchParams.set('skip', '0');
-searchParams.set('take', '5');
+    // Configuration
+    const CONFIG = {
+        apiEndpoint: '/api/books',
+        defaultPageSize: 5,
+        lengthFacetOrder: ['very short', 'short', 'medium', 'long', 'very long'],
+        sortOptions: [
+            { label: 'Relevance', value: 'relevance' },
+            { label: 'Title', value: 'title' },
+            { label: 'Publish year', value: 'publishYear' }
+        ],
+        sortDirectionOptions: [
+            { label: 'Descending', value: 'desc' },
+            { label: 'Ascending', value: 'asc' }
+        ]
+    };
 
-search = () => {
-    fetch(`/api/books?${searchParams.toString()}`, {method: 'GET'})
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Could not fetch data - response status was: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            render(data);
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-        })
-};
+    // State management
+    const searchParams = new URLSearchParams();
+    searchParams.set('skip', '0');
+    searchParams.set('take', String(CONFIG.defaultPageSize));
 
-render = (searchResult) => {
-    document.getElementById('searchResults').innerHTML = `
-        ${renderSearchResults(searchResult)}
-        ${renderPagination(searchResult)}
-    `;
+    // DOM element references
+    const elements = {
+        searchResults: null,
+        searchFilters: null
+    };
 
-    document.getElementById('searchFilters').innerHTML = `
-        ${renderQuery()}
-        ${renderRangeFacet(searchResult, 'publishYear', 'Century')}
-        ${renderExactFacet(searchResult, 'length', 'Length')}
-        ${renderExactFacet(searchResult, 'authorNationality', 'Nationality')}
-        ${renderSorting()}
-    `;
-};
+    /**
+     * Executes a search request and updates the UI with results
+     */
+    function search() {
+        showLoadingState();
 
-renderSearchResults = (searchResult) => `
-    <fieldset>
-        <legend>Search results</legend>
-        <h2>Found ${searchResult.total} ${searchResult.total === 1 ? 'book' : 'books'}${searchParams.get('query') ? ` for "${searchParams.get('query')}"` : ''}</h2>
-        ${searchResult.documents.map(document => `
-            <h3 style="display: inline">${document.name}</h3> by ${document.properties.author}
-            <br/>
-            <small>
-                Published: <strong>${document.properties.publishYear}</strong> |
-                Length: <strong>${document.properties.length}</strong> |
-                Nationality: <strong>${document.properties.authorNationality[0]}</strong>
-            </small>
-            <p>${document.properties.summary}</p>
-        `).join('')}
-    </fieldset>
-`;
-
-renderPagination = (searchResult) => {
-    const skip = parseInt(searchParams.get('skip'));
-    const take = parseInt(searchParams.get('take'));
-    const totalPages = Math.floor(searchResult.total / take) + (searchResult.total % take === 0 ? 0 : 1);
-
-    let pages = [];
-    for (let i = 1; i <= totalPages; i++){
-        pages.push({
-            pageNumber: i,
-            isCurrent: skip === (i - 1) * take
-        });
+        fetch(`${CONFIG.apiEndpoint}?${searchParams.toString()}`, { method: 'GET' })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                hideLoadingState();
+                render(data);
+            })
+            .catch(error => {
+                hideLoadingState();
+                showError(`Failed to load search results: ${error.message}`);
+                console.error('Search error:', error);
+            });
     }
 
-    return `
-    <fieldset>
-        <legend>Pagination</legend>
-        ${pages.map(page => `
-        <span ${page.isCurrent ? 'style="font-weight: bold;"' : ''}><a href onclick="paginate(event, ${take * (page.pageNumber - 1)})">${page.pageNumber}</a></span>
-        `).join(' - ')}
-    </fieldset>
-`};
+    /**
+     * Renders the complete search interface with results and filters
+     * @param {Object} searchResult - The search result data from the API
+     */
+    function render(searchResult) {
+        if (!elements.searchResults || !elements.searchFilters) {
+            console.error('Required DOM elements not found');
+            return;
+        }
 
-renderQuery = () => `
-    <fieldset>
-        <legend>Query</legend>
-        <input type="text" id="query" placeholder="Enter query" value="${searchParams.get('query') ?? ''}" onkeyup="queryChange(event)">
-    </fieldset>
-`;
+        elements.searchResults.innerHTML = `
+            ${renderSearchResults(searchResult)}
+            ${renderPagination(searchResult)}
+        `;
 
-renderRangeFacet = (searchResult, fieldName, label) => {
-    const facet = searchResult.facets.find(f => f.fieldName === fieldName);
-    if (!facet){
-        return '';
+        elements.searchFilters.innerHTML = `
+            ${renderQuery()}
+            ${renderRangeFacet(searchResult, 'publishYear', 'Century')}
+            ${renderExactFacet(searchResult, 'length', 'Length')}
+            ${renderExactFacet(searchResult, 'authorNationality', 'Nationality')}
+            ${renderSorting()}
+        `;
     }
 
-    return `
-    <fieldset>
-        <legend>${label}</legend>
-        ${facet.values.filter(value => value.count > 0).map(value => {
-            const facetValue = `${value.min},${value.max}`;
+    /**
+     * Renders the search results list
+     * @param {Object} searchResult - The search result data
+     * @returns {string} HTML string for search results
+     */
+    function renderSearchResults(searchResult) {
+        const query = searchParams.get('query');
+        const resultCount = searchResult.total;
+        const pluralizedBooks = resultCount === 1 ? 'book' : 'books';
+        const queryText = query ? ` for "${escapeHtml(query)}"` : '';
+
+        if (resultCount === 0) {
             return `
-        <div>
-            <input type="checkbox" id="${fieldName}:${value.key}" name="${fieldName}" value="${facetValue}" ${searchParams.has(fieldName, facetValue) ? 'checked' : ''} onclick="toggleFacet(event)">
-            <label for="${fieldName}:${value.key}">${value.key} (${value.count})</label>
-        </div>`
-        }).join('')}
-    </fieldset>
-`};
+                <fieldset>
+                    <legend>Search results</legend>
+                    <h2>No books found${queryText}</h2>
+                    <p>Try adjusting your search terms or filters.</p>
+                </fieldset>
+            `;
+        }
 
-renderExactFacet = (searchResult, fieldName, label) => {
-    const facet = searchResult.facets.find(f => f.fieldName === fieldName);
-    if (!facet){
-        return '';
+        return `
+            <fieldset>
+                <legend>Search results</legend>
+                <h2>Found ${resultCount} ${pluralizedBooks}${queryText}</h2>
+                ${searchResult.documents.map(document => `
+                    <article class="book-result">
+                        <h3>${escapeHtml(document.name)}</h3>
+                        <p class="book-meta">
+                            by ${escapeHtml(document.properties.author)}
+                        </p>
+                        <p class="book-details">
+                            <small>
+                                Published: <strong>${document.properties.publishYear}</strong> |
+                                Length: <strong>${escapeHtml(document.properties.length)}</strong> |
+                                Nationality: <strong>${escapeHtml(document.properties.authorNationality[0])}</strong>
+                            </small>
+                        </p>
+                        <p class="book-summary">${escapeHtml(document.properties.summary)}</p>
+                    </article>
+                `).join('')}
+            </fieldset>
+        `;
     }
 
-    let facetValues = [];
+    /**
+     * Renders pagination controls
+     * @param {Object} searchResult - The search result data
+     * @returns {string} HTML string for pagination
+     */
+    function renderPagination(searchResult) {
+        const skip = parseInt(searchParams.get('skip'), 10);
+        const take = parseInt(searchParams.get('take'), 10);
+        const totalPages = Math.ceil(searchResult.total / take);
 
-    // let's present the "Length" facet in a meaningful way, by explicitly ordering the facet values from "very short" to "very long"
-    if (fieldName === 'length') {
-        const facetValueOrder = ['very short', 'short', 'medium', 'long', 'very long'];
-        facetValues = facet.values.sort((a, b) => facetValueOrder.indexOf(a.key.toLowerCase()) - facetValueOrder.indexOf(b.key.toLowerCase()));
+        if (totalPages <= 1) {
+            return '';
+        }
+
+        const pages = Array.from({ length: totalPages }, (_, i) => ({
+            pageNumber: i + 1,
+            isCurrent: skip === i * take,
+            skipValue: i * take
+        }));
+
+        return `
+            <fieldset>
+                <legend>Pagination</legend>
+                <nav class="pagination" aria-label="Search results pagination">
+                    ${pages.map(page => `
+                        <button
+                            type="button"
+                            class="pagination-button${page.isCurrent ? ' current' : ''}"
+                            data-skip="${page.skipValue}"
+                            onclick="BooksSearch.paginate(event, ${page.skipValue})"
+                            ${page.isCurrent ? 'aria-current="page"' : ''}>
+                            ${page.pageNumber}
+                        </button>
+                    `).join(' ')}
+                </nav>
+            </fieldset>
+        `;
     }
-    // ...and order the facet values alphabetically for all other facets 
-    else {
-        facetValues = facet.values.sort((a, b) => a.key.localeCompare(b.key));
+
+    /**
+     * Renders the search query input
+     * @returns {string} HTML string for query input
+     */
+    function renderQuery() {
+        const query = searchParams.get('query') || '';
+        return `
+            <fieldset>
+                <legend>Search</legend>
+                <label for="query" class="visually-hidden">Search query</label>
+                <input
+                    type="search"
+                    id="query"
+                    placeholder="Search books..."
+                    value="${escapeHtml(query)}"
+                    onkeydown="BooksSearch.handleQueryKeydown(event)"
+                    aria-label="Search books">
+            </fieldset>
+        `;
     }
 
-    return `
-    <fieldset>
-        <legend>${label}</legend>
-        ${facetValues.filter(value => value.count > 0).map(value => `
-        <div>
-            <input type="checkbox" id="${fieldName}:${value.key}" value="${value.key}" name="${fieldName}" ${searchParams.has(fieldName, value.key) ? 'checked' : ''} onclick="toggleFacet(event)">
-            <label for="${fieldName}:${value.key}">${value.key} (${value.count})</label>
-        </div>`
-        ).join('')}
-    </fieldset>
-`};
+    /**
+     * Renders a range facet (e.g., date ranges)
+     * @param {Object} searchResult - The search result data
+     * @param {string} fieldName - The field name for the facet
+     * @param {string} label - Display label for the facet
+     * @returns {string} HTML string for range facet
+     */
+    function renderRangeFacet(searchResult, fieldName, label) {
+        const facet = searchResult.facets.find(f => f.fieldName === fieldName);
+        if (!facet) {
+            return '';
+        }
 
-renderSorting = () => {
-    const sortByOptions = [
-        { label: 'Relevance', value: 'relevance' },
-        { label: 'Title', value: 'title' },
-        { label: 'Publish year', value: 'publishYear' }
-    ];
+        const hasActiveFilters = facet.values.some(value => {
+            const facetValue = `${value.min},${value.max}`;
+            return searchParams.has(fieldName, facetValue);
+        });
 
-    const sortDirectionOptions = [
-        { label: 'Descending', value: 'desc' },
-        { label: 'Ascending', value: 'asc' }
-    ];
-    
-    const sortBy = searchParams.get('sortBy') ?? sortByOptions[0].value;
-    const sortDirection = searchParams.get('sortDirection') ?? sortDirectionOptions[0].value;
+        return `
+            <fieldset>
+                <legend>${escapeHtml(label)}</legend>
+                ${facet.values
+                    .filter(value => value.count > 0)
+                    .map(value => {
+                        const facetValue = `${value.min},${value.max}`;
+                        const inputId = `${fieldName}:${sanitizeId(value.key)}`;
+                        const isChecked = searchParams.has(fieldName, facetValue);
 
-    return `
-    <fieldset>
-        <legend>Sorting</legend>
-        <select onchange="sort(event)">
-            ${sortByOptions.map(option => `
-                <option value="${option.value}" ${sortBy === option.value ? 'selected' : ''}>${option.label}</option>
-            `)}
-        </select>
-        <select onchange="sortDirection(event)">
-            ${sortDirectionOptions.map(option => `
-                <option value="${option.value}" ${sortDirection === option.value ? 'selected' : ''}>${option.label}</option>
-            `)}
-        </select>
-    </fieldset>
-`};
+                        return `
+                            <div class="facet-option">
+                                <input
+                                    type="checkbox"
+                                    id="${inputId}"
+                                    name="${fieldName}"
+                                    value="${escapeHtml(facetValue)}"
+                                    ${isChecked ? 'checked' : ''}
+                                    onchange="BooksSearch.toggleFacet(event)">
+                                <label for="${inputId}">
+                                    ${escapeHtml(value.key)} (${value.count})
+                                </label>
+                            </div>
+                        `;
+                    })
+                    .join('')}
+            </fieldset>
+        `;
+    }
 
-queryChange = (event) => {
-    event.preventDefault();
+    /**
+     * Renders an exact value facet (e.g., tags, categories)
+     * @param {Object} searchResult - The search result data
+     * @param {string} fieldName - The field name for the facet
+     * @param {string} label - Display label for the facet
+     * @returns {string} HTML string for exact facet
+     */
+    function renderExactFacet(searchResult, fieldName, label) {
+        const facet = searchResult.facets.find(f => f.fieldName === fieldName);
+        if (!facet) {
+            return '';
+        }
 
-    if (event.keyCode === 13) {
+        // Sort facet values
+        let facetValues;
+        if (fieldName === 'length') {
+            // Custom ordering for length facet
+            facetValues = facet.values.sort((a, b) => {
+                const aIndex = CONFIG.lengthFacetOrder.indexOf(a.key.toLowerCase());
+                const bIndex = CONFIG.lengthFacetOrder.indexOf(b.key.toLowerCase());
+                return aIndex - bIndex;
+            });
+        } else {
+            // Alphabetical ordering for other facets
+            facetValues = facet.values.sort((a, b) => a.key.localeCompare(b.key));
+        }
+
+        return `
+            <fieldset>
+                <legend>${escapeHtml(label)}</legend>
+                ${facetValues
+                    .filter(value => value.count > 0)
+                    .map(value => {
+                        const inputId = `${fieldName}:${sanitizeId(value.key)}`;
+                        const isChecked = searchParams.has(fieldName, value.key);
+
+                        return `
+                            <div class="facet-option">
+                                <input
+                                    type="checkbox"
+                                    id="${inputId}"
+                                    name="${fieldName}"
+                                    value="${escapeHtml(value.key)}"
+                                    ${isChecked ? 'checked' : ''}
+                                    onchange="BooksSearch.toggleFacet(event)">
+                                <label for="${inputId}">
+                                    ${escapeHtml(value.key)} (${value.count})
+                                </label>
+                            </div>
+                        `;
+                    })
+                    .join('')}
+            </fieldset>
+        `;
+    }
+
+    /**
+     * Renders sorting controls
+     * @returns {string} HTML string for sorting controls
+     */
+    function renderSorting() {
+        const sortBy = searchParams.get('sortBy') || CONFIG.sortOptions[0].value;
+        const sortDirection = searchParams.get('sortDirection') || CONFIG.sortDirectionOptions[0].value;
+
+        return `
+            <fieldset>
+                <legend>Sorting</legend>
+                <div class="sort-controls">
+                    <label for="sortBy">Sort by:</label>
+                    <select id="sortBy" onchange="BooksSearch.sort(event)">
+                        ${CONFIG.sortOptions.map(option => `
+                            <option
+                                value="${escapeHtml(option.value)}"
+                                ${sortBy === option.value ? 'selected' : ''}>
+                                ${escapeHtml(option.label)}
+                            </option>
+                        `).join('')}
+                    </select>
+
+                    <label for="sortDirection">Direction:</label>
+                    <select id="sortDirection" onchange="BooksSearch.sortDirection(event)">
+                        ${CONFIG.sortDirectionOptions.map(option => `
+                            <option
+                                value="${escapeHtml(option.value)}"
+                                ${sortDirection === option.value ? 'selected' : ''}>
+                                ${escapeHtml(option.label)}
+                            </option>
+                        `).join('')}
+                    </select>
+                </div>
+            </fieldset>
+        `;
+    }
+
+    /**
+     * Handles query input keydown events
+     * @param {KeyboardEvent} event - The keyboard event
+     */
+    function handleQueryKeydown(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            searchParams.set('query', event.target.value);
+            skipTo(0);
+            search();
+        } else {
+            // Update search params as user types, but don't trigger search
+            searchParams.set('query', event.target.value);
+        }
+    }
+
+    /**
+     * Toggles a facet filter
+     * @param {Event} event - The change event from the checkbox
+     */
+    function toggleFacet(event) {
+        const fieldName = event.target.name;
+        const value = event.target.value;
+
+        if (searchParams.has(fieldName, value)) {
+            searchParams.delete(fieldName, value);
+        } else {
+            searchParams.append(fieldName, value);
+        }
+
         skipTo(0);
         search();
-        return;
     }
 
-    searchParams.set('query', event.target.value);
-}
-
-toggleFacet = (event) => {
-    const fieldName = event.target.name;
-    const value = event.target.value
-
-    if (searchParams.has(fieldName, value)) {
-        searchParams.delete(fieldName, value);
-    }
-    else {
-        searchParams.append(fieldName, value);
+    /**
+     * Handles pagination
+     * @param {Event} event - The click event
+     * @param {number} skip - The number of results to skip
+     */
+    function paginate(event, skip) {
+        event.preventDefault();
+        skipTo(skip);
+        search();
     }
 
-    skipTo(0);
-    search();
-}
+    /**
+     * Handles sort field change
+     * @param {Event} event - The change event
+     */
+    function sort(event) {
+        searchParams.set('sortBy', event.target.value);
+        skipTo(0);
+        search();
+    }
 
-paginate = (event, skip) => {
-    event.preventDefault();
+    /**
+     * Handles sort direction change
+     * @param {Event} event - The change event
+     */
+    function sortDirection(event) {
+        searchParams.set('sortDirection', event.target.value);
+        skipTo(0);
+        search();
+    }
 
-    skipTo(skip);
-    search();
-}
+    /**
+     * Updates the skip parameter for pagination
+     * @param {number} skip - The number of results to skip
+     */
+    function skipTo(skip) {
+        searchParams.set('skip', String(skip));
+    }
 
-sort = (event) => {
-    event.preventDefault();
+    /**
+     * Shows loading state in the UI
+     */
+    function showLoadingState() {
+        if (elements.searchResults) {
+            elements.searchResults.setAttribute('aria-busy', 'true');
+            elements.searchResults.style.opacity = '0.6';
+        }
+    }
 
-    searchParams.set('sortBy', event.target.value);
-    skipTo(0);
-    search();
-}
+    /**
+     * Hides loading state in the UI
+     */
+    function hideLoadingState() {
+        if (elements.searchResults) {
+            elements.searchResults.removeAttribute('aria-busy');
+            elements.searchResults.style.opacity = '1';
+        }
+    }
 
-sortDirection = (event) => {
-    event.preventDefault();
+    /**
+     * Displays an error message to the user
+     * @param {string} message - The error message to display
+     */
+    function showError(message) {
+        if (elements.searchResults) {
+            elements.searchResults.innerHTML = `
+                <fieldset>
+                    <legend>Error</legend>
+                    <p class="error-message">${escapeHtml(message)}</p>
+                    <button type="button" onclick="BooksSearch.search()">Try Again</button>
+                </fieldset>
+            `;
+        }
+    }
 
-    searchParams.set('sortDirection', event.target.value);
-    skipTo(0);
-    search();
-}
+    /**
+     * Escapes HTML special characters to prevent XSS
+     * @param {string} str - The string to escape
+     * @returns {string} The escaped string
+     */
+    function escapeHtml(str) {
+        if (str == null) {
+            return '';
+        }
+        const div = document.createElement('div');
+        div.textContent = String(str);
+        return div.innerHTML;
+    }
 
-skipTo = (skip) => searchParams.set('skip', skip);
+    /**
+     * Sanitizes a string for use as an HTML ID
+     * @param {string} str - The string to sanitize
+     * @returns {string} The sanitized string
+     */
+    function sanitizeId(str) {
+        return String(str).replace(/[^a-zA-Z0-9-_]/g, '_');
+    }
 
-window.addEventListener('load', () => search());
+    /**
+     * Initializes the search interface
+     */
+    function init() {
+        elements.searchResults = document.getElementById('searchResults');
+        elements.searchFilters = document.getElementById('searchFilters');
+
+        if (!elements.searchResults || !elements.searchFilters) {
+            console.error('Required DOM elements (#searchResults, #searchFilters) not found');
+            return;
+        }
+
+        search();
+    }
+
+    // Public API
+    window.BooksSearch = {
+        search,
+        handleQueryKeydown,
+        toggleFacet,
+        paginate,
+        sort,
+        sortDirection
+    };
+
+    // Initialize on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+})();
