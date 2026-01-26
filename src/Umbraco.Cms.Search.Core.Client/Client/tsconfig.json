@@ -14,6 +14,12 @@
     "moduleDetection": "force",
     "noEmit": true,
 
+    /* Path mappings */
+    "baseUrl": ".",
+    "paths": {
+      "/App_Plugins/UmbracoSearch/search-library.js": ["./src/index.ts"]
+    },
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,

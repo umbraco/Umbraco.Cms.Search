@@ -8,7 +8,7 @@
       "name": "Umbraco Search Bundle",
       "alias": "Umbraco.Cms.Search.Core.Client.Bundle",
       "type": "bundle",
-      "js": "/App_Plugins/UmbracoSearch/umbraco-search.js"
+      "js": "/App_Plugins/UmbracoSearch/search-bundle.js"
     }
   ]
 }

@@ -1,5 +1,4 @@
 import { UMB_SEARCH_ROOT_COLLECTION_ALIAS } from '../constants.js';
-import { UmbSearchCollectionReloadAction } from './reload.collection-action.js';
 
 export const manifests: Array<UmbExtensionManifest> = [
   {
@@ -7,7 +6,7 @@ export const manifests: Array<UmbExtensionManifest> = [
     kind: 'button',
     name: 'Umbraco Search Collection Action - Reload',
     alias: 'Umbraco.Search.CollectionAction.Reload',
-    api: UmbSearchCollectionReloadAction,
+    api: () => import('/App_Plugins/UmbracoSearch/search-library.js').then(m => ({ default: m.UmbSearchCollectionReloadAction })),
     meta: {
       label: '#search_collectionActionReload',
     },

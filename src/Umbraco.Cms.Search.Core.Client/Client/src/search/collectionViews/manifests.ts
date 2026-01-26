@@ -3,7 +3,6 @@ import {
   UMB_SEARCH_COLLECTION_VIEW_ALIAS,
   UMB_SEARCH_ROOT_COLLECTION_ALIAS,
 } from '../constants.js';
-import { UmbSearchCollectionContext } from '../search-collection.context.js';
 
 export const manifests: Array<UmbExtensionManifest> = [
   {
@@ -11,7 +10,7 @@ export const manifests: Array<UmbExtensionManifest> = [
     kind: 'default',
     name: 'Umbraco Search - Root Collection',
     alias: UMB_SEARCH_ROOT_COLLECTION_ALIAS,
-    api: UmbSearchCollectionContext,
+    api: () => import('/App_Plugins/UmbracoSearch/search-library.js').then(m => ({ default: m.UmbSearchCollectionContext })),
     meta: {
       repositoryAlias: UMB_SEARCH_COLLECTION_REPOSITORY_ALIAS
     },
@@ -20,7 +19,8 @@ export const manifests: Array<UmbExtensionManifest> = [
     type: 'collectionView',
     name: 'Umbraco Search - Root Collection View',
     alias: UMB_SEARCH_COLLECTION_VIEW_ALIAS,
-    element: () => import('./search-root-collection-view.element.js'),
+    element: '/App_Plugins/UmbracoSearch/search-library.js',
+    elementName: 'umb-search-root-collection-view',
     meta: {
       label: '#search_collectionViewRootHeader',
       icon: 'icon-search',

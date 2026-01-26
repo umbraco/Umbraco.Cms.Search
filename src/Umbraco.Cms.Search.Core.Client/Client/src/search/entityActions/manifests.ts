@@ -7,7 +7,7 @@ export const manifests: Array<UmbExtensionManifest> = [
     alias: 'Umb.Search.EntityAction.RebuildIndex',
     name: 'Umbraco Search Entity Action - Rebuild Index',
     weight: 100,
-    api: () => import('./rebuild-index.action.js'),
+    api: () => import('/App_Plugins/UmbracoSearch/search-library.js').then(m => ({ default: m.UmbSearchRebuildIndexEntityAction })),
     forEntityTypes: [UMB_SEARCH_INDEX_ENTITY_TYPE],
     meta: {
       icon: 'icon-refresh',
