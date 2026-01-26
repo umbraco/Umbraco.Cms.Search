@@ -55,7 +55,7 @@ public class VariantDocumentTests : IndexTestBase
 
         IIndex index = ExamineManager.GetIndex(indexAlias);
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
-        Assert.That(results.TotalItemCount, Is.EqualTo(6));
+        Assert.That(results.TotalItemCount, Is.EqualTo(2));
     }
 
     [TestCase(true, "en-US", "Name")]
@@ -153,7 +153,7 @@ public class VariantDocumentTests : IndexTestBase
 
         ISearchResults results = index.Searcher.Search(expectedValue);
         Assert.That(results, Is.Not.Empty);
-        var fieldName = FieldNameHelper.FieldName("body", Constants.FieldValues.Texts);
+        var fieldName = FieldNameHelper.FieldName("body", Constants.FieldValues.Texts, segment);
         Assert.That(results.First().Values.First(x => x.Key == fieldName).Value, Is.EqualTo(expectedValue));
     }
 

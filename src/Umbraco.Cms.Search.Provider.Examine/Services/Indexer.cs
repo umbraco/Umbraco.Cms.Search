@@ -36,14 +36,19 @@ internal sealed class Indexer : IExamineIndexer
 
         var valuesToIndex = new List<ValueSet>();
 
-        foreach (Variation variation in variations)
+        IEnumerable<IGrouping<string?, Variation>> variationGroups = variations.GroupBy(x => x.Culture);
+
+        IndexField[] fieldsAsArray = fields as IndexField[] ?? fields.ToArray();
+
+        foreach (IGrouping<string?, Variation> variationGroup in variationGroups)
         {
-            var indexKey = CalculateIndexKey(key, variation);
-            IEnumerable<IndexField> fieldsToMap = MapFields(fields, variation);
+            var indexKey = CalculateIndexKey(key, variationGroup.Key);
+            IEnumerable<IndexField> fieldsToMap = MapFields(fieldsAsArray.Where(x => x.Culture is null || x.Culture == variationGroup.Key), variationGroup.Key);
+
             valuesToIndex.Add(new ValueSet(
                 indexKey,
                 objectType.ToString(),
-                MapToDictionary(fieldsToMap, variation.Culture, variation.Segment, protection)));
+                MapToDictionary(fieldsToMap, variationGroup.Key, variationGroup.Select(x => x.Segment).Distinct(), protection)));
         }
 
         index.IndexItems(valuesToIndex);
@@ -51,31 +56,33 @@ internal sealed class Indexer : IExamineIndexer
         return Task.CompletedTask;
     }
 
-    private IEnumerable<IndexField> MapFields(IEnumerable<IndexField> fields, Variation variation)
+    private IEnumerable<IndexField> MapFields(IEnumerable<IndexField> fields, string? culture)
     {
-        var results = new Dictionary<string, IndexField>();
+        var results = new Dictionary<(string FieldName, string? Segment), IndexField>();
         foreach (IndexField field in fields)
         {
-            if (field.Culture is null && field.Segment is null)
+            (string FieldName, string? Segment) key = (field.FieldName, field.Segment);
+
+            if (field.Culture is null)
             {
-                if (results.TryGetValue(field.FieldName, out IndexField? indexField))
+                if (results.TryGetValue(key, out IndexField? indexField))
                 {
-                    results[field.FieldName] = new IndexField(field.FieldName, MergeIndexValue(indexField.Value, field.Value), variation.Culture, variation.Segment);
+                    results[key] = field with { Value = MergeIndexValue(indexField.Value, field.Value), Culture = culture };
                     continue;
                 }
 
-                results.Add(field.FieldName, field);
+                results.Add(key, field);
             }
 
-            if (field.Culture == variation.Culture && field.Segment == variation.Segment)
+            if (field.Culture == culture)
             {
-                if (results.TryGetValue(field.FieldName, out IndexField? indexField))
+                if (results.TryGetValue(key, out IndexField? indexField))
                 {
-                    results[field.FieldName] = new IndexField(field.FieldName, MergeIndexValue(indexField.Value, field.Value), variation.Culture, variation.Segment);
+                    results[key] = field with { Value = MergeIndexValue(indexField.Value, field.Value) };
                     continue;
                 }
 
-                results[field.FieldName] = field;
+                results[key] = field;
             }
         }
 
@@ -161,17 +168,13 @@ internal sealed class Indexer : IExamineIndexer
         }
     }
 
-    private static string CalculateIndexKey(Guid key, Variation variation)
+    private static string CalculateIndexKey(Guid key, string? culture)
     {
         var result = key.ToString().ToLowerInvariant();
 
-        if (variation.Culture is not null)
+        if (culture is not null)
         {
-            result += $"_{variation.Culture}";
-        }
-        if (variation.Segment is not null)
-        {
-            result += $"_{variation.Segment}";
+            result += $"_{culture}";
         }
 
         return result;
@@ -213,19 +216,22 @@ internal sealed class Indexer : IExamineIndexer
         return Task.CompletedTask;
     }
 
-    private Dictionary<string, IEnumerable<object>> MapToDictionary(IEnumerable<IndexField> fields, string? culture, string? segment, ContentProtection? protection)
+    private Dictionary<string, IEnumerable<object>> MapToDictionary(IEnumerable<IndexField> fields, string? culture, IEnumerable<string?> segments, ContentProtection? protection)
     {
         var result = new Dictionary<string, IEnumerable<object>>();
-        List<string> aggregatedTexts = [];
-        List<string> aggregatedR1Texts = [];
-        List<string> aggregatedR2Texts = [];
-        List<string> aggregatedR3Texts = [];
+
+        // Aggregated texts grouped by segment (using empty string for null segment)
+        var aggregatedTextsBySegment = new Dictionary<string, List<string>>();
+        var aggregatedR1TextsBySegment = new Dictionary<string, List<string>>();
+        var aggregatedR2TextsBySegment = new Dictionary<string, List<string>>();
+        var aggregatedR3TextsBySegment = new Dictionary<string, List<string>>();
+
         foreach (IndexField field in fields)
         {
             if (field.Value.Integers?.Any() ?? false)
             {
                 var integers = field.Value.Integers.Cast<object>().ToList();
-                result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.Integers),  integers);
+                result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.Integers), integers);
             }
 
             if (field.Value.Keywords?.Any() ?? false)
@@ -258,55 +264,72 @@ internal sealed class Indexer : IExamineIndexer
             if (field.Value.Texts?.Any() ?? false)
             {
                 result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.Texts), field.Value.Texts);
-                aggregatedTexts.AddRange(field.Value.Texts);
+                AddToAggregatedTexts(aggregatedTextsBySegment, field.Segment, field.Value.Texts);
             }
 
             if (field.Value.TextsR1?.Any() ?? false)
             {
                 result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.TextsR1), field.Value.TextsR1);
-                aggregatedR1Texts.AddRange(field.Value.TextsR1);
+                AddToAggregatedTexts(aggregatedR1TextsBySegment, field.Segment, field.Value.TextsR1);
             }
 
             if (field.Value.TextsR2?.Any() ?? false)
             {
                 result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.TextsR2), field.Value.TextsR2);
-                aggregatedR2Texts.AddRange(field.Value.TextsR2);
+                AddToAggregatedTexts(aggregatedR2TextsBySegment, field.Segment, field.Value.TextsR2);
             }
 
             if (field.Value.TextsR3?.Any() ?? false)
             {
                 result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.TextsR3), field.Value.TextsR3);
-                aggregatedR3Texts.AddRange(field.Value.TextsR3);
+                AddToAggregatedTexts(aggregatedR3TextsBySegment, field.Segment, field.Value.TextsR3);
             }
         }
 
-        if (aggregatedTexts.Any())
-        {
-            result.Add(Constants.SystemFields.AggregatedTexts, aggregatedTexts.ToArray());
-        }
-
-        if (aggregatedR1Texts.Any())
-        {
-            result.Add(Constants.SystemFields.AggregatedTextsR1, aggregatedR1Texts.ToArray());
-        }
-
-        if (aggregatedR2Texts.Any())
-        {
-            result.Add(Constants.SystemFields.AggregatedTextsR2, aggregatedR2Texts.ToArray());
-        }
-
-        if (aggregatedR3Texts.Any())
-        {
-            result.Add(Constants.SystemFields.AggregatedTextsR3, aggregatedR3Texts.ToArray());
-        }
+        // Add segment-specific aggregated text fields
+        AddAggregatedTextFields(result, Constants.SystemFields.AggregatedTexts, aggregatedTextsBySegment);
+        AddAggregatedTextFields(result, Constants.SystemFields.AggregatedTextsR1, aggregatedR1TextsBySegment);
+        AddAggregatedTextFields(result, Constants.SystemFields.AggregatedTextsR2, aggregatedR2TextsBySegment);
+        AddAggregatedTextFields(result, Constants.SystemFields.AggregatedTextsR3, aggregatedR3TextsBySegment);
 
         // Cannot add null values, so we have to just say "none" here, so we can filter on variant / invariant content
         result.Add(Constants.SystemFields.Culture, [culture ?? Constants.Variance.Invariant]);
-        result.Add(Constants.SystemFields.Segment, [segment ?? Constants.Variance.Invariant]);
         IEnumerable<Guid> protectionIds = protection?.AccessIds ?? new List<Guid> {Guid.Empty};
         result.Add(Constants.SystemFields.Protection, protectionIds.Select(x => x.AsKeyword()));
 
         return result;
+    }
+
+    private static void AddToAggregatedTexts(Dictionary<string, List<string>> aggregatedTextsBySegment, string? segment, IEnumerable<string> texts)
+    {
+        // Use empty string as key for null segment
+        var key = segment ?? string.Empty;
+        if (aggregatedTextsBySegment.TryGetValue(key, out List<string>? list))
+        {
+            list.AddRange(texts);
+        }
+        else
+        {
+            aggregatedTextsBySegment[key] = texts.ToList();
+        }
+    }
+
+    private static void AddAggregatedTextFields(Dictionary<string, IEnumerable<object>> result, string baseFieldName, Dictionary<string, List<string>> aggregatedTextsBySegment)
+    {
+        foreach (KeyValuePair<string, List<string>> aggregatedTexts in aggregatedTextsBySegment)
+        {
+            if (!aggregatedTexts.Value.Any())
+            {
+                continue;
+            }
+
+            // Empty string key means null segment, use base field name
+            var fieldName = string.IsNullOrEmpty(aggregatedTexts.Key)
+                ? baseFieldName
+                : $"{baseFieldName}_{aggregatedTexts.Key}";
+
+            result.Add(fieldName, aggregatedTexts.Value.ToArray());
+        }
     }
 
     private IIndex GetIndex(string indexName)

@@ -44,6 +44,11 @@ public static class UmbracoBuilderExtensions
 
         builder.Services.AddTransient<IPublishedContentChangeStrategy, PublishedContentChangeStrategy>();
         builder.Services.AddTransient<IDraftContentChangeStrategy, DraftContentChangeStrategy>();
+        builder
+            .AddNotificationAsyncHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationAsyncHandler<ContentTypeChangedNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationAsyncHandler<MemberTypeChangedNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationAsyncHandler<MediaTypeChangedNotification, RebuildIndexesNotificationHandler>();
 
         builder
             .AddNotificationHandler<DraftContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
@@ -82,12 +87,6 @@ public static class UmbracoBuilderExtensions
     private class SearchOperationSecurityFilter : BackOfficeSecurityRequirementsOperationFilterBase
     {
         protected override string ApiName => Constants.Api.Name;
-    }
-
-    public static IUmbracoBuilder RebuildIndexesAfterStartup(this IUmbracoBuilder builder)
-    {
-        builder.AddNotificationHandler<UmbracoApplicationStartedNotification, RebuildIndexesNotificationHandler>();
-        return builder;
     }
 
     // This is used to generate nice operation IDs in our swagger json file
