@@ -4,6 +4,7 @@ using Lucene.Net.Index;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
+using Umbraco.Extensions;
 using CoreConstants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Configuration;
@@ -73,21 +74,32 @@ internal sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirec
             };
 
             var fieldName = getFieldName(field, fieldValues);
-            var facetFieldName = fieldName;
-            options.FieldDefinitions.AddOrUpdate(new FieldDefinition(fieldName, fieldDefinitionType));
+            AddFieldDefinition(options, field, fieldName, fieldDefinitionType);
 
-            if (field.FieldValues is FieldValues.Keywords && (field.Sortable || field.Facetable))
+            foreach (var segment in field.Segments.Distinct().Where(segment => segment.IsNullOrWhiteSpace() is false))
             {
-                // add extra field for keyword field sorting and/or faceting
-                var queryableKeywordFieldName = FieldNameHelper.QueryableKeywordFieldName(fieldName);
-                options.FieldDefinitions.AddOrUpdate(new FieldDefinition(queryableKeywordFieldName, FullTextDefinition(field)));
-                facetFieldName = queryableKeywordFieldName;
+                var segmentFieldName = FieldNameHelper.FieldName(field.PropertyName, fieldValues, segment);
+                AddFieldDefinition(options, field, segmentFieldName, fieldDefinitionType);
             }
+        }
+    }
 
-            if (field.Facetable)
-            {
-                options.FacetsConfig.SetMultiValued(facetFieldName, true);
-            }
+    private void AddFieldDefinition(LuceneDirectoryIndexOptions options, FieldOptions.Field field, string fieldName, string fieldDefinitionType)
+    {
+        var facetFieldName = fieldName;
+        options.FieldDefinitions.AddOrUpdate(new FieldDefinition(fieldName, fieldDefinitionType));
+
+        if (field.FieldValues is FieldValues.Keywords && (field.Sortable || field.Facetable))
+        {
+            // add extra field for keyword field sorting and/or faceting
+            var queryableKeywordFieldName = FieldNameHelper.QueryableKeywordFieldName(fieldName);
+            options.FieldDefinitions.AddOrUpdate(new FieldDefinition(queryableKeywordFieldName, FullTextDefinition(field)));
+            facetFieldName = queryableKeywordFieldName;
+        }
+
+        if (field.Facetable)
+        {
+            options.FacetsConfig.SetMultiValued(facetFieldName, true);
         }
     }
 

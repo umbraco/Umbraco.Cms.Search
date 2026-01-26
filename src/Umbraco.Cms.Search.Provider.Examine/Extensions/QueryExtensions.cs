@@ -6,7 +6,7 @@ namespace Umbraco.Cms.Search.Provider.Examine.Extensions;
 
 internal static class QueryExtensions
 {
-    public static void AddRangeFilter<T>(this IBooleanOperation query, string fieldName, bool negate, IEnumerable<FilterRange<T>> ranges)
+    public static void AddRangeFilter<T>(this IBooleanOperation query, string fieldName, string? segmentFieldName, bool negate, IEnumerable<FilterRange<T>> ranges)
         where T : struct
     {
         FilterRange<T>[] rangesAsArray = ranges as FilterRange<T>[] ?? ranges.ToArray();
@@ -16,21 +16,23 @@ internal static class QueryExtensions
             return;
         }
 
+        string[] fieldNames = segmentFieldName is not null ? [fieldName, segmentFieldName] : [fieldName];
+
         if (negate)
         {
             foreach (FilterRange<T> range in rangesAsArray)
             {
-                query.Not().RangeQuery<T>([fieldName], range.MinValue, range.MaxValue, true, false);
+                query.Not().RangeQuery<T>(fieldNames, range.MinValue, range.MaxValue, true, false);
             }
         }
         else
         {
             query.And().Group(nestedQuery =>
             {
-                INestedBooleanOperation rangeQuery = nestedQuery.RangeQuery<T>([fieldName], rangesAsArray[0].MinValue, rangesAsArray[0].MaxValue, true, false);
+                INestedBooleanOperation rangeQuery = nestedQuery.RangeQuery<T>(fieldNames, rangesAsArray[0].MinValue, rangesAsArray[0].MaxValue, true, false);
                 for (var i = 1; i < rangesAsArray.Length; i++)
                 {
-                    rangeQuery.Or().RangeQuery<T>([fieldName], rangesAsArray[i].MinValue, rangesAsArray[i].MaxValue, true, false);
+                    rangeQuery.Or().RangeQuery<T>(fieldNames, rangesAsArray[i].MinValue, rangesAsArray[i].MaxValue, true, false);
                 }
 
                 return rangeQuery;
@@ -38,7 +40,7 @@ internal static class QueryExtensions
         }
     }
 
-    public static void AddExactFilter<T>(this IBooleanOperation query, string fieldName, ExactFilter<T> filter) where T : struct
+    public static void AddExactFilter<T>(this IBooleanOperation query, string fieldName, string? segmentFieldName, ExactFilter<T> filter) where T : struct
     {
         if (filter.Values.Length == 0)
         {
@@ -49,17 +51,37 @@ internal static class QueryExtensions
         {
             foreach (T filterValue in filter.Values)
             {
-                query.Not().Group(nestedQuery => nestedQuery.Field(fieldName, filterValue));
+                if (segmentFieldName is not null)
+                {
+                    query.Not().Group(nestedQuery => nestedQuery.Field(fieldName, filterValue).Or().Field(segmentFieldName, filterValue));
+                }
+                else
+                {
+                    query.Not().Group(nestedQuery => nestedQuery.Field(fieldName, filterValue));
+                }
             }
         }
         else
         {
             query.And().Group(nestedQuery =>
             {
-                INestedBooleanOperation nestedBooleanOperation = nestedQuery.Field(fieldName, filter.Values[0]);
-                for (var i = 1; i < filter.Values.Length; i++)
+                INestedBooleanOperation nestedBooleanOperation;
+
+                if (segmentFieldName is not null)
                 {
-                    nestedBooleanOperation.Or().Field(fieldName, filter.Values[i]);
+                    nestedBooleanOperation = nestedQuery.Field(fieldName, filter.Values[0]).Or().Field(segmentFieldName, filter.Values[0]);
+                    for (var i = 1; i < filter.Values.Length; i++)
+                    {
+                        nestedBooleanOperation.Or().Field(fieldName, filter.Values[i]).Or().Field(segmentFieldName, filter.Values[i]);
+                    }
+                }
+                else
+                {
+                    nestedBooleanOperation = nestedQuery.Field(fieldName, filter.Values[0]);
+                    for (var i = 1; i < filter.Values.Length; i++)
+                    {
+                        nestedBooleanOperation.Or().Field(fieldName, filter.Values[i]);
+                    }
                 }
 
                 return nestedBooleanOperation;
