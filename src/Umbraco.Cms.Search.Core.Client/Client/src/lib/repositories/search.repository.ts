@@ -1,5 +1,5 @@
-import { rebuild } from '../../api';
-import type { UmbSearchIndex } from '../../types.js';
+import type { UmbSearchIndex } from '../types.js';
+import { rebuild } from '../api';
 import { UmbSearchCollectionContext } from '../search-collection.context.js';
 import { UmbSearchCollectionServerDataSource } from './search-collection.server.data-source.js';
 import { UmbRepositoryBase} from '@umbraco-cms/backoffice/repository';

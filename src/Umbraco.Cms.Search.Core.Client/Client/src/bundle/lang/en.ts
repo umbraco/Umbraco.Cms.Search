@@ -1,5 +1,5 @@
-import { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
-import { HealthStatusModel } from '../../api';
+import { UmbHealthStatusModel } from '../../lib/types.js';
+import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
 
 export default {
   search: {
@@ -7,7 +7,7 @@ export default {
     tableColumnAlias: 'Alias',
     tableColumnHealthStatus: 'Health Status',
     tableColumnDocumentCount: 'Document Count',
-    healthStatus: (status: HealthStatusModel) => status,
+    healthStatus: (status: UmbHealthStatusModel) => status,
     documentCount: (cnt: number) => {
       switch (cnt) {
         case 0:

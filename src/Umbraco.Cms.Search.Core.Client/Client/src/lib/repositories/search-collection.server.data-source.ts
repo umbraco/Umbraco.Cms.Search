@@ -1,7 +1,6 @@
-import { indexes } from '../../api';
-import type { UmbSearchIndex } from '../../types.js';
 import { UMB_SEARCH_INDEX_ENTITY_TYPE } from '../../constants.js';
-import type { UmbSearchCollectionDataSource } from './types.js';
+import { indexes } from '../api';
+import type { UmbSearchIndex, UmbSearchCollectionDataSource } from '../types.js';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { client } from "@umbraco-cms/backoffice/external/backend-api";
 import type { UmbDataSourceResponse, UmbPagedModel } from '@umbraco-cms/backoffice/repository';
@@ -25,9 +24,10 @@ export class UmbSearchCollectionServerDataSource implements UmbSearchCollectionD
 
     const items = data.items.map<UmbSearchIndex>((item) => (
       {
-        ...item,
-        entityType: UMB_SEARCH_INDEX_ENTITY_TYPE,
         unique: item.indexAlias,
+        documentCount: item.documentCount,
+        healthStatus: item.healthStatus,
+        entityType: UMB_SEARCH_INDEX_ENTITY_TYPE,
         state: 'idle'
       }
     ));

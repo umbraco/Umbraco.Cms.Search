@@ -1,4 +1,4 @@
-import type { UmbSearchIndex } from '../../types.js';
+import type { UmbSearchIndex } from '../types.js';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { html, customElement, state, when } from '@umbraco-cms/backoffice/external/lit';
 import { UMB_COLLECTION_CONTEXT, type UmbDefaultCollectionContext } from '@umbraco-cms/backoffice/collection';
@@ -64,12 +64,12 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
   #createTable(items: UmbSearchIndex[]) {
     this._tableItems = items?.map(item => {
       return {
-        id: item.indexAlias,
+        id: item.unique,
         icon: this.#healthStatusIcon(item),
         data: [
           {
             columnAlias: 'indexAlias',
-            value: item.indexAlias
+            value: item.unique
           },
           {
             columnAlias: 'healthStatus',
@@ -90,7 +90,7 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
 							.value=${{
               entityType: item.entityType,
               unique: item.unique,
-              name: item.indexAlias,
+              name: item.unique,
             }}></umb-entity-actions-table-column-view>`,
           },
         ]
