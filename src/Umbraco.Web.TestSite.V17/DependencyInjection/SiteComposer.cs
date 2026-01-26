@@ -19,9 +19,7 @@ public sealed class SiteComposer : IComposer
             .AddDeliveryApi()
             .AddDeliveryApiSearch()
             // add the backoffice search implementation
-            .AddBackOfficeSearch()
-            // force rebuild indexes after startup (awaiting a better solution from Core)
-            .RebuildIndexesAfterStartup();
+            .AddBackOfficeSearch();
 
         builder
             // configure the Examine search provider for this site
