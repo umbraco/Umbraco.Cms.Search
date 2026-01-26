@@ -21,6 +21,25 @@ public class ExplicitSegmentIndexTests : IndexTestBase
     private static readonly Guid DocumentWithAllSegmentsKey = Guid.NewGuid();
     private static readonly Guid DocumentWithOnlyNullSegmentKey = Guid.NewGuid();
     private static readonly Guid DocumentWithOnlySegment1Key = Guid.NewGuid();
+    private static readonly Guid DocumentWithSpecialCharacterSegmentsKey = Guid.NewGuid();
+
+    /// <summary>
+    /// Segments with special characters that could potentially cause issues with indexing or field naming.
+    /// </summary>
+    private static readonly string[] SpecialCharacterSegments =
+    [
+        "segment-{{curly}}",      // Curly braces (common in templating)
+        "segment with spaces",    // Spaces
+        "segment_underscore",     // Underscores (used as delimiter in field names)
+        "segment.dot.notation",   // Dots
+        "segment:colon",          // Colons
+        "segment[brackets]",      // Square brackets
+        "segment+plus",           // Plus signs
+        "segment/slash",          // Forward slashes
+        "segment-å",              // Danish character
+        "segment-@@",             // @ sign
+        "segment-漢字",            // Japanese kanji
+    ];
 
     /// <summary>
     /// Expected field name format for segment-specific properties.
@@ -190,14 +209,13 @@ public class ExplicitSegmentIndexTests : IndexTestBase
         var allDocs = GetDocumentsByKey(index, DocumentWithAllSegmentsKey)
             .Concat(GetDocumentsByKey(index, DocumentWithOnlyNullSegmentKey))
             .Concat(GetDocumentsByKey(index, DocumentWithOnlySegment1Key))
+            .Concat(GetDocumentsByKey(index, DocumentWithSpecialCharacterSegmentsKey))
             .ToList();
 
-        // 3 documents * 2 cultures = 6 total indexed documents
-        // NOT 3 documents * 2 cultures * 3 segments = 18 documents
-        Assert.That(allDocs.Count, Is.EqualTo(6), "Total indexed documents should be (document count * culture count), not (document count * culture count * segment count)");
+        // 4 documents * 2 cultures = 8 total indexed documents
+        // NOT 4 documents * 2 cultures * N segments = many more documents
+        Assert.That(allDocs.Count, Is.EqualTo(8), "Total indexed documents should be (document count * culture count), not (document count * culture count * segment count)");
     }
-
-    #region Aggregated Texts Tests
 
     /// <summary>
     /// Expected field name format for segment-specific aggregated texts.
@@ -328,7 +346,39 @@ public class ExplicitSegmentIndexTests : IndexTestBase
             "Document should NOT contain null segment aggregated texts when only explicit segment has values");
     }
 
-    #endregion
+    [TestCase(true, "en-US")]
+    [TestCase(false, "en-US")]
+    public void DocumentWithSpecialCharacterSegments_IndexesAsSingleDocumentPerCulture(bool publish, string culture)
+    {
+        var indexAlias = GetIndexAlias(publish);
+        IIndex index = ExamineManager.GetIndex(indexAlias);
+
+        var documents = GetDocumentsByKey(index, DocumentWithSpecialCharacterSegmentsKey)
+            .Where(d => d.Values.TryGetValue(Constants.SystemFields.Culture, out var c) && c == culture)
+            .ToList();
+
+        Assert.That(documents.Count, Is.EqualTo(1), $"Expected exactly 1 indexed document for culture {culture} with special character segments");
+    }
+
+    [TestCase(true, "en-US")]
+    [TestCase(false, "en-US")]
+    public void DocumentWithSpecialCharacterSegments_ContainsAllSegmentPropertiesOnSameDocument(bool publish, string culture)
+    {
+        var indexAlias = GetIndexAlias(publish);
+        IIndex index = ExamineManager.GetIndex(indexAlias);
+
+        ISearchResult? document = GetDocumentByKeyAndCulture(index, DocumentWithSpecialCharacterSegmentsKey, culture);
+        Assert.That(document, Is.Not.Null);
+
+        Assert.Multiple(() =>
+        {
+            foreach (var segment in SpecialCharacterSegments)
+            {
+                var segmentFieldName = SegmentFieldName("segmentedProperty", segment, Constants.FieldValues.Texts);
+                Assert.That(document!.Values.ContainsKey(segmentFieldName), Is.True, $"Document should contain property for segment '{segment}'");
+            }
+        });
+    }
 
     [SetUp]
     public async Task CreateTestDocuments()
@@ -395,6 +445,23 @@ public class ExplicitSegmentIndexTests : IndexTestBase
         docWithOnlySegment1.SetValue("segmentedProperty", "OnlyInSegment1Document", "en-US", "segment-1");
         docWithOnlySegment1.SetValue("segmentedProperty", "OnlyInSegment1Document", "da-DK", "segment-1");
 
+        // Document 4: Has values in segments with special characters
+        Content docWithSpecialCharacterSegments = new ContentBuilder()
+            .WithKey(DocumentWithSpecialCharacterSegmentsKey)
+            .WithContentType(contentType)
+            .WithCultureName("en-US", "DocWithSpecialCharacterSegments")
+            .WithCultureName("da-DK", "DokMedSpecielTegnSegmenter")
+            .Build();
+
+        // Set values for each special character segment
+        foreach (var segment in SpecialCharacterSegments)
+        {
+            // Use a sanitized version of the segment name as part of the value to verify correct retrieval
+            var sanitizedSegment = segment.Replace(" ", "_");
+            docWithSpecialCharacterSegments.SetValue("segmentedProperty", $"ValueFor_{sanitizedSegment}", "en-US", segment);
+            docWithSpecialCharacterSegments.SetValue("segmentedProperty", $"ValueFor_{sanitizedSegment}", "da-DK", segment);
+        }
+
         await WaitForIndexing(GetIndexAlias(true), () =>
         {
             ContentService.Save(docWithAllSegments);
@@ -405,6 +472,9 @@ public class ExplicitSegmentIndexTests : IndexTestBase
 
             ContentService.Save(docWithOnlySegment1);
             ContentService.Publish(docWithOnlySegment1, ["*"]);
+
+            ContentService.Save(docWithSpecialCharacterSegments);
+            ContentService.Publish(docWithSpecialCharacterSegments, ["*"]);
 
             return Task.CompletedTask;
         });
