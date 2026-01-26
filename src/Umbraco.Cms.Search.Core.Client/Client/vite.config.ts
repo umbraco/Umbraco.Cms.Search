@@ -4,8 +4,8 @@ export default defineConfig({
   build: {
     lib: {
       entry: {
-        "search-bundle": "src/bundle.manifests.ts",
-        "search-library": "src/index.ts"
+        "search-bundle": "src/bundle/search-bundle.ts",
+        "search-library": "src/lib/search-library.ts"
       }, // Bundle registers one or more manifests
       formats: ["es"],
     },

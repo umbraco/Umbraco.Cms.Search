@@ -1,4 +1,4 @@
-import { IndexModel } from '../api';
+import { IndexModel } from './api';
 
 export type UmbSearchIndexState = 'idle' | 'loading' | 'error';
 

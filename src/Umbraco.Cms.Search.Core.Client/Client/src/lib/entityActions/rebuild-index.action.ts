@@ -1,4 +1,4 @@
-import { UmbSearchCollectionRepository } from '../repositories/index.js';
+import { UmbSearchCollectionRepository } from '../repositories/search.repository.js';
 import { UmbEntityActionBase } from '@umbraco-cms/backoffice/entity-action';
 import { umbConfirmModal } from "@umbraco-cms/backoffice/modal";
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';

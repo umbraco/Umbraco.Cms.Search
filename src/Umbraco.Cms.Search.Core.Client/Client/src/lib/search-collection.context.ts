@@ -1,5 +1,5 @@
-import { UMB_SEARCH_COLLECTION_VIEW_ALIAS } from './constants.js';
-import type { UmbSearchIndex, UmbSearchIndexState } from './types.js';
+import { UMB_SEARCH_COLLECTION_VIEW_ALIAS } from '../constants.js';
+import type { UmbSearchIndex, UmbSearchIndexState } from '../types.js';
 import { UmbDefaultCollectionContext } from '@umbraco-cms/backoffice/collection';
 import type { UmbControllerHostElement } from '@umbraco-cms/backoffice/controller-api';
 import { UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT } from '@umbraco-cms/backoffice/management-api';

@@ -1,6 +1,6 @@
 import { indexes } from '../../api';
-import type { UmbSearchIndex } from '../types.js';
-import { UMB_SEARCH_INDEX_ENTITY_TYPE } from '../constants.js';
+import type { UmbSearchIndex } from '../../types.js';
+import { UMB_SEARCH_INDEX_ENTITY_TYPE } from '../../constants.js';
 import type { UmbSearchCollectionDataSource } from './types.js';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { client } from "@umbraco-cms/backoffice/external/backend-api";
