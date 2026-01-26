@@ -129,12 +129,6 @@ public class VariantDocumentTests : SearcherTestBase
             .WithDataTypeId(Constants.DataTypes.Textbox)
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
             .Done()
-            .AddPropertyType()
-            .WithAlias("segmentTest")
-            .WithVariations(ContentVariation.CultureAndSegment)
-            .WithDataTypeId(Constants.DataTypes.Textbox)
-            .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
-            .Done()
             .Build();
         ContentTypeService.Save(contentType);
 
@@ -156,16 +150,6 @@ public class VariantDocumentTests : SearcherTestBase
         root.SetValue("body", "kropSegment2", "da-DK", "segment-2");
         root.SetValue("body", "ボディSegment1", "ja-JP", "segment-1");
         root.SetValue("body", "ボディSegment2", "ja-JP", "segment-2");
-
-        root.SetValue("segmentTest", "PropertySegTest segment-1", "en-US");
-        root.SetValue("segmentTest", "PropertySegTest segment-1", "en-US", "segment-1");
-        root.SetValue("segmentTest", "PropertySegTest segment-2", "en-US", "segment-2");
-        root.SetValue("segmentTest", "PropertySegTest segment-1", "da-DK");
-        root.SetValue("segmentTest", "PropertySegTest segment-1", "da-DK", "segment-1");
-        root.SetValue("segmentTest", "PropertySegTest segment-2", "da-DK", "segment-2");
-        root.SetValue("segmentTest", "PropertySegTest segment-1", "ja-JP");
-        root.SetValue("segmentTest", "PropertySegTest segment-1", "ja-JP", "segment-1");
-        root.SetValue("segmentTest", "PropertySegTest segment-2", "ja-JP", "segment-2");
 
         await WaitForIndexing(GetIndexAlias(true), () =>
         {
