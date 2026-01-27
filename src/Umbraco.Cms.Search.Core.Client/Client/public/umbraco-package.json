@@ -1,6 +1,6 @@
 {
-  "id": "Umbraco.Cms.Search.Core.Client",
-  "name": "Umbraco.Cms.Search.Core.Client",
+  "id": "Umbraco.Cms.Search.Core",
+  "name": "@umbraco-cms/search",
   "version": "0.0.0",
   "allowTelemetry": true,
   "extensions": [
@@ -13,7 +13,8 @@
   ],
   "importmap": {
     "imports": {
-      "@umbraco-cms/search": "/App_Plugins/UmbracoSearch/search-library.js"
+      "@umbraco-cms/search/global": "/App_Plugins/UmbracoSearch/search-global.js",
+      "@umbraco-cms/search/core": "/App_Plugins/UmbracoSearch/search-core.js"
     }
   }
 }

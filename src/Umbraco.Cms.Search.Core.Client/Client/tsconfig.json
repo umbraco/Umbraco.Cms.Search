@@ -17,7 +17,8 @@
     /* Path mappings */
     "baseUrl": ".",
     "paths": {
-      "@umbraco-cms/search": ["./src/lib/index.ts"]
+      "@umbraco-cms/search/global": ["./src/global/index.ts"],
+      "@umbraco-cms/search/core": ["./src/core/index.ts"]
     },
 
     /* Linting */

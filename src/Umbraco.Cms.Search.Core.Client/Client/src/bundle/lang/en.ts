@@ -1,4 +1,4 @@
-import { UmbHealthStatusModel } from '../../lib/types.js';
+import { UmbHealthStatusModel } from '../../core/types.js';
 import type { UmbLocalizationDictionary } from '@umbraco-cms/backoffice/localization-api';
 
 export default {

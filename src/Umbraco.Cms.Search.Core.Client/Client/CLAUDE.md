@@ -5,8 +5,8 @@
 This backoffice client uses a two-bundle code-splitting strategy with importmap pattern to optimize initial load performance and align with Umbraco CMS conventions:
 
 - **search-bundle.js** (~1-2kb) - Manifest metadata, loaded upfront by Umbraco
-- **search-library.js** (~18-20kb) - Implementation classes, lazy-loaded on demand
-- **Importmap** - Logical module identifiers (`@umbraco-cms/search`) resolve to physical files at runtime
+- **search-core.js** (~18-20kb) - Implementation classes, lazy-loaded on demand
+- **Importmap** - Logical module identifiers (`@umbraco-cms/search/bundle` and `@umbraco-cms/search/core`) resolve to physical files at runtime
 
 ## Architecture
 
@@ -38,12 +38,12 @@ Instead of using raw file paths, this package uses logical module identifiers th
 
 **Logical Import (What You Write):**
 ```typescript
-import('@umbraco-cms/search')
+import('@umbraco-cms/search/core')
 ```
 
 **Development Resolution (TypeScript):**
 - TypeScript sees `tsconfig.json` paths mapping
-- Resolves to `./src/lib/index.ts` for type-checking
+- Resolves to `./src/core/index.ts` for type-checking
 - ✅ Full IntelliSense and type safety
 
 **Build Resolution (Vite):**
@@ -52,7 +52,7 @@ import('@umbraco-cms/search')
 
 **Runtime Resolution (Browser):**
 - Browser checks importmap in `umbraco-package.json`
-- Resolves to `/App_Plugins/UmbracoSearch/search-library.js`
+- Resolves to `/App_Plugins/UmbracoSearch/search-core.js`
 - ✅ Loads the actual built file
 
 **Why This Is Clever:**
@@ -74,7 +74,7 @@ export const manifests: Array<UmbExtensionManifest> = [
   {
     type: 'repository',
     alias: 'My.Repository',
-    api: () => import('@umbraco-cms/search')
+    api: () => import('@umbraco-cms/search/core')
       .then(m => ({ default: m.UmbSearchCollectionRepository })),
   }
 ];
@@ -93,7 +93,7 @@ export const manifests: Array<UmbExtensionManifest> = [
   {
     type: 'collectionView',
     alias: 'My.CollectionView',
-    element: '@umbraco-cms/search',
+    element: '@umbraco-cms/search/core',
     elementName: 'umb-search-root-collection-view',
   }
 ];
@@ -101,7 +101,7 @@ export const manifests: Array<UmbExtensionManifest> = [
 
 **Why simpler?** The module just needs to be loaded (registering the custom element via `@customElement` decorator). Umbraco then looks up the element by `elementName`.
 
-**Note:** The logical import `@umbraco-cms/search` resolves to the actual file via the importmap at runtime.
+**Note:** The logical import `@umbraco-cms/search/core` resolves to the actual file via the importmap at runtime.
 
 ## Configuration
 
@@ -115,15 +115,14 @@ export default defineConfig({
   build: {
     lib: {
       entry: {
-        "search-bundle": "src/bundle.manifests.ts",    // Manifests bundle
-        "search-library": "src/lib/search-library.ts"  // Library bundle
+        "search-bundle": "src/bundle/search-bundle.ts",    // Manifests bundle
+        "search-core": "src/core/search-core.ts"  // Core bundle
       },
       formats: ["es"],
     },
     rollupOptions: {
       external: [
-        /^@umbraco/,
-        '@umbraco-cms/search'  // Treat logical import as external
+        /^@umbraco/ // Treat logical import as external  
       ]
     },
   },
@@ -139,13 +138,13 @@ Path mapping allows TypeScript to resolve the logical import during development:
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@umbraco-cms/search": ["./src/lib/index.ts"]
+        "@umbraco-cms/search/bundle": ["./src/bundle/index.ts"], "@umbraco-cms/search/core": ["./src/core/index.ts"]
     }
   }
 }
 ```
 
-**Note:** Maps to `src/lib/index.ts` (the actual exports file), not `src/lib/search-library.ts` (which re-exports from index).
+**Note:** Maps to `src/core/index.ts` (the actual exports file), not `src/core/search-core.ts` (which re-exports from index).
 
 ### Umbraco Package Config
 
@@ -157,7 +156,8 @@ The importmap in `umbraco-package.json` provides runtime resolution:
   "extensions": [ /* ... */ ],
   "importmap": {
     "imports": {
-      "@umbraco-cms/search": "/App_Plugins/UmbracoSearch/search-library.js"
+        "@umbraco-cms/search/bundle": "/App_Plugins/UmbracoSearch/search-bundle.js",
+      "@umbraco-cms/search/core": "/App_Plugins/UmbracoSearch/search-core.js"
     }
   }
 }
@@ -167,24 +167,24 @@ The importmap in `umbraco-package.json` provides runtime resolution:
 
 **Developer writes:**
 ```typescript
-import { UmbSearchRepository } from '@umbraco-cms/search';
+import { UmbSearchRepository } from '@umbraco-cms/search/core';
 ```
 
 **During Development:**
-1. TypeScript sees `@umbraco-cms/search`
+1. TypeScript sees `@umbraco-cms/search/core`
 2. Checks tsconfig.json `paths` mapping
-3. Resolves to `./src/lib/index.ts` for type-checking
+3. Resolves to `./src/core/index.ts` for type-checking
 4. ✅ Full IntelliSense and type safety
 
 **During Build:**
-1. Vite encounters `@umbraco-cms/search`
+1. Vite encounters `@umbraco-cms/search/core`
 2. Marked as external in rollupOptions
 3. ✅ Not bundled, left as-is in output
 
 **At Runtime:**
-1. Browser encounters `import('@umbraco-cms/search')`
+1. Browser encounters `import('@umbraco-cms/search/core')`
 2. Checks importmap in umbraco-package.json
-3. Resolves to `/App_Plugins/UmbracoSearch/search-library.js`
+3. Resolves to `/App_Plugins/UmbracoSearch/search-core.js`
 4. ✅ Loads the actual built file
 
 ## Library Exports
