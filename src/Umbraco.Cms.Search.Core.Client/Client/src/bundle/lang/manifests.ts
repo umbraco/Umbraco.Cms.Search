@@ -1,10 +1,11 @@
+import english from './en.js';
+
 export const manifests: Array<UmbExtensionManifest> = [
   {
     type: 'localization',
     name: 'Umbraco Search Localization - English',
     alias: 'Umbraco.Search.Localization.En',
-    meta: { culture: 'en' },
-    js: () => import('./en.js'),
+    meta: { culture: 'en', localizations: english },
   },
   {
     type: 'localization',
