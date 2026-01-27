@@ -2,7 +2,7 @@ import {
   UMB_SEARCH_COLLECTION_REPOSITORY_ALIAS,
   UMB_SEARCH_COLLECTION_VIEW_ALIAS,
   UMB_SEARCH_ROOT_COLLECTION_ALIAS,
-} from '../constants.js';
+} from '@umbraco-cms/search/global';
 
 export const manifests: Array<UmbExtensionManifest> = [
   {

@@ -1,4 +1,4 @@
-import { UMB_SEARCH_COLLECTION_REPOSITORY_ALIAS } from '../constants.js';
+import { UMB_SEARCH_COLLECTION_REPOSITORY_ALIAS } from '@umbraco-cms/search/global';
 
 export const manifests: Array<UmbExtensionManifest> = [
   {

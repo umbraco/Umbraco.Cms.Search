@@ -1,4 +1,4 @@
-import { UMB_SEARCH_INDEX_ENTITY_TYPE } from "../constants.js";
+import { UMB_SEARCH_INDEX_ENTITY_TYPE } from '@umbraco-cms/search/global';
 
 export const manifests: Array<UmbExtensionManifest> = [
   {

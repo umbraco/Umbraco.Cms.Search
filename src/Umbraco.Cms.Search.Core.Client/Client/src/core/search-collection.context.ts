@@ -1,6 +1,9 @@
-import { UMB_SEARCH_COLLECTION_VIEW_ALIAS } from '../constants.js';
 import type { UmbSearchIndex, UmbSearchIndexState } from './types.js';
-import { UMB_SEARCH_NOTIFICATION_CONTEXT } from '@umbraco-cms/search/global';
+import {
+  UMB_SEARCH_NOTIFICATION_CONTEXT,
+  UMB_SEARCH_COLLECTION_VIEW_ALIAS,
+  UMB_SEARCH_SERVER_EVENT_TYPE
+} from '@umbraco-cms/search/global';
 import { UmbDefaultCollectionContext } from '@umbraco-cms/backoffice/collection';
 import type { UmbControllerHostElement } from '@umbraco-cms/backoffice/controller-api';
 import { UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT } from '@umbraco-cms/backoffice/management-api';
@@ -34,8 +37,8 @@ export class UmbSearchCollectionContext extends UmbDefaultCollectionContext<
   }
 
   #observeSearchIndexChanges() {
-    this.observe(this.#serverEventContext?.byEventSource('IndexRebuildCompleted'), (args) => {
-      if (!args.eventSource) return;
+    this.observe(this.#serverEventContext?.byEventSource(UMB_SEARCH_SERVER_EVENT_TYPE), (args) => {
+      if (!args?.eventSource) return;
 
       // Try and get latest collection context and reload
       this.loadCollection();

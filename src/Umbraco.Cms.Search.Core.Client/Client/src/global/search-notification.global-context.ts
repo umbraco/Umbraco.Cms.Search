@@ -1,9 +1,11 @@
+import { UMB_SEARCH_SERVER_EVENT_TYPE } from './constants.js';
+
 import { UmbContextBase } from '@umbraco-cms/backoffice/class-api';
 import { UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT } from '@umbraco-cms/backoffice/management-api';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
-import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { UmbContextToken } from '@umbraco-cms/backoffice/context-api';
+import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 
 export class UmbSearchNotificationContext extends UmbContextBase {
   #serverEventContext?: typeof UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT.TYPE;
@@ -37,8 +39,8 @@ export class UmbSearchNotificationContext extends UmbContextBase {
   }
 
   #observeSearchIndexChanges() {
-    this.observe(this.#serverEventContext?.byEventSource('IndexRebuildCompleted'), (args) => {
-      if (!args.eventSource) return;
+    this.observe(this.#serverEventContext?.byEventSource(UMB_SEARCH_SERVER_EVENT_TYPE), (args) => {
+      if (!args?.eventSource) return;
 
       if (!this.#isUserWaitingForIndexUpdate(args.eventSource)) return;
 
