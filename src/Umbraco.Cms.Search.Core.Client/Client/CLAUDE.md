@@ -1,171 +1,158 @@
-# Umbraco Search Client - Code Splitting Pattern with Importmap
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with the backoffice client code in this directory.
+
+**See also:** [Main repository CLAUDE.md](../../../CLAUDE.md) for server-side architecture and build commands.
 
 ## Overview
 
-This backoffice client uses a three-bundle code-splitting strategy with importmap pattern to optimize initial load performance and align with Umbraco CMS conventions:
+The Umbraco Search backoffice client uses a **three-bundle code-splitting pattern with importmap** for optimal performance:
 
-- **search-bundle.js** (~3kb) - Manifest metadata, loaded upfront by Umbraco
-- **search-global.js** (~1.5kb) - Global contexts, loaded upfront for server event subscriptions
-- **search-core.js** (~22kb) - Core implementation classes, lazy-loaded on demand
-- **Importmap** - Logical module identifiers (`@umbraco-cms/search/global` and `@umbraco-cms/search/core`) resolve to physical files at runtime
+- **search-bundle.js** (~3kb) - Manifest metadata, loaded upfront
+- **search-global.js** (~1.5kb) - Global contexts for SignalR events, loaded upfront
+- **search-core.js** (~22kb) - Core implementations, lazy-loaded on demand
 
-## Architecture
+**Key principle:** Logical imports (`@umbraco-cms/search/core`) resolve via importmap at runtime, not physical file paths.
+
+## Build Commands
+
+```bash
+# Install dependencies
+npm install
+
+# Build for production
+npm run build
+
+# Watch mode for development
+npm run watch
+
+# Generate OpenAPI client (requires test site at https://localhost:44324)
+npm run generate-client
+```
+
+**Requirements:** Node.js 24 (see `.nvmrc`)
+
+## Architecture Pattern
 
 ### Bundle Structure
 
 ```
 src/
-├── bundle/
-│   ├── search-bundle.ts         → search-bundle.js (manifests metadata)
-│   ├── repositories.manifests.ts
-│   ├── collectionViews.manifests.ts
-│   ├── collectionActions.manifests.ts
-│   └── entityActions.manifests.ts
-├── global/
-│   ├── search-global.ts         → search-global.js (global contexts entry)
-│   ├── index.ts                 → Re-exports
+├── bundle/          → search-bundle.js (manifests only)
+│   ├── search-bundle.ts
+│   └── *.manifests.ts
+├── global/          → search-global.js (loaded upfront)
+│   ├── search-global.ts
+│   ├── index.ts
 │   └── globalContexts/
-│       ├── search-notification.global-context.ts
-│       └── search-notification.context-token.ts
-└── core/
-    ├── search-core.ts           → search-core.js (core library entry)
-    ├── index.ts                 → Core library exports
-    ├── collectionActions/       → Implementation classes
-    ├── collectionViews/
-    ├── entityActions/
-    ├── repositories/
-    └── api/
+├── core/            → search-core.js (lazy-loaded)
+│   ├── search-core.ts
+│   ├── index.ts
+│   ├── collectionActions/
+│   ├── collectionViews/
+│   ├── entityActions/
+│   ├── repositories/
+│   └── api/
+└── lang/            → Localization (not code-split)
 ```
 
-### How It Works
+### The Importmap Pattern
 
-1. **Upfront Load - Manifests**: Umbraco loads `search-bundle.js` which contains only manifest metadata
-2. **Upfront Load - Global**: Browser immediately loads `search-global.js` to initialize global contexts (e.g., notification listeners)
-3. **Lazy Load - Core**: When user accesses search functionality, manifests trigger import of `search-core.js`
-4. **Shared Bundles**: Core and global code loaded once and shared across all manifests
+Instead of importing files directly, use logical module identifiers that resolve differently in each context:
 
-### The Importmap Principle
-
-Instead of using raw file paths, this package uses logical module identifiers that resolve differently in different contexts:
-
-**Logical Import (What You Write):**
+**What you write:**
 ```typescript
-import('@umbraco-cms/search/core')
+import { UmbSearchRepository } from '@umbraco-cms/search/core';
 ```
 
-**Development Resolution (TypeScript):**
-- TypeScript sees `tsconfig.json` paths mapping
-- Resolves to `./src/core/index.ts` for type-checking
-- ✅ Full IntelliSense and type safety
+**Development (TypeScript):**
+- `tsconfig.json` paths resolve to `./src/core/index.ts`
+- Full IntelliSense and type safety
 
-**Build Resolution (Vite):**
-- Vite sees it's marked as external in `rollupOptions`
-- ✅ Not bundled, left as-is in output
+**Build (Vite):**
+- Marked as external in `rollupOptions`
+- Not bundled, left as import statement
 
-**Runtime Resolution (Browser):**
-- Browser checks importmap in `umbraco-package.json`
-- Resolves to `/App_Plugins/UmbracoSearch/search-core.js`
-- ✅ Loads the actual built file
+**Runtime (Browser):**
+- `umbraco-package.json` importmap resolves to `/App_Plugins/UmbracoSearch/search-core.js`
+- Lazy-loaded when first used
 
-**Why This Is Clever:**
-1. **Abstraction Layer**: Import paths are logical identifiers, not physical file locations
-2. **Convention Alignment**: Matches Umbraco CMS core pattern (`@umbraco-cms/backoffice/*`)
-3. **Professional Naming**: Namespaced package names follow Node.js conventions
-4. **Future-Proof**: Can change file structure without updating imports throughout codebase
-5. **Extensibility**: Third-party developers can import your runtime in their own packages
-6. **V19 Ready**: Named for eventual merge into core with no breaking changes needed
+## Manifest Patterns
 
-## Implementation Patterns
-
-### For `api` Properties
-
-When a manifest needs to instantiate a class, use this pattern:
+### For `api` Properties (Instantiating Classes)
 
 ```typescript
 export const manifests: Array<UmbExtensionManifest> = [
   {
     type: 'repository',
-    alias: 'My.Repository',
+    alias: 'Umb.Repository.SearchCollection',
     api: () => import('@umbraco-cms/search/core')
       .then(m => ({ default: m.UmbSearchCollectionRepository })),
   }
 ];
 ```
 
-**Why the wrapper?** Umbraco expects the import to return a module with a `default` or `api` export.
+**Why the wrapper?** Umbraco expects `{ default: Class }` or `{ api: Class }`.
 
-**Note:** The logical import `@umbraco-cms/search/core` resolves to the actual file via the importmap at runtime.
-
-### For `element` Properties with `elementName`
-
-When using custom elements with the `elementName` property:
+### For `element` Properties (Web Components)
 
 ```typescript
 export const manifests: Array<UmbExtensionManifest> = [
   {
     type: 'collectionView',
-    alias: 'My.CollectionView',
+    alias: 'Umb.CollectionView.SearchRoot',
     element: '@umbraco-cms/search/core',
     elementName: 'umb-search-root-collection-view',
   }
 ];
 ```
 
-**Why simpler?** The module just needs to be loaded (registering the custom element via `@customElement` decorator). Umbraco then looks up the element by `elementName`.
+**Why simpler?** The module just needs to load (registers custom element). Umbraco finds it by `elementName`.
 
-**Note:** The logical import `@umbraco-cms/search/core` resolves to the actual file via the importmap at runtime.
-
-### For Global Contexts
-
-Global contexts need to be loaded upfront (not lazy-loaded) because they listen for server events. Import them directly in your components:
+### For Global Contexts (Upfront Loading)
 
 ```typescript
 import { UMB_SEARCH_NOTIFICATION_CONTEXT } from '@umbraco-cms/search/global';
 
-// In your component:
+// In your component
 this.consumeContext(UMB_SEARCH_NOTIFICATION_CONTEXT, (instance) => {
-  // Use the global notification context
   instance.setUserWaitingForIndexUpdate('myIndex', true);
 });
 ```
 
-**Why upfront?** Global contexts must subscribe to SignalR events immediately, so they're loaded with the bundle rather than lazy-loaded.
+**Critical:** Global contexts must be in `search-global.js` (not `search-core.js`) because they subscribe to SignalR events immediately.
 
-## Configuration
+## Configuration Files
 
-### Vite Config
+### vite.config.ts
 
-Three entry points create the three bundles:
+Three entry points create three bundles:
 
 ```typescript
-// vite.config.ts
 export default defineConfig({
   build: {
     lib: {
       entry: {
-        "search-bundle": "src/bundle/search-bundle.ts",    // Manifests bundle
-        "search-global": "src/global/search-global.ts",    // Global contexts bundle
-        "search-core": "src/core/search-core.ts"           // Core implementation bundle
+        "search-bundle": "src/bundle/search-bundle.ts",
+        "search-global": "src/global/search-global.ts",
+        "search-core": "src/core/search-core.ts"
       },
       formats: ["es"],
     },
     rollupOptions: {
-      external: [
-        /^@umbraco/  // All @umbraco imports treated as external
-      ]
+      external: [/^@umbraco/]  // Don't bundle @umbraco imports
     },
   },
 });
 ```
 
-### TypeScript Config
+### tsconfig.json
 
-Path mapping allows TypeScript to resolve the logical imports during development:
+Maps logical imports to physical files for type-checking:
 
 ```json
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "@umbraco-cms/search/global": ["./src/global/index.ts"],
       "@umbraco-cms/search/core": ["./src/core/index.ts"]
@@ -174,11 +161,11 @@ Path mapping allows TypeScript to resolve the logical imports during development
 }
 ```
 
-**Note:** Maps to index.ts files (the actual exports) in each package, not the entry files (search-global.ts, search-core.ts) which re-export from index.
+**Note:** Maps to `index.ts` (exports), not entry files (`search-*.ts`).
 
-### Umbraco Package Config
+### public/umbraco-package.json
 
-The importmap in `umbraco-package.json` provides runtime resolution:
+Provides runtime resolution via importmap:
 
 ```json
 {
@@ -193,81 +180,96 @@ The importmap in `umbraco-package.json` provides runtime resolution:
 }
 ```
 
-**Note:** The bundle (search-bundle.js) is loaded by Umbraco via the extensions array, not via importmap. Only the global and core subpaths are in the importmap.
+## Adding New Features
 
-### How It Works Together
+### Adding a New Collection Action
 
-**Developer writes:**
+1. Create implementation in `src/core/collectionActions/`
+2. Export from `src/core/index.ts`
+3. Add manifest in `src/bundle/collectionActions.manifests.ts`
+4. Use `api: () => import('@umbraco-cms/search/core').then(m => ({ default: m.YourAction }))`
+
+### Adding a New Global Context
+
+1. Create context in `src/global/globalContexts/`
+2. Create context token in same directory
+3. Export both from `src/global/index.ts`
+4. **Important:** Global contexts load upfront, so keep them lightweight
+
+### Adding a New API Endpoint
+
+1. Run `npm run generate-client` after adding endpoint to server
+2. Generated types appear in `src/core/api/`
+3. Use generated services in repositories or contexts
+
+## Common Patterns
+
+### Consuming Global Contexts
+
 ```typescript
-import { UmbSearchRepository } from '@umbraco-cms/search/core';
+import { UMB_SEARCH_NOTIFICATION_CONTEXT } from '@umbraco-cms/search/global';
+
+export class MyElement extends UmbElementMixin(LitElement) {
+  constructor() {
+    super();
+    this.consumeContext(UMB_SEARCH_NOTIFICATION_CONTEXT, (context) => {
+      this._notificationContext = context;
+    });
+  }
+}
 ```
 
-**During Development:**
-1. TypeScript sees `@umbraco-cms/search/core`
-2. Checks tsconfig.json `paths` mapping
-3. Resolves to `./src/core/index.ts` for type-checking
-4. ✅ Full IntelliSense and type safety
-
-**During Build:**
-1. Vite encounters `@umbraco-cms/search/core`
-2. Marked as external in rollupOptions
-3. ✅ Not bundled, left as-is in output
-
-**At Runtime:**
-1. Browser encounters `import('@umbraco-cms/search/core')`
-2. Checks importmap in umbraco-package.json
-3. Resolves to `/App_Plugins/UmbracoSearch/search-core.js`
-4. ✅ Loads the actual built file
-
-## Package Exports
-
-The package is organized into two logical subpaths, each with its own exports:
-
-### Core Package (`@umbraco-cms/search/core`)
-
-All core implementation classes are exported from `src/core/index.ts`:
+### Lazy Loading Core Services
 
 ```typescript
+// In a manifest
+api: () => import('@umbraco-cms/search/core')
+  .then(m => ({ default: m.UmbSearchRepository }))
+
+// Or in code
+const { UmbSearchRepository } = await import('@umbraco-cms/search/core');
+```
+
+### Exporting Classes with Default Export
+
+```typescript
+// src/core/repositories/search.repository.ts
+export class UmbSearchRepository { }
+
 // src/core/index.ts
-export * from './collectionActions/reload.collection-action.js';
-export * from './collectionViews/search-root-collection-view.element.js';
-export { default as UmbSearchCollectionViewRootElement } from './collectionViews/search-root-collection-view.element.js';
-export * from './search-collection.context.js';
 export * from './repositories/search.repository.js';
-export * from './entityActions/rebuild-index.action.js';
-export * from './api/index.js';
+export { UmbSearchRepository } from './repositories/search.repository.js';
 ```
 
-### Global Package (`@umbraco-cms/search/global`)
+## Why This Pattern?
 
-All global contexts are exported from `src/global/index.ts`:
+1. **Performance**: Only 4.5kb loaded upfront vs 26.5kb
+2. **Shared Code**: Core bundle loaded once, shared across all manifests
+3. **SignalR Ready**: Global contexts can subscribe to events immediately
+4. **Type Safe**: Full IntelliSense via TypeScript path mapping
+5. **Umbraco Convention**: Matches core pattern (`@umbraco-cms/backoffice/*`)
+6. **Extensible**: Third parties can import `@umbraco-cms/search/*` in their packages
 
-```typescript
-// src/global/index.ts
-export * from './globalContexts/search-notification.global-context.js';
-export * from './globalContexts/search-notification.context-token.js';
+## Common Gotchas
+
+1. **Global vs Core**: SignalR listeners must be in `search-global.js`, not `search-core.js`
+2. **Default Exports**: Classes used in manifests need both named and default exports
+3. **Path Mapping**: TypeScript paths point to `index.ts`, not entry files
+4. **Importmap Scope**: Only `core` and `global` are in importmap; `bundle` loads via Umbraco
+5. **External Dependencies**: All `@umbraco-cms/backoffice/*` imports must be external
+
+## Testing
+
+The client is tested through the test site. To run the test site:
+
+```bash
+cd ../../../Umbraco.Web.TestSite.V17
+dotnet run
 ```
 
-**Note**: Default exports need explicit named re-exports for the import pattern to work.
+For client-side debugging:
+1. Run test site (command above)
+2. Run watch mode: `npm run watch`
+3. Changes auto-rebuild and hot-reload in browser
 
-## Benefits
-
-1. **Performance**: Only ~4.5kb loaded upfront (bundle + global) instead of full ~26.5kb
-2. **Maintainability**: Clear separation between manifests, global contexts, and core implementation
-3. **Shared Bundles**: Core and global code loaded once and shared across all components
-4. **Real-time Notifications**: Global contexts can listen to SignalR events immediately
-5. **Type Safety**: Full TypeScript support via path mapping for both subpaths
-6. **Convention Alignment**: Uses subpath patterns like Umbraco CMS core (`@umbraco-cms/backoffice/*`)
-7. **Abstraction Layer**: Logical imports hide physical file locations
-8. **Extensibility**: Third-party developers can import both core and global exports
-9. **Future-Proof**: Scoped package naming ready for ecosystem growth
-
-## Localization
-
-Localization files are kept separate and loaded globally as they're always needed:
-
-```
-src/
-└── lang/
-    └── manifests.ts  → Loaded globally, not code-split
-```
+See [main CLAUDE.md](../../../CLAUDE.md) for full test site details and server-side testing.

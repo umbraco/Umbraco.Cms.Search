@@ -168,7 +168,7 @@ The backoffice client uses **code-splitting with importmap pattern** for optimal
 - Vite marks as external (not bundled)
 - Browser resolves via importmap in `umbraco-package.json` at runtime
 
-See `src/Umbraco.Cms.Search.Core.Client/Client/CLAUDE.md` for detailed client architecture.
+**See [Client CLAUDE.md](src/Umbraco.Cms.Search.Core.Client/Client/CLAUDE.md) for detailed client architecture, manifest patterns, and development workflow.**
 
 ## Key Concepts
 
