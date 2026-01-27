@@ -21,7 +21,7 @@ export const manifests: Array<UmbExtensionManifest> = [
     name: 'Umbraco Search - Workspace View',
     alias: 'Umbraco.Search.WorkspaceView.Collection',
     meta: {
-      label: '#search_collectionHeader',
+      label: '#search_treeHeader',
       pathname: 'indexes',
       icon: 'icon-search',
       collectionAlias: UMB_SEARCH_ROOT_COLLECTION_ALIAS
