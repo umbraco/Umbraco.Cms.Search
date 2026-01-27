@@ -3,7 +3,7 @@ import { UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT } from '@umbraco-cms/backoffice
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
-import {UmbContextToken} from "@umbraco-cms/backoffice/context-api";
+import { UmbContextToken } from '@umbraco-cms/backoffice/context-api';
 
 export class UmbSearchNotificationContext extends UmbContextBase {
   #serverEventContext?: typeof UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT.TYPE;
