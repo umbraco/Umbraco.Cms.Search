@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Umbraco.Cms.Api.Common.ViewModels.Pagination;
 using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Cms.Search.Core.Models.Configuration;
+using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.ViewModels;
 using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
@@ -20,13 +21,20 @@ public class SearchApiController : SearchApiControllerBase
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<SearchApiController> _logger;
     private readonly IContentIndexingService _contentIndexingService;
+    private readonly ISearcherResolver _searcherResolver;
     private readonly IndexOptions _options;
 
-    public SearchApiController(IOptions<IndexOptions> options, IServiceProvider serviceProvider, ILogger<SearchApiController> logger, IContentIndexingService contentIndexingService)
+    public SearchApiController(
+        IOptions<IndexOptions> options,
+        IServiceProvider serviceProvider,
+        ILogger<SearchApiController> logger,
+        IContentIndexingService contentIndexingService,
+        ISearcherResolver searcherResolver)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
         _contentIndexingService = contentIndexingService;
+        _searcherResolver = searcherResolver;
         _options = options.Value;
     }
 
@@ -75,6 +83,36 @@ public class SearchApiController : SearchApiControllerBase
 
         _contentIndexingService.Rebuild(indexAlias);
         return Ok();
+    }
+
+    [HttpGet("search")]
+    [ProducesResponseType<SearchResultViewModel>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Search(string indexAlias, string query, int skip = 0, int take = 100)
+    {
+        if (string.IsNullOrWhiteSpace(indexAlias))
+        {
+            return BadRequest("The indexAlias parameter must be provided and cannot be empty.");
+        }
+
+        ISearcher? searcher = _searcherResolver.GetSearcher(indexAlias);
+        if (searcher is null)
+        {
+            return NotFound($"No searcher was found for the index alias '{indexAlias}'.");
+        }
+
+        SearchResult result = await searcher.SearchAsync(indexAlias, query, skip: skip, take: take);
+
+        return Ok(new SearchResultViewModel
+        {
+            Total = result.Total,
+            Documents = result.Documents.Select(d => new DocumentViewModel
+            {
+                Id = d.Id,
+                ObjectType = d.ObjectType,
+            }),
+        });
     }
 
     private bool TryGetIndexer(Type type, [NotNullWhen(true)] out IIndexer? indexer)
