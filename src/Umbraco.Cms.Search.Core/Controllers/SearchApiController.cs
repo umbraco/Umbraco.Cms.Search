@@ -89,7 +89,7 @@ public class SearchApiController : SearchApiControllerBase
     [ProducesResponseType<SearchResultViewModel>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Search([FromBody] SearchRequestModel request)
+    public async Task<IActionResult> Search([FromBody] SearchRequestModel request, int skip = 0, int take = 100)
     {
         if (string.IsNullOrWhiteSpace(request.IndexAlias))
         {
@@ -110,8 +110,9 @@ public class SearchApiController : SearchApiControllerBase
             request.Sorters,
             request.Culture,
             request.Segment,
-            skip: request.Skip,
-            take: request.Take);
+            request.AccessContext,
+            skip,
+            take);
 
         return Ok(new SearchResultViewModel
         {
