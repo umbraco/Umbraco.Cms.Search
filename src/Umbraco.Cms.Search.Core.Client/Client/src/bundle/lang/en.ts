@@ -19,6 +19,7 @@ export default {
       }
     },
     collectionActionReload: 'Refresh list',
+    entityActionRebuildIndex: 'Rebuild Index',
     rebuildConfirmHeadline: 'Rebuild Search Index',
     rebuildConfirmMessage: 'Are you sure you want to rebuild the search index? This operation may take a while depending on the size of your content.',
     rebuildConfirmLabel: 'Rebuild Index',

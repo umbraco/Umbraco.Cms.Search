@@ -22,7 +22,7 @@ export const manifests: Array<UmbExtensionManifest> = [
     element: '@umbraco-cms/search/core',
     elementName: 'umb-search-root-collection-view',
     meta: {
-      label: '#search_collectionViewRootHeader',
+      label: '#search_treeHeader',
       icon: 'icon-search',
       pathName: 'table'
     },
