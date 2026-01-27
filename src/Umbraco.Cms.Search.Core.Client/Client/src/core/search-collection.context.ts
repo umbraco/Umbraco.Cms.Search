@@ -34,10 +34,7 @@ export class UmbSearchCollectionContext extends UmbDefaultCollectionContext<
   }
 
   #observeSearchIndexChanges() {
-    console.log('Watching for search index changes');
     this.observe(this.#serverEventContext?.byEventSource('IndexRebuildCompleted'), (args) => {
-      console.log('index updated', args);
-
       if (!args.eventSource) return;
 
       // Try and get latest collection context and reload

@@ -37,15 +37,10 @@ export class UmbSearchNotificationContext extends UmbContextBase {
   }
 
   #observeSearchIndexChanges() {
-    console.log('Global: Watching for search index changes');
     this.observe(this.#serverEventContext?.byEventSource('IndexRebuildCompleted'), (args) => {
-      console.log('Global: index updated', args);
-
       if (!args.eventSource) return;
 
-      if (!this.#isUserWaitingForIndexUpdate(args.eventSource)) {
-        return;
-      }
+      if (!this.#isUserWaitingForIndexUpdate(args.eventSource)) return;
 
       this.setUserWaitingForIndexUpdate(args.eventSource, false);
 
@@ -58,7 +53,5 @@ export class UmbSearchNotificationContext extends UmbContextBase {
     }, 'index-rebuild-notification-observer');
   }
 }
-
-export default UmbSearchNotificationContext;
 
 export const UMB_SEARCH_NOTIFICATION_CONTEXT = new UmbContextToken<UmbSearchNotificationContext>('UmbSearchNotificationContext');
