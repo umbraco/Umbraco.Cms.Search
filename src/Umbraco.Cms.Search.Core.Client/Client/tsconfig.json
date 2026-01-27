@@ -17,7 +17,7 @@
     /* Path mappings */
     "baseUrl": ".",
     "paths": {
-      "/App_Plugins/UmbracoSearch/search-library.js": ["./src/lib/search-library.ts"]
+      "@umbraco-cms/search": ["./src/lib/index.ts"]
     },
 
     /* Linting */

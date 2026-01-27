@@ -10,5 +10,10 @@
       "type": "bundle",
       "js": "/App_Plugins/UmbracoSearch/search-bundle.js"
     }
-  ]
+  ],
+  "importmap": {
+    "imports": {
+      "@umbraco-cms/search": "/App_Plugins/UmbracoSearch/search-library.js"
+    }
+  }
 }

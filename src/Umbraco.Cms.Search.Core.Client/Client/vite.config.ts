@@ -15,7 +15,6 @@ export default defineConfig({
     rollupOptions: {
       external: [
         /^@umbraco/,
-        '/App_Plugins/UmbracoSearch/search-library.js'
       ]
     },
   },
