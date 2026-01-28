@@ -4,7 +4,37 @@ export type ClientOptions = {
     baseUrl: 'https://localhost:44324' | (string & {});
 };
 
+export type AccessContextModel = {
+    principalId: string;
+    groupIds?: Array<string> | null;
+};
+
+export type DirectionModel = 'Ascending' | 'Descending';
+
+export type DocumentModel = {
+    id: string;
+    objectType: UmbracoObjectTypesModel;
+};
+
 export type EventMessageTypeModel = 'Default' | 'Info' | 'Error' | 'Success' | 'Warning';
+
+export type FacetModel = {
+    fieldName: string;
+};
+
+export type FacetResultModel = {
+    fieldName: string;
+    values: Array<FacetValueModel>;
+};
+
+export type FacetValueModel = {
+    count: number;
+};
+
+export type FilterModel = {
+    fieldName: string;
+    negate: boolean;
+};
 
 export type HealthStatusModel = 'Healthy' | 'Rebuilding' | 'Corrupted' | 'Empty' | 'Unknown';
 
@@ -24,6 +54,30 @@ export type PagedIndexModel = {
     total: number;
     items: Array<IndexModel>;
 };
+
+export type SearchRequestModel = {
+    indexAlias: string;
+    query?: string | null;
+    filters?: Array<FilterModel> | null;
+    facets?: Array<FacetModel> | null;
+    sorters?: Array<SorterModel> | null;
+    culture?: string | null;
+    segment?: string | null;
+    accessContext?: AccessContextModel | null;
+};
+
+export type SearchResultModel = {
+    total: number;
+    documents: Array<DocumentModel>;
+    facets: Array<FacetResultModel>;
+};
+
+export type SorterModel = {
+    fieldName: string;
+    direction: DirectionModel;
+};
+
+export type UmbracoObjectTypesModel = 'Unknown' | 'ROOT' | 'Document' | 'Media' | 'Template' | 'DocumentType' | 'MediaType' | 'MemberType' | 'MemberGroup' | 'RecycleBin' | 'Member' | 'DataType' | 'DocumentTypeContainer' | 'MediaTypeContainer' | 'MemberTypeContainer' | 'DataTypeContainer' | 'DocumentBlueprintContainer' | 'RelationType' | 'FormsForm' | 'FormsPreValue' | 'FormsDataSource' | 'Language' | 'DocumentBlueprint' | 'IdReservation';
 
 export type IndexesData = {
     body?: never;
@@ -78,3 +132,37 @@ export type RebuildResponses = {
      */
     200: unknown;
 };
+
+export type SearchData = {
+    body?: SearchRequestModel;
+    path?: never;
+    query?: {
+        skip?: number;
+        take?: number;
+    };
+    url: '/umbraco/search/api/v1/search';
+};
+
+export type SearchErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * Not Found
+     */
+    404: unknown;
+};
+
+export type SearchResponses = {
+    /**
+     * OK
+     */
+    200: SearchResultModel;
+};
+
+export type SearchResponse = SearchResponses[keyof SearchResponses];
