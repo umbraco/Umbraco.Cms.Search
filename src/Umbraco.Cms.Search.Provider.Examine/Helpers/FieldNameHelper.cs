@@ -3,7 +3,7 @@ using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Helpers;
 
-internal static class FieldNameHelper
+public static class FieldNameHelper
 {
     public static string FieldName(IndexField field, string fieldValues)
         => FieldName(field.FieldName, fieldValues, field.Segment);
