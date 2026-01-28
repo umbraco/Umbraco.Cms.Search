@@ -45,5 +45,3 @@ export class UmbSearchCollectionContext extends UmbDefaultCollectionContext<
     }, 'index-rebuild-completed-observer');
   }
 }
-
-export { UmbSearchCollectionContext as api };
