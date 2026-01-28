@@ -3,6 +3,7 @@ using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.HostedServices;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Core.ServerEvents;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Cms.Search.Core.DependencyInjection;
@@ -35,6 +36,7 @@ public abstract class TestBase : UmbracoIntegrationTest
 
         builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
+        builder.Services.AddUnique<IServerEventRouter, NoOpServerEventRouter>();
         builder.Services.AddUnique<IIndexDocumentService, IndexDocumentService>();
         builder.Services.AddUnique<IIndexDocumentRepository, IndexDocumentRepository>();
 

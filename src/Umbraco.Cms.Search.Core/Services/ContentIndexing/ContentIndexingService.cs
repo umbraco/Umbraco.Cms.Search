@@ -2,6 +2,8 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.HostedServices;
+using Umbraco.Cms.Core.Models.ServerEvents;
+using Umbraco.Cms.Core.ServerEvents;
 using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Cms.Search.Core.Models.Configuration;
 using Umbraco.Cms.Search.Core.Models.Indexing;
@@ -15,17 +17,20 @@ internal sealed class ContentIndexingService : IContentIndexingService
     private readonly ILogger<ContentIndexingService> _logger;
     private readonly IndexOptions _indexOptions;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IServerEventRouter _serverEventRouter;
 
     public ContentIndexingService(
         IBackgroundTaskQueue backgroundTaskQueue,
         ILogger<ContentIndexingService> logger,
         IOptions<IndexOptions> indexOptions,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        IServerEventRouter serverEventRouter)
     {
         _backgroundTaskQueue = backgroundTaskQueue;
         _logger = logger;
         _indexOptions = indexOptions.Value;
         _serviceProvider = serviceProvider;
+        _serverEventRouter = serverEventRouter;
     }
 
     public void Handle(IEnumerable<ContentChange> changes)
@@ -85,6 +90,12 @@ internal sealed class ContentIndexingService : IContentIndexingService
         }
 
         await contentChangeStrategy.RebuildAsync(new IndexInfo(indexRegistration.IndexAlias, indexRegistration.ContainedObjectTypes, indexer), cancellationToken);
+
+        await _serverEventRouter.BroadcastEventAsync(new ServerEvent
+        {
+            EventType = "IndexRebuildCompleted",
+            EventSource = indexRegistration.IndexAlias,
+        });
     }
 
     private bool TryGetContentChangeStrategy(Type type, [NotNullWhen(true)] out IContentChangeStrategy? contentChangeStrategy)

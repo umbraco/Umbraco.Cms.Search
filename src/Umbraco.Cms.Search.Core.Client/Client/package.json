@@ -1,0 +1,23 @@
+{
+  "name": "@umbraco-cms/backoffice/search",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "watch": "vite build --watch",
+    "build": "tsc && vite build",
+    "generate-client": "node scripts/generate-openapi.js https://localhost:44324/umbraco/swagger/Search/swagger.json"
+  },
+  "devDependencies": {
+    "@umbraco-cms/backoffice": "17.0.0",
+    "chalk": "^5.6.2",
+    "cross-env": "^10.1.0",
+    "node-fetch": "^3.3.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.9"
+  },
+  "dependencies": {
+    "@hey-api/openapi-ts": "^0.90.6",
+    "lit": "^3.3.2"
+  }
+}
