@@ -1,2 +1,2 @@
 export * from './constants.js';
-export * from './search-notification.global-context.js';
+export * from './search.global-context.js';

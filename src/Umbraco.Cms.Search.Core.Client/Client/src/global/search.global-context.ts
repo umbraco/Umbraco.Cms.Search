@@ -1,3 +1,4 @@
+import { rebuild } from '../core/api';
 import { UMB_SEARCH_SERVER_EVENT_TYPE } from './constants.js';
 
 import { UmbContextBase } from '@umbraco-cms/backoffice/class-api';
@@ -5,16 +6,18 @@ import { UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT } from '@umbraco-cms/backoffice
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { UmbContextToken } from '@umbraco-cms/backoffice/context-api';
+import { tryExecute } from '@umbraco-cms/backoffice/resources';
+import { client } from '@umbraco-cms/backoffice/external/backend-api';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 
-export class UmbSearchNotificationContext extends UmbContextBase {
+export class UmbSearchContext extends UmbContextBase {
   #serverEventContext?: typeof UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT.TYPE;
   #notificationContext?: typeof UMB_NOTIFICATION_CONTEXT.TYPE;
   #userWaitingForIndexUpdate = new Set<string>();
   #localize = new UmbLocalizationController(this);
 
   constructor(host: UmbControllerHost) {
-    super(host, UMB_SEARCH_NOTIFICATION_CONTEXT);
+    super(host, UMB_SEARCH_CONTEXT);
 
     this.consumeContext(UMB_NOTIFICATION_CONTEXT, (instance) => {
       this.#notificationContext = instance;
@@ -24,6 +27,11 @@ export class UmbSearchNotificationContext extends UmbContextBase {
       this.#serverEventContext = instance;
       this.#observeSearchIndexChanges();
     });
+  }
+
+  async rebuildIndex(indexAlias: string): Promise<void> {
+    const { error } = await tryExecute(this, rebuild({ query: { indexAlias }, client: client as any }));
+    if (error) throw error;
   }
 
   setUserWaitingForIndexUpdate(indexAlias: string, isWaiting: boolean) {
@@ -56,4 +64,4 @@ export class UmbSearchNotificationContext extends UmbContextBase {
   }
 }
 
-export const UMB_SEARCH_NOTIFICATION_CONTEXT = new UmbContextToken<UmbSearchNotificationContext>('UmbSearchNotificationContext');
+export const UMB_SEARCH_CONTEXT = new UmbContextToken<UmbSearchContext>('UmbSearchContext');

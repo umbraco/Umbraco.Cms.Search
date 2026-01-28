@@ -1,6 +1,6 @@
 import type { UmbSearchIndex, UmbSearchIndexState } from './types.js';
 import {
-  UMB_SEARCH_NOTIFICATION_CONTEXT,
+  UMB_SEARCH_CONTEXT,
   UMB_SEARCH_COLLECTION_VIEW_ALIAS,
   UMB_SEARCH_SERVER_EVENT_TYPE
 } from '@umbraco-cms/search/global';
@@ -12,13 +12,13 @@ export class UmbSearchCollectionContext extends UmbDefaultCollectionContext<
   UmbSearchIndex,
   never
 > {
-  #searchContext?: typeof UMB_SEARCH_NOTIFICATION_CONTEXT.TYPE;
+  #searchContext?: typeof UMB_SEARCH_CONTEXT.TYPE;
   #serverEventContext?: typeof UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT.TYPE;
 
   constructor(host: UmbControllerHostElement) {
     super(host, UMB_SEARCH_COLLECTION_VIEW_ALIAS);
 
-    this.consumeContext(UMB_SEARCH_NOTIFICATION_CONTEXT, (instance) => {
+    this.consumeContext(UMB_SEARCH_CONTEXT, (instance) => {
       this.#searchContext = instance;
     });
 
