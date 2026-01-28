@@ -1,6 +1,7 @@
 using Examine;
 using Examine.Lucene.Directories;
 using Examine.Lucene.Providers;
+using Examine.Search;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NUnit.Framework;
@@ -8,12 +9,16 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
+using Umbraco.Cms.Search.Core.Models.Searching;
+using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Search.Provider.Examine.DependencyInjection;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using Umbraco.Cms.Search.Provider.Examine.Services;
 using Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
+using SearchResult = Umbraco.Cms.Search.Core.Models.Searching.SearchResult;
+using ISearcher = Umbraco.Cms.Search.Core.Services.ISearcher;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests;
 
@@ -234,6 +239,122 @@ public class CustomIndexValueTests
         });
     }
 
+    [Test]
+    public void CustomSearcherIsResolved()
+    {
+        // Verify that our custom searcher is being used
+        ISearcher searcher = GetRequiredService<ISearcher>();
+        Assert.That(searcher, Is.InstanceOf<CustomSearcher>(), $"Expected CustomSearcher but got {searcher.GetType().FullName}");
+    }
+
+    [Test]
+    public async Task CanFilterDocumentsUsingCustomGuidFilter()
+    {
+        // Use the custom searcher with a custom GuidFilter
+        ISearcher searcher = GetRequiredService<ISearcher>();
+
+        // Search for document 3 using its custom guid
+        Guid targetGuid = DocumentCustomGuids[3][0];
+        Guid expectedDocId = DocumentIds[3];
+
+        SearchResult result = await searcher.SearchAsync(
+            IndexAlias,
+            query: null,
+            filters: [new GuidFilter(CustomGuidFieldName, [targetGuid], Negate: false)],
+            facets: null,
+            sorters: null,
+            culture: null,
+            segment: null,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Total, Is.EqualTo(1));
+            Assert.That(result.Documents.First().Id, Is.EqualTo(expectedDocId));
+        });
+    }
+
+    [Test]
+    public async Task CanFilterDocumentsUsingMultipleGuidsInCustomFilter()
+    {
+        ISearcher searcher = GetRequiredService<ISearcher>();
+
+        // Search for documents 2 and 7 using their custom guids
+        Guid guid2 = DocumentCustomGuids[2][0];
+        Guid guid7 = DocumentCustomGuids[7][1]; // Use second guid for variety
+
+        SearchResult result = await searcher.SearchAsync(
+            IndexAlias,
+            query: null,
+            filters: [new GuidFilter(CustomGuidFieldName, [guid2, guid7], Negate: false)],
+            facets: null,
+            sorters: null,
+            culture: null,
+            segment: null,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Total, Is.EqualTo(2));
+            Assert.That(result.Documents.Select(d => d.Id), Does.Contain(DocumentIds[2]));
+            Assert.That(result.Documents.Select(d => d.Id), Does.Contain(DocumentIds[7]));
+        });
+    }
+
+    [Test]
+    public async Task CanFilterDocumentsUsingNegatedCustomGuidFilter()
+    {
+        ISearcher searcher = GetRequiredService<ISearcher>();
+
+        // Search for all documents EXCEPT document 1
+        Guid excludeGuid = DocumentCustomGuids[1][0];
+
+        SearchResult result = await searcher.SearchAsync(
+            IndexAlias,
+            query: null,
+            filters: [new GuidFilter(CustomGuidFieldName, [excludeGuid], Negate: true)],
+            facets: null,
+            sorters: null,
+            culture: null,
+            segment: null,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Total, Is.EqualTo(9)); // 10 total - 1 excluded = 9
+            Assert.That(result.Documents.Select(d => d.Id), Does.Not.Contain(DocumentIds[1]));
+        });
+    }
+
+    [Test]
+    public async Task CustomFilterReturnsNoResultsForNonExistentGuid()
+    {
+        ISearcher searcher = GetRequiredService<ISearcher>();
+
+        // Search for a guid that doesn't exist
+        Guid nonExistentGuid = Guid.NewGuid();
+
+        SearchResult result = await searcher.SearchAsync(
+            IndexAlias,
+            query: null,
+            filters: [new GuidFilter(CustomGuidFieldName, [nonExistentGuid], Negate: false)],
+            facets: null,
+            sorters: null,
+            culture: null,
+            segment: null,
+            accessContext: null,
+            skip: 0,
+            take: 100);
+
+        Assert.That(result.Total, Is.EqualTo(0));
+    }
+
     private async Task EnsureIndex() => await DeleteIndex();
 
     private async Task DeleteIndex()
@@ -346,9 +467,11 @@ internal static class CustomIndexerServiceCollectionExtensions
         // Add base Examine services first
         services.AddExamineSearchProviderServices();
 
-        // Override with our custom indexer
+        // Override with our custom indexer and searcher
         services.AddTransient<IExamineIndexer, CustomIndexer>();
         services.AddTransient<IIndexer, CustomIndexer>();
+        services.AddTransient<IExamineSearcher, CustomSearcher>();
+        services.AddTransient<ISearcher, CustomSearcher>();
 
         return services;
     }
@@ -370,5 +493,48 @@ internal class CustomIndexValueFieldOptions : IConfigureOptions<FieldOptions>
             FieldValues = FieldValues.Keywords,
         });
         fieldOptions.Fields = existingFields.ToArray();
+    }
+}
+
+/// <summary>
+/// A custom Filter that filters by Guid values.
+/// This demonstrates the extensibility of the Filter model.
+/// </summary>
+public record GuidFilter(string FieldName, Guid[] Values, bool Negate)
+    : Filter(FieldName, Negate)
+{
+}
+
+/// <summary>
+/// A custom Searcher that handles <see cref="GuidFilter"/> by querying the custom guids field.
+/// This demonstrates the extensibility of the Searcher class.
+/// </summary>
+public class CustomSearcher : Searcher
+{
+    public CustomSearcher(IExamineManager examineManager, IOptions<SearcherOptions> searcherOptions)
+        : base(examineManager, searcherOptions)
+    {
+    }
+
+    protected override void HandleCustomFilter(IBooleanOperation searchQuery, Filter filter, string? segment)
+    {
+        if (filter is GuidFilter guidFilter)
+        {
+            // Build the field name for the custom guids field
+            // The field was indexed as: Field_{fieldName}_guids_keywords
+            var fieldName = FieldNameHelper.FieldName($"{filter.FieldName}_guids", "keywords", segment);
+
+            // Convert guids to strings for the query
+            var guidStrings = guidFilter.Values.Select(g => g.ToString()).ToArray();
+
+            if (guidFilter.Negate)
+            {
+                searchQuery.Not().GroupedOr([fieldName], guidStrings);
+            }
+            else
+            {
+                searchQuery.And().GroupedOr([fieldName], guidStrings);
+            }
+        }
     }
 }

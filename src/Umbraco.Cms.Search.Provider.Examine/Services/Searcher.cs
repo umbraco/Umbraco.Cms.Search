@@ -21,16 +21,23 @@ using SearchResult = Umbraco.Cms.Search.Core.Models.Searching.SearchResult;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
-internal sealed class Searcher : IExamineSearcher
+public class Searcher : IExamineSearcher
 {
-    private readonly IExamineManager _examineManager;
-    private readonly SearcherOptions _searcherOptions;
-
     public Searcher(IExamineManager examineManager, IOptions<SearcherOptions> searcherOptions)
     {
-        _examineManager = examineManager;
-        _searcherOptions = searcherOptions.Value;
+        ExamineManager = examineManager;
+        SearcherOptions = searcherOptions.Value;
     }
+
+    /// <summary>
+    /// Gets the Examine manager for use in derived classes.
+    /// </summary>
+    protected IExamineManager ExamineManager { get; }
+
+    /// <summary>
+    /// Gets the searcher options configuration for use in derived classes.
+    /// </summary>
+    protected SearcherOptions SearcherOptions { get; }
 
     public Task<SearchResult> SearchAsync(
         string indexAlias,
@@ -50,14 +57,14 @@ internal sealed class Searcher : IExamineSearcher
             return Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
         }
 
-        if (_examineManager.TryGetIndex(indexAlias, out IIndex? index) is false)
+        if (ExamineManager.TryGetIndex(indexAlias, out IIndex? index) is false)
         {
             return Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
         }
 
         SearchResult? searchResult;
 
-        if (_searcherOptions.ExpandFacetValues)
+        if (SearcherOptions.ExpandFacetValues)
         {
             Filter[]? filtersAsArray = filters as Filter[] ?? filters?.ToArray();
             Facet[]? facetsAsArray = facets as Facet[] ?? facets?.ToArray();
@@ -232,8 +239,21 @@ internal sealed class Searcher : IExamineSearcher
                 new SortableField(FieldNameHelper.FieldName(sorter.FieldName, Constants.FieldValues.Texts), SortType.String),
             ],
             ScoreSorter => [],
-            _ => throw new ArgumentOutOfRangeException(nameof(sorter))
+            _ => MapCustomSorter(sorter)
         };
+
+    /// <summary>
+    /// Override this method to handle custom <see cref="Sorter"/> types in derived classes.
+    /// This method is called for sorters that are not built-in sorter types.
+    /// </summary>
+    /// <param name="sorter">The custom sorter to map.</param>
+    /// <returns>An array of <see cref="SortableField"/> to apply, or an empty array to skip sorting.</returns>
+    protected virtual SortableField[] MapCustomSorter(Sorter sorter)
+    {
+        // By default, throw an exception for unknown sorter types.
+        // Override in derived classes to handle custom Sorter types.
+        throw new ArgumentOutOfRangeException(nameof(sorter), $"Unknown sorter type: {sorter.GetType().Name}");
+    }
 
     private void AddFilters(IBooleanOperation searchQuery, IEnumerable<Filter>? filters, string? segment)
     {
@@ -339,8 +359,23 @@ internal sealed class Searcher : IExamineSearcher
                     var datetimeExactFilter = new DateTimeExactFilter(filter.FieldName, dateTimeOffsetExactFilter.Values.Select(value => value.DateTime).ToArray(), filter.Negate);
                     searchQuery.AddExactFilter(dateTimeOffsetExactFieldName, dateTimeOffsetExactSegmentFieldName, datetimeExactFilter);
                     break;
+                default:
+                    HandleCustomFilter(searchQuery, filter, segment);
+                    break;
             }
         }
+    }
+
+    /// <summary>
+    /// Override this method to handle custom <see cref="Filter"/> types in derived classes.
+    /// This method is called for each filter that is not a built-in filter type.
+    /// </summary>
+    /// <param name="searchQuery">The search query to add the filter to.</param>
+    /// <param name="filter">The custom filter to handle.</param>
+    /// <param name="segment">The optional segment to filter on.</param>
+    protected virtual void HandleCustomFilter(IBooleanOperation searchQuery, Filter filter, string? segment)
+    {
+        // No-op by default. Override in derived classes to handle custom Filter types.
     }
 
     private void AddFacets(IOrdering searchQuery, IEnumerable<Facet>? facets)
@@ -357,7 +392,7 @@ internal sealed class Searcher : IExamineSearcher
                 switch (facet)
                 {
                     case IntegerExactFacet integerExactFacet:
-                        facetOperations.FacetString(FieldNameHelper.FieldName(integerExactFacet.FieldName, Constants.FieldValues.Integers), config => config.MaxCount(_searcherOptions.MaxFacetValues));
+                        facetOperations.FacetString(FieldNameHelper.FieldName(integerExactFacet.FieldName, Constants.FieldValues.Integers), config => config.MaxCount(SearcherOptions.MaxFacetValues));
                         break;
                     case IntegerRangeFacet integerRangeFacet:
                         facetOperations.FacetLongRange(
@@ -368,7 +403,7 @@ internal sealed class Searcher : IExamineSearcher
                                 .ToArray());
                         break;
                     case DecimalExactFacet decimalExactFacet:
-                        facetOperations.FacetString(FieldNameHelper.FieldName(decimalExactFacet.FieldName, Constants.FieldValues.Decimals), config => config.MaxCount(_searcherOptions.MaxFacetValues));
+                        facetOperations.FacetString(FieldNameHelper.FieldName(decimalExactFacet.FieldName, Constants.FieldValues.Decimals), config => config.MaxCount(SearcherOptions.MaxFacetValues));
                         break;
                     case DecimalRangeFacet decimalRangeFacet:
                     {
@@ -386,7 +421,7 @@ internal sealed class Searcher : IExamineSearcher
                         break;
                     }
                     case DateTimeOffsetExactFacet dateTimeOffsetExactFacet:
-                        facetOperations.FacetString(FieldNameHelper.FieldName(dateTimeOffsetExactFacet.FieldName, Constants.FieldValues.DateTimeOffsets), config => config.MaxCount(_searcherOptions.MaxFacetValues));
+                        facetOperations.FacetString(FieldNameHelper.FieldName(dateTimeOffsetExactFacet.FieldName, Constants.FieldValues.DateTimeOffsets), config => config.MaxCount(SearcherOptions.MaxFacetValues));
                         break;
                     case DateTimeOffsetRangeFacet dateTimeOffsetRangeFacet:
                         facetOperations.FacetLongRange(
@@ -401,11 +436,25 @@ internal sealed class Searcher : IExamineSearcher
                         break;
                     case KeywordFacet keywordFacet:
                         var keywordFieldName = FieldNameHelper.QueryableKeywordFieldName(FieldNameHelper.FieldName(keywordFacet.FieldName, Constants.FieldValues.Keywords));
-                        facetOperations.FacetString(keywordFieldName, config => config.MaxCount(_searcherOptions.MaxFacetValues));
+                        facetOperations.FacetString(keywordFieldName, config => config.MaxCount(SearcherOptions.MaxFacetValues));
+                        break;
+                    default:
+                        HandleCustomFacet(facetOperations, facet);
                         break;
                 }
             }
         });
+    }
+
+    /// <summary>
+    /// Override this method to handle custom <see cref="Facet"/> types in derived classes.
+    /// This method is called for each facet that is not a built-in facet type.
+    /// </summary>
+    /// <param name="facetOperations">The facet operations to add the facet to.</param>
+    /// <param name="facet">The custom facet to handle.</param>
+    protected virtual void HandleCustomFacet(IFacetOperations facetOperations, Facet facet)
+    {
+        // No-op by default. Override in derived classes to handle custom Facet types.
     }
 
     private Facet[] DeduplicateFacets(IEnumerable<Facet>? facets)
@@ -567,8 +616,28 @@ internal sealed class Searcher : IExamineSearcher
                     var keywordFacetValues = examineKeywordFacets.Select(examineKeywordFacet => new KeywordFacetValue(examineKeywordFacet.Label, (int)examineKeywordFacet.Value)).ToList();
                     yield return new FacetResult(facet.FieldName, keywordFacetValues);
                     break;
+                default:
+                    FacetResult? customFacetResult = MapCustomFacet(facet, searchResults);
+                    if (customFacetResult is not null)
+                    {
+                        yield return customFacetResult;
+                    }
+                    break;
             }
         }
+    }
+
+    /// <summary>
+    /// Override this method to map custom <see cref="Facet"/> types to <see cref="FacetResult"/> in derived classes.
+    /// This method is called for each facet result that is not a built-in facet type.
+    /// </summary>
+    /// <param name="facet">The custom facet to map results for.</param>
+    /// <param name="searchResults">The search results containing the facet data.</param>
+    /// <returns>A <see cref="FacetResult"/> for the custom facet, or null to skip.</returns>
+    protected virtual FacetResult? MapCustomFacet(Facet facet, ISearchResults searchResults)
+    {
+        // No-op by default. Override in derived classes to handle custom Facet types.
+        return null;
     }
 
     private static int GetFacetCount(string fieldName, string key, ISearchResults results)
@@ -579,7 +648,7 @@ internal sealed class Searcher : IExamineSearcher
         INestedBooleanOperation result = nestedQuery
             .Field(
                 Constants.SystemFields.AggregatedTextsR1,
-                term.Boost(_searcherOptions.BoostFactorTextR1))
+                term.Boost(SearcherOptions.BoostFactorTextR1))
             .Or()
             .Field(
                 Constants.SystemFields.AggregatedTextsR1,
@@ -587,7 +656,7 @@ internal sealed class Searcher : IExamineSearcher
             .Or()
             .Field(
                 Constants.SystemFields.AggregatedTextsR2,
-                term.Boost(_searcherOptions.BoostFactorTextR2))
+                term.Boost(SearcherOptions.BoostFactorTextR2))
             .Or()
             .Field(
                 Constants.SystemFields.AggregatedTextsR2,
@@ -595,7 +664,7 @@ internal sealed class Searcher : IExamineSearcher
             .Or()
             .Field(
                 Constants.SystemFields.AggregatedTextsR3,
-                term.Boost(_searcherOptions.BoostFactorTextR3))
+                term.Boost(SearcherOptions.BoostFactorTextR3))
             .Or()
             .Field(
                 Constants.SystemFields.AggregatedTextsR3,
@@ -616,7 +685,7 @@ internal sealed class Searcher : IExamineSearcher
                 .Or()
                 .Field(
                     FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTextsR1, searchSegment),
-                    term.Boost(_searcherOptions.BoostFactorTextR1))
+                    term.Boost(SearcherOptions.BoostFactorTextR1))
                 .Or()
                 .Field(
                     FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTextsR1, searchSegment),
@@ -624,7 +693,7 @@ internal sealed class Searcher : IExamineSearcher
                 .Or()
                 .Field(
                     FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTextsR2, searchSegment),
-                    term.Boost(_searcherOptions.BoostFactorTextR2))
+                    term.Boost(SearcherOptions.BoostFactorTextR2))
                 .Or()
                 .Field(
                     FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTextsR2, searchSegment),
@@ -632,7 +701,7 @@ internal sealed class Searcher : IExamineSearcher
                 .Or()
                 .Field(
                     FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTextsR3, searchSegment),
-                    term.Boost(_searcherOptions.BoostFactorTextR3))
+                    term.Boost(SearcherOptions.BoostFactorTextR3))
                 .Or()
                 .Field(
                     FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTextsR3, searchSegment),
