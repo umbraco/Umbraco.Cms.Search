@@ -1,14 +1,13 @@
-import { UmbSearchCollectionRepository } from '../repositories/search-collection.repository.js';
 import { UmbSearchCollectionContext } from '../search-collection.context.js';
+import { UMB_SEARCH_CONTEXT } from '@umbraco-cms/search/global';
+
 import { UmbEntityActionBase } from '@umbraco-cms/backoffice/entity-action';
-import { umbConfirmModal } from "@umbraco-cms/backoffice/modal";
+import { umbConfirmModal } from '@umbraco-cms/backoffice/modal';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
-import { UmbLocalizationController } from "@umbraco-cms/backoffice/localization-api";
-import { UMB_COLLECTION_CONTEXT } from "@umbraco-cms/backoffice/collection";
-import {UMB_SEARCH_CONTEXT} from "@umbraco-cms/search/global";
+import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
+import { UMB_COLLECTION_CONTEXT } from '@umbraco-cms/backoffice/collection';
 
 export class UmbSearchRebuildIndexEntityAction extends UmbEntityActionBase<never> {
-  #searchRepository = new UmbSearchCollectionRepository(this);
 
   override async execute() {
     if (!this.args.unique) {
@@ -47,5 +46,3 @@ export class UmbSearchRebuildIndexEntityAction extends UmbEntityActionBase<never
     }
   }
 }
-
-export default UmbSearchRebuildIndexEntityAction;
