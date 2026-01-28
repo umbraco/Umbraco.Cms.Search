@@ -5,3 +5,4 @@ export * from './search-collection.context.js';
 export * from './repositories/search-collection.repository.js';
 export * from './repositories/search.repository.js';
 export * from './entityActions/rebuild-index.action.js';
+export type * from './types.js';
