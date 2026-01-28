@@ -14,7 +14,7 @@
   "importmap": {
     "imports": {
       "@umbraco-cms/search/global": "/App_Plugins/UmbracoSearch/search-global.js",
-      "@umbraco-cms/search/core": "/App_Plugins/UmbracoSearch/search-core.js"
+      "@umbraco-cms/search/settings": "/App_Plugins/UmbracoSearch/search-settings.js"
     }
   }
 }

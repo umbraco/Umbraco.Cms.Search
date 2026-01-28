@@ -10,9 +10,9 @@ The Umbraco Search backoffice client uses a **three-bundle code-splitting patter
 
 - **search-bundle.js** (~3kb) - Manifest metadata, loaded upfront
 - **search-global.js** (~1.5kb) - Global contexts for SignalR events, loaded upfront
-- **search-core.js** (~22kb) - Core implementations, lazy-loaded on demand
+- **search-settings.js** (~22kb) - Core implementations, lazy-loaded on demand
 
-**Key principle:** Logical imports (`@umbraco-cms/search/core`) resolve via importmap at runtime, not physical file paths.
+**Key principle:** Logical imports (`@umbraco-cms/search/settings`) resolve via importmap at runtime, not physical file paths.
 
 ## Build Commands
 
@@ -45,8 +45,8 @@ src/
 │   ├── search-global.ts
 │   ├── index.ts
 │   └── globalContexts/
-├── core/            → search-core.js (lazy-loaded)
-│   ├── search-core.ts
+├── settings/            → search-settings.js (lazy-loaded)
+│   ├── search-settings.ts
 │   ├── index.ts
 │   ├── collectionActions/
 │   ├── collectionViews/
@@ -62,11 +62,11 @@ Instead of importing files directly, use logical module identifiers that resolve
 
 **What you write:**
 ```typescript
-import { UmbSearchRepository } from '@umbraco-cms/search/core';
+import { UmbSearchRepository } from '@umbraco-cms/search/settings';
 ```
 
 **Development (TypeScript):**
-- `tsconfig.json` paths resolve to `./src/core/index.ts`
+- `tsconfig.json` paths resolve to `./src/settings/index.ts`
 - Full IntelliSense and type safety
 
 **Build (Vite):**
@@ -74,7 +74,7 @@ import { UmbSearchRepository } from '@umbraco-cms/search/core';
 - Not bundled, left as import statement
 
 **Runtime (Browser):**
-- `umbraco-package.json` importmap resolves to `/App_Plugins/UmbracoSearch/search-core.js`
+- `umbraco-package.json` importmap resolves to `/App_Plugins/UmbracoSearch/search-settings.js`
 - Lazy-loaded when first used
 
 ## Manifest Patterns
@@ -86,7 +86,7 @@ export const manifests: Array<UmbExtensionManifest> = [
   {
     type: 'repository',
     alias: 'Umb.Repository.SearchCollection',
-    api: () => import('@umbraco-cms/search/core')
+    api: () => import('@umbraco-cms/search/settings')
       .then(m => ({ default: m.UmbSearchCollectionRepository })),
   }
 ];
@@ -101,7 +101,7 @@ export const manifests: Array<UmbExtensionManifest> = [
   {
     type: 'collectionView',
     alias: 'Umb.CollectionView.SearchRoot',
-    element: '@umbraco-cms/search/core',
+    element: '@umbraco-cms/search/settings',
     elementName: 'umb-search-root-collection-view',
   }
 ];
@@ -120,7 +120,7 @@ this.consumeContext(UMB_SEARCH_NOTIFICATION_CONTEXT, (instance) => {
 });
 ```
 
-**Critical:** Global contexts must be in `search-global.js` (not `search-core.js`) because they subscribe to SignalR events immediately.
+**Critical:** Global contexts must be in `search-global.js` (not `search-settings.js`) because they subscribe to SignalR events immediately.
 
 ## Configuration Files
 
@@ -135,7 +135,7 @@ export default defineConfig({
       entry: {
         "search-bundle": "src/bundle/search-bundle.ts",
         "search-global": "src/global/search-global.ts",
-        "search-core": "src/core/search-core.ts"
+        "search-settings": "src/settings/search-settings.ts"
       },
       formats: ["es"],
     },
@@ -155,7 +155,7 @@ Maps logical imports to physical files for type-checking:
   "compilerOptions": {
     "paths": {
       "@umbraco-cms/search/global": ["./src/global/index.ts"],
-      "@umbraco-cms/search/core": ["./src/core/index.ts"]
+      "@umbraco-cms/search/settings": ["./src/settings/index.ts"]
     }
   }
 }
@@ -174,7 +174,7 @@ Provides runtime resolution via importmap:
   "importmap": {
     "imports": {
       "@umbraco-cms/search/global": "/App_Plugins/UmbracoSearch/search-global.js",
-      "@umbraco-cms/search/core": "/App_Plugins/UmbracoSearch/search-core.js"
+      "@umbraco-cms/search/settings": "/App_Plugins/UmbracoSearch/search-settings.js"
     }
   }
 }
@@ -184,10 +184,10 @@ Provides runtime resolution via importmap:
 
 ### Adding a New Collection Action
 
-1. Create implementation in `src/core/collectionActions/`
-2. Export from `src/core/index.ts`
+1. Create implementation in `src/settings/collectionActions/`
+2. Export from `src/settings/index.ts`
 3. Add manifest in `src/bundle/collectionActions.manifests.ts`
-4. Use `api: () => import('@umbraco-cms/search/core').then(m => ({ default: m.YourAction }))`
+4. Use `api: () => import('@umbraco-cms/search/settings').then(m => ({ default: m.YourAction }))`
 
 ### Adding a New Global Context
 
@@ -199,7 +199,7 @@ Provides runtime resolution via importmap:
 ### Adding a New API Endpoint
 
 1. Run `npm run generate-client` after adding endpoint to server
-2. Generated types appear in `src/core/api/`
+2. Generated types appear in `src/settings/api/` (should be moved to new module if consumed by other parts of the Backoffice in the future)
 3. Use generated services in repositories or contexts
 
 ## Common Patterns
@@ -223,20 +223,20 @@ export class MyElement extends UmbElementMixin(LitElement) {
 
 ```typescript
 // In a manifest
-api: () => import('@umbraco-cms/search/core')
+api: () => import('@umbraco-cms/search/settings')
   .then(m => ({ default: m.UmbSearchRepository }))
 
 // Or in code
-const { UmbSearchRepository } = await import('@umbraco-cms/search/core');
+const { UmbSearchRepository } = await import('@umbraco-cms/search/settings');
 ```
 
 ### Exporting Classes with Default Export
 
 ```typescript
-// src/core/repositories/search.repository.ts
+// src/settings/repositories/search.repository.ts
 export class UmbSearchRepository { }
 
-// src/core/index.ts
+// src/settings/index.ts
 export * from './repositories/search.repository.js';
 export { UmbSearchRepository } from './repositories/search.repository.js';
 ```

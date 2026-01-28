@@ -6,7 +6,7 @@ export default defineConfig({
       entry: {
         "search-bundle": "src/bundle/search-bundle.ts",
         "search-global": "src/global/search-global.ts",
-        "search-core": "src/core/search-core.ts"
+        "search-settings": "src/settings/search-settings.ts"
       }, // Bundle registers one or more manifests
       formats: ["es"],
     },

@@ -1,4 +1,5 @@
 import { UmbSearchCollectionContext } from '../search-collection.context.js';
+import { UmbSearchRepository } from '../repositories/search.repository.js';
 import { UMB_SEARCH_CONTEXT } from '@umbraco-cms/search/global';
 
 import { UmbEntityActionBase } from '@umbraco-cms/backoffice/entity-action';
@@ -8,6 +9,7 @@ import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-
 import { UMB_COLLECTION_CONTEXT } from '@umbraco-cms/backoffice/collection';
 
 export class UmbSearchRebuildIndexEntityAction extends UmbEntityActionBase<never> {
+  #searchRepository = new UmbSearchRepository(this);
 
   override async execute() {
     if (!this.args.unique) {
@@ -36,7 +38,7 @@ export class UmbSearchRebuildIndexEntityAction extends UmbEntityActionBase<never
       }
     });
 
-    await searchContext.rebuildIndex(this.args.unique);
+    await this.#searchRepository.rebuildIndex(this.args.unique);
 
     // See if we have a collection context to update the index state
     const collectionContext = await this.getContext(UMB_COLLECTION_CONTEXT);
