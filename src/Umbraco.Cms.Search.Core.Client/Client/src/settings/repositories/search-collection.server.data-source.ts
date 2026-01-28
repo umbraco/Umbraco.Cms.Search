@@ -26,6 +26,7 @@ export class UmbSearchCollectionServerDataSource implements UmbSearchCollectionD
     const items = data.items.map<UmbSearchIndex>((item) => (
       {
         unique: item.indexAlias,
+        name: item.indexAlias,
         documentCount: item.documentCount,
         healthStatus: item.healthStatus,
         entityType: UMB_SEARCH_INDEX_ENTITY_TYPE,

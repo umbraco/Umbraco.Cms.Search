@@ -10,6 +10,7 @@ export type UmbHealthStatusModel = 'Healthy' | 'Rebuilding' | 'Corrupted' | 'Emp
 
 export type UmbSearchIndex = {
   unique: string;
+  name: string;
   documentCount: number;
   healthStatus: UmbHealthStatusModel;
   entityType: string;
