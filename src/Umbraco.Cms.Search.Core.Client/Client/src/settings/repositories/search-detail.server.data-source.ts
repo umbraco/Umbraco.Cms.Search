@@ -1,0 +1,72 @@
+import { indexes, type IndexModel } from '../api';
+import { UMB_SEARCH_INDEX_ENTITY_TYPE } from '@umbraco-cms/search/global';
+import type { UmbSearchIndex } from '@umbraco-cms/search/settings';
+
+import type { UmbDetailDataSource } from '@umbraco-cms/backoffice/repository';
+import { client } from '@umbraco-cms/backoffice/external/backend-api';
+import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
+import { tryExecute, UmbError } from '@umbraco-cms/backoffice/resources';
+
+/**
+ * A data source for the search indexes that fetches data from the server
+ */
+export class UmbSearchServerDataSource implements UmbDetailDataSource<UmbSearchIndex> {
+  readonly #host: UmbControllerHost;
+
+  constructor(host: UmbControllerHost) {
+    this.#host = host;
+  }
+
+  async createScaffold(preset: Partial<IndexModel> = {}) {
+    const data: UmbSearchIndex = {
+      entityType: UMB_SEARCH_INDEX_ENTITY_TYPE,
+      name: preset.indexAlias!,
+      unique: preset.indexAlias!,
+      documentCount: 0,
+      state: 'idle',
+      healthStatus: 'Unknown',
+      ...preset,
+    };
+
+    return { data };
+  }
+
+  async read(unique: string) {
+    if (!unique) throw new Error('Unique is missing');
+
+    const { data, error } = await tryExecute(
+      this.#host,
+      indexes({ client: client as any })
+    );
+
+    if (error || !data) {
+      return { error };
+    }
+
+    const index = data.items.find((item) => item.indexAlias === unique);
+
+    if (!index) {
+      return {
+        data: undefined,
+        error: new UmbError('Search index not found'),
+      };
+    }
+
+    return this.createScaffold(index);
+  }
+
+  async create(model: UmbSearchIndex) {
+    console.error('Creating search indexes is not supported.');
+    return { data: model, error: new UmbError('Creating search indexes is not supported') };
+  }
+
+  async update(model: UmbSearchIndex) {
+    console.error('Updating search indexes is not supported.');
+    return { data: model, error: new UmbError('Updating search indexes is not supported') };
+  }
+
+  async delete(_unique: string) {
+    console.error('Deleting search indexes is not supported.');
+    return { error: new UmbError('Deleting search indexes is not supported') };
+  }
+}

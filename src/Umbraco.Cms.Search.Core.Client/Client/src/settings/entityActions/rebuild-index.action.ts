@@ -1,5 +1,5 @@
 import { UmbSearchCollectionContext } from '../search-collection.context.js';
-import { UmbSearchRepository } from '../repositories/search.repository.js';
+import { UmbSearchDetailRepository } from '../repositories/search-detail.repository.js';
 import { UMB_SEARCH_CONTEXT } from '@umbraco-cms/search/global';
 
 import { UmbEntityActionBase } from '@umbraco-cms/backoffice/entity-action';
@@ -9,7 +9,7 @@ import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-
 import { UMB_COLLECTION_CONTEXT } from '@umbraco-cms/backoffice/collection';
 
 export class UmbSearchRebuildIndexEntityAction extends UmbEntityActionBase<never> {
-  #searchRepository = new UmbSearchRepository(this);
+  #searchRepository = new UmbSearchDetailRepository(this);
 
   override async execute() {
     if (!this.args.unique) {

@@ -1,5 +1,5 @@
 import {
-  UMB_SEARCH_ENTITY_TYPE,
+  UMB_SEARCH_ROOT_ENTITY_TYPE,
   UMB_SEARCH_ROOT_COLLECTION_ALIAS,
   UMB_SEARCH_ROOT_WORKSPACE_ALIAS
 } from '@umbraco-cms/search/global';
@@ -11,7 +11,7 @@ export const manifests: Array<UmbExtensionManifest> = [
     name: 'Umbraco Search - Workspace',
     alias: UMB_SEARCH_ROOT_WORKSPACE_ALIAS,
     meta: {
-      entityType: UMB_SEARCH_ENTITY_TYPE,
+      entityType: UMB_SEARCH_ROOT_ENTITY_TYPE,
       headline: '#search_treeHeader',
     }
   },
