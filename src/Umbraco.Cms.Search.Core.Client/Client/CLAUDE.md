@@ -372,19 +372,29 @@ export class MyElement extends UmbLitElement {
 }
 ```
 
-### Observing Server Events (SignalR)
+### Observing Index Rebuild Events
+
+The global context exposes an `indexRebuilt` observable that emits the index alias when a rebuild completes. Subscribe to this instead of directly observing SignalR server events:
 
 ```typescript
-// Pattern used in workspace/collection contexts
-this.observe(
-  this.#serverEventContext?.byEventSource(UMB_SEARCH_SERVER_EVENT_TYPE),
-  async (args) => {
-    if (args?.eventSource !== this.getUnique()) return;
-    await this.reload();
-  },
-  'observer-rebuild-event'
-);
+import { UMB_SEARCH_CONTEXT } from '@umbraco-cms/search/global';
+
+// In a context or element
+this.consumeContext(UMB_SEARCH_CONTEXT, (searchContext) => {
+  if (!searchContext) return;
+  this.observe(
+    searchContext.indexRebuilt,
+    (indexAlias) => {
+      if (!indexAlias) return;
+      // Handle the rebuild completion
+      // indexAlias contains the alias of the rebuilt index
+    },
+    'my-observer-id',
+  );
+});
 ```
+
+This pattern keeps SignalR knowledge centralized in the global context.
 
 ### Lazy Loading Core Services
 

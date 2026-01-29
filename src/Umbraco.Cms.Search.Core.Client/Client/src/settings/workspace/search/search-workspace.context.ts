@@ -1,9 +1,9 @@
 import { UmbSearchWorkspaceEditorElement } from './search-workspace-editor.element.js';
 import { UmbSearchDetailRepository, UmbSearchIndex } from '@umbraco-cms/search/settings';
 import {
+  UMB_SEARCH_CONTEXT,
   UMB_SEARCH_DETAIL_REPOSITORY_ALIAS,
   UMB_SEARCH_ENTITY_TYPE,
-  UMB_SEARCH_SERVER_EVENT_TYPE,
   UMB_SEARCH_WORKSPACE_ALIAS,
 } from '@umbraco-cms/search/global';
 
@@ -12,17 +12,14 @@ import {
   UmbEntityNamedDetailWorkspaceContextBase,
 } from '@umbraco-cms/backoffice/workspace';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
-import { UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT } from '@umbraco-cms/backoffice/management-api';
 
 export class UmbSearchWorkspaceContext
   extends UmbEntityNamedDetailWorkspaceContextBase<UmbSearchIndex, UmbSearchDetailRepository>
   implements UmbRoutableWorkspaceContext
 {
   public readonly repository = new UmbSearchDetailRepository(this);
-  public readonly documentCount = this._data.createObservablePartOfCurrent(x => x?.documentCount);
-  public readonly healthStatus = this._data.createObservablePartOfCurrent(x => x?.healthStatus);
-
-  #serverEventContext?: typeof UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT.TYPE;
+  public readonly documentCount = this._data.createObservablePartOfCurrent((x) => x?.documentCount);
+  public readonly healthStatus = this._data.createObservablePartOfCurrent((x) => x?.healthStatus);
 
   constructor(host: UmbControllerHost) {
     super(host, {
@@ -41,17 +38,17 @@ export class UmbSearchWorkspaceContext
       },
     ]);
 
-    this.consumeContext(UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT, (instance) => {
-      this.#serverEventContext = instance;
-      this.#observeSearchIndexChanges();
+    this.consumeContext(UMB_SEARCH_CONTEXT, (searchContext) => {
+      if (!searchContext) return;
+      this.observe(
+        searchContext.indexRebuilt,
+        async (indexAlias) => {
+          if (!indexAlias) return;
+          if (indexAlias !== this.getUnique()) return;
+          await this.reload();
+        },
+        'index-rebuild-completed-detail-observer',
+      );
     });
-  }
-
-  #observeSearchIndexChanges() {
-    this.observe(this.#serverEventContext?.byEventSource(UMB_SEARCH_SERVER_EVENT_TYPE), async (args) => {
-      if (!args?.eventSource) return;
-      if (args.eventSource !== this.getUnique()) return;
-      await this.reload();
-    }, 'index-rebuild-completed-detail-observer');
   }
 }

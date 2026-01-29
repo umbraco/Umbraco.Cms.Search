@@ -1,31 +1,26 @@
 import type { UmbSearchIndex, UmbSearchIndexState } from '../types.js';
-import { UMB_SEARCH_COLLECTION_VIEW_ALIAS, UMB_SEARCH_SERVER_EVENT_TYPE } from '@umbraco-cms/search/global';
+import { UMB_SEARCH_COLLECTION_VIEW_ALIAS, UMB_SEARCH_CONTEXT } from '@umbraco-cms/search/global';
 import { UmbDefaultCollectionContext } from '@umbraco-cms/backoffice/collection';
 import type { UmbControllerHostElement } from '@umbraco-cms/backoffice/controller-api';
-import { UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT } from '@umbraco-cms/backoffice/management-api';
 
 export class UmbSearchCollectionContext extends UmbDefaultCollectionContext<UmbSearchIndex, never> {
-  #serverEventContext?: typeof UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT.TYPE;
-
   constructor(host: UmbControllerHostElement) {
     super(host, UMB_SEARCH_COLLECTION_VIEW_ALIAS);
 
-    this.consumeContext(UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT, (instance) => {
-      this.#serverEventContext = instance;
-      this.#observeSearchIndexChanges();
+    this.consumeContext(UMB_SEARCH_CONTEXT, (searchContext) => {
+      if (!searchContext) return;
+      this.observe(
+        searchContext.indexRebuilt,
+        (indexAlias) => {
+          if (!indexAlias) return;
+          this.loadCollection();
+        },
+        'index-rebuild-completed-observer',
+      );
     });
   }
 
   setIndexState(indexAlias: string, state: UmbSearchIndexState) {
     this._items.updateOne(indexAlias, { state });
-  }
-
-  #observeSearchIndexChanges() {
-    this.observe(this.#serverEventContext?.byEventSource(UMB_SEARCH_SERVER_EVENT_TYPE), (args) => {
-      if (!args?.eventSource) return;
-
-      // Try and get latest collection context and reload
-      this.loadCollection();
-    }, 'index-rebuild-completed-observer');
   }
 }

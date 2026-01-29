@@ -5,6 +5,7 @@ import { UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT } from '@umbraco-cms/backoffice
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import { UmbContextToken } from '@umbraco-cms/backoffice/context-api';
+import { UmbBasicState } from '@umbraco-cms/backoffice/observable-api';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 
 export class UmbSearchContext extends UmbContextBase {
@@ -12,6 +13,13 @@ export class UmbSearchContext extends UmbContextBase {
   #notificationContext?: typeof UMB_NOTIFICATION_CONTEXT.TYPE;
   #userWaitingForIndexUpdate = new Set<string>();
   #localize = new UmbLocalizationController(this);
+
+  /**
+   * Observable that emits the index alias when an index rebuild completes.
+   * Subscribe to this instead of directly observing server events.
+   */
+  #indexRebuilt = new UmbBasicState<string | undefined>(undefined);
+  public readonly indexRebuilt = this.#indexRebuilt.asObservable();
 
   constructor(host: UmbControllerHost) {
     super(host, UMB_SEARCH_CONTEXT);
@@ -42,16 +50,22 @@ export class UmbSearchContext extends UmbContextBase {
     this.observe(this.#serverEventContext?.byEventSource(UMB_SEARCH_SERVER_EVENT_TYPE), (args) => {
       if (!args?.eventSource) return;
 
-      if (!this.#isUserWaitingForIndexUpdate(args.eventSource)) return;
+      const indexAlias = args.eventSource;
 
-      this.setUserWaitingForIndexUpdate(args.eventSource, false);
+      // Emit on the public observable for subscribers
+      this.#indexRebuilt.setValue(indexAlias);
 
-      this.#notificationContext?.peek('positive', {
-        data: {
-          title: this.#localize.term('search_rebuildCompletedTitle'),
-          message: this.#localize.term('search_rebuildCompletedMessage', args.eventSource),
-        }
-      });
+      // Handle user notification if they were waiting
+      if (this.#isUserWaitingForIndexUpdate(indexAlias)) {
+        this.setUserWaitingForIndexUpdate(indexAlias, false);
+
+        this.#notificationContext?.peek('positive', {
+          data: {
+            title: this.#localize.term('search_rebuildCompletedTitle'),
+            message: this.#localize.term('search_rebuildCompletedMessage', indexAlias),
+          },
+        });
+      }
     }, 'index-rebuild-notification-observer');
   }
 }
