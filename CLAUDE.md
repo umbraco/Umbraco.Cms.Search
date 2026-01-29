@@ -63,7 +63,7 @@ npm run watch
 npm run generate-client
 ```
 
-The client uses **Node.js 23** (see `.nvmrc`). Ensure you have Node.js 23 installed.
+The client uses **Node.js 24** (see `.nvmrc`). Ensure you have Node.js 24 installed.
 
 ### Test Site
 
@@ -160,13 +160,20 @@ The backoffice client uses **code-splitting with importmap pattern** for optimal
 **Three-Bundle Strategy:**
 - `search-bundle.js` (~3kb) - Manifest metadata, loaded upfront
 - `search-global.js` (~1.5kb) - Global contexts for SignalR event subscriptions, loaded upfront
-- `search-core.js` (~22kb) - Core implementation, lazy-loaded on demand
+- `search-settings.js` (~22kb) - Core implementation, lazy-loaded on demand
 
 **Logical Import Pattern:**
-- Code imports `@umbraco-cms/search/core` and `@umbraco-cms/search/global`
+- Code imports `@umbraco-cms/search/settings` and `@umbraco-cms/search/global`
 - TypeScript resolves via `tsconfig.json` paths for type-checking
 - Vite marks as external (not bundled)
 - Browser resolves via importmap in `umbraco-package.json` at runtime
+
+**Two-Workspace Architecture:**
+- **Root Workspace** (`Umbraco.Search.Workspace.Root`) - Collection view of all search indexes
+- **Detail Workspace** (`Umbraco.Search.Workspace`) - Detail view for a single index with extensible boxes
+
+**Custom Extension Type:**
+- `searchIndexDetailBox` - Allows adding custom UI boxes to the index detail view via extension slot
 
 **See [Client CLAUDE.md](src/Umbraco.Cms.Search.Core.Client/Client/CLAUDE.md) for detailed client architecture, manifest patterns, and development workflow.**
 
@@ -272,9 +279,9 @@ Pass `AccessContext` to `SearchAsync` to include protected content in results.
 
 3. **Variation Field Naming**: When querying variant content, ensure field names include culture/segment suffixes where appropriate.
 
-4. **Global Contexts Must Load Upfront**: Client global contexts (e.g., notification listeners) must be in `search-global.js`, not lazy-loaded in `search-core.js`.
+4. **Global Contexts Must Load Upfront**: Client global contexts (e.g., notification listeners) must be in `search-global.js`, not lazy-loaded in `search-settings.js`.
 
-5. **Client Import Paths**: Always use logical imports (`@umbraco-cms/search/core` not `./path/to/file`) to leverage the importmap pattern.
+5. **Client Import Paths**: Always use logical imports (`@umbraco-cms/search/settings` not `./path/to/file`) to leverage the importmap pattern.
 
 6. **Segment Variant Search**: Known limitation - segment variant content not created in the targeted segment may be excluded from results. This is a bug being addressed.
 
