@@ -1,5 +1,5 @@
 import type { UmbSearchIndex } from '../types.js';
-import { rebuild } from '../api/index.js';
+import { rebuild } from '../api';
 import { UmbSearchServerDataSource } from './search-detail.server.data-source.js';
 import { UMB_SEARCH_DETAIL_STORE_CONTEXT } from './search-detail.store.context-token.js';
 import { UmbDetailRepositoryBase } from '@umbraco-cms/backoffice/repository';
