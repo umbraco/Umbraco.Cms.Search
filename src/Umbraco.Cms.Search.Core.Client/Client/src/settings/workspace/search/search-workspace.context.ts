@@ -18,8 +18,8 @@ export class UmbSearchWorkspaceContext
   implements UmbRoutableWorkspaceContext
 {
   public readonly repository = new UmbSearchDetailRepository(this);
-  public readonly documentCount = this._data.createObservablePartOfCurrent((x) => x?.documentCount);
-  public readonly healthStatus = this._data.createObservablePartOfCurrent((x) => x?.healthStatus);
+  public readonly documentCount = this._data.createObservablePartOfPersisted((x) => x?.documentCount);
+  public readonly healthStatus = this._data.createObservablePartOfPersisted((x) => x?.healthStatus);
 
   constructor(host: UmbControllerHost) {
     super(host, {
