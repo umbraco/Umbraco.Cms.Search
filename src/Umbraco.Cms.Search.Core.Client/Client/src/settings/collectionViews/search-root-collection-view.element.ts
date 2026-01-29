@@ -69,7 +69,7 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
         data: [
           {
             columnAlias: 'indexAlias',
-            value: item.unique
+            value: html`<a href=${`section/settings/workspace/search/edit/${item.unique}`}>${item.unique}</a>`
           },
           {
             columnAlias: 'healthStatus',
