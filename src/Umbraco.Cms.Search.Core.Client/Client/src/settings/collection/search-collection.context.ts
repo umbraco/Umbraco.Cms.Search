@@ -1,4 +1,4 @@
-import type { UmbSearchIndex, UmbSearchIndexState } from './types.js';
+import type { UmbSearchIndex, UmbSearchIndexState } from '../types.js';
 import {
   UMB_SEARCH_CONTEXT,
   UMB_SEARCH_COLLECTION_VIEW_ALIAS,

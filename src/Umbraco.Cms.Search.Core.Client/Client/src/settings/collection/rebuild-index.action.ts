@@ -1,5 +1,5 @@
-import { UmbSearchCollectionContext } from '../search-collection.context.js';
-import { UmbSearchDetailRepository } from '../repositories/search-detail.repository.js';
+import { UmbSearchDetailRepository } from '../repositories/index.js';
+import { UmbSearchCollectionContext } from './search-collection.context.js';
 import { UMB_SEARCH_CONTEXT } from '@umbraco-cms/search/global';
 
 import { UmbEntityActionBase } from '@umbraco-cms/backoffice/entity-action';
