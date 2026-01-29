@@ -420,12 +420,13 @@ export { UmbSearchRepository } from './repositories/search.repository.js';
 ## Common Gotchas
 
 1. **Global vs Settings**: SignalR listeners must be in `search-global.js`, not `search-settings.js`
-2. **Default Exports**: Classes used in manifests need both named and default exports
-3. **Path Mapping**: TypeScript paths point to `index.ts`, not entry files
-4. **Importmap Scope**: Only `settings` and `global` are in importmap; `bundle` loads via Umbraco
-5. **External Dependencies**: All `@umbraco-cms/backoffice/*` imports must be external
-6. **Workspace Context Token**: Use type guard function to narrow generic `UmbWorkspaceContext` to specific type
-7. **Extension Slot Types**: Custom extension types (like `searchIndexDetailBox`) need both kind manifest and TypeScript interface with global declaration
+2. **Global Has No Dependencies**: The `bundle` and `global` bundles must NOT import from anything else - they load upfront and must stay lightweight with no lazy-loaded dependencies
+3. **Default Exports**: Classes used in manifests need both named and default exports
+4. **Path Mapping**: TypeScript paths point to `index.ts`, not entry files
+5. **Importmap Scope**: Only `settings` and `global` are in importmap; `bundle` loads via the `umbraco-package.json` declaration file
+6. **External Dependencies**: All `@umbraco-cms/backoffice/*` imports must be external
+7. **Workspace Context Token**: Use type guard function to narrow generic `UmbWorkspaceContext` to specific type
+8. **Extension Slot Types**: Custom extension types (like `searchIndexDetailBox`) need both kind manifest and TypeScript interface with global declaration
 
 ## Testing
 
