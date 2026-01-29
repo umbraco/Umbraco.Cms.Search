@@ -39,5 +39,15 @@ export default {
     rebuildStartedMessage: 'Genopbygningen af søgeindeks "{0}" er startet. Du kan fortsætte med at arbejde, mens processen kører i baggrunden.',
     rebuildCompletedTitle: 'Genopbygning af søgeindeks fuldført',
     rebuildCompletedMessage: 'Genopbygningen af søgeindeks "{0}" er blevet fuldført.',
+    rebuildIndex: 'Genopbyg indeks',
+    indexInfo: 'Indeks information',
+    indexAlias: 'Indeks alias',
+    searchBox: 'Søg',
+    searchPlaceholder: 'Søg i indeks...',
+    searchButton: 'Søg',
+    noResults: 'Ingen resultater fundet',
+    resultsCount: (count: number) => `Fandt ${count} resultat${count !== 1 ? 'er' : ''}`,
+    statsBoxLabel: 'Statistik',
+    searchBoxLabel: 'Søgning',
   }
 } satisfies UmbLocalizationDictionary;

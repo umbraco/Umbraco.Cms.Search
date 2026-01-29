@@ -26,5 +26,15 @@ export default {
     rebuildStartedMessage: 'The rebuild of search index "{0}" has started. You can continue working while the process runs in the background.',
     rebuildCompletedTitle: 'Search Index Rebuild Completed',
     rebuildCompletedMessage: 'The rebuild of search index "{0}" has completed successfully.',
+    rebuildIndex: 'Rebuild Index',
+    indexInfo: 'Index Information',
+    indexAlias: 'Index Alias',
+    searchBox: 'Search',
+    searchPlaceholder: 'Search index...',
+    searchButton: 'Search',
+    noResults: 'No results found',
+    resultsCount: (count: number) => `Found ${count} result${count !== 1 ? 's' : ''}`,
+    statsBoxLabel: 'Statistics',
+    searchBoxLabel: 'Search',
   }
 } satisfies UmbLocalizationDictionary;
