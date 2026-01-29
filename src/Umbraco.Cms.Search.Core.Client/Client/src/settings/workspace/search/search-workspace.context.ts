@@ -3,7 +3,7 @@ import { UmbSearchDetailRepository, UmbSearchIndex } from '@umbraco-cms/search/s
 import {
   UMB_SEARCH_CONTEXT,
   UMB_SEARCH_DETAIL_REPOSITORY_ALIAS,
-  UMB_SEARCH_ENTITY_TYPE,
+  UMB_SEARCH_ENTITY_TYPE, UMB_SEARCH_SERVER_EVENT_TYPE,
   UMB_SEARCH_WORKSPACE_ALIAS
 } from '@umbraco-cms/search/global';
 
@@ -12,8 +12,9 @@ import {
   UmbEntityNamedDetailWorkspaceContextBase,
 } from '@umbraco-cms/backoffice/workspace';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
-import {UmbLocalizationController} from "@umbraco-cms/backoffice/localization-api";
-import {UMB_NOTIFICATION_CONTEXT} from "@umbraco-cms/backoffice/notification";
+import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
+import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
+import { UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT } from '@umbraco-cms/backoffice/management-api';
 
 export class UmbSearchWorkspaceContext
   extends UmbEntityNamedDetailWorkspaceContextBase<UmbSearchIndex, UmbSearchDetailRepository>
@@ -22,6 +23,8 @@ export class UmbSearchWorkspaceContext
   public readonly repository = new UmbSearchDetailRepository(this);
   public readonly documentCount = this._data.createObservablePartOfCurrent(x => x?.documentCount);
   public readonly healthStatus = this._data.createObservablePartOfCurrent(x => x?.healthStatus);
+
+  #serverEventContext?: typeof UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT.TYPE;
 
   constructor(host: UmbControllerHost) {
     super(host, {
@@ -39,6 +42,11 @@ export class UmbSearchWorkspaceContext
         },
       },
     ]);
+
+    this.consumeContext(UMB_MANAGEMENT_API_SERVER_EVENT_CONTEXT, (instance) => {
+      this.#serverEventContext = instance;
+      this.#observeSearchIndexChanges();
+    });
   }
 
   async rebuildIndex() {
@@ -64,5 +72,13 @@ export class UmbSearchWorkspaceContext
 
     // Mark that the user is waiting for this index to rebuild
     searchContext.setUserWaitingForIndexUpdate(indexAlias, true);
+  }
+
+  #observeSearchIndexChanges() {
+    this.observe(this.#serverEventContext?.byEventSource(UMB_SEARCH_SERVER_EVENT_TYPE), async (args) => {
+      if (!args?.eventSource) return;
+      if (args.eventSource !== this.getUnique()) return;
+      await this.reload();
+    }, 'index-rebuild-completed-detail-observer');
   }
 }
