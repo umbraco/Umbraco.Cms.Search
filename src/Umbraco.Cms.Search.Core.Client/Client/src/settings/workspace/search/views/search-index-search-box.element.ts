@@ -1,10 +1,11 @@
 import { UMB_SEARCH_WORKSPACE_CONTEXT } from '../search-workspace.context-token.js';
 import { UmbSearchQueryRepository } from '../../../repositories/search-query.repository.js';
 import type { UmbSearchRequest, UmbSearchResult } from '../../../types.js';
-import { html, customElement, state, css, repeat, when } from '@umbraco-cms/backoffice/external/lit';
+import { html, customElement, state, css, when } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
 import { debounce } from '@umbraco-cms/backoffice/utils';
+import type { UmbTableColumn, UmbTableConfig, UmbTableItem } from '@umbraco-cms/backoffice/components';
 
 @customElement('umb-search-index-search-box')
 export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
@@ -15,6 +16,21 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     this._searchQuery = value;
   }, 300);
 
+  private _tableConfig: UmbTableConfig = {
+    allowSelection: false,
+  };
+
+  private _tableColumns: Array<UmbTableColumn> = [
+    {
+      name: 'Document ID',
+      alias: 'documentId',
+    },
+    {
+      name: 'Object Type',
+      alias: 'objectType',
+    },
+  ];
+
   @state()
   private _indexAlias?: string;
 
@@ -23,6 +39,9 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
 
   @state()
   private _searchResults?: UmbSearchResult;
+
+  @state()
+  private _tableItems: Array<UmbTableItem> = [];
 
   @state()
   private _isSearching = false;
@@ -70,14 +89,44 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
 
     const { data, error } = await this.#queryRepository.search(request);
 
-    if (error) {
-      this._error = error.message;
+    if (error || !data) {
+      this._error = error?.message || 'An error occurred while searching';
       this._searchResults = undefined;
+      this._tableItems = [];
     } else {
       this._searchResults = data;
+      this.#createTableItems(data);
     }
 
     this._isSearching = false;
+  }
+
+  #createTableItems(results: UmbSearchResult) {
+    this._tableItems = results.documents.map((doc) => ({
+      id: doc.id,
+      data: [
+        {
+          columnAlias: 'documentId',
+          value: html`<a href=${this.#getContentUrl(doc.id, doc.objectType)}>${doc.id}</a>`,
+        },
+        {
+          columnAlias: 'objectType',
+          value: doc.objectType || 'Unknown',
+        },
+      ],
+    }));
+  }
+
+  #getContentUrl(id: string, objectType: string): string {
+    // Map object types to their appropriate workspace URLs
+    // This mimics the old Examine dashboard behavior
+    const typeMap: Record<string, string> = {
+      'Document': `/section/content/workspace/document/edit/${id}`,
+      'Media': `/section/media/workspace/media/edit/${id}`,
+      'Member': `/section/member/workspace/member/edit/${id}`,
+    };
+
+    return typeMap[objectType] || '#';
   }
 
   #handleInputChange(e: Event) {
@@ -141,24 +190,11 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
             </umb-localize>
           </strong>
         </div>
-        <div class="results-list">
-          ${repeat(
-            this._searchResults.documents,
-            (doc) => doc.id,
-            (doc) => html`
-              <div class="result-item">
-                <div class="result-id">
-                  <strong>ID:</strong> ${doc.id}
-                </div>
-                <div class="result-type">
-                  <uui-tag look="placeholder">
-                    ${doc.objectType || 'Unknown'}
-                  </uui-tag>
-                </div>
-              </div>
-            `
-          )}
-        </div>
+        <umb-table
+          .config=${this._tableConfig}
+          .columns=${this._tableColumns}
+          .items=${this._tableItems}>
+        </umb-table>
       </div>
     `;
   }
@@ -208,27 +244,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
       .results-header {
         padding-bottom: var(--uui-size-space-2);
         border-bottom: 1px solid var(--uui-color-border);
-      }
-
-      .results-list {
-        display: flex;
-        flex-direction: column;
-        gap: var(--uui-size-space-2);
-      }
-
-      .result-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: var(--uui-size-space-3);
-        background-color: var(--uui-color-surface);
-        border: 1px solid var(--uui-color-border);
-        border-radius: var(--uui-border-radius);
-      }
-
-      .result-id {
-        font-family: var(--uui-font-family-monospace);
-        font-size: var(--uui-type-small-size);
+        margin-bottom: var(--uui-size-space-3);
       }
     `,
   ];
