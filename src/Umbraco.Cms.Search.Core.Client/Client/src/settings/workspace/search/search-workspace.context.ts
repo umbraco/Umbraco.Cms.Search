@@ -3,7 +3,7 @@ import { UmbSearchDetailRepository, UmbSearchIndex, UmbSearchIndexState } from '
 import {
   UMB_SEARCH_CONTEXT,
   UMB_SEARCH_DETAIL_REPOSITORY_ALIAS,
-  UMB_SEARCH_ENTITY_TYPE,
+  UMB_SEARCH_INDEX_ENTITY_TYPE,
   UMB_SEARCH_WORKSPACE_ALIAS,
 } from '@umbraco-cms/search/global';
 
@@ -29,7 +29,7 @@ export class UmbSearchWorkspaceContext
   constructor(host: UmbControllerHost) {
     super(host, {
       workspaceAlias: UMB_SEARCH_WORKSPACE_ALIAS,
-      entityType: UMB_SEARCH_ENTITY_TYPE,
+      entityType: UMB_SEARCH_INDEX_ENTITY_TYPE,
       detailRepositoryAlias: UMB_SEARCH_DETAIL_REPOSITORY_ALIAS,
     });
 

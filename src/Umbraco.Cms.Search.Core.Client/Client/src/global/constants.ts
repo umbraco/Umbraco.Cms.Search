@@ -1,6 +1,6 @@
 export const UMB_SEARCH_ROOT_ENTITY_TYPE = 'search-root';
 export const UMB_SEARCH_ENTITY_TYPE = 'search';
-export const UMB_SEARCH_INDEX_ENTITY_TYPE = 'Umb.Search.Index';
+export const UMB_SEARCH_INDEX_ENTITY_TYPE = 'search-index';
 export const UMB_SEARCH_COLLECTION_REPOSITORY_ALIAS = 'UMB_SEARCH_COLLECTION_REPOSITORY';
 export const UMB_SEARCH_DETAIL_REPOSITORY_ALIAS = 'UmbSearchDetailRepository';
 export const UMB_SEARCH_DETAIL_STORE_ALIAS = 'UmbSearchStore';

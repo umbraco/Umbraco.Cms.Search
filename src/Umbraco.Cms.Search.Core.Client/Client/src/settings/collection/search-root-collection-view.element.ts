@@ -1,4 +1,5 @@
 import type { UmbSearchIndex } from '../types.js';
+import { UMB_SEARCH_INDEX_ENTITY_TYPE } from '@umbraco-cms/search/global';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { html, customElement, state, when } from '@umbraco-cms/backoffice/external/lit';
 import { UMB_COLLECTION_CONTEXT, type UmbDefaultCollectionContext } from '@umbraco-cms/backoffice/collection';
@@ -69,7 +70,7 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
         data: [
           {
             columnAlias: 'indexAlias',
-            value: html`<a href=${`section/settings/workspace/search/edit/${item.unique}`}>${item.unique}</a>`
+            value: html`<a href=${`section/settings/workspace/${UMB_SEARCH_INDEX_ENTITY_TYPE}/edit/${item.unique}`}>${item.unique}</a>`
           },
           {
             columnAlias: 'healthStatus',

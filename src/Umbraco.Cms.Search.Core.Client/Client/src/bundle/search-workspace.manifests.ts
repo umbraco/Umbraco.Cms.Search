@@ -1,6 +1,6 @@
 import {
   UMB_SEARCH_WORKSPACE_ALIAS,
-  UMB_SEARCH_ENTITY_TYPE,
+  UMB_SEARCH_INDEX_ENTITY_TYPE,
 } from '@umbraco-cms/search/global';
 import { UMB_WORKSPACE_CONDITION_ALIAS } from '@umbraco-cms/backoffice/workspace';
 
@@ -12,7 +12,7 @@ export const manifests: Array<UmbExtensionManifest> = [
     name: 'Search Workspace',
     api: () => import('@umbraco-cms/search/settings').then(m => ({ default: m.UmbSearchWorkspaceContext })),
     meta: {
-      entityType: UMB_SEARCH_ENTITY_TYPE,
+      entityType: UMB_SEARCH_INDEX_ENTITY_TYPE,
     },
   },
   {
@@ -26,24 +26,6 @@ export const manifests: Array<UmbExtensionManifest> = [
       label: '#general_details',
       pathname: 'details',
       icon: 'icon-search',
-    },
-    conditions: [
-      {
-        alias: UMB_WORKSPACE_CONDITION_ALIAS,
-        match: UMB_SEARCH_WORKSPACE_ALIAS,
-      },
-    ],
-  },
-  {
-    type: 'workspaceAction',
-    kind: 'default',
-    alias: 'Umb.WorkspaceAction.Search.Rebuild',
-    name: 'Rebuild Index Workspace Action',
-    api: () => import('@umbraco-cms/search/settings').then(m => ({ default: m.UmbRebuildIndexWorkspaceAction })),
-    meta: {
-      look: 'secondary',
-      color: 'warning',
-      label: '#search_rebuildIndex',
     },
     conditions: [
       {
