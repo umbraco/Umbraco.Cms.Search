@@ -6,12 +6,15 @@ import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
 import { debounce } from '@umbraco-cms/backoffice/utils';
 import type { UmbTableColumn, UmbTableConfig, UmbTableItem } from '@umbraco-cms/backoffice/components';
+import { UmbModalRouteRegistrationController } from '@umbraco-cms/backoffice/router';
+import { UMB_WORKSPACE_MODAL } from '@umbraco-cms/backoffice/workspace';
 
 @customElement('umb-search-index-search-box')
 export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   #workspaceContext?: typeof UMB_SEARCH_WORKSPACE_CONTEXT.TYPE;
   #queryRepository = new UmbSearchQueryRepository(this);
   #inputValue = ''; // Non-reactive property for input value
+  #routeBuilder?: (params: { entityType: string }) => string; // Route builder function
   #debouncedUpdateQuery = debounce((value: string) => {
     this._searchQuery = value;
   }, 300);
@@ -51,6 +54,22 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
 
   constructor() {
     super();
+
+    // Register modal route for opening entities
+    new UmbModalRouteRegistrationController(this, UMB_WORKSPACE_MODAL)
+      .addAdditionalPath(':entityType')
+      .onSetup((routingInfo) => {
+        return {
+          data: {
+            entityType: routingInfo.entityType,
+            preset: {},
+          },
+        };
+      })
+      .observeRouteBuilder((routeBuilder) => {
+        // Store the route builder function to call dynamically per entity type
+        this.#routeBuilder = routeBuilder;
+      });
 
     this.consumeContext(UMB_SEARCH_WORKSPACE_CONTEXT, (context) => {
       this.#workspaceContext = context;
@@ -107,7 +126,14 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
       data: [
         {
           columnAlias: 'documentId',
-          value: html`<a href=${this.#getContentUrl(doc.id, doc.objectType)}>${doc.id}</a>`,
+          value: html`
+            <uui-button
+              look="secondary"
+              label="Open"
+              href=${this.#getModalUrl(doc.id, doc.objectType)}>
+              ${doc.id}
+            </uui-button>
+          `,
         },
         {
           columnAlias: 'objectType',
@@ -117,16 +143,30 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     }));
   }
 
-  #getContentUrl(id: string, objectType: string): string {
-    // Map object types to their appropriate workspace URLs
-    // This mimics the old Examine dashboard behavior
+  #getEntityType(objectType: string): string {
+    // Map UmbracoObjectTypes enum values to entity type strings
     const typeMap: Record<string, string> = {
-      'Document': `/section/content/workspace/document/edit/${id}`,
-      'Media': `/section/media/workspace/media/edit/${id}`,
-      'Member': `/section/member/workspace/member/edit/${id}`,
+      'Document': 'document',
+      'Media': 'media',
+      'Member': 'member',
+      'DocumentType': 'document-type',
+      'MediaType': 'media-type',
+      'MemberType': 'member-type',
+      'DataType': 'data-type',
     };
 
-    return typeMap[objectType] || '#';
+    return typeMap[objectType] || objectType.toLowerCase();
+  }
+
+  #getModalUrl(id: string, objectType: string): string {
+    if (!this.#routeBuilder) {
+      console.error('Route builder not initialized');
+      return '#';
+    }
+
+    const entityType = this.#getEntityType(objectType);
+    const modalPath = this.#routeBuilder({ entityType });
+    return `${modalPath}edit/${id}`;
   }
 
   #handleInputChange(e: Event) {
