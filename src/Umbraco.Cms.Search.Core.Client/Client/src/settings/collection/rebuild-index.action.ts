@@ -1,5 +1,6 @@
 import { UmbSearchDetailRepository } from '../repositories/search-detail.repository.js';
 import { UmbSearchCollectionContext } from './search-collection.context.js';
+import { UMB_SEARCH_WORKSPACE_CONTEXT } from '../workspace/search/search-workspace.context-token.js';
 
 import { UmbEntityActionBase } from '@umbraco-cms/backoffice/entity-action';
 import { UMB_COLLECTION_CONTEXT } from '@umbraco-cms/backoffice/collection';
@@ -21,11 +22,17 @@ export class UmbSearchRebuildIndexEntityAction extends UmbEntityActionBase<never
       confirmLabel: '#search_rebuildConfirmLabel',
     });
 
+    // Check for workspace context first (when triggered from workspace header)
+    const workspaceContext = await this.getContext(UMB_SEARCH_WORKSPACE_CONTEXT).catch(() => undefined);
+    if (workspaceContext) {
+      workspaceContext.setState('loading');
+    }
+
     // User confirmed - repository handles: notification → API call → waiting state
     await this.#repository.rebuildIndex(this.args.unique);
 
-    // Collection-specific: set loading state for UI feedback
-    const collectionContext = await this.getContext(UMB_COLLECTION_CONTEXT);
+    // Collection-specific: set loading state for UI feedback (when triggered from collection view)
+    const collectionContext = await this.getContext(UMB_COLLECTION_CONTEXT).catch(() => undefined);
     if (collectionContext instanceof UmbSearchCollectionContext) {
       collectionContext.setIndexState(this.args.unique, 'loading');
     }

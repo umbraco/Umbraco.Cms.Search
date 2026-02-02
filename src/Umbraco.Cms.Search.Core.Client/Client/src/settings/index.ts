@@ -1,6 +1,5 @@
 // Library exports
 export * from './collection/index.js';
 export * from './repositories/index.js';
-export * from './workspaceActions/rebuild-index.workspace-action.js';
 export * from './workspace/index.js';
 export type * from './types.js';
