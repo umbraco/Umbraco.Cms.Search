@@ -1,4 +1,4 @@
-import { indexes, type IndexModel } from '../api';
+import { index, type IndexModel } from '../api';
 import { UMB_SEARCH_INDEX_ENTITY_TYPE } from '@umbraco-cms/search/global';
 import type { UmbSearchIndex } from '@umbraco-cms/search/settings';
 
@@ -36,23 +36,19 @@ export class UmbSearchServerDataSource implements UmbDetailDataSource<UmbSearchI
 
     const { data, error } = await tryExecute(
       this.#host,
-      indexes({ client: client as any })
+      index({
+        client: client as any,
+        path: {
+          indexAlias: unique
+        }
+      })
     );
 
     if (error || !data) {
       return { error };
     }
 
-    const index = data.items.find((item) => item.indexAlias === unique);
-
-    if (!index) {
-      return {
-        data: undefined,
-        error: new UmbError('Search index not found'),
-      };
-    }
-
-    return this.createScaffold(index);
+    return this.createScaffold(data);
   }
 
   async create(model: UmbSearchIndex) {
