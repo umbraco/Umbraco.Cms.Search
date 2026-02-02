@@ -42,7 +42,8 @@ public class Searcher : IExamineSearcher
         string? segment,
         AccessContext? accessContext,
         int skip,
-        int take)
+        int take,
+        bool includeSuggestions = false)
     {
         // Special case if no parameters are provided, return an empty list.
         if (query is null && filters is null && facets is null && sorters is null && culture is null && segment is null && accessContext is null)
@@ -84,8 +85,13 @@ public class Searcher : IExamineSearcher
             searchResult = Search(CreateBaseQuery(), filters, facets, sorters, segment, skip, take);
         }
 
-        IEnumerable<string> suggestions = await GetSuggestionsAsync(indexAlias, query, culture, segment);
-        return searchResult with { Suggestions = suggestions };
+        if (includeSuggestions)
+        {
+            IEnumerable<string> suggestions = await GetSuggestionsAsync(indexAlias, query, culture, segment);
+            return searchResult with { Suggestions = suggestions };
+        }
+
+        return searchResult;
 
         IBooleanOperation CreateBaseQuery()
         {
