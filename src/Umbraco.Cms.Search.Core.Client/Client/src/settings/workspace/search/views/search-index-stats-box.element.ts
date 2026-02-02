@@ -82,7 +82,7 @@ export class UmbSearchIndexStatsBoxElement extends UmbLitElement {
 
           <div class="stat-item">
             <strong><umb-localize key="search_tableColumnHealthStatus">Health Status</umb-localize></strong>
-            <uui-tag .look=${'primary'} .color=${this.#getHealthStatusColor(this._healthStatus)}>
+            <uui-tag style="max-width:80px" .look=${'primary'} .color=${this.#getHealthStatusColor(this._healthStatus)}>
               ${this.localize.term('search_healthStatus', this._healthStatus)}
             </uui-tag>
           </div>
