@@ -251,6 +251,38 @@ Pass `AccessContext` to `SearchAsync` to include protected content in results.
 4. Update `FieldOptions` configuration if adding facetable/sortable fields
 5. Add migration if persisted index metadata changes
 
+### Adding a New Repository (Client)
+
+Repositories abstract API calls and provide clean interfaces for UI components. Follow this pattern:
+
+1. **Define Domain Types** in `src/settings/types.ts`:
+   - Create request/response types that abstract away API-generated types
+   - Example: `UmbSearchRequest`, `UmbSearchResult`
+
+2. **Create Server Data Source** (e.g., `search-query.server.data-source.ts`):
+   - Implements data fetching and type mapping
+   - Maps domain types → API types (for requests)
+   - Maps API types → domain types (for responses)
+   - Uses `tryExecute()` for error handling
+
+3. **Create Repository** (e.g., `search-query.repository.ts`):
+   - Extends `UmbRepositoryBase`
+   - Orchestrates data source calls
+   - Provides clean API for consumers
+   - Example: `async search(request: UmbSearchRequest) { return this.#dataSource.search(request); }`
+
+4. **Register Repository**:
+   - Add constant in `src/global/constants.ts`: `export const UMB_SEARCH_QUERY_REPOSITORY_ALIAS = '...'`
+   - Export from `src/settings/repositories/index.ts`
+   - Add manifest in `src/bundle/repositories.manifests.ts`
+
+5. **Use in Components**:
+   - Import repository class directly: `import { UmbSearchQueryRepository } from '../repositories/search-query.repository.js'`
+   - Instantiate: `#repository = new UmbSearchQueryRepository(this)`
+   - Call methods: `const { data, error } = await this.#repository.search(request)`
+
+**Benefits**: Separation of concerns, testability, type safety, consistency, reusability.
+
 ## Testing Strategy
 
 ### Unit Tests (Umbraco.Test.Search.Unit)
@@ -284,6 +316,14 @@ Pass `AccessContext` to `SearchAsync` to include protected content in results.
 5. **Client Import Paths**: Always use logical imports (`@umbraco-cms/search/settings` not `./path/to/file`) to leverage the importmap pattern.
 
 6. **Segment Variant Search**: Known limitation - segment variant content not created in the targeted segment may be excluded from results. This is a bug being addressed.
+
+7. **Entity Actions vs Workspace Actions**: Entity actions automatically appear in workspace header dropdowns. Don't create duplicate workspace actions for the same functionality. Ensure the workspace's `entityType` matches the entity action's registered entity type.
+
+8. **Enum JSON Serialization**: C# enums used in ViewModels should use `[JsonConverter(typeof(JsonStringEnumConverter))]` to serialize as strings instead of numbers. This prevents confusion in the UI where enum values would appear as numbers.
+
+9. **State Management Race Conditions**: When setting loading states for async operations, set the state BEFORE making the API call, not after. This ensures immediate UI feedback and prevents race conditions where the operation completes before the loading state is set.
+
+10. **Server-Driven State**: UI state should be derived from server health status (e.g., `healthStatus: 'Rebuilding'` → `state: 'loading'`). This keeps the UI synchronized with actual server state after reloads.
 
 ## Coding Conventions
 

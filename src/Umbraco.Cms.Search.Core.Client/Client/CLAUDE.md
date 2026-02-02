@@ -418,6 +418,167 @@ export * from './repositories/search.repository.js';
 export { UmbSearchRepository } from './repositories/search.repository.js';
 ```
 
+### Modal Routing for Entity Links
+
+To make entity IDs clickable and open in modals (like the Examine dashboard):
+
+```typescript
+export class MyElement extends UmbLitElement {
+  #routeBuilder?: (params: { entityType: string }) => string;
+
+  constructor() {
+    super();
+    // Register modal route with dynamic entity type
+    new UmbModalRouteRegistrationController(this, UMB_WORKSPACE_MODAL)
+      .addAdditionalPath(':entityType')
+      .onSetup((routingInfo) => ({
+        data: { entityType: routingInfo.entityType, preset: {} }
+      }))
+      .observeRouteBuilder((routeBuilder) => {
+        this.#routeBuilder = routeBuilder;
+      });
+  }
+
+  #getModalUrl(id: string, objectType: string): string {
+    const entityType = this.#mapObjectTypeToEntityType(objectType);
+    const modalPath = this.#routeBuilder!({ entityType });
+    return `${modalPath}edit/${id}`;
+  }
+
+  render() {
+    return html`
+      <uui-button
+        look="secondary"
+        href=${this.#getModalUrl(doc.id, doc.objectType)}>
+        ${doc.id}
+      </uui-button>
+    `;
+  }
+}
+```
+
+**Key points:**
+- Store the route builder function itself, not a pre-built route
+- Call the route builder dynamically with the specific entityType for each link
+- Map object types to entity types (e.g., 'Document' → 'document', 'Media' → 'media')
+
+### Using umb-table for Displaying Results
+
+Replace custom lists with `<umb-table>` for consistent UI:
+
+```typescript
+#createTableConfig() {
+  this._tableConfig = {
+    columns: [
+      {
+        name: this.localize.term('search_tableColumnDocumentId'),
+        alias: 'documentId',
+      },
+      {
+        name: this.localize.term('search_tableColumnObjectType'),
+        alias: 'objectType',
+      },
+    ],
+  };
+}
+
+#createTableItems(results: UmbSearchResult) {
+  this._tableItems = results.documents.map((doc) => ({
+    id: doc.id,
+    data: [
+      {
+        columnAlias: 'documentId',
+        value: html`<uui-button look="secondary" href=${this.#getModalUrl(doc.id, doc.objectType)}>${doc.id}</uui-button>`
+      },
+      { columnAlias: 'objectType', value: doc.objectType || 'Unknown' }
+    ]
+  }));
+}
+
+render() {
+  return html`
+    <umb-table
+      .config=${this._tableConfig}
+      .items=${this._tableItems}>
+    </umb-table>
+  `;
+}
+```
+
+**Benefits:** Consistent styling, built-in sorting, pagination support, accessibility.
+
+### Entity Actions vs Workspace Actions
+
+Entity actions automatically appear in workspace header dropdowns - don't create duplicate workspace actions:
+
+```typescript
+// ❌ DON'T: Create separate workspace action
+export class UmbSearchRebuildWorkspaceAction extends UmbWorkspaceActionBase { }
+
+// ✅ DO: Create single entity action that works in both contexts
+export class UmbSearchRebuildIndexEntityAction extends UmbEntityActionBase<never> {
+  override async execute() {
+    // Check for workspace context (when triggered from workspace header)
+    const workspaceContext = await this.getContext(UMB_SEARCH_WORKSPACE_CONTEXT).catch(() => undefined);
+    if (workspaceContext) {
+      workspaceContext.setState('loading');
+    }
+
+    await this.#repository.rebuildIndex(this.args.unique);
+
+    // Check for collection context (when triggered from collection view)
+    const collectionContext = await this.getContext(UMB_COLLECTION_CONTEXT).catch(() => undefined);
+    if (collectionContext instanceof UmbSearchCollectionContext) {
+      collectionContext.setIndexState(this.args.unique, 'loading');
+    }
+  }
+}
+```
+
+**Important:** Ensure the workspace's `entityType` matches the entity action's registered entity type, or the action won't appear in the dropdown.
+
+### State Management for Async Operations
+
+For operations that take time (like rebuild), manage state carefully to avoid race conditions:
+
+```typescript
+// ✅ DO: Set loading state BEFORE API call
+const workspaceContext = await this.getContext(UMB_SEARCH_WORKSPACE_CONTEXT).catch(() => undefined);
+if (workspaceContext) {
+  workspaceContext.setState('loading');  // Set BEFORE
+}
+await this.#repository.rebuildIndex(this.args.unique);  // Then call API
+
+// ❌ DON'T: Set loading state AFTER API call
+await this.#repository.rebuildIndex(this.args.unique);  // API call first
+if (workspaceContext) {
+  workspaceContext.setState('loading');  // Too late! Race condition
+}
+```
+
+**Derive state from server health status** when loading data:
+
+```typescript
+// In server data source
+async createScaffold(preset: Partial<IndexModel> = {}) {
+  let state: UmbSearchIndex['state'] = 'idle';
+  if (preset.healthStatus === 'Rebuilding') {
+    state = 'loading';
+  } else if (preset.healthStatus === 'Corrupted') {
+    state = 'error';
+  }
+
+  return {
+    data: {
+      ...preset,
+      state  // Derived from server status
+    }
+  };
+}
+```
+
+This ensures UI state stays synchronized with actual server state after reloads.
+
 ## Why This Pattern?
 
 1. **Performance**: Only 4.5kb loaded upfront vs 26.5kb
@@ -437,6 +598,10 @@ export { UmbSearchRepository } from './repositories/search.repository.js';
 6. **External Dependencies**: All `@umbraco-cms/backoffice/*` imports must be external
 7. **Workspace Context Token**: Use type guard function to narrow generic `UmbWorkspaceContext` to specific type
 8. **Extension Slot Types**: Custom extension types (like `searchIndexDetailBox`) need both kind manifest and TypeScript interface with global declaration
+9. **Modal Route Builders**: Store the route builder function itself, not a cached route. Call it dynamically with parameters for each link. Caching a route with empty params will break dynamic routing.
+10. **Entity Type Matching**: For entity actions to appear in workspace dropdowns, the workspace's `entityType` must match the entity action's registered entity type (e.g., both must use `UMB_SEARCH_INDEX_ENTITY_TYPE`).
+11. **State Timing**: Set loading states BEFORE async operations, not after. Setting state after an API call creates race conditions where the operation might complete before the loading indicator appears.
+12. **Server-Driven State**: Always derive UI state from server health status when reloading data. This prevents local state from becoming stale and ensures consistency after operations complete.
 
 ## Testing
 
