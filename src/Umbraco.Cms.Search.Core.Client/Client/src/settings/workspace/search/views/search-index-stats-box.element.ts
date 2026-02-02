@@ -77,14 +77,16 @@ export class UmbSearchIndexStatsBoxElement extends UmbLitElement {
 
           <div class="stat-item">
             <strong><umb-localize key="search_tableColumnDocumentCount">Document Count</umb-localize></strong>
-            <span>${this._documentCount ?? 0}</span>
+            <span>${this.localize.term('search_documentCount', this._documentCount)}</span>
           </div>
 
           <div class="stat-item">
             <strong><umb-localize key="search_tableColumnHealthStatus">Health Status</umb-localize></strong>
-            <uui-tag style="max-width:80px" .look=${'primary'} .color=${this.#getHealthStatusColor(this._healthStatus)}>
-              ${this.localize.term('search_healthStatus', this._healthStatus)}
-            </uui-tag>
+            <div>
+              <uui-tag look="primary" .color=${this.#getHealthStatusColor(this._healthStatus)}>
+                ${this.localize.term('search_healthStatus', this._healthStatus)}
+              </uui-tag>
+            </div>
           </div>
         </div>
       </uui-box>
