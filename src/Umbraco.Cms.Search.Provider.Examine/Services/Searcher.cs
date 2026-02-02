@@ -21,7 +21,7 @@ using SearchResult = Umbraco.Cms.Search.Core.Models.Searching.SearchResult;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
-internal sealed class Searcher : IExamineSearcher
+public class Searcher : IExamineSearcher
 {
     private readonly IExamineManager _examineManager;
     private readonly SearcherOptions _searcherOptions;
@@ -32,7 +32,7 @@ internal sealed class Searcher : IExamineSearcher
         _searcherOptions = searcherOptions.Value;
     }
 
-    public Task<SearchResult> SearchAsync(
+    public async Task<SearchResult> SearchAsync(
         string indexAlias,
         string? query,
         IEnumerable<Filter>? filters,
@@ -47,12 +47,12 @@ internal sealed class Searcher : IExamineSearcher
         // Special case if no parameters are provided, return an empty list.
         if (query is null && filters is null && facets is null && sorters is null && culture is null && segment is null && accessContext is null)
         {
-            return Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
+            return new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>());
         }
 
         if (_examineManager.TryGetIndex(indexAlias, out IIndex? index) is false)
         {
-            return Task.FromResult(new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>()));
+            return new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>());
         }
 
         SearchResult? searchResult;
@@ -84,7 +84,8 @@ internal sealed class Searcher : IExamineSearcher
             searchResult = Search(CreateBaseQuery(), filters, facets, sorters, segment, skip, take);
         }
 
-        return Task.FromResult(searchResult);
+        IEnumerable<string> suggestions = await GetSuggestionsAsync(indexAlias, query, culture, segment);
+        return searchResult with { Suggestions = suggestions };
 
         IBooleanOperation CreateBaseQuery()
         {
@@ -648,5 +649,23 @@ internal sealed class Searcher : IExamineSearcher
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Gets suggestions for autocomplete based on the query.
+    /// Override this method to provide custom suggestion logic.
+    /// </summary>
+    /// <param name="indexAlias">The index alias to search in.</param>
+    /// <param name="query">The search query.</param>
+    /// <param name="culture">The culture to search in.</param>
+    /// <param name="segment">The segment to search in.</param>
+    /// <returns>A list of suggestions, empty by default.</returns>
+    protected virtual Task<IEnumerable<string>> GetSuggestionsAsync(
+        string indexAlias,
+        string? query,
+        string? culture,
+        string? segment)
+    {
+        return Task.FromResult<IEnumerable<string>>([]);
     }
 }
