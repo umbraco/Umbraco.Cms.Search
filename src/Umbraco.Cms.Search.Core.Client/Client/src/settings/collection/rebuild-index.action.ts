@@ -22,19 +22,20 @@ export class UmbSearchRebuildIndexEntityAction extends UmbEntityActionBase<never
       confirmLabel: '#search_rebuildConfirmLabel',
     });
 
-    // User confirmed - repository handles: notification → API call → waiting state
-    await this.#repository.rebuildIndex(this.args.unique);
-
-    // Check for workspace context first (when triggered from workspace header)
+    // Set loading states BEFORE API call for immediate feedback
+    // Check for workspace context (when triggered from workspace header)
     const workspaceContext = await this.getContext(UMB_SEARCH_WORKSPACE_CONTEXT).catch(() => undefined);
     if (workspaceContext) {
       workspaceContext.setState('loading');
     }
 
-    // Set loading state immediately for UI feedback (when triggered from collection view)
+    // Set loading state for collection view (when triggered from collection)
     const collectionContext = await this.getContext(UMB_COLLECTION_CONTEXT).catch(() => undefined);
     if (collectionContext instanceof UmbSearchCollectionContext) {
       collectionContext.setIndexState(this.args.unique, 'loading');
     }
+
+    // User confirmed - repository handles: notification → API call
+    await this.#repository.rebuildIndex(this.args.unique);
   }
 }
