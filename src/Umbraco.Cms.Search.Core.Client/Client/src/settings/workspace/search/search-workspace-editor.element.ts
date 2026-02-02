@@ -32,7 +32,7 @@ export class UmbSearchWorkspaceEditorElement extends UmbLitElement {
 
   override render() {
     return html`
-      <umb-entity-detail-workspace-editor backPath="${UMB_SEARCH_ROOT_WORKSPACE_PATH}">
+      <umb-entity-detail-workspace-editor .backPath=${UMB_SEARCH_ROOT_WORKSPACE_PATH}>
         <h3 slot="header">${this._indexAlias ?? 'Loading...'}</h3>
       </umb-entity-detail-workspace-editor>
     `;
