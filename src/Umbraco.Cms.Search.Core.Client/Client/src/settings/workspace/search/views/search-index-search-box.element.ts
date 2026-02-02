@@ -22,11 +22,11 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
 
   private _tableColumns: Array<UmbTableColumn> = [
     {
-      name: 'Document ID',
+      name: this.localize.term('search_tableColumnDocumentId'),
       alias: 'documentId',
     },
     {
-      name: 'Object Type',
+      name: this.localize.term('search_tableColumnObjectType'),
       alias: 'objectType',
     },
   ];

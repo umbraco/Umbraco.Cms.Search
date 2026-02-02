@@ -48,6 +48,8 @@ export default {
     searchButton: 'Søg',
     noResults: 'Ingen resultater fundet',
     resultsCount: (count: number) => `Fandt ${count} resultat${count !== 1 ? 'er' : ''}`,
+    tableColumnDocumentId: 'Dokument ID',
+    tableColumnObjectType: 'Objekttype',
     statsBoxLabel: 'Statistik',
     searchBoxLabel: 'Søgning',
   }
