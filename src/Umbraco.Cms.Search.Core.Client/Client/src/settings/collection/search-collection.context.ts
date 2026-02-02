@@ -1,4 +1,4 @@
-import type { UmbSearchIndex, UmbSearchIndexState } from '../types.js';
+import type { UmbSearchIndex } from '../types.js';
 import { UMB_SEARCH_COLLECTION_VIEW_ALIAS, UMB_SEARCH_CONTEXT } from '@umbraco-cms/search/global';
 import { UmbDefaultCollectionContext } from '@umbraco-cms/backoffice/collection';
 import type { UmbControllerHostElement } from '@umbraco-cms/backoffice/controller-api';
@@ -18,9 +18,5 @@ export class UmbSearchCollectionContext extends UmbDefaultCollectionContext<UmbS
         'index-rebuild-completed-observer',
       );
     });
-  }
-
-  setIndexState(indexAlias: string, state: UmbSearchIndexState) {
-    this._items.updateOne(indexAlias, { state });
   }
 }

@@ -23,16 +23,24 @@ export class UmbSearchCollectionServerDataSource implements UmbSearchCollectionD
       return { error };
     }
 
-    const items = data.items.map<UmbSearchIndex>((item) => (
-      {
+    const items = data.items.map<UmbSearchIndex>((item) => {
+      // Derive UI state from server health status
+      let state: UmbSearchIndex['state'] = 'idle';
+      if (item.healthStatus === 'Rebuilding') {
+        state = 'loading';
+      } else if (item.healthStatus === 'Corrupted') {
+        state = 'error';
+      }
+
+      return {
         unique: item.indexAlias,
         name: item.indexAlias,
         documentCount: item.documentCount,
         healthStatus: item.healthStatus,
         entityType: UMB_SEARCH_INDEX_ENTITY_TYPE,
-        state: 'idle'
-      }
-    ));
+        state
+      };
+    });
 
     return { data: { items, total: data.total } };
   }
