@@ -1,14 +1,19 @@
 import { UMB_SEARCH_WORKSPACE_CONTEXT } from '../search-workspace.context-token.js';
-import { search } from '../../../api';
-import type { DocumentModel, SearchResultModel } from '../../../api';
-import { html, customElement, state, css } from '@umbraco-cms/backoffice/external/lit';
+import { UmbSearchQueryRepository } from '../../../repositories/search-query.repository.js';
+import type { UmbSearchRequest, UmbSearchResult } from '../../../types.js';
+import { html, customElement, state, css, repeat, when } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
-import { client } from '@umbraco-cms/backoffice/external/backend-api';
+import { debounce } from '@umbraco-cms/backoffice/utils';
 
 @customElement('umb-search-index-search-box')
 export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   #workspaceContext?: typeof UMB_SEARCH_WORKSPACE_CONTEXT.TYPE;
+  #queryRepository = new UmbSearchQueryRepository(this);
+  #inputValue = ''; // Non-reactive property for input value
+  #debouncedUpdateQuery = debounce((value: string) => {
+    this._searchQuery = value;
+  }, 300);
 
   @state()
   private _indexAlias?: string;
@@ -17,7 +22,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   private _searchQuery = '';
 
   @state()
-  private _searchResults?: SearchResultModel;
+  private _searchResults?: UmbSearchResult;
 
   @state()
   private _isSearching = false;
@@ -45,6 +50,9 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   }
 
   async #handleSearch() {
+    // Sync state with current input value
+    this._searchQuery = this.#inputValue;
+
     if (!this._indexAlias || !this._searchQuery.trim()) {
       this._searchResults = undefined;
       return;
@@ -53,31 +61,29 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     this._isSearching = true;
     this._error = undefined;
 
-    try {
-      const result = await search({
-        body: {
-          indexAlias: this._indexAlias,
-          query: this._searchQuery,
-        },
-        query: {
-          skip: 0,
-          take: 10,
-        },
-        client: client as any,
-      });
+    const request: UmbSearchRequest = {
+      indexAlias: this._indexAlias,
+      query: this._searchQuery,
+      skip: 0,
+      take: 10,
+    };
 
-      this._searchResults = result.data;
-    } catch (error) {
-      this._error = error instanceof Error ? error.message : 'An error occurred while searching';
+    const { data, error } = await this.#queryRepository.search(request);
+
+    if (error) {
+      this._error = error.message;
       this._searchResults = undefined;
-    } finally {
-      this._isSearching = false;
+    } else {
+      this._searchResults = data;
     }
+
+    this._isSearching = false;
   }
 
   #handleInputChange(e: Event) {
     const input = e.target as HTMLInputElement;
-    this._searchQuery = input.value;
+    this.#inputValue = input.value;
+    this.#debouncedUpdateQuery(input.value);
   }
 
   #handleKeyDown(e: KeyboardEvent) {
@@ -86,17 +92,13 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     }
   }
 
-  #getObjectTypeLabel(objectType: DocumentModel['objectType']): string {
-    return objectType.replace(/([A-Z])/g, ' $1').trim();
-  }
-
   override render() {
     return html`
       <uui-box headline=${this.localize.term('search_searchBox')}>
         <div class="search-container">
           <div class="search-input-row">
             <uui-input
-              .value=${this._searchQuery}
+              .value=${this.#inputValue}
               @input=${this.#handleInputChange}
               @keydown=${this.#handleKeyDown}
               placeholder=${this.localize.term('search_searchPlaceholder', 'Search index...')}
@@ -106,13 +108,13 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
               look="primary"
               color="positive"
               @click=${this.#handleSearch}
-              ?disabled=${this._isSearching || !this._searchQuery.trim()}>
+              ?disabled=${this._isSearching || !this.#inputValue.trim()}>
               <umb-localize key="search_searchButton">Search</umb-localize>
             </uui-button>
           </div>
 
-          ${this._isSearching ? html`<uui-loader></uui-loader>` : ''}
-          ${this._error ? html`<div class="error-message">${this._error}</div>` : ''}
+          ${when(this._isSearching, () => html`<uui-loader></uui-loader>`)}
+          ${when(this._error, () => html`<div class="error-message">${this._error}</div>`)}
           ${this.#renderResults()}
         </div>
       </uui-box>
@@ -140,7 +142,9 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
           </strong>
         </div>
         <div class="results-list">
-          ${this._searchResults.documents.map(
+          ${repeat(
+            this._searchResults.documents,
+            (doc) => doc.id,
             (doc) => html`
               <div class="result-item">
                 <div class="result-id">
@@ -148,7 +152,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
                 </div>
                 <div class="result-type">
                   <uui-tag look="placeholder">
-                    ${this.#getObjectTypeLabel(doc.objectType)}
+                    ${doc.objectType || 'Unknown'}
                   </uui-tag>
                 </div>
               </div>
