@@ -6,6 +6,7 @@ using NUnit.Framework;
 using Umbraco.Cms.Core.HostedServices;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Core.ServerEvents;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Infrastructure.Install;
@@ -63,6 +64,7 @@ public abstract class TestBase : UmbracoIntegrationTest
 
         builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
+        builder.Services.AddUnique<IServerEventRouter, NoOpServerEventRouter>();
         builder.AddNotificationAsyncHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>();
 
         // the core ConfigureBuilderAttribute won't execute from other assemblies at the moment, so this is a workaround

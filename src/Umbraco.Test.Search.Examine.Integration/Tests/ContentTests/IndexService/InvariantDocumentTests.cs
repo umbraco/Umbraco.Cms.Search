@@ -145,6 +145,31 @@ public class InvariantDocumentTests : IndexTestBase
         Assert.That(results.First().AllValues.First(x => x.Key == Constants.SystemFields.AggregatedTexts).Value.Contains("The root title"), Is.True);
     }
 
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task CanGetDocumentCount(bool publish)
+    {
+        var indexAlias = GetIndexAlias(publish);
+        var count = await Indexer.GetDocumentCountAsync(indexAlias);
+        Assert.That(count, Is.EqualTo(1));
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task CanGetDocumentCount_AfterDeletion(bool publish)
+    {
+        var indexAlias = GetIndexAlias(publish);
+        await WaitForIndexing(indexAlias, () =>
+        {
+            IContent content = ContentService.GetById(RootKey)!;
+            ContentService.Delete(content);
+            return Task.CompletedTask;
+        });
+
+        var count = await Indexer.GetDocumentCountAsync(indexAlias);
+        Assert.That(count, Is.EqualTo(0));
+    }
+
 
     [SetUp]
     public async Task CreateInvariantDocument()

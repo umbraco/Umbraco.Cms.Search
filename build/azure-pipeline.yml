@@ -13,6 +13,7 @@ variables:
   DOTNET_GENERATE_ASPNET_CERTIFICATE: false
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
+  npm_config_cache: $(Pipeline.Workspace)/.npm_client
 
 stages:
   - stage: Build
@@ -21,7 +22,7 @@ stages:
     jobs:
       - job: Build
         pool:
-          vmImage: "windows-latest"
+          vmImage: "ubuntu-latest"
         steps:
           # Checkout source (avoid shallow clone to calculate version height)
           - checkout: self
@@ -35,6 +36,42 @@ stages:
             displayName: Use .NET SDK from global.json
             inputs:
               useGlobalJson: true
+
+          # Client
+          - task: NodeTool@0
+            displayName: Use Node.js
+            retryCountOnTaskFailure: 3
+            inputs:
+              versionSource: 'fromFile'
+              versionFilePath: src/Umbraco.Cms.Search.Core.Client/Client/.nvmrc
+
+          - bash: |
+              echo "##[command]Install nbgv"
+              dotnet tool install --tool-path . nbgv
+              echo "##[command]Running nbgv get-version"
+              PACKAGE_VERSION=$(nbgv get-version -v NpmPackageVersion)
+              echo "##[command]Running npm version"
+              echo "##[debug]Version: $PACKAGE_VERSION"
+              cd src/Umbraco.Cms.Search.Core.Client/Client
+              npm version $PACKAGE_VERSION --allow-same-version --no-git-tag-version
+            displayName: Set NPM Version
+
+          - task: Cache@2
+            displayName: Cache node_modules
+            inputs:
+              key: '"npm_client" | "$(Agent.OS)"| $(Build.SourcesDirectory)/src/Umbraco.Cms.Search.Core.Client/Client/package-lock.json'
+              restoreKeys: |
+                "npm_client" | "$(Agent.OS)"
+                "npm_client"
+              path: $(npm_config_cache)
+
+          - script: npm ci --no-fund --no-audit --prefer-offline
+            displayName: Install NPM packages
+            workingDirectory: src/Umbraco.Cms.Search.Core.Client/Client
+
+          - script: npm run build
+            displayName: Build Client
+            workingDirectory: src/Umbraco.Cms.Search.Core.Client/Client
 
           # Cache and restore NuGet packages
           - task: Cache@2
@@ -114,7 +151,7 @@ stages:
         displayName: Run Integration Tests (SQLite)
         pool:
           vmImage: 'windows-latest'
-        timeoutInMinutes: 30
+        timeoutInMinutes: 60
         steps:
           - checkout: self
             submodules: false
@@ -155,7 +192,7 @@ stages:
         displayName: Run Integration Tests (SQL Server)
         pool:
           vmImage: 'windows-latest'
-        timeoutInMinutes: 30
+        timeoutInMinutes: 60
         steps:
           # Setup test environment
           - task: DownloadPipelineArtifact@2

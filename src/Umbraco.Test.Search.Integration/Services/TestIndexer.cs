@@ -5,6 +5,7 @@ using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
+using Umbraco.Cms.Search.Core.Models.ViewModels;
 using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Test.Search.Integration.Extensions;
 using Umbraco.Test.Search.Integration.Tests;
@@ -44,6 +45,10 @@ public class TestIndexer : IIndexer, ISearcher
         _indexes.Remove(indexAlias);
         return Task.CompletedTask;
     }
+
+    public Task<long> GetDocumentCountAsync(string indexAlias) => Task.FromResult((long)GetIndex(indexAlias).Count);
+
+    public Task<HealthStatus> GetHealthStatus(string indexAlias) => Task.FromResult(HealthStatus.Healthy);
 
     public IReadOnlyList<TestIndexDocument> Dump(string indexAlias) => GetIndex(indexAlias).Values.ToList();
 

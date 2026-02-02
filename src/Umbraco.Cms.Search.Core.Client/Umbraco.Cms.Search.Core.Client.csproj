@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <PackageId>Umbraco.Cms.Search.Core.Client</PackageId>
+        <Product>Umbraco.Cms.Search.Core.Client</Product>
+        <Title>Umbraco.Cms.Search.Core.Client</Title>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Dont include the client folder as part of packaging nuget build -->
+        <Content Remove="Client\**"/>
+
+        <!-- However make the Umbraco-package.json included for dotnet pack or nuget package and visible to the solution -->
+        <None Include="Client\public\umbraco-package.json" Pack="false"/>
+        <None Include="Client\package.json" Pack="false"/>
+        <None Include="Client\tsconfig.json" Pack="false"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Folder Include="wwwroot\"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="wwwroot\App_Plugins\UmbracoCmsSearchBackOfficeClient\entrypoint-BSlTz4-p.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\App_Plugins\UmbracoCmsSearchBackOfficeClient\entrypoint-BSlTz4-p.js.map" />
+      <_ContentIncludedByDefault Remove="wwwroot\App_Plugins\UmbracoCmsSearchBackOfficeClient\umbraco-cms-search-back-office-client.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\App_Plugins\UmbracoCmsSearchBackOfficeClient\umbraco-cms-search-back-office-client.js.map" />
+      <_ContentIncludedByDefault Remove="wwwroot\App_Plugins\UmbracoCmsSearchBackOfficeClient\umbraco-package.json" />
+    </ItemGroup>
+
+</Project>
