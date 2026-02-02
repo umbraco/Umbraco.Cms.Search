@@ -18,12 +18,20 @@ export class UmbSearchServerDataSource implements UmbDetailDataSource<UmbSearchI
   }
 
   async createScaffold(preset: Partial<IndexModel> = {}) {
+    // Derive UI state from server health status
+    let state: UmbSearchIndex['state'] = 'idle';
+    if (preset.healthStatus === 'Rebuilding') {
+      state = 'loading';
+    } else if (preset.healthStatus === 'Corrupted') {
+      state = 'error';
+    }
+
     const data: UmbSearchIndex = {
       entityType: UMB_SEARCH_INDEX_ENTITY_TYPE,
       name: preset.indexAlias!,
       unique: preset.indexAlias!,
       documentCount: 0,
-      state: 'idle',
+      state,
       healthStatus: 'Unknown',
       ...preset,
     };
