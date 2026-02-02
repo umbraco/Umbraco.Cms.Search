@@ -5,4 +5,3 @@ import './search/views/search-index-stats-box.element.js';
 export * from './paths.js';
 export * from './search/search-workspace.context.js';
 export * from './search/search-workspace.context-token.js';
-export * from './search/search-workspace.interface.js';
