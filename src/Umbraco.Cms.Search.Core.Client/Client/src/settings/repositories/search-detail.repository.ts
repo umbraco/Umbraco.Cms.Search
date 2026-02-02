@@ -7,7 +7,6 @@ import { UMB_SEARCH_CONTEXT } from '@umbraco-cms/search/global';
 import { UmbDetailRepositoryBase } from '@umbraco-cms/backoffice/repository';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { client } from '@umbraco-cms/backoffice/external/backend-api';
-import { umbConfirmModal } from '@umbraco-cms/backoffice/modal';
 import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
 import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
@@ -25,21 +24,13 @@ export class UmbSearchDetailRepository extends UmbDetailRepositoryBase<UmbSearch
   }
 
   /**
-   * Rebuilds the search index with user confirmation and notifications.
-   * Shows a confirm modal, then a "rebuild started" notification, calls the API,
+   * Rebuilds the search index with notifications.
+   * Shows a "rebuild started" notification, calls the API,
    * and marks the user as waiting for the completion notification.
+   * Note: Confirmation modal should be shown by the caller before calling this method.
    * @param indexAlias The alias of the index to rebuild
-   * @throws If user cancels the confirm modal
    */
   async rebuildIndex(indexAlias: string): Promise<void> {
-    // Confirm with user
-    await umbConfirmModal(this, {
-      color: 'warning',
-      headline: '#search_rebuildConfirmHeadline',
-      content: '#search_rebuildConfirmMessage',
-      confirmLabel: '#search_rebuildConfirmLabel',
-    });
-
     // Show "rebuild started" notification
     this.#notificationContext?.peek('warning', {
       data: {

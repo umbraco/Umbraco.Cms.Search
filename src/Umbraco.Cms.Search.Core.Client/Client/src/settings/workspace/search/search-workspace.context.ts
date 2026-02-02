@@ -1,5 +1,5 @@
 import { UmbSearchWorkspaceEditorElement } from './search-workspace-editor.element.js';
-import { UmbSearchDetailRepository, UmbSearchIndex } from '@umbraco-cms/search/settings';
+import { UmbSearchDetailRepository, UmbSearchIndex, UmbSearchIndexState } from '@umbraco-cms/search/settings';
 import {
   UMB_SEARCH_CONTEXT,
   UMB_SEARCH_DETAIL_REPOSITORY_ALIAS,
@@ -20,6 +20,11 @@ export class UmbSearchWorkspaceContext
   public readonly repository = new UmbSearchDetailRepository(this);
   public readonly documentCount = this._data.createObservablePartOfPersisted((x) => x?.documentCount);
   public readonly healthStatus = this._data.createObservablePartOfPersisted((x) => x?.healthStatus);
+  public readonly state = this._data.createObservablePartOfCurrent((x) => x?.state);
+
+  setState(state: UmbSearchIndexState) {
+    this._data.updateCurrent({ state });
+  }
 
   constructor(host: UmbControllerHost) {
     super(host, {
