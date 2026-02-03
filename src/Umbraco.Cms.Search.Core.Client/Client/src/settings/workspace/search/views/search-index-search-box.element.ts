@@ -24,9 +24,11 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   #debouncedSearch = debounce(() => {
     void this.#handleSearch();
   }, 300);
+
   private _tableConfig: UmbTableConfig = {
     allowSelection: false,
   };
+
   private _tableColumns: Array<UmbTableColumn> = [
     {
       name: this.localize.term('search_tableColumnDocumentId'),
@@ -42,20 +44,28 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
       align: 'right',
     },
   ];
-  @state()
-  private _indexAlias?: string;
-  @state()
-  private _healthStatus?: UmbHealthStatusModel;
-  @state()
-  private _searchQuery = '';
-  @state()
-  private _searchResults?: UmbSearchResult;
+
   @state()
   private _tableItems: Array<UmbTableItem> = [];
+
+  @state()
+  private _indexAlias?: string;
+
+  @state()
+  private _healthStatus?: UmbHealthStatusModel;
+
+  @state()
+  private _searchQuery = '';
+
+  @state()
+  private _searchResults?: UmbSearchResult;
+
   @state()
   private _isSearching = false;
+
   @state()
   private _error?: string;
+
   @state()
   private _searchStatusMessage = ''; // For screen reader announcements
 
@@ -113,6 +123,36 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
             ${this._searchStatusMessage}
           </div>
 
+          <div class="search-input-row">
+            <uui-input
+              id="search-input"
+              .value=${this.#inputValue}
+              @input=${this.#handleInputChange}
+              @keydown=${this.#handleKeyDown}
+              ?disabled=${this.#isSearchDisabled}
+              placeholder=${this.localize.term('search_searchPlaceholder')}
+              label=${this.localize.term('search_searchInputLabel')}
+              aria-label=${this.localize.term('search_searchInputAriaLabel', this._indexAlias)}
+              aria-describedby="search-hint"
+            >
+            </uui-input>
+            <uui-button
+              look="primary"
+              color="positive"
+              @click=${this.#handleButtonClick}
+              ?disabled=${this.#isSearchDisabled || this._isSearching || !this.#inputValue.trim()}
+              aria-label=${this.localize.term('search_searchButtonAriaLabel')}
+            >
+              <umb-localize key="search_searchButton">Search</umb-localize>
+            </uui-button>
+          </div>
+
+          <div id="search-hint" class="visually-hidden">
+            <umb-localize key="search_searchHint">
+              Press Enter or click Search button to execute search
+            </umb-localize>
+          </div>
+
           ${when(
             this.#isSearchDisabled,
             () => html`
@@ -124,36 +164,6 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
                   ${this.localize.term('search_healthStatus', this._healthStatus)}
                 </p>
               </uui-box>
-            `,
-            () => html`
-              <div class="search-input-row">
-                <uui-input
-                  id="search-input"
-                  .value=${this.#inputValue}
-                  @input=${this.#handleInputChange}
-                  @keydown=${this.#handleKeyDown}
-                  placeholder=${this.localize.term('search_searchPlaceholder')}
-                  label=${this.localize.term('search_searchInputLabel')}
-                  aria-label=${this.localize.term('search_searchInputAriaLabel', this._indexAlias)}
-                  aria-describedby="search-hint"
-                >
-                </uui-input>
-                <uui-button
-                  look="primary"
-                  color="positive"
-                  @click=${this.#handleButtonClick}
-                  ?disabled=${this._isSearching || !this.#inputValue.trim()}
-                  aria-label=${this.localize.term('search_searchButtonAriaLabel')}
-                >
-                  <umb-localize key="search_searchButton">Search</umb-localize>
-                </uui-button>
-              </div>
-
-              <div id="search-hint" class="visually-hidden">
-                <umb-localize key="search_searchHint">
-                  Press Enter or click Search button to execute search
-                </umb-localize>
-              </div>
             `,
           )}
           ${when(
