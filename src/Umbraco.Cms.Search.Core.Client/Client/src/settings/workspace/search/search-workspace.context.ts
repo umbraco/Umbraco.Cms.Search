@@ -1,6 +1,5 @@
 import { UmbSearchWorkspaceEditorElement } from './search-workspace-editor.element.js';
 import {
-  UmbHealthStatusModel,
   UmbSearchDetailRepository,
   UmbSearchIndex,
   UmbSearchIndexState,
@@ -23,15 +22,11 @@ export class UmbSearchWorkspaceContext
   implements UmbRoutableWorkspaceContext
 {
   public readonly repository = new UmbSearchDetailRepository(this);
-  public readonly documentCount?: number = this._data.createObservablePartOfPersisted(
+  public readonly documentCount = this._data.createObservablePartOfPersisted(
     (x) => x?.documentCount,
   );
-  public readonly healthStatus?: UmbHealthStatusModel = this._data.createObservablePartOfPersisted(
-    (x) => x?.healthStatus,
-  );
-  public readonly state?: UmbSearchIndexState = this._data.createObservablePartOfCurrent<
-    UmbSearchIndexState | undefined
-  >((x) => x?.state);
+  public readonly healthStatus = this._data.createObservablePartOfPersisted((x) => x?.healthStatus);
+  public readonly state = this._data.createObservablePartOfCurrent((x) => x?.state);
 
   constructor(host: UmbControllerHost) {
     super(host, {

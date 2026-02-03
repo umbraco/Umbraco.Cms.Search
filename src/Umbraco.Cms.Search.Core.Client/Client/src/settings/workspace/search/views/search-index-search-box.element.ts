@@ -98,7 +98,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   #observeHealthStatus() {
     this.observe(
       this.#workspaceContext?.healthStatus,
-      (status: UmbHealthStatusModel | undefined) => {
+      (status) => {
         this._healthStatus = status;
       },
       '_observeHealthStatus',

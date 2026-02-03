@@ -3,6 +3,7 @@ import { UMB_SEARCH_WORKSPACE_CONTEXT } from '../search-workspace.context-token.
 import { css, customElement, html, state } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
+import { UmbSearchWorkspaceContext } from '@umbraco-cms/search/settings';
 
 @customElement('umb-search-details-view')
 export class UmbSearchDetailsViewElement extends UmbLitElement {
@@ -12,7 +13,7 @@ export class UmbSearchDetailsViewElement extends UmbLitElement {
   constructor() {
     super();
 
-    this.consumeContext(UMB_SEARCH_WORKSPACE_CONTEXT, (context) => {
+    this.consumeContext(UMB_SEARCH_WORKSPACE_CONTEXT, (context?: UmbSearchWorkspaceContext) => {
       this.observe(
         context?.state,
         (state) => {
