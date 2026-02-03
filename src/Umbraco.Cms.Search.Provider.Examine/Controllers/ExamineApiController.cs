@@ -27,7 +27,6 @@ public class ExamineApiController : ExamineApiControllerBase
 
         var documentId = DocumentIdHelper.CalculateDocumentId(documentKey, culture);
 
-        // Search for the specific document by its ID
         ISearchResults results = index.Searcher
             .CreateQuery()
             .Id(documentId)
