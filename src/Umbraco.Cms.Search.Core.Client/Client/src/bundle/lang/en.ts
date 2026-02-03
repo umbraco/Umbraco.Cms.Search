@@ -52,5 +52,6 @@ export default {
     loading: 'Loading search results',
     resultsRegion: 'Search results',
     resultsTable: 'Search results table',
+    searchDisabled: 'Search is disabled because the index is not healthy. Current status:',
   }
 } satisfies UmbLocalizationDictionary;

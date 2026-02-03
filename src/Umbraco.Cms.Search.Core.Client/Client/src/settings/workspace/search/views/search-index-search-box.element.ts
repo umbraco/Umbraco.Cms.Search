@@ -1,5 +1,5 @@
 import { UmbSearchQueryRepository } from '../../../repositories/search-query.repository.js';
-import type { UmbSearchRequest, UmbSearchResult } from '../../../types.js';
+import type { UmbSearchRequest, UmbSearchResult, UmbHealthStatusModel } from '../../../types.js';
 import { UMB_SEARCH_WORKSPACE_CONTEXT } from '../search-workspace.context-token.js';
 import { UMB_SEARCH_DOCUMENT_ENTITY_TYPE } from '@umbraco-cms/search/global';
 
@@ -17,68 +17,6 @@ import { UMB_WORKSPACE_MODAL } from '@umbraco-cms/backoffice/workspace';
 
 @customElement('umb-search-index-search-box')
 export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
-  static override styles = [
-    UmbTextStyles,
-    css`
-      :host {
-        display: block;
-      }
-
-      .search-container {
-        display: flex;
-        flex-direction: column;
-        gap: var(--uui-size-space-4);
-      }
-
-      /* Visually hidden but accessible to screen readers */
-      .visually-hidden {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-        border-width: 0;
-      }
-
-      .search-input-row {
-        display: flex;
-        gap: var(--uui-size-space-3);
-        align-items: flex-end;
-      }
-
-      uui-input {
-        flex: 1;
-      }
-
-      .error-message {
-        padding: var(--uui-size-space-4);
-        background-color: var(--uui-color-danger-standalone);
-        color: var(--uui-color-danger-contrast);
-        border-radius: var(--uui-border-radius);
-      }
-
-      .no-results {
-        padding: var(--uui-size-space-4);
-        text-align: center;
-        color: var(--uui-color-text-alt);
-      }
-
-      .results-container {
-        display: flex;
-        flex-direction: column;
-        gap: var(--uui-size-space-3);
-      }
-
-      .results-header {
-        padding-bottom: var(--uui-size-space-2);
-        border-bottom: 1px solid var(--uui-color-border);
-        margin-bottom: var(--uui-size-space-3);
-      }
-    `,
-  ];
   #workspaceContext?: typeof UMB_SEARCH_WORKSPACE_CONTEXT.TYPE;
   #queryRepository = new UmbSearchQueryRepository(this);
   #inputValue = ''; // Non-reactive property for input value
@@ -106,6 +44,8 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   ];
   @state()
   private _indexAlias?: string;
+  @state()
+  private _healthStatus?: UmbHealthStatusModel;
   @state()
   private _searchQuery = '';
   @state()
@@ -141,7 +81,22 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     this.consumeContext(UMB_SEARCH_WORKSPACE_CONTEXT, (context) => {
       this.#workspaceContext = context;
       this.#observeIndexAlias();
+      this.#observeHealthStatus();
     });
+  }
+
+  #observeHealthStatus() {
+    this.observe(
+      this.#workspaceContext?.healthStatus,
+      (status: UmbHealthStatusModel | undefined) => {
+        this._healthStatus = status;
+      },
+      '_observeHealthStatus',
+    );
+  }
+
+  get #isSearchDisabled(): boolean {
+    return this._healthStatus !== 'Healthy';
   }
 
   override render() {
@@ -158,35 +113,49 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
             ${this._searchStatusMessage}
           </div>
 
-          <div class="search-input-row">
-            <uui-input
-              id="search-input"
-              .value=${this.#inputValue}
-              @input=${this.#handleInputChange}
-              @keydown=${this.#handleKeyDown}
-              placeholder=${this.localize.term('search_searchPlaceholder')}
-              label=${this.localize.term('search_searchInputLabel')}
-              aria-label=${this.localize.term('search_searchInputAriaLabel', this._indexAlias)}
-              aria-describedby="search-hint"
-            >
-            </uui-input>
-            <uui-button
-              look="primary"
-              color="positive"
-              @click=${this.#handleButtonClick}
-              ?disabled=${this._isSearching ?? !this.#inputValue.trim()}
-              aria-label=${this.localize.term('search_searchButtonAriaLabel')}
-            >
-              <umb-localize key="search_searchButton">Search</umb-localize>
-            </uui-button>
-          </div>
+          ${when(
+            this.#isSearchDisabled,
+            () => html`
+              <uui-box>
+                <p>
+                  <umb-localize key="search_searchDisabled">
+                    Search is disabled because the index is not healthy. Current status:
+                  </umb-localize>
+                  ${this.localize.term('search_healthStatus', this._healthStatus)}
+                </p>
+              </uui-box>
+            `,
+            () => html`
+              <div class="search-input-row">
+                <uui-input
+                  id="search-input"
+                  .value=${this.#inputValue}
+                  @input=${this.#handleInputChange}
+                  @keydown=${this.#handleKeyDown}
+                  placeholder=${this.localize.term('search_searchPlaceholder')}
+                  label=${this.localize.term('search_searchInputLabel')}
+                  aria-label=${this.localize.term('search_searchInputAriaLabel', this._indexAlias)}
+                  aria-describedby="search-hint"
+                >
+                </uui-input>
+                <uui-button
+                  look="primary"
+                  color="positive"
+                  @click=${this.#handleButtonClick}
+                  ?disabled=${this._isSearching || !this.#inputValue.trim()}
+                  aria-label=${this.localize.term('search_searchButtonAriaLabel')}
+                >
+                  <umb-localize key="search_searchButton">Search</umb-localize>
+                </uui-button>
+              </div>
 
-          <div id="search-hint" class="visually-hidden">
-            <umb-localize key="search_searchHint">
-              Press Enter or click Search button to execute search
-            </umb-localize>
-          </div>
-
+              <div id="search-hint" class="visually-hidden">
+                <umb-localize key="search_searchHint">
+                  Press Enter or click Search button to execute search
+                </umb-localize>
+              </div>
+            `,
+          )}
           ${when(
             this._isSearching,
             () => html`
@@ -381,6 +350,68 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
       </div>
     `;
   }
+  static override styles = [
+    UmbTextStyles,
+    css`
+      :host {
+        display: block;
+      }
+
+      .search-container {
+        display: flex;
+        flex-direction: column;
+        gap: var(--uui-size-space-4);
+      }
+
+      /* Visually hidden but accessible to screen readers */
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
+      }
+
+      .search-input-row {
+        display: flex;
+        gap: var(--uui-size-space-3);
+        align-items: flex-end;
+      }
+
+      uui-input {
+        flex: 1;
+      }
+
+      .error-message {
+        padding: var(--uui-size-space-4);
+        background-color: var(--uui-color-danger-standalone);
+        color: var(--uui-color-danger-contrast);
+        border-radius: var(--uui-border-radius);
+      }
+
+      .no-results {
+        padding: var(--uui-size-space-4);
+        text-align: center;
+        color: var(--uui-color-text-alt);
+      }
+
+      .results-container {
+        display: flex;
+        flex-direction: column;
+        gap: var(--uui-size-space-3);
+      }
+
+      .results-header {
+        padding-bottom: var(--uui-size-space-2);
+        border-bottom: 1px solid var(--uui-color-border);
+        margin-bottom: var(--uui-size-space-3);
+      }
+    `,
+  ];
 }
 
 export default UmbSearchIndexSearchBoxElement;
