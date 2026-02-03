@@ -69,6 +69,14 @@ stages:
             displayName: Install NPM packages
             workingDirectory: src/Umbraco.Cms.Search.Core.Client/Client
 
+          - script: npm run format:check
+            displayName: Check code formatting
+            workingDirectory: src/Umbraco.Cms.Search.Core.Client/Client
+
+          - script: npm run lint:errors-only
+            displayName: Lint Client (errors only)
+            workingDirectory: src/Umbraco.Cms.Search.Core.Client/Client
+
           - script: npm run build
             displayName: Build Client
             workingDirectory: src/Umbraco.Cms.Search.Core.Client/Client
