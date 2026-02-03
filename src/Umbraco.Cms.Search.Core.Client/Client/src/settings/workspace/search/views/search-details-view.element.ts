@@ -6,31 +6,6 @@ import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
 
 @customElement('umb-search-details-view')
 export class UmbSearchDetailsViewElement extends UmbLitElement {
-  static override styles = [
-    UmbTextStyles,
-    css`
-      :host {
-        display: block;
-        padding: var(--uui-size-layout-1);
-      }
-
-      .container {
-        display: flex;
-        flex-direction: column;
-        gap: var(--uui-size-layout-1);
-      }
-
-      .loading-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 400px;
-        gap: var(--uui-size-space-4);
-      }
-    `,
-  ];
-
   @state()
   private _state?: UmbSearchIndexState;
 
@@ -66,6 +41,31 @@ export class UmbSearchDetailsViewElement extends UmbLitElement {
       </div>
     `;
   }
+
+  static override styles = [
+    UmbTextStyles,
+    css`
+      :host {
+        display: block;
+        padding: var(--uui-size-layout-1);
+      }
+
+      .container {
+        display: flex;
+        flex-direction: column;
+        gap: var(--uui-size-layout-1);
+      }
+
+      .loading-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 400px;
+        gap: var(--uui-size-space-4);
+      }
+    `,
+  ];
 }
 
 declare global {
