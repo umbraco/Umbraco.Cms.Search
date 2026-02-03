@@ -32,7 +32,7 @@ export class UmbSearchIndexStatsBoxElement extends UmbLitElement {
       (name) => {
         this._indexAlias = name;
       },
-      '_observeName'
+      '_observeName',
     );
 
     this.observe(
@@ -40,7 +40,7 @@ export class UmbSearchIndexStatsBoxElement extends UmbLitElement {
       (count) => {
         this._documentCount = count;
       },
-      '_observeDocumentCount'
+      '_observeDocumentCount',
     );
 
     this.observe(
@@ -48,7 +48,7 @@ export class UmbSearchIndexStatsBoxElement extends UmbLitElement {
       (status) => {
         this._healthStatus = status;
       },
-      '_observeHealthStatus'
+      '_observeHealthStatus',
     );
   }
 
@@ -57,9 +57,9 @@ export class UmbSearchIndexStatsBoxElement extends UmbLitElement {
       case 'Healthy':
         return 'positive';
       case 'Rebuilding':
+      case 'Empty':
         return 'warning';
       case 'Corrupted':
-      case 'Empty':
         return 'danger';
       default:
         return 'default';
@@ -76,12 +76,16 @@ export class UmbSearchIndexStatsBoxElement extends UmbLitElement {
           </div>
 
           <div class="stat-item">
-            <strong><umb-localize key="search_tableColumnDocumentCount">Document Count</umb-localize></strong>
+            <strong>
+              <umb-localize key="search_tableColumnDocumentCount"> Document Count </umb-localize>
+            </strong>
             <span>${this.localize.term('search_documentCount', this._documentCount)}</span>
           </div>
 
           <div class="stat-item">
-            <strong><umb-localize key="search_tableColumnHealthStatus">Health Status</umb-localize></strong>
+            <strong>
+              <umb-localize key="search_tableColumnHealthStatus"> Health Status </umb-localize>
+            </strong>
             <div>
               <uui-tag look="primary" .color=${this.#getHealthStatusColor(this._healthStatus)}>
                 ${this.localize.term('search_healthStatus', this._healthStatus)}
