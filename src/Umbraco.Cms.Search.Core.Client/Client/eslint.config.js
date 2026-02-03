@@ -18,6 +18,7 @@ export default tseslint.config(
       '**/*.d.ts',
       'src/settings/api/**', // Generated OpenAPI client
       'scripts/**',
+      'vite.config.ts', // Build configuration
     ],
   },
 
@@ -42,15 +43,16 @@ export default tseslint.config(
         },
       ],
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/no-non-null-assertion': 'off', // Used sparingly for DOM access
       '@typescript-eslint/no-unsafe-assignment': 'off', // Umbraco base classes have limited type info
+      '@typescript-eslint/no-unsafe-member-access': 'off', // Umbraco base classes have limited type info
 
       // Prefer optional chaining
       '@typescript-eslint/prefer-optional-chain': 'error',
       '@typescript-eslint/prefer-nullish-coalescing': 'error',
 
       // Code style
-      'quotes': ['error', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
+      quotes: ['error', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
     },
   },
 

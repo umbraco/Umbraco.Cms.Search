@@ -50,7 +50,7 @@ export class UmbSearchContext extends UmbContextBase {
     this.observe(this.#serverEventContext?.byEventSource(UMB_SEARCH_SERVER_EVENT_TYPE), (args) => {
       if (!args?.eventSource) return;
 
-      const indexAlias = args.eventSource;
+      const indexAlias = String(args.eventSource);
 
       // Emit on the public observable for subscribers
       this.#indexRebuilt.setValue(indexAlias);

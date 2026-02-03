@@ -1,20 +1,21 @@
 import type { UmbSearchIndex } from '../types.js';
 import { UMB_SEARCH_INDEX_ENTITY_TYPE } from '@umbraco-cms/search/global';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
-import { html, customElement, state, when } from '@umbraco-cms/backoffice/external/lit';
+import { customElement, html, state, when } from '@umbraco-cms/backoffice/external/lit';
 import { UMB_COLLECTION_CONTEXT, type UmbDefaultCollectionContext } from '@umbraco-cms/backoffice/collection';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
 import type { UmbTableColumn, UmbTableConfig, UmbTableItem } from '@umbraco-cms/backoffice/components';
 
 @customElement('umb-search-root-collection-view')
 export default class UmbSearchRootCollectionView extends UmbLitElement {
+  static override readonly styles = [
+    UmbTextStyles,
+  ];
   @state()
   private _tableItems: Array<UmbTableItem> = [];
-
   private _tableConfig: UmbTableConfig = {
     allowSelection: false,
   };
-
   private _tableColumns: Array<UmbTableColumn> = [
     {
       name: this.localize.term('search_tableColumnAlias'),
@@ -34,7 +35,6 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
       align: 'right'
     },
   ];
-
   #collectionContext?: UmbDefaultCollectionContext<UmbSearchIndex, never>;
 
   constructor() {
@@ -53,7 +53,7 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
   }
 
   #observeCollectionItems() {
-    this.observe(this.#collectionContext?.items, (items) => {
+    this.observe(this.#collectionContext?.items, (items: UmbSearchIndex[]) => {
       // Make sure we are connected to the DOM, otherwise we might update state when not needed
       // or when changing to another workspace with similar context.
       if (!this.isConnected) return;
@@ -115,8 +115,4 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
         return 'icon-alert color-red';
     }
   }
-
-  static override readonly styles = [
-    UmbTextStyles,
-  ];
 }

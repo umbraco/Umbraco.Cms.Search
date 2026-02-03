@@ -40,13 +40,17 @@ export class UmbSearchDetailRepository extends UmbDetailRepositoryBase<UmbSearch
     });
 
     // Call API
-    const { error } = await tryExecute(this, rebuild({ query: { indexAlias }, client: client as any }));
+    const { error } = await tryExecute(
+      this,
+      rebuild({ query: { indexAlias }, client: client as never }),
+    );
     if (error) throw error;
 
     // Mark user waiting for completion notification
     this.#searchContext?.setUserWaitingForIndexUpdate(indexAlias, true);
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   override async save(model: UmbSearchIndex) {
     console.error('Saving search indexes is not supported.');
     return { data: model, error: undefined };

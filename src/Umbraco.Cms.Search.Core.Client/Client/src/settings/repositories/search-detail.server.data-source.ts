@@ -17,6 +17,7 @@ export class UmbSearchServerDataSource implements UmbDetailDataSource<UmbSearchI
     this.#host = host;
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async createScaffold(preset: Partial<IndexModel> = {}) {
     // Derive UI state from server health status
     let state: UmbSearchIndex['state'] = 'idle';
@@ -47,9 +48,9 @@ export class UmbSearchServerDataSource implements UmbDetailDataSource<UmbSearchI
       index({
         client: client as any,
         path: {
-          indexAlias: unique
-        }
-      })
+          indexAlias: unique,
+        },
+      }),
     );
 
     if (error || !data) {
@@ -59,16 +60,19 @@ export class UmbSearchServerDataSource implements UmbDetailDataSource<UmbSearchI
     return this.createScaffold(data);
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async create(model: UmbSearchIndex) {
     console.error('Creating search indexes is not supported.');
     return { data: model, error: new UmbError('Creating search indexes is not supported') };
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async update(model: UmbSearchIndex) {
     console.error('Updating search indexes is not supported.');
     return { data: model, error: new UmbError('Updating search indexes is not supported') };
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async delete(_unique: string) {
     console.error('Deleting search indexes is not supported.');
     return { error: new UmbError('Deleting search indexes is not supported') };
