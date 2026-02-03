@@ -1,5 +1,10 @@
 import { UmbSearchWorkspaceEditorElement } from './search-workspace-editor.element.js';
-import { UmbSearchDetailRepository, UmbSearchIndex, UmbSearchIndexState } from '@umbraco-cms/search/settings';
+import {
+  UmbHealthStatusModel,
+  UmbSearchDetailRepository,
+  UmbSearchIndex,
+  UmbSearchIndexState,
+} from '@umbraco-cms/search/settings';
 import {
   UMB_SEARCH_CONTEXT,
   UMB_SEARCH_DETAIL_REPOSITORY_ALIAS,
@@ -8,8 +13,8 @@ import {
 } from '@umbraco-cms/search/global';
 
 import {
-  type UmbRoutableWorkspaceContext,
   UmbEntityNamedDetailWorkspaceContextBase,
+  type UmbRoutableWorkspaceContext,
 } from '@umbraco-cms/backoffice/workspace';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 
@@ -18,13 +23,15 @@ export class UmbSearchWorkspaceContext
   implements UmbRoutableWorkspaceContext
 {
   public readonly repository = new UmbSearchDetailRepository(this);
-  public readonly documentCount = this._data.createObservablePartOfPersisted((x) => x?.documentCount);
-  public readonly healthStatus = this._data.createObservablePartOfPersisted((x) => x?.healthStatus);
-  public readonly state = this._data.createObservablePartOfCurrent((x) => x?.state);
-
-  setState(state: UmbSearchIndexState) {
-    this._data.updateCurrent({ state });
-  }
+  public readonly documentCount?: number = this._data.createObservablePartOfPersisted(
+    (x) => x?.documentCount,
+  );
+  public readonly healthStatus?: UmbHealthStatusModel = this._data.createObservablePartOfPersisted(
+    (x) => x?.healthStatus,
+  );
+  public readonly state?: UmbSearchIndexState = this._data.createObservablePartOfCurrent<
+    UmbSearchIndexState | undefined
+  >((x) => x?.state);
 
   constructor(host: UmbControllerHost) {
     super(host, {
@@ -38,22 +45,25 @@ export class UmbSearchWorkspaceContext
         path: 'edit/:unique',
         component: UmbSearchWorkspaceEditorElement,
         setup: (_component, info) => {
-          this.load(info.match.params.unique);
+          void this.load(info.match.params.unique);
         },
       },
     ]);
 
     this.consumeContext(UMB_SEARCH_CONTEXT, (searchContext) => {
-      if (!searchContext) return;
       this.observe(
-        searchContext.indexRebuilt,
-        async (indexAlias) => {
+        searchContext?.indexRebuilt,
+        (indexAlias) => {
           if (!indexAlias) return;
           if (indexAlias !== this.getUnique()) return;
-          await this.reload();
+          void this.reload();
         },
         'index-rebuild-completed-detail-observer',
       );
     });
+  }
+
+  setState(state: UmbSearchIndexState) {
+    this._data.updateCurrent({ state });
   }
 }

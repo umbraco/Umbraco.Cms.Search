@@ -9,5 +9,6 @@ export const UMB_SEARCH_WORKSPACE_CONTEXT = new UmbContextToken<
 >(
   'UmbWorkspaceContext',
   undefined,
-  (context): context is UmbSearchWorkspaceContext => context.getEntityType?.() === UMB_SEARCH_INDEX_ENTITY_TYPE,
+  (context): context is UmbSearchWorkspaceContext =>
+    context.getEntityType?.() === UMB_SEARCH_INDEX_ENTITY_TYPE,
 );

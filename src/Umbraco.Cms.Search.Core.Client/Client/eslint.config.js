@@ -43,6 +43,7 @@ export default tseslint.config(
       ],
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-non-null-assertion': 'warn',
+      '@typescript-eslint/no-unsafe-assignment': 'off', // Umbraco base classes have limited type info
 
       // Prefer optional chaining
       '@typescript-eslint/prefer-optional-chain': 'error',
