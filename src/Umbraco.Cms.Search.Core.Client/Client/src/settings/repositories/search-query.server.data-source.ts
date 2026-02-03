@@ -5,11 +5,7 @@ import type {
   UmbSearchDocument,
   UmbSearchFacetResult,
 } from '../types.js';
-import type {
-  SearchRequestModel,
-  DocumentModel,
-  FacetResultModel,
-} from '../api';
+import type { SearchRequestModel, DocumentModel, FacetResultModel } from '../api';
 
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { client } from '@umbraco-cms/backoffice/external/backend-api';
@@ -44,8 +40,8 @@ export class UmbSearchQueryServerDataSource {
           skip: request.skip ?? 0,
           take: request.take ?? 10,
         },
-        client: client as any,
-      })
+        client: client as never,
+      }),
     );
 
     if (error || !data) {

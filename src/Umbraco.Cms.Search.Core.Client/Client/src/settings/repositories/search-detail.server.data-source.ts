@@ -46,7 +46,7 @@ export class UmbSearchServerDataSource implements UmbDetailDataSource<UmbSearchI
     const { data, error } = await tryExecute(
       this.#host,
       index({
-        client: client as any,
+        client: client as never,
         path: {
           indexAlias: unique,
         },
