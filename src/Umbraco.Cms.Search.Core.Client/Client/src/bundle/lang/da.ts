@@ -52,5 +52,18 @@ export default {
     tableColumnObjectType: 'Objekttype',
     statsBoxLabel: 'Statistik',
     searchBoxLabel: 'Søgning',
+    // Accessibility labels
+    searching: 'Søger...',
+    searchFailed: 'Søgning fejlede',
+    searchComplete: (count: number) => `Søgning færdig. Fandt ${count} resultat${count !== 1 ? 'er' : ''}`,
+    openEntity: (type: string, id: string) => `Åbn ${type} med ID ${id}`,
+    searchFormLabel: (indexAlias: string) => `Søg i ${indexAlias} indeks`,
+    searchInputLabel: 'Søgeforespørgsel',
+    searchInputAriaLabel: (indexAlias: string) => `Indtast søgeforespørgsel for ${indexAlias} indeks`,
+    searchButtonAriaLabel: 'Udfør søgning',
+    searchHint: 'Tryk Enter eller klik på Søg-knappen for at udføre søgningen',
+    loading: 'Indlæser søgeresultater',
+    resultsRegion: 'Søgeresultater',
+    resultsTable: 'Tabel med søgeresultater',
   }
 } satisfies UmbLocalizationDictionary;

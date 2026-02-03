@@ -52,6 +52,9 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   @state()
   private _error?: string;
 
+  @state()
+  private _searchStatusMessage = ''; // For screen reader announcements
+
   constructor() {
     super();
 
@@ -98,6 +101,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
 
     this._isSearching = true;
     this._error = undefined;
+    this._searchStatusMessage = this.localize.term('search_searching');
 
     const request: UmbSearchRequest = {
       indexAlias: this._indexAlias,
@@ -112,9 +116,11 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
       this._error = error?.message || 'An error occurred while searching';
       this._searchResults = undefined;
       this._tableItems = [];
+      this._searchStatusMessage = this.localize.term('search_searchFailed');
     } else {
       this._searchResults = data;
       this.#createTableItems(data);
+      this._searchStatusMessage = this.localize.term('search_searchComplete', data.total);
     }
 
     this._isSearching = false;
@@ -130,6 +136,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
             <uui-button
               look="secondary"
               label="Open"
+              aria-label=${this.localize.term('search_openEntity', doc.objectType, doc.id)}
               href=${this.#getModalUrl(doc.id, doc.objectType)}>
               ${doc.id}
             </uui-button>
@@ -184,26 +191,60 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   override render() {
     return html`
       <uui-box headline=${this.localize.term('search_searchBox')}>
-        <div class="search-container">
+        <div
+          class="search-container"
+          role="search"
+          aria-label=${this.localize.term('search_searchFormLabel', this._indexAlias)}
+          aria-busy=${this._isSearching ? 'true' : 'false'}>
+
+          <!-- Screen reader status announcements -->
+          <div class="visually-hidden" role="status" aria-live="polite" aria-atomic="true">
+            ${this._searchStatusMessage}
+          </div>
+
           <div class="search-input-row">
             <uui-input
+              id="search-input"
               .value=${this.#inputValue}
               @input=${this.#handleInputChange}
               @keydown=${this.#handleKeyDown}
-              placeholder=${this.localize.term('search_searchPlaceholder', 'Search index...')}
-              label="Search">
+              placeholder=${this.localize.term('search_searchPlaceholder')}
+              label=${this.localize.term('search_searchInputLabel')}
+              aria-label=${this.localize.term('search_searchInputAriaLabel', this._indexAlias)}
+              aria-describedby="search-hint">
             </uui-input>
             <uui-button
               look="primary"
               color="positive"
               @click=${this.#handleSearch}
-              ?disabled=${this._isSearching || !this.#inputValue.trim()}>
+              ?disabled=${this._isSearching || !this.#inputValue.trim()}
+              aria-label=${this.localize.term('search_searchButtonAriaLabel')}>
               <umb-localize key="search_searchButton">Search</umb-localize>
             </uui-button>
           </div>
 
-          ${when(this._isSearching, () => html`<uui-loader></uui-loader>`)}
-          ${when(this._error, () => html`<div class="error-message">${this._error}</div>`)}
+          <div id="search-hint" class="visually-hidden">
+            <umb-localize key="search_searchHint">
+              Press Enter or click Search button to execute search
+            </umb-localize>
+          </div>
+
+          ${when(
+            this._isSearching,
+            () => html`
+              <div role="status" aria-label=${this.localize.term('search_loading')}>
+                <uui-loader></uui-loader>
+              </div>
+            `
+          )}
+          ${when(
+            this._error,
+            () => html`
+              <div class="error-message" role="alert" aria-live="assertive">
+                ${this._error}
+              </div>
+            `
+          )}
           ${this.#renderResults()}
         </div>
       </uui-box>
@@ -215,25 +256,30 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
 
     if (this._searchResults.total === 0) {
       return html`
-        <div class="no-results">
+        <div class="no-results" role="status" aria-live="polite">
           <umb-localize key="search_noResults">No results found</umb-localize>
         </div>
       `;
     }
 
     return html`
-      <div class="results-container">
-        <div class="results-header">
+      <div
+        class="results-container"
+        role="region"
+        aria-label=${this.localize.term('search_resultsRegion')}>
+        <div class="results-header" id="results-summary">
           <strong>
             <umb-localize key="search_resultsCount" .args=${[this._searchResults.total]}>
-              Found ${this._searchResults.total} results
+              Found ${this._searchResults.total} result${this._searchResults.total === 1 ? '' : 's'}
             </umb-localize>
           </strong>
         </div>
         <umb-table
           .config=${this._tableConfig}
           .columns=${this._tableColumns}
-          .items=${this._tableItems}>
+          .items=${this._tableItems}
+          aria-describedby="results-summary"
+          aria-label=${this.localize.term('search_resultsTable')}>
         </umb-table>
       </div>
     `;
@@ -250,6 +296,19 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
         display: flex;
         flex-direction: column;
         gap: var(--uui-size-space-4);
+      }
+
+      /* Visually hidden but accessible to screen readers */
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
       }
 
       .search-input-row {

@@ -39,5 +39,18 @@ export default {
     tableColumnObjectType: 'Object Type',
     statsBoxLabel: 'Statistics',
     searchBoxLabel: 'Search',
+    // Accessibility labels
+    searching: 'Searching...',
+    searchFailed: 'Search failed',
+    searchComplete: (count: number) => `Search complete. Found ${count} result${count !== 1 ? 's' : ''}`,
+    openEntity: (type: string, id: string) => `Open ${type} with ID ${id}`,
+    searchFormLabel: (indexAlias: string) => `Search ${indexAlias} index`,
+    searchInputLabel: 'Search query',
+    searchInputAriaLabel: (indexAlias: string) => `Enter search query for ${indexAlias} index`,
+    searchButtonAriaLabel: 'Execute search',
+    searchHint: 'Press Enter or click Search button to execute search',
+    loading: 'Loading search results',
+    resultsRegion: 'Search results',
+    resultsTable: 'Search results table',
   }
 } satisfies UmbLocalizationDictionary;
