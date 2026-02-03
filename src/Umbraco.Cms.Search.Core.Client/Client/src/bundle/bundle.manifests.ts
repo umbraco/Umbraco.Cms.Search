@@ -4,8 +4,8 @@ import { manifests as collectionViewManifests } from './collectionViews.manifest
 import { manifests as entityActionManifests } from './entityActions.manifests.js';
 import { manifests as globalContextManifests } from './globalContexts.manifests.js';
 import { manifests as repositoryManifests } from './repositories.manifests.js';
-import { manifests as searchRootWorkspaceManifests } from './search-root-workspace.manifests.ts';
-import { manifests as searchWorkspaceManifests } from './search-workspace.manifests.ts';
+import { manifests as searchRootWorkspaceManifests } from './search-root-workspace.manifests.js';
+import { manifests as searchWorkspaceManifests } from './search-workspace.manifests.js';
 import { manifests as indexDetailBoxManifests } from './indexDetailBoxes.manifests.js';
 import { manifest as indexDetailBoxKindManifest } from './indexDetailBoxKind.manifests.js';
 
