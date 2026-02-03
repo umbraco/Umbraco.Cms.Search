@@ -123,6 +123,18 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
             ${this._searchStatusMessage}
           </div>
 
+          ${when(
+            this.#isSearchDisabled,
+            () => html`
+              <div class="search-disabled-message">
+                <umb-localize key="search_searchDisabled">
+                  Search is disabled because the index is not healthy. Current status:
+                </umb-localize>
+                ${this.localize.term('search_healthStatus', this._healthStatus)}
+              </div>
+            `,
+          )}
+
           <div class="search-input-row">
             <uui-input
               id="search-input"
@@ -152,20 +164,6 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
               Press Enter or click Search button to execute search
             </umb-localize>
           </div>
-
-          ${when(
-            this.#isSearchDisabled,
-            () => html`
-              <uui-box>
-                <p>
-                  <umb-localize key="search_searchDisabled">
-                    Search is disabled because the index is not healthy. Current status:
-                  </umb-localize>
-                  ${this.localize.term('search_healthStatus', this._healthStatus)}
-                </p>
-              </uui-box>
-            `,
-          )}
           ${when(
             this._isSearching,
             () => html`
@@ -401,6 +399,11 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
         background-color: var(--uui-color-danger-standalone);
         color: var(--uui-color-danger-contrast);
         border-radius: var(--uui-border-radius);
+      }
+
+      .search-disabled-message {
+        color: var(--uui-color-danger);
+        font-size: 0.875rem;
       }
 
       .no-results {
