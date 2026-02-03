@@ -10,7 +10,7 @@ import { manifests as indexDetailBoxManifests } from './indexDetailBoxes.manifes
 import { manifest as indexDetailBoxKindManifest } from './indexDetailBoxKind.manifests.js';
 
 import { UMB_SEARCH_ROOT_ENTITY_TYPE } from '@umbraco-cms/search/global';
-import { UMB_ADVANCED_SETTINGS_MENU_ALIAS } from '@umbraco-cms/backoffice/settings'
+import { UMB_ADVANCED_SETTINGS_MENU_ALIAS } from '@umbraco-cms/backoffice/settings';
 
 // Job of the bundle is to collate all the manifests from different parts of the extension and load other manifests
 // We load this bundle from umbraco-package.json
@@ -24,7 +24,7 @@ export const manifests: Array<UmbExtensionManifest> = [
   ...searchRootWorkspaceManifests,
   ...searchWorkspaceManifests,
   ...indexDetailBoxManifests,
-  indexDetailBoxKindManifest as any,
+  indexDetailBoxKindManifest as never,
   {
     type: 'menuItem',
     name: 'Umbraco Search Root Menu Item',
