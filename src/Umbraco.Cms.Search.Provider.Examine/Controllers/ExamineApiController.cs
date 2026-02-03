@@ -2,6 +2,7 @@ using Asp.Versioning;
 using Examine;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using Umbraco.Cms.Search.Provider.Examine.Models.ViewModels;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Controllers;
@@ -24,12 +25,7 @@ public class ExamineApiController : ExamineApiControllerBase
             return NotFound($"Could not find index with alias '{indexAlias}'");
         }
 
-        // Calculate the document ID using the same logic as Indexer.CalculateIndexKey
-        var documentId = documentKey.ToString().ToLowerInvariant();
-        if (culture is not null)
-        {
-            documentId += $"_{culture}";
-        }
+        var documentId = DocumentIdHelper.CalculateDocumentId(documentKey, culture);
 
         // Search for the specific document by its ID
         ISearchResults results = index.Searcher
