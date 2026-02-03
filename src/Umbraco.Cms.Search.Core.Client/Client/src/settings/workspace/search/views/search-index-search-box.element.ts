@@ -15,8 +15,8 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   #queryRepository = new UmbSearchQueryRepository(this);
   #inputValue = ''; // Non-reactive property for input value
   #routeBuilder?: (params: { entityType: string }) => string; // Route builder function
-  #debouncedUpdateQuery = debounce((value: string) => {
-    this._searchQuery = value;
+  #debouncedSearch = debounce(() => {
+    this.#handleSearch();
   }, 300);
 
   private _tableConfig: UmbTableConfig = {
@@ -91,6 +91,11 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   }
 
   async #handleSearch() {
+    // Prevent concurrent searches
+    if (this._isSearching) {
+      return;
+    }
+
     // Sync state with current input value
     this._searchQuery = this.#inputValue;
 
@@ -179,13 +184,28 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   #handleInputChange(e: Event) {
     const input = e.target as HTMLInputElement;
     this.#inputValue = input.value;
-    this.#debouncedUpdateQuery(input.value);
+
+    // Clear results if input is empty
+    if (!this.#inputValue.trim()) {
+      this._searchResults = undefined;
+      this._error = undefined;
+      return;
+    }
+
+    // Trigger debounced search
+    this.#debouncedSearch();
   }
 
   #handleKeyDown(e: KeyboardEvent) {
     if (e.key === 'Enter') {
+      // Execute search immediately (debounced search will be skipped if already searching)
       this.#handleSearch();
     }
+  }
+
+  #handleButtonClick() {
+    // Execute search immediately (debounced search will be skipped if already searching)
+    this.#handleSearch();
   }
 
   override render() {
@@ -216,7 +236,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
             <uui-button
               look="primary"
               color="positive"
-              @click=${this.#handleSearch}
+              @click=${this.#handleButtonClick}
               ?disabled=${this._isSearching || !this.#inputValue.trim()}
               aria-label=${this.localize.term('search_searchButtonAriaLabel')}>
               <umb-localize key="search_searchButton">Search</umb-localize>
