@@ -20,8 +20,6 @@ internal static class ServiceCollectionExtensions
         // register the in-memory searcher and indexer so they can be used explicitly for index registrations
         services.AddTransient<IExamineIndexer, Indexer>();
         services.AddTransient<IExamineSearcher, Searcher>();
-        services.AddSingleton<IIndexDocumentRepository, IndexDocumentRepository>();
-        services.AddSingleton<IIndexDocumentService, IndexDocumentService>();
 
         services.AddTransient<IIndexer, Indexer>();
         services.AddTransient<ISearcher, Searcher>();

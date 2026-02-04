@@ -37,8 +37,7 @@ public abstract class TestBase : UmbracoIntegrationTest
         builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
         builder.Services.AddUnique<IServerEventRouter, NoOpServerEventRouter>();
-        builder.Services.AddUnique<IIndexDocumentService, IndexDocumentService>();
-        builder.Services.AddUnique<IIndexDocumentRepository, IndexDocumentRepository>();
+        builder.Services.AddUnique<IIndexDocumentRepository, NoopIndexDocumentRepository>();
 
         builder.Services.AddTransient<IIndexer>(_ => Indexer);
         builder.Services.AddTransient<ISearcher>(_ => Indexer);
@@ -57,13 +56,16 @@ public abstract class TestBase : UmbracoIntegrationTest
         builder.AddNotificationHandler<MemberDeletedNotification, MemberDeletedDistributedCacheNotificationHandler>();
     }
 
-    private class IndexDocumentRepository : IIndexDocumentRepository
+    // these tests are not concerned with DB cached index data, so this is a no-op implementation
+    // of the document repository.
+    private class NoopIndexDocumentRepository : IIndexDocumentRepository
     {
         public Task AddAsync(IndexDocument indexDocument) => Task.CompletedTask;
 
         public Task<IndexDocument?> GetAsync(Guid id, bool published) => Task.FromResult<IndexDocument?>(null);
 
         public Task DeleteAsync(Guid[] ids, bool published) => Task.CompletedTask;
+
         public Task DeleteAllAsync() => Task.CompletedTask;
     }
 }
