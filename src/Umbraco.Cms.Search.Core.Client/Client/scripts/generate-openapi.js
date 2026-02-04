@@ -33,7 +33,7 @@ fetch(swaggerUrl).then(async (response) => {
 
   await createClient({
     input: swaggerUrl,
-    output: 'src/core/api',
+    output: 'src/settings/api',
     plugins: [
       ...defaultPlugins,
       {

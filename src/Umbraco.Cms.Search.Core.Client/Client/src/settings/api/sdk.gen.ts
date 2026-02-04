@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { IndexesData, IndexesErrors, IndexesResponses, RebuildData, RebuildErrors, RebuildResponses, SearchData, SearchErrors, SearchResponses } from './types.gen';
+import type { IndexData, IndexErrors, IndexesData, IndexesErrors, IndexesResponses, IndexResponses, RebuildData, RebuildErrors, RebuildResponses, SearchData, SearchErrors, SearchResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -21,6 +21,12 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 export const indexes = <ThrowOnError extends boolean = true>(options?: Options<IndexesData, ThrowOnError>) => (options?.client ?? client).get<IndexesResponses, IndexesErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/umbraco/search/api/v1/indexes',
+    ...options
+});
+
+export const index = <ThrowOnError extends boolean = true>(options: Options<IndexData, ThrowOnError>) => (options.client ?? client).get<IndexResponses, IndexErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/umbraco/search/api/v1/indexes/{indexAlias}',
     ...options
 });
 

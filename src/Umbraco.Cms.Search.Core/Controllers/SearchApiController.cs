@@ -63,6 +63,36 @@ public class SearchApiController : SearchApiControllerBase
         return Ok(new PagedViewModel<IndexViewModel> { Items = indexes, Total = indexes.Count });
     }
 
+    [HttpGet("indexes/{indexAlias}")]
+    [ProducesResponseType<IndexViewModel>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Index(string indexAlias)
+    {
+        if (string.IsNullOrWhiteSpace(indexAlias))
+        {
+            return BadRequest("The indexAlias parameter must be provided and cannot be empty.");
+        }
+
+        IndexRegistration? indexRegistration = _options.GetIndexRegistration(indexAlias);
+        if (indexRegistration is null)
+        {
+            return NotFound("The specified index alias was not found.");
+        }
+
+        if (TryGetIndexer(indexRegistration.Indexer, out IIndexer? indexer) is false)
+        {
+            return NotFound("Could not resolve the indexer for the specified index.");
+        }
+
+        return Ok(new IndexViewModel
+        {
+            IndexAlias = indexRegistration.IndexAlias,
+            DocumentCount = await indexer.GetDocumentCountAsync(indexAlias),
+            HealthStatus = await indexer.GetHealthStatus(indexAlias),
+        });
+    }
+
     [HttpPut("rebuild")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

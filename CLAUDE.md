@@ -63,7 +63,7 @@ npm run watch
 npm run generate-client
 ```
 
-The client uses **Node.js 23** (see `.nvmrc`). Ensure you have Node.js 23 installed.
+The client uses **Node.js 24** (see `.nvmrc`). Ensure you have Node.js 24 installed.
 
 ### Test Site
 
@@ -160,13 +160,20 @@ The backoffice client uses **code-splitting with importmap pattern** for optimal
 **Three-Bundle Strategy:**
 - `search-bundle.js` (~3kb) - Manifest metadata, loaded upfront
 - `search-global.js` (~1.5kb) - Global contexts for SignalR event subscriptions, loaded upfront
-- `search-core.js` (~22kb) - Core implementation, lazy-loaded on demand
+- `search-settings.js` (~22kb) - Core implementation, lazy-loaded on demand
 
 **Logical Import Pattern:**
-- Code imports `@umbraco-cms/search/core` and `@umbraco-cms/search/global`
+- Code imports `@umbraco-cms/search/settings` and `@umbraco-cms/search/global`
 - TypeScript resolves via `tsconfig.json` paths for type-checking
 - Vite marks as external (not bundled)
 - Browser resolves via importmap in `umbraco-package.json` at runtime
+
+**Two-Workspace Architecture:**
+- **Root Workspace** (`Umbraco.Search.Workspace.Root`) - Collection view of all search indexes
+- **Detail Workspace** (`Umbraco.Search.Workspace`) - Detail view for a single index with extensible boxes
+
+**Custom Extension Type:**
+- `searchIndexDetailBox` - Allows adding custom UI boxes to the index detail view via extension slot
 
 **See [Client CLAUDE.md](src/Umbraco.Cms.Search.Core.Client/Client/CLAUDE.md) for detailed client architecture, manifest patterns, and development workflow.**
 
@@ -244,6 +251,38 @@ Pass `AccessContext` to `SearchAsync` to include protected content in results.
 4. Update `FieldOptions` configuration if adding facetable/sortable fields
 5. Add migration if persisted index metadata changes
 
+### Adding a New Repository (Client)
+
+Repositories abstract API calls and provide clean interfaces for UI components. Follow this pattern:
+
+1. **Define Domain Types** in `src/settings/types.ts`:
+   - Create request/response types that abstract away API-generated types
+   - Example: `UmbSearchRequest`, `UmbSearchResult`
+
+2. **Create Server Data Source** (e.g., `search-query.server.data-source.ts`):
+   - Implements data fetching and type mapping
+   - Maps domain types → API types (for requests)
+   - Maps API types → domain types (for responses)
+   - Uses `tryExecute()` for error handling
+
+3. **Create Repository** (e.g., `search-query.repository.ts`):
+   - Extends `UmbRepositoryBase`
+   - Orchestrates data source calls
+   - Provides clean API for consumers
+   - Example: `async search(request: UmbSearchRequest) { return this.#dataSource.search(request); }`
+
+4. **Register Repository**:
+   - Add constant in `src/global/constants.ts`: `export const UMB_SEARCH_QUERY_REPOSITORY_ALIAS = '...'`
+   - Export from `src/settings/repositories/index.ts`
+   - Add manifest in `src/bundle/repositories.manifests.ts`
+
+5. **Use in Components**:
+   - Import repository class directly: `import { UmbSearchQueryRepository } from '../repositories/search-query.repository.js'`
+   - Instantiate: `#repository = new UmbSearchQueryRepository(this)`
+   - Call methods: `const { data, error } = await this.#repository.search(request)`
+
+**Benefits**: Separation of concerns, testability, type safety, consistency, reusability.
+
 ## Testing Strategy
 
 ### Unit Tests (Umbraco.Test.Search.Unit)
@@ -272,11 +311,19 @@ Pass `AccessContext` to `SearchAsync` to include protected content in results.
 
 3. **Variation Field Naming**: When querying variant content, ensure field names include culture/segment suffixes where appropriate.
 
-4. **Global Contexts Must Load Upfront**: Client global contexts (e.g., notification listeners) must be in `search-global.js`, not lazy-loaded in `search-core.js`.
+4. **Global Contexts Must Load Upfront**: Client global contexts (e.g., notification listeners) must be in `search-global.js`, not lazy-loaded in `search-settings.js`.
 
-5. **Client Import Paths**: Always use logical imports (`@umbraco-cms/search/core` not `./path/to/file`) to leverage the importmap pattern.
+5. **Client Import Paths**: Always use logical imports (`@umbraco-cms/search/settings` not `./path/to/file`) to leverage the importmap pattern.
 
 6. **Segment Variant Search**: Known limitation - segment variant content not created in the targeted segment may be excluded from results. This is a bug being addressed.
+
+7. **Entity Actions vs Workspace Actions**: Entity actions automatically appear in workspace header dropdowns. Don't create duplicate workspace actions for the same functionality. Ensure the workspace's `entityType` matches the entity action's registered entity type.
+
+8. **Enum JSON Serialization**: C# enums used in ViewModels should use `[JsonConverter(typeof(JsonStringEnumConverter))]` to serialize as strings instead of numbers. This prevents confusion in the UI where enum values would appear as numbers.
+
+9. **State Management Race Conditions**: When setting loading states for async operations, set the state BEFORE making the API call, not after. This ensures immediate UI feedback and prevents race conditions where the operation completes before the loading state is set.
+
+10. **Server-Driven State**: UI state should be derived from server health status (e.g., `healthStatus: 'Rebuilding'` → `state: 'loading'`). This keeps the UI synchronized with actual server state after reloads.
 
 ## Coding Conventions
 
