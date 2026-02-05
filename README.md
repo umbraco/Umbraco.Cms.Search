@@ -538,7 +538,7 @@ public record CustomIndexValue : IndexValue
 
 ### Creating a custom Indexer
 
-Extend the `Indexer` class to handle your custom `IndexValue` type. Override the `HandleCustomIndexValues` method to add custom fields to the index, and optionally override `MergeIndexValue` to handle merging when the same field appears multiple times:
+Extend the `Indexer` class to handle your custom `IndexValue` type. Override the `AppendCustomIndexValues` method to add custom fields to the index, and optionally override `MergeIndexValue` to handle merging when the same field appears multiple times:
 
 ```csharp
 using Examine;
@@ -613,7 +613,7 @@ public record GuidFilter(string FieldName, Guid[] Values, bool Negate)
 
 ### Creating a custom Searcher
 
-Extend the `Searcher` class to handle your custom filter. Override the `HandleCustomFilter` method to implement the filtering logic:
+Extend the `Searcher` class to handle your custom filter. Override the `AddCustomFilter` method to implement the filtering logic:
 
 ```csharp
 using Examine;
@@ -766,9 +766,9 @@ The `Searcher` class provides additional virtual methods for extending faceting 
 
 | Method | Purpose |
 |--------|---------|
-| `HandleCustomFacet` | Add custom facet operations to the search query |
-| `MapCustomFacet` | Map custom facet results from the search results |
-| `MapCustomSorter` | Handle custom sorter types |
+| `AddCustomFacet` | Add custom facet operations to the search query |
+| `ExtractCustomFacetResult` | Extract custom facet results from the search results |
+| `AddCustomSorter` | Handle custom sorter types |
 
 ## Appendix A: Indexed values of built-in property editors
 
