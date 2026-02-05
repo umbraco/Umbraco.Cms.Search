@@ -557,7 +557,7 @@ public class CustomIndexer : Indexer
     {
     }
 
-    protected override void HandleCustomIndexValues(
+    protected override void AppendCustomIndexValues(
         IndexField field,
         Dictionary<string, IEnumerable<object>> result)
     {
@@ -633,9 +633,10 @@ public class CustomSearcher : Searcher
     {
     }
 
-    protected override void HandleCustomFilter(
+    protected override void AddCustomFilter(
         IBooleanOperation searchQuery,
         Filter filter,
+        string? culture,
         string? segment)
     {
         if (filter is GuidFilter guidFilter)
