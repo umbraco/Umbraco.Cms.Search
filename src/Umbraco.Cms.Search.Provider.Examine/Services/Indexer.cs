@@ -1,8 +1,10 @@
 ﻿using Examine;
+using Examine.Search;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
+using Umbraco.Cms.Search.Core.Models.ViewModels;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using CoreConstants = Umbraco.Cms.Search.Core.Constants;
@@ -153,6 +155,43 @@ public class Indexer : IExamineIndexer
         }
         index.CreateIndex();
         return Task.CompletedTask;
+    }
+
+    public Task<long> GetDocumentCountAsync(string indexAlias)
+    {
+        if (_examineManager.TryGetIndex(indexAlias, out IIndex? index))
+        {
+            if (index is IIndexStats stats)
+            {
+                return Task.FromResult(stats.GetDocumentCount());
+            }
+        }
+
+        return Task.FromResult(0L);
+    }
+
+    public Task<HealthStatus> GetHealthStatus(string indexAlias)
+    {
+        if (_examineManager.TryGetIndex(indexAlias, out IIndex? index) is false || index.IndexExists() is false)
+        {
+            return Task.FromResult(HealthStatus.Unknown);
+        }
+
+        if (index is IIndexStats stats && stats.GetDocumentCount() == 0)
+        {
+            return Task.FromResult(HealthStatus.Empty);
+        }
+
+        // Attempt to query the index to verify it's readable and not corrupted
+        try
+        {
+            index.Searcher.CreateQuery().ManagedQuery("__healthcheck__").Execute(new QueryOptions(0, 1));
+            return Task.FromResult(HealthStatus.Healthy);
+        }
+        catch
+        {
+            return Task.FromResult(HealthStatus.Corrupted);
+        }
     }
 
     private static string CalculateIndexKey(Guid key, string? culture)

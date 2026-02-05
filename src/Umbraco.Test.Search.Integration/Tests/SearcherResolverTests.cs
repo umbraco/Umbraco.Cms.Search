@@ -9,6 +9,7 @@ using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
+using Umbraco.Cms.Search.Core.Models.ViewModels;
 using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -115,6 +116,12 @@ public class SearcherResolverTests : UmbracoIntegrationTest
 
         public Task ResetAsync(string indexAlias)
             => throw new NotImplementedException();
+
+        public Task<long> GetDocumentCountAsync(string indexAlias)
+            => throw new NotImplementedException();
+
+        public Task<HealthStatus> GetHealthStatus(string indexAlias)
+            => Task.FromResult(HealthStatus.Healthy);
     }
 
     private abstract class SearcherBase : ISearcher
@@ -129,7 +136,8 @@ public class SearcherResolverTests : UmbracoIntegrationTest
             string? segment = null,
             AccessContext? accessContext = null,
             int skip = 0,
-            int take = 10)
+            int take = 10,
+            int maxSuggestions = 0)
             => throw new NotImplementedException();
     }
 }
