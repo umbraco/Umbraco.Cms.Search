@@ -1,0 +1,22 @@
+{
+  "name": "umbraco-search-acceptancetest",
+  "private": true,
+  "scripts": {
+    "test": "npx playwright test",
+    "ui": "npx playwright test --ui",
+    "postinstall": "node postinstall.js",
+    "config": "node config.js",
+    "createTest": "node createTest.js",
+    "smokeTest": "npx playwright test --grep \"@smoke\""
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^20.9.0",
+    "prompt": "^1.2.0",
+    "tslib": "^2.4.0",
+    "typescript": "^4.8.3"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1"
+  }
+}
