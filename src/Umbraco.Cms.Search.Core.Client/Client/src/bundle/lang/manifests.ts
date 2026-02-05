@@ -13,5 +13,5 @@ export const manifests: Array<UmbExtensionManifest> = [
     alias: 'Umbraco.Search.Localization.Da',
     meta: { culture: 'da' },
     js: () => import('./da.js'),
-  }
-]
+  },
+];

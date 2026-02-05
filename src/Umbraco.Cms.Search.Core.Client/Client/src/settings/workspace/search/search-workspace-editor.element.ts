@@ -26,7 +26,7 @@ export class UmbSearchWorkspaceEditorElement extends UmbLitElement {
       (alias) => {
         this._indexAlias = alias;
       },
-      '_observeIndexAlias'
+      '_observeIndexAlias',
     );
   }
 
