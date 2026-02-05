@@ -43,7 +43,7 @@ public class Searcher : IExamineSearcher
         AccessContext? accessContext,
         int skip,
         int take,
-        bool includeSuggestions = false)
+        int maxSuggestions = 0)
     {
         // Special case if no parameters are provided, return an empty list.
         if (query is null && filters is null && facets is null && sorters is null && culture is null && segment is null && accessContext is null)
@@ -85,9 +85,9 @@ public class Searcher : IExamineSearcher
             searchResult = Search(CreateBaseQuery(), filters, facets, sorters, segment, skip, take);
         }
 
-        if (includeSuggestions)
+        if (maxSuggestions > 0)
         {
-            IEnumerable<string> suggestions = await GetSuggestionsAsync(indexAlias, query, culture, segment);
+            IEnumerable<string> suggestions = await GetSuggestionsAsync(indexAlias, query, culture, segment, maxSuggestions);
             return searchResult with { Suggestions = suggestions };
         }
 
@@ -665,12 +665,14 @@ public class Searcher : IExamineSearcher
     /// <param name="query">The search query.</param>
     /// <param name="culture">The culture to search in.</param>
     /// <param name="segment">The segment to search in.</param>
+    /// <param name="maxSuggestions">The maximum number of suggestions to return.</param>
     /// <returns>A list of suggestions, empty by default.</returns>
     protected virtual Task<IEnumerable<string>> GetSuggestionsAsync(
         string indexAlias,
         string? query,
         string? culture,
-        string? segment)
+        string? segment,
+        int maxSuggestions)
     {
         return Task.FromResult<IEnumerable<string>>([]);
     }

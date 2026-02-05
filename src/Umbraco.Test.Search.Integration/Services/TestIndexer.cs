@@ -71,7 +71,7 @@ public class TestIndexer : IIndexer, ISearcher
         AccessContext? accessContext = null,
         int skip = 0,
         int take = 10,
-        bool includeSuggestions = false)
+        int maxSuggestions = 0)
     {
         indexAlias = indexAlias switch
         {
