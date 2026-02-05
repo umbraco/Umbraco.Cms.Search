@@ -9,7 +9,6 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
-using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
@@ -24,10 +23,10 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests;
 
 /// <summary>
 /// Tests to verify that custom <see cref="IndexValue"/> subclasses can be indexed
-/// using a custom <see cref="Indexer"/> implementation.
+/// using a custom <see cref="Indexer"/> and <see cref="Searcher"/> implementation.
 /// </summary>
 [TestFixture]
-public class CustomIndexValueTests
+public class CustomSearchProviderTests
 {
     private ServiceProvider _serviceProvider = null!;
     private const string IndexAlias = Constants.IndexAliases.PublishedContent;
@@ -419,7 +418,7 @@ public class CustomIndexer : Indexer
         };
     }
 
-    protected override void HandleCustomIndexValues(IndexField field, Dictionary<string, IEnumerable<object>> result)
+    protected override void AppendCustomIndexValues(IndexField field, Dictionary<string, IEnumerable<object>> result)
     {
         if (field.Value is CustomIndexValue customValue && customValue.Guids?.Any() == true)
         {
@@ -516,7 +515,7 @@ public class CustomSearcher : Searcher
     {
     }
 
-    protected override void HandleCustomFilter(IBooleanOperation searchQuery, Filter filter, string? segment)
+    protected override void AddCustomFilter(IBooleanOperation searchQuery, Filter filter, string? culture, string? segment)
     {
         if (filter is GuidFilter guidFilter)
         {

@@ -25,13 +25,13 @@ public class Indexer : IExamineIndexer
     protected FieldOptions FieldOptions { get; }
 
     /// <summary>
-    /// Override this method to handle custom <see cref="IndexValue"/> properties in derived classes.
+    /// Override this method to append custom <see cref="IndexValue"/> properties in derived classes.
     /// This method is called for each <see cref="IndexField"/> during indexing, allowing you to
     /// add custom values to the index dictionary.
     /// </summary>
     /// <param name="field">The index field being processed.</param>
     /// <param name="result">The dictionary to add custom index values to. Keys are field names, values are the data to index.</param>
-    protected virtual void HandleCustomIndexValues(IndexField field, Dictionary<string, IEnumerable<object>> result)
+    protected virtual void AppendCustomIndexValues(IndexField field, Dictionary<string, IEnumerable<object>> result)
     {
         // No-op by default. Override in derived classes to handle custom IndexValue types.
     }
@@ -272,7 +272,7 @@ public class Indexer : IExamineIndexer
                 AddToAggregatedTexts(aggregatedR3TextsBySegment, field.Segment, field.Value.TextsR3);
             }
 
-            HandleCustomIndexValues(field, result);
+            AppendCustomIndexValues(field, result);
         }
 
         // Add segment-specific aggregated text fields

@@ -77,10 +77,10 @@ public class Searcher : IExamineSearcher
             {
                 IBooleanOperation facetSearchQuery = CreateBaseQuery();
                 Filter[] effectiveFilters = filtersAsArray!.Where(filter => filter.FieldName != facet.FieldName).ToArray();
-                facetFilterResults.AddRange(Search(facetSearchQuery, effectiveFilters, [facet], null, segment, 0, 0).Facets);
+                facetFilterResults.AddRange(Search(facetSearchQuery, effectiveFilters, [facet], null, culture, segment, 0, 0).Facets);
             }
 
-            SearchResult documentsSearchResult = Search(CreateBaseQuery(), filtersAsArray, facetsAsArray?.Except(filterFacets), sorters, segment, skip, take);
+            SearchResult documentsSearchResult = Search(CreateBaseQuery(), filtersAsArray, facetsAsArray?.Except(filterFacets), sorters, culture, segment, skip, take);
             searchResult = documentsSearchResult with
             {
                 Facets = facetFilterResults.Union(documentsSearchResult.Facets)
@@ -88,7 +88,7 @@ public class Searcher : IExamineSearcher
         }
         else
         {
-            searchResult = Search(CreateBaseQuery(), filters, facets, sorters, segment, skip, take);
+            searchResult = Search(CreateBaseQuery(), filters, facets, sorters, culture, segment, skip, take);
         }
 
         return Task.FromResult(searchResult);
@@ -132,6 +132,7 @@ public class Searcher : IExamineSearcher
         IEnumerable<Filter>? filters,
         IEnumerable<Facet>? facets,
         IEnumerable<Sorter>? sorters,
+        string? culture,
         string? segment,
         int skip,
         int take)
@@ -142,9 +143,9 @@ public class Searcher : IExamineSearcher
         Sorter[]? sortersAsArray = sorters as Sorter[] ?? sorters?.ToArray();
 
         // Add facets and filters
-        AddFilters(searchQuery, filters, segment);
-        AddFacets(searchQuery, deduplicateFacets);
-        AddSorters(searchQuery, sortersAsArray);
+        AddFilters(searchQuery, filters, culture, segment);
+        AddFacets(searchQuery, deduplicateFacets, culture, segment);
+        AddSorters(searchQuery, sortersAsArray, culture, segment);
 
         // We only need the IndexType and NodeId
         var selectedFields = new HashSet<string> {Constants.SystemFields.IndexType, "__NodeId" };
@@ -172,7 +173,7 @@ public class Searcher : IExamineSearcher
 
         IEnumerable<ISearchResult> searchResults = results.ToArray();
 
-        FacetResult[] facetResults = facets is null ? [] : MapFacets(results, deduplicateFacets).ToArray();
+        FacetResult[] facetResults = facets is null ? [] : MapFacets(results, deduplicateFacets, culture, segment).ToArray();
         Document[] searchResultDocuments = take > 0 ? searchResults.Select(MapToDocument).WhereNotNull().ToArray() : [];
 
         return new SearchResult(results.TotalItemCount, searchResultDocuments, facetResults);
@@ -197,7 +198,7 @@ public class Searcher : IExamineSearcher
         }
     }
 
-    private void AddSorters(IBooleanOperation searchQuery, IEnumerable<Sorter>? sorters)
+    private void AddSorters(IBooleanOperation searchQuery, IEnumerable<Sorter>? sorters, string? culture, string? segment)
     {
         if (sorters is null)
         {
@@ -207,7 +208,14 @@ public class Searcher : IExamineSearcher
         // TODO: Handling of multiple sorters, does this hold up?
         foreach (Sorter sorter in sorters)
         {
-            SortableField[] sortableFields = MapSorter(sorter);
+            SortableField[]? sortableFields = MapSorter(sorter);
+            if (sortableFields is null)
+            {
+                // Custom sorter handling - let derived class manipulate the query directly
+                AddCustomSorter(searchQuery, sorter, culture, segment);
+                continue;
+            }
+
             if (sortableFields.Length == 0)
             {
                 continue;
@@ -224,7 +232,7 @@ public class Searcher : IExamineSearcher
         }
     }
 
-    private SortableField[] MapSorter(Sorter sorter)
+    private SortableField[]? MapSorter(Sorter sorter)
         => sorter switch
         {
             IntegerSorter => [new SortableField(FieldNameHelper.FieldName(sorter.FieldName, Constants.FieldValues.Integers), SortType.Int)],
@@ -239,23 +247,26 @@ public class Searcher : IExamineSearcher
                 new SortableField(FieldNameHelper.FieldName(sorter.FieldName, Constants.FieldValues.Texts), SortType.String),
             ],
             ScoreSorter => [],
-            _ => MapCustomSorter(sorter)
+            _ => null // Return null to indicate custom sorter handling is needed
         };
 
     /// <summary>
     /// Override this method to handle custom <see cref="Sorter"/> types in derived classes.
-    /// This method is called for sorters that are not built-in sorter types.
+    /// This method is called for sorters that are not built-in sorter types, allowing direct
+    /// manipulation of the search query.
     /// </summary>
-    /// <param name="sorter">The custom sorter to map.</param>
-    /// <returns>An array of <see cref="SortableField"/> to apply, or an empty array to skip sorting.</returns>
-    protected virtual SortableField[] MapCustomSorter(Sorter sorter)
+    /// <param name="searchQuery">The search query to add sorting to.</param>
+    /// <param name="sorter">The custom sorter to handle.</param>
+    /// <param name="culture">The optional culture context.</param>
+    /// <param name="segment">The optional segment context.</param>
+    protected virtual void AddCustomSorter(IBooleanOperation searchQuery, Sorter sorter, string? culture, string? segment)
     {
         // By default, throw an exception for unknown sorter types.
         // Override in derived classes to handle custom Sorter types.
         throw new ArgumentOutOfRangeException(nameof(sorter), $"Unknown sorter type: {sorter.GetType().Name}");
     }
 
-    private void AddFilters(IBooleanOperation searchQuery, IEnumerable<Filter>? filters, string? segment)
+    private void AddFilters(IBooleanOperation searchQuery, IEnumerable<Filter>? filters, string? culture, string? segment)
     {
         if (filters is null)
         {
@@ -360,7 +371,7 @@ public class Searcher : IExamineSearcher
                     searchQuery.AddExactFilter(dateTimeOffsetExactFieldName, dateTimeOffsetExactSegmentFieldName, datetimeExactFilter);
                     break;
                 default:
-                    HandleCustomFilter(searchQuery, filter, segment);
+                    AddCustomFilter(searchQuery, filter, culture, segment);
                     break;
             }
         }
@@ -372,13 +383,14 @@ public class Searcher : IExamineSearcher
     /// </summary>
     /// <param name="searchQuery">The search query to add the filter to.</param>
     /// <param name="filter">The custom filter to handle.</param>
-    /// <param name="segment">The optional segment to filter on.</param>
-    protected virtual void HandleCustomFilter(IBooleanOperation searchQuery, Filter filter, string? segment)
+    /// <param name="culture">The optional culture context.</param>
+    /// <param name="segment">The optional segment context.</param>
+    protected virtual void AddCustomFilter(IBooleanOperation searchQuery, Filter filter, string? culture, string? segment)
     {
         // No-op by default. Override in derived classes to handle custom Filter types.
     }
 
-    private void AddFacets(IOrdering searchQuery, IEnumerable<Facet>? facets)
+    private void AddFacets(IOrdering searchQuery, IEnumerable<Facet>? facets, string? culture, string? segment)
     {
         if (facets is null)
         {
@@ -439,7 +451,7 @@ public class Searcher : IExamineSearcher
                         facetOperations.FacetString(keywordFieldName, config => config.MaxCount(SearcherOptions.MaxFacetValues));
                         break;
                     default:
-                        HandleCustomFacet(facetOperations, facet);
+                        AddCustomFacet(facetOperations, facet, culture, segment);
                         break;
                 }
             }
@@ -452,7 +464,9 @@ public class Searcher : IExamineSearcher
     /// </summary>
     /// <param name="facetOperations">The facet operations to add the facet to.</param>
     /// <param name="facet">The custom facet to handle.</param>
-    protected virtual void HandleCustomFacet(IFacetOperations facetOperations, Facet facet)
+    /// <param name="culture">The optional culture context.</param>
+    /// <param name="segment">The optional segment context.</param>
+    protected virtual void AddCustomFacet(IFacetOperations facetOperations, Facet facet, string? culture, string? segment)
     {
         // No-op by default. Override in derived classes to handle custom Facet types.
     }
@@ -510,7 +524,7 @@ public class Searcher : IExamineSearcher
             : null;
     }
 
-    private IEnumerable<FacetResult> MapFacets(ISearchResults searchResults, IEnumerable<Facet> queryFacets)
+    private IEnumerable<FacetResult> MapFacets(ISearchResults searchResults, IEnumerable<Facet> queryFacets, string? culture, string? segment)
     {
         foreach (Facet facet in queryFacets)
         {
@@ -617,7 +631,7 @@ public class Searcher : IExamineSearcher
                     yield return new FacetResult(facet.FieldName, keywordFacetValues);
                     break;
                 default:
-                    FacetResult? customFacetResult = MapCustomFacet(facet, searchResults);
+                    FacetResult? customFacetResult = ExtractCustomFacetResult(facet, searchResults, culture, segment);
                     if (customFacetResult is not null)
                     {
                         yield return customFacetResult;
@@ -628,13 +642,15 @@ public class Searcher : IExamineSearcher
     }
 
     /// <summary>
-    /// Override this method to map custom <see cref="Facet"/> types to <see cref="FacetResult"/> in derived classes.
+    /// Override this method to extract custom <see cref="Facet"/> types to <see cref="FacetResult"/> in derived classes.
     /// This method is called for each facet result that is not a built-in facet type.
     /// </summary>
-    /// <param name="facet">The custom facet to map results for.</param>
+    /// <param name="facet">The custom facet to extract results for.</param>
     /// <param name="searchResults">The search results containing the facet data.</param>
+    /// <param name="culture">The optional culture context.</param>
+    /// <param name="segment">The optional segment context.</param>
     /// <returns>A <see cref="FacetResult"/> for the custom facet, or null to skip.</returns>
-    protected virtual FacetResult? MapCustomFacet(Facet facet, ISearchResults searchResults)
+    protected virtual FacetResult? ExtractCustomFacetResult(Facet facet, ISearchResults searchResults, string? culture, string? segment)
     {
         // No-op by default. Override in derived classes to handle custom Facet types.
         return null;
