@@ -46,7 +46,11 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
 
     const query = this._filterQuery.toLowerCase();
     return this._fields
-      .filter((field) => field.name.toLowerCase().includes(query))
+      .filter(
+        (field) =>
+          field.name.toLowerCase().includes(query) ||
+          field.values.some((v) => v.toLowerCase().includes(query)),
+      )
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
