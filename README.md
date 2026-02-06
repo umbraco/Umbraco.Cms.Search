@@ -47,18 +47,9 @@ public sealed class SiteComposer : IComposer
             .AddSearchCore()
             // add the Examine search provider
             .AddExamineSearchProvider();
-
-        // force rebuild indexes after startup (awaiting a better solution from Core)
-        builder.RebuildIndexesAfterStartup();
     }
 }
 ```
-
-> [!TIP]
-> The invocation of `RebuildIndexesAfterStartup()` is a temporary means to an end. We'll use it for now, because:
-> 
-> 1. Umbraco Search does not yet pack a UI for managing (rebuilding) indexes, so it ensures index population at first install.
-> 2. Any subsequent breaking changes that affect the index structure will be automatically propagated into the index at startup.
 
 Umbraco Search covers three different aspects of search in Umbraco:
 
@@ -354,9 +345,6 @@ By default, Umbraco Search will search only for invariant content. Use `culture`
 > [!TIP]
 > Invariant content will automatically be included in the search result when searching for variant content.
 
-> [!IMPORTANT]  
-> At this time, segment variant search might produce incorrect search results. See the [known limitations](#known-limitations) section for details.
-
 ```csharp
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Services;
@@ -504,14 +492,6 @@ If all (applicable) facet values should be included for all groups in the search
 #### Max facet values
 
 The Examine search provider limits the number of resulting facet values within a facet group to 100. This limit can be changed using `SearcherOptions.MaxFacetValues`.
-
-### Known limitations
-
-The Examine search provider has a few known limitations you should be aware of.
-
-#### Segment support
-
-Segment variant content, that has _not_ been created in the targeted segment, will not be part of the search result. This is a bug which will be fixed as soon as possible.
 
 ## Indexing and searching custom data
 
