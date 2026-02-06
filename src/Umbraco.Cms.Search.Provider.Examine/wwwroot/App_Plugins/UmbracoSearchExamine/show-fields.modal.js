@@ -72,7 +72,8 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
     if (!isLong) {
       return html`
         <div class="value-item">
-          ${indexPrefix}${value}
+          ${indexPrefix}
+          <span class="value-content">${value}</span>
           <uui-button-copy-text class="copy-button" .text=${value} look="placeholder" compact></uui-button-copy-text>
         </div>
       `;
@@ -81,10 +82,12 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
     return html`
       <div class="value-item">
         ${indexPrefix}
-        <span>${isExpanded ? value : `${value.substring(0, MAX_VALUE_LENGTH)}...`}</span>
-        <button class="see-more" @click=${() => this.#toggleExpanded(fieldKey)}>
-          ${isExpanded ? 'See less' : 'See more'}
-        </button>
+        <span class="value-content">
+          ${isExpanded ? value : `${value.substring(0, MAX_VALUE_LENGTH)}...`}
+          <button class="see-more" @click=${() => this.#toggleExpanded(fieldKey)}>
+            ${isExpanded ? 'See less' : 'See more'}
+          </button>
+        </span>
         <uui-button-copy-text class="copy-button" .text=${value} look="placeholder" compact></uui-button-copy-text>
       </div>
     `;
@@ -259,6 +262,11 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
         margin-bottom: 0;
       }
 
+      .value-content {
+        flex: 1;
+        min-width: 0;
+      }
+
       .copy-button {
         opacity: 0;
         transition: opacity 0.15s ease;
@@ -274,9 +282,12 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
         margin-right: var(--uui-size-2);
         user-select: none;
         opacity: 0.7;
+        flex-shrink: 0;
+        white-space: nowrap;
       }
 
       .see-more {
+        display: inline;
         background: none;
         border: none;
         color: var(--uui-color-interactive);
@@ -285,6 +296,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
         margin-left: var(--uui-size-2);
         font-size: var(--uui-font-size-2);
         text-decoration: underline;
+        white-space: nowrap;
       }
 
       .see-more:hover {
