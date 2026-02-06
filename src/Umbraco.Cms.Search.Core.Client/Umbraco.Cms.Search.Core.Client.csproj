@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
@@ -24,14 +23,6 @@
 
     <ItemGroup>
         <Folder Include="wwwroot\"/>
-    </ItemGroup>
-
-    <ItemGroup>
-      <_ContentIncludedByDefault Remove="wwwroot\App_Plugins\UmbracoCmsSearchBackOfficeClient\entrypoint-BSlTz4-p.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\App_Plugins\UmbracoCmsSearchBackOfficeClient\entrypoint-BSlTz4-p.js.map" />
-      <_ContentIncludedByDefault Remove="wwwroot\App_Plugins\UmbracoCmsSearchBackOfficeClient\umbraco-cms-search-back-office-client.js" />
-      <_ContentIncludedByDefault Remove="wwwroot\App_Plugins\UmbracoCmsSearchBackOfficeClient\umbraco-cms-search-back-office-client.js.map" />
-      <_ContentIncludedByDefault Remove="wwwroot\App_Plugins\UmbracoCmsSearchBackOfficeClient\umbraco-package.json" />
     </ItemGroup>
 
 </Project>
