@@ -1,9 +1,17 @@
 import type { UmbSearchIndex } from '../types.js';
+import { UMB_SEARCH_INDEX_ENTITY_TYPE } from '@umbraco-cms/search/global';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
-import { html, customElement, state, when } from '@umbraco-cms/backoffice/external/lit';
-import { UMB_COLLECTION_CONTEXT, type UmbDefaultCollectionContext } from '@umbraco-cms/backoffice/collection';
+import { customElement, html, state, when } from '@umbraco-cms/backoffice/external/lit';
+import {
+  UMB_COLLECTION_CONTEXT,
+  type UmbDefaultCollectionContext,
+} from '@umbraco-cms/backoffice/collection';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
-import type { UmbTableColumn, UmbTableConfig, UmbTableItem } from '@umbraco-cms/backoffice/components';
+import type {
+  UmbTableColumn,
+  UmbTableConfig,
+  UmbTableItem,
+} from '@umbraco-cms/backoffice/components';
 
 @customElement('umb-search-root-collection-view')
 export default class UmbSearchRootCollectionView extends UmbLitElement {
@@ -21,7 +29,7 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
     },
     {
       name: this.localize.term('search_tableColumnHealthStatus'),
-      alias: 'healthStatus'
+      alias: 'healthStatus',
     },
     {
       name: this.localize.term('search_tableColumnDocumentCount'),
@@ -30,7 +38,7 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
     {
       name: '',
       alias: 'entityActions',
-      align: 'right'
+      align: 'right',
     },
   ];
 
@@ -47,55 +55,69 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
 
   override render() {
     return html`
-      <umb-table .config=${this._tableConfig} .columns=${this._tableColumns} .items=${this._tableItems}></umb-table>
+      <umb-table
+        .config=${this._tableConfig}
+        .columns=${this._tableColumns}
+        .items=${this._tableItems}
+      ></umb-table>
     `;
   }
 
   #observeCollectionItems() {
-    this.observe(this.#collectionContext?.items, (items) => {
-      // Make sure we are connected to the DOM, otherwise we might update state when not needed
-      // or when changing to another workspace with similar context.
-      if (!this.isConnected) return;
+    this.observe(
+      this.#collectionContext?.items,
+      (items: UmbSearchIndex[]) => {
+        // Make sure we are connected to the DOM, otherwise we might update state when not needed
+        // or when changing to another workspace with similar context.
+        if (!this.isConnected) return;
 
-      this.#createTable(items);
-    }, '_itemsObserver')
+        this.#createTable(items);
+      },
+      '_itemsObserver',
+    );
   }
 
   #createTable(items: UmbSearchIndex[]) {
-    this._tableItems = items?.map(item => {
+    this._tableItems = items?.map((item) => {
       return {
         id: item.unique,
         icon: this.#healthStatusIcon(item),
         data: [
           {
             columnAlias: 'indexAlias',
-            value: item.unique
+            value: html`<a
+              href=${`section/settings/workspace/${UMB_SEARCH_INDEX_ENTITY_TYPE}/edit/${item.unique}`}
+              >${item.unique}</a
+            >`,
           },
           {
             columnAlias: 'healthStatus',
-            value:
-              when(
-                item.state === 'loading',
-                () => html`<uui-loader-bar></uui-loader-bar>`,
-                () => this.localize.term('search_healthStatus', item.healthStatus)
-              )
+            value: when(
+              item.state === 'loading',
+              () => html`<uui-loader-bar></uui-loader-bar>`,
+              () => this.localize.term('search_healthStatus', item.healthStatus),
+            ),
           },
           {
             columnAlias: 'documentCount',
-            value: this.localize.term('search_documentCount', this.localize.number(item.documentCount)),
+            value: this.localize.term(
+              'search_documentCount',
+              this.localize.number(item.documentCount),
+            ),
           },
           {
             columnAlias: 'entityActions',
             value: html`<umb-entity-actions-table-column-view
-							.value=${{
-              entityType: item.entityType,
-              unique: item.unique,
-              name: item.unique,
-            }}></umb-entity-actions-table-column-view>`,
+              .value=${{
+                entityType: item.entityType,
+                unique: item.unique,
+                name: item.unique,
+              }}
+            ></umb-entity-actions-table-column-view>`,
           },
-        ]
-      }
-    })
+        ],
+      };
+    });
   }
 
   #healthStatusIcon(item: UmbSearchIndex) {
@@ -115,7 +137,5 @@ export default class UmbSearchRootCollectionView extends UmbLitElement {
     }
   }
 
-  static override readonly styles = [
-    UmbTextStyles,
-  ];
+  static override readonly styles = [UmbTextStyles];
 }

@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Umbraco.Cms.Api.Common.ViewModels.Pagination;
 using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Cms.Search.Core.Models.Configuration;
+using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.ViewModels;
 using Umbraco.Cms.Search.Core.Services;
@@ -51,16 +52,50 @@ public class SearchApiController : SearchApiControllerBase
                 continue;
             }
 
+            IndexMetadata indexMetadata = await indexer.GetMetadataAsync(indexRegistration.IndexAlias);
+
             indexes.Add(
                 new IndexViewModel
                 {
                     IndexAlias = indexRegistration.IndexAlias,
-                    DocumentCount = await indexer.GetDocumentCountAsync(indexRegistration.IndexAlias),
-                    HealthStatus = await indexer.GetHealthStatus(indexRegistration.IndexAlias),
+                    DocumentCount = indexMetadata.DocumentCount,
+                    HealthStatus = indexMetadata.HealthStatus,
                 });
         }
 
         return Ok(new PagedViewModel<IndexViewModel> { Items = indexes, Total = indexes.Count });
+    }
+
+    [HttpGet("indexes/{indexAlias}")]
+    [ProducesResponseType<IndexViewModel>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Index(string indexAlias)
+    {
+        if (string.IsNullOrWhiteSpace(indexAlias))
+        {
+            return BadRequest("The indexAlias parameter must be provided and cannot be empty.");
+        }
+
+        IndexRegistration? indexRegistration = _options.GetIndexRegistration(indexAlias);
+        if (indexRegistration is null)
+        {
+            return NotFound("The specified index alias was not found.");
+        }
+
+        if (TryGetIndexer(indexRegistration.Indexer, out IIndexer? indexer) is false)
+        {
+            return NotFound("Could not resolve the indexer for the specified index.");
+        }
+
+        IndexMetadata indexMetadata = await indexer.GetMetadataAsync(indexRegistration.IndexAlias);
+
+        return Ok(new IndexViewModel
+        {
+            IndexAlias = indexRegistration.IndexAlias,
+            DocumentCount = indexMetadata.DocumentCount,
+            HealthStatus = indexMetadata.HealthStatus,
+        });
     }
 
     [HttpPut("rebuild")]

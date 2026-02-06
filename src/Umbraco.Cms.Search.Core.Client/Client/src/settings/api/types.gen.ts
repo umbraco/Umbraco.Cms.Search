@@ -102,6 +102,39 @@ export type IndexesResponses = {
 
 export type IndexesResponse = IndexesResponses[keyof IndexesResponses];
 
+export type IndexData = {
+    body?: never;
+    path: {
+        indexAlias: string;
+    };
+    query?: never;
+    url: '/umbraco/search/api/v1/indexes/{indexAlias}';
+};
+
+export type IndexErrors = {
+    /**
+     * Bad Request
+     */
+    400: unknown;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * Not Found
+     */
+    404: unknown;
+};
+
+export type IndexResponses = {
+    /**
+     * OK
+     */
+    200: IndexModel;
+};
+
+export type IndexResponse = IndexResponses[keyof IndexResponses];
+
 export type RebuildData = {
     body?: never;
     path?: never;

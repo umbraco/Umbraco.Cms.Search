@@ -15,6 +15,7 @@ using Umbraco.Cms.Search.Core.Cache.Media;
 using Umbraco.Cms.Search.Core.Cache.PublicAccess;
 using Umbraco.Cms.Search.Core.Helpers;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
+using Umbraco.Cms.Search.Core.Persistence;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers;
 using Umbraco.Cms.Search.Core.PropertyValueHandlers.Collection;
 using Umbraco.Cms.Search.Core.Services;
@@ -44,6 +45,10 @@ public static class UmbracoBuilderExtensions
 
         builder.Services.AddTransient<IPublishedContentChangeStrategy, PublishedContentChangeStrategy>();
         builder.Services.AddTransient<IDraftContentChangeStrategy, DraftContentChangeStrategy>();
+
+        builder.Services.AddSingleton<IIndexDocumentRepository, IndexDocumentRepository>();
+        builder.Services.AddSingleton<IIndexDocumentService, IndexDocumentService>();
+
         builder
             .AddNotificationAsyncHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>()
             .AddNotificationAsyncHandler<ContentTypeChangedNotification, RebuildIndexesNotificationHandler>()

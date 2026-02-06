@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { IndexesData, IndexesErrors, IndexesResponses, RebuildData, RebuildErrors, RebuildResponses, SearchData, SearchErrors, SearchResponses } from './types.gen';
+import type { IndexData, IndexErrors, IndexesData, IndexesErrors, IndexesResponses, IndexResponses, RebuildData, RebuildErrors, RebuildResponses, SearchData, SearchErrors, SearchResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -18,24 +18,58 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
     meta?: Record<string, unknown>;
 };
 
-export const indexes = <ThrowOnError extends boolean = true>(options?: Options<IndexesData, ThrowOnError>) => (options?.client ?? client).get<IndexesResponses, IndexesErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/umbraco/search/api/v1/indexes',
-    ...options
-});
+export const indexes = <ThrowOnError extends boolean = true>(options?: Options<IndexesData, ThrowOnError>) => {
+    return (options?.client ?? client).get<IndexesResponses, IndexesErrors, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
+        url: '/umbraco/search/api/v1/indexes',
+        ...options
+    });
+};
 
-export const rebuild = <ThrowOnError extends boolean = true>(options?: Options<RebuildData, ThrowOnError>) => (options?.client ?? client).put<RebuildResponses, RebuildErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/umbraco/search/api/v1/rebuild',
-    ...options
-});
+export const index = <ThrowOnError extends boolean = true>(options: Options<IndexData, ThrowOnError>) => {
+    return (options.client ?? client).get<IndexResponses, IndexErrors, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
+        url: '/umbraco/search/api/v1/indexes/{indexAlias}',
+        ...options
+    });
+};
 
-export const search = <ThrowOnError extends boolean = true>(options?: Options<SearchData, ThrowOnError>) => (options?.client ?? client).post<SearchResponses, SearchErrors, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/umbraco/search/api/v1/search',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers
-    }
-});
+export const rebuild = <ThrowOnError extends boolean = true>(options?: Options<RebuildData, ThrowOnError>) => {
+    return (options?.client ?? client).put<RebuildResponses, RebuildErrors, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
+        url: '/umbraco/search/api/v1/rebuild',
+        ...options
+    });
+};
+
+export const search = <ThrowOnError extends boolean = true>(options?: Options<SearchData, ThrowOnError>) => {
+    return (options?.client ?? client).post<SearchResponses, SearchErrors, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
+        url: '/umbraco/search/api/v1/search',
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...options?.headers
+        }
+    });
+};
