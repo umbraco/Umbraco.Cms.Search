@@ -117,11 +117,8 @@ public class SearcherResolverTests : UmbracoIntegrationTest
         public Task ResetAsync(string indexAlias)
             => throw new NotImplementedException();
 
-        public Task<long> GetDocumentCountAsync(string indexAlias)
-            => throw new NotImplementedException();
-
-        public Task<HealthStatus> GetHealthStatus(string indexAlias)
-            => Task.FromResult(HealthStatus.Healthy);
+        public Task<IndexMetadata> GetMetadataAsync(string indexAlias)
+            => Task.FromResult(new IndexMetadata(0, HealthStatus.Healthy));
     }
 
     private abstract class SearcherBase : ISearcher
