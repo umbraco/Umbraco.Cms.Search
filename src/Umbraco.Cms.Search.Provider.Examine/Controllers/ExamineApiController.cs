@@ -29,7 +29,9 @@ public class ExamineApiController : ExamineApiControllerBase
 
         ISearchResults results = index.Searcher
             .CreateQuery()
-            .Id(documentId)
+            .Field(
+                FieldNameHelper.FieldName(Core.Constants.FieldNames.Id, Constants.FieldValues.Keywords),
+                documentId)
             .Execute();
 
         ISearchResult? result = results.FirstOrDefault();
