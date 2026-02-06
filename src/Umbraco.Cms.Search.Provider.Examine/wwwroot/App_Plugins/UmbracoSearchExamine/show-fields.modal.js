@@ -79,7 +79,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
         <div class="value-item">
           ${indexPrefix}
           <span class="value-content">${value}</span>
-          <uui-button-copy-text class="copy-button" .text=${value} look="placeholder" compact></uui-button-copy-text>
+          <uui-button-copy-text class="copy-button" .text=${value} look="placeholder" compact label="Copy value"></uui-button-copy-text>
         </div>
       `;
     }
@@ -93,7 +93,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
             ${isExpanded ? 'See less' : 'See more'}
           </button>
         </span>
-        <uui-button-copy-text class="copy-button" .text=${value} look="placeholder" compact></uui-button-copy-text>
+        <uui-button-copy-text class="copy-button" .text=${value} look="placeholder" compact label="Copy value"></uui-button-copy-text>
       </div>
     `;
   }
@@ -110,7 +110,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
               ? html`<uui-icon name="icon-info" title="${field.type}" class="type-icon"></uui-icon>`
               : nothing}
           </span>
-          <uui-button-copy-text class="copy-button" .text=${field.name} look="placeholder" compact></uui-button-copy-text>
+          <uui-button-copy-text class="copy-button" .text=${field.name} look="placeholder" compact label="Copy name"></uui-button-copy-text>
         </td>
         <td class="field-value">
           ${field.values.map((value, index) => this.#renderValue(field, value, index, showIndex))}
@@ -130,7 +130,8 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
               <div class="filter-bar">
                 <uui-input
                   type="search"
-                  placeholder="Filter fields..."
+                  placeholder="Filter fields by name or value..."
+                  label="Filter fields by name or value"
                   .value=${this._filterQuery}
                   @input=${this.#onFilterInput}>
                   <uui-icon name="icon-search" slot="prepend" style="padding-left:var(--uui-size-space-2)"></uui-icon>

@@ -159,7 +159,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
               color="positive"
               @click=${this.#handleButtonClick}
               ?disabled=${this.#isSearchDisabled || this._isSearching || !this.#inputValue.trim()}
-              aria-label=${this.localize.term('search_searchButtonAriaLabel')}
+              label=${this.localize.term('search_searchButtonAriaLabel')}
             >
               <umb-localize key="search_searchButton">Search</umb-localize>
             </uui-button>

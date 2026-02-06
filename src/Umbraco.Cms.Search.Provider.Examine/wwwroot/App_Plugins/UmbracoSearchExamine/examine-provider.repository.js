@@ -1,15 +1,11 @@
 import { UmbRepositoryBase } from '@umbraco-cms/backoffice/repository';
-import { UMB_AUTH_CONTEXT } from '@umbraco-cms/backoffice/auth';
+import { umbHttpClient } from '@umbraco-cms/backoffice/http-client';
+import { tryExecute } from '@umbraco-cms/backoffice/resources';
 
 export class UmbSearchExamineProviderRepository extends UmbRepositoryBase {
-  #authContext;
 
   constructor(host) {
     super(host);
-
-    this.consumeContext(UMB_AUTH_CONTEXT, (instance) => {
-      this.#authContext = instance;
-    });
   }
 
   async requestSearchDocument(unique, indexAlias) {
@@ -21,24 +17,17 @@ export class UmbSearchExamineProviderRepository extends UmbRepositoryBase {
       return { error: new Error('Index alias is not provided') };
     }
 
-    const openApiConfig = await this.#authContext.getOpenApiConfiguration();
+    const config = umbHttpClient.getConfig();
+    const token = typeof config.auth === 'function' ? await config.auth() : config.auth;
 
-    try {
-      const data = await fetch(`${openApiConfig.base}/umbraco/examine/api/v1/${indexAlias}/document/${unique}`, {
-        credentials: openApiConfig.credentials,
-        headers: {
-          'Authorization': `Bearer ${await openApiConfig.token()}`,
-        }
-      }).then((response) => {
-        if (!response.ok) {
-          throw new Error('Failed to fetch search document fields');
-        }
-        return response.json();
-      });
+    const { data, error } = await tryExecute(this, umbHttpClient.request({
+      url: `/umbraco/examine/api/v1/${indexAlias}/document/${unique}`,
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    }));
 
-      return { data };
-    } catch (error) {
-      return { error };
-    }
+    return { data, error };
   }
 }

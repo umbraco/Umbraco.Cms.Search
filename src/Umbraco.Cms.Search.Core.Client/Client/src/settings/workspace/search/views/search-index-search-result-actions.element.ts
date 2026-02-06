@@ -70,6 +70,9 @@ export class UmbSearchIndexSearchResultActionsElement extends UmbLitElement {
               compact
               look=${action.manifest?.meta?.look ?? 'secondary'}
               color=${action.manifest?.meta?.color ?? 'default'}
+              label="${this.localize.string(
+                action.manifest?.meta?.label ?? action.manifest?.name ?? '',
+              )}"
               @click=${(event: Event) => this.#onActionClick(event, action)}
             >
               <uui-icon name=${action.manifest?.meta?.icon ?? 'icon-settings'}></uui-icon>
