@@ -13,7 +13,6 @@ using Umbraco.Cms.Search.Core.Services;
 namespace Umbraco.Cms.Search.Core.Controllers;
 
 [ApiVersion("1.0")]
-[ApiExplorerSettings(GroupName = "Search")]
 public class GetAllIndexesApiController : ApiControllerBase
 {
     private readonly IServiceProvider _serviceProvider;

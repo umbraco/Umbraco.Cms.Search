@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Search.Core.Models.Searching;
@@ -6,18 +7,19 @@ using Umbraco.Cms.Search.Core.Services;
 
 namespace Umbraco.Cms.Search.Core.Controllers;
 
-public class SearchIndexApiController : ApiControllerBase
+[ApiVersion("1.0")]
+public class SearchApiController : ApiControllerBase
 {
     private readonly ISearcherResolver _searcherResolver;
 
-    public SearchIndexApiController(ISearcherResolver searcherResolver)
+    public SearchApiController(ISearcherResolver searcherResolver)
         => _searcherResolver = searcherResolver;
 
     [HttpPost("search")]
     [ProducesResponseType<SearchResultViewModel>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Query([FromBody] SearchRequestModel request, int skip = 0, int take = 100)
+    public async Task<IActionResult> Search([FromBody] SearchRequestModel request, int skip = 0, int take = 100)
     {
         if (string.IsNullOrWhiteSpace(request.IndexAlias))
         {

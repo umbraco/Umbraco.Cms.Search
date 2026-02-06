@@ -13,6 +13,7 @@ namespace Umbraco.Cms.Search.Core.Controllers;
 [BackOfficeRoute("search/api/v{version:apiVersion}")]
 [Authorize(Policy = AuthorizationPolicies.SectionAccessSettings)]
 [MapToApi(Constants.Api.Name)]
+[ApiExplorerSettings(GroupName = "Search")]
 public abstract class ApiControllerBase : ControllerBase
 {
     // TODO: replace this with an IIndexerResolver service (like the ISearcherResolver)
