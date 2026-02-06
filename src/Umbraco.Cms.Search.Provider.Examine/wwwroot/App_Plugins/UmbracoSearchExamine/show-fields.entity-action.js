@@ -10,7 +10,7 @@ export class UmbSearchExamineShowFieldsEntityAction extends UmbEntityActionBase 
     await umbOpenModal(this, 'Umbraco.Cms.Search.Provider.Examine.Modal.Fields', {
       modal: {
         type: 'sidebar',
-        size: 'medium',
+        size: 'large',
       },
       data: {
         searchDocument: this.args.searchDocument,

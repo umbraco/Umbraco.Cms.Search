@@ -1,14 +1,24 @@
 import { UmbSearchExamineProviderRepository } from './examine-provider.repository.js';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
-import { html, repeat, when, css } from '@umbraco-cms/backoffice/external/lit';
+import { html, repeat, when, css, nothing } from '@umbraco-cms/backoffice/external/lit';
+
+const MAX_VALUE_LENGTH = 100;
 
 export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
   static properties = {
     _fields: { type: Array },
     _isLoading: { type: Boolean },
+    _filterQuery: { type: String },
+    _expandedFields: { type: Object },
   };
 
   #repository = new UmbSearchExamineProviderRepository(this);
+
+  constructor() {
+    super();
+    this._filterQuery = '';
+    this._expandedFields = new Set();
+  }
 
   async firstUpdated() {
     void this.#requestSearchDocumentFields();
@@ -16,7 +26,10 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
 
   async #requestSearchDocumentFields() {
     this._isLoading = true;
-    const { data, error } = await this.#repository.requestSearchDocument(this.data?.searchDocument.unique, this.data?.indexAlias);
+    const { data, error } = await this.#repository.requestSearchDocument(
+      this.data?.searchDocument.unique,
+      this.data?.indexAlias,
+    );
 
     if (error) {
       this._isLoading = false;
@@ -24,10 +37,69 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
       return;
     }
 
-    console.log('data', data);
-
     this._fields = data.fields;
     this._isLoading = false;
+  }
+
+  get #filteredAndSortedFields() {
+    if (!this._fields) return [];
+
+    const query = this._filterQuery.toLowerCase();
+    return this._fields
+      .filter((field) => field.name.toLowerCase().includes(query))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  #onFilterInput(e) {
+    this._filterQuery = e.target.value;
+  }
+
+  #toggleExpanded(fieldName) {
+    if (this._expandedFields.has(fieldName)) {
+      this._expandedFields.delete(fieldName);
+    } else {
+      this._expandedFields.add(fieldName);
+    }
+    this.requestUpdate();
+  }
+
+  #renderValue(field, value, index, showIndex) {
+    const isLong = value.length > MAX_VALUE_LENGTH;
+    const fieldKey = `${field.name}-${index}`;
+    const isExpanded = this._expandedFields.has(fieldKey);
+    const indexPrefix = showIndex ? html`<span class="value-index" title="Value ${index + 1}">[${index}]</span>` : nothing;
+
+    if (!isLong) {
+      return html`<div class="value-item">${indexPrefix}${value}</div>`;
+    }
+
+    return html`
+      <div class="value-item">
+        ${indexPrefix}
+        <span>${isExpanded ? value : `${value.substring(0, MAX_VALUE_LENGTH)}...`}</span>
+        <button class="see-more" @click=${() => this.#toggleExpanded(fieldKey)}>
+          ${isExpanded ? 'See less' : 'See more'}
+        </button>
+      </div>
+    `;
+  }
+
+  #renderField(field) {
+    const showIndex = field.values.length > 1;
+
+    return html`
+      <tr class="field-row">
+        <td class="field-name">
+          ${field.name}
+          ${field.type
+            ? html`<uui-icon name="icon-info" title="${field.type}" class="type-icon"></uui-icon>`
+            : nothing}
+        </td>
+        <td class="field-value">
+          ${field.values.map((value, index) => this.#renderValue(field, value, index, showIndex))}
+        </td>
+      </tr>
+    `;
   }
 
   render() {
@@ -38,14 +110,32 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
             this._isLoading,
             () => html`<uui-loader></uui-loader>`,
             () => html`
+              <div class="filter-bar">
+                <uui-input
+                  type="search"
+                  placeholder="Filter fields..."
+                  .value=${this._filterQuery}
+                  @input=${this.#onFilterInput}>
+                  <uui-icon name="icon-search" slot="prepend"></uui-icon>
+                </uui-input>
+                <span class="field-count">${this.#filteredAndSortedFields.length} fields</span>
+              </div>
               ${when(
-                this._fields?.length > 0,
+                this.#filteredAndSortedFields.length > 0,
                 () => html`
-                  <div class="fields">
-                    ${repeat(this._fields, (field) => field.key, (field) => html`<div class="field">${field}            </div>`)}
-                  </div>
+                  <table class="fields-table">
+                    <thead>
+                      <tr>
+                        <th class="th-name">Name</th>
+                        <th class="th-value">Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${repeat(this.#filteredAndSortedFields, (field) => field.name, (field) => this.#renderField(field))}
+                    </tbody>
+                  </table>
                 `,
-                () => html`<div class="empty-state">No fields found for this search document.</div>`,
+                () => html`<div class="empty-state">No fields match your filter.</div>`,
               )}
             `,
           )}
@@ -63,27 +153,126 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
   static styles = [
     css`
       #field-viewer {
-        height: 400px;
+        height: 100%;
         width: 100%;
       }
 
-      .fields {
+      .filter-bar {
         display: flex;
-        flex-direction: column;
-        gap: var(--uui-size-3);
+        align-items: center;
+        gap: var(--uui-size-4);
+        padding: var(--uui-size-4);
+        border-bottom: 1px solid var(--uui-color-border);
+        position: sticky;
+        top: 0;
+        background: var(--uui-color-surface);
+        z-index: 1;
       }
 
-      .field {
-        padding: var(--uui-size-3);
-        background-color: var(--uui-color-background);
-        border-radius: var(--uui-border-radius);
-        box-shadow: var(--uui-shadow-depth-1);
-        font-family: var(--uui-font-family-monospace);
+      .filter-bar uui-input {
+        flex: 1;
+      }
+
+      .field-count {
+        font-size: var(--uui-font-size-2);
+        color: var(--uui-color-text-muted);
+        white-space: nowrap;
+      }
+
+      .fields-table {
+        width: 100%;
+        border-collapse: collapse;
         font-size: var(--uui-font-size-3);
       }
 
+      .fields-table th {
+        text-align: left;
+        padding: var(--uui-size-3) var(--uui-size-4);
+        font-weight: 600;
+        color: var(--uui-color-text-muted);
+        border-bottom: 1px solid var(--uui-color-border);
+        position: sticky;
+        top: 52px;
+        background: var(--uui-color-surface);
+      }
+
+      .th-name {
+        width: 200px;
+      }
+
+      .th-value {
+        width: auto;
+      }
+
+      .field-row {
+        border-bottom: 1px solid var(--uui-color-border);
+      }
+
+      .field-row:hover {
+        background: var(--uui-color-surface-alt);
+      }
+
+      .field-row td {
+        padding: var(--uui-size-3) var(--uui-size-4);
+        vertical-align: top;
+      }
+
+      .field-name {
+        font-weight: 600;
+        font-family: var(--uui-font-family-monospace);
+        word-break: break-word;
+        white-space: nowrap;
+      }
+
+      .type-icon {
+        margin-left: var(--uui-size-2);
+        color: var(--uui-color-text-muted);
+        font-size: var(--uui-font-size-2);
+        cursor: help;
+        vertical-align: middle;
+      }
+
+      .field-value {
+        font-family: var(--uui-font-family-monospace);
+        color: var(--uui-color-text);
+        line-height: 1.4;
+      }
+
+      .value-item {
+        padding: var(--uui-size-2);
+        background-color: var(--uui-color-surface-alt);
+        border-radius: var(--uui-border-radius);
+        margin-bottom: var(--uui-size-2);
+        word-break: break-word;
+      }
+
+      .value-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .value-index {
+        margin-right: var(--uui-size-2);
+        user-select: none;
+        opacity: 0.7;
+      }
+
+      .see-more {
+        background: none;
+        border: none;
+        color: var(--uui-color-interactive);
+        cursor: pointer;
+        padding: 0;
+        margin-left: var(--uui-size-2);
+        font-size: var(--uui-font-size-2);
+        text-decoration: underline;
+      }
+
+      .see-more:hover {
+        color: var(--uui-color-interactive-emphasis);
+      }
+
       .empty-state {
-        padding: var(--uui-size-3);
+        padding: var(--uui-size-6);
         text-align: center;
         color: var(--uui-color-text-muted);
       }
