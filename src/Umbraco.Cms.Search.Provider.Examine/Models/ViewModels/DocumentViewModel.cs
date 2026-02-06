@@ -6,5 +6,5 @@ public class DocumentViewModel
 
     public string? Culture { get; set; }
 
-    public required IReadOnlyDictionary<string, IReadOnlyCollection<string>> Fields { get; set; }
+    public required IReadOnlyCollection<FieldViewModel> Fields { get; set; }
 }
