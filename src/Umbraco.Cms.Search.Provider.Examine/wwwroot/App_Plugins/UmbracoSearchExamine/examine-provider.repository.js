@@ -1,9 +1,15 @@
 import { UmbRepositoryBase } from '@umbraco-cms/backoffice/repository';
+import { UMB_AUTH_CONTEXT } from '@umbraco-cms/backoffice/auth';
 
 export class UmbSearchExamineProviderRepository extends UmbRepositoryBase {
+  #authContext;
 
   constructor(host) {
     super(host);
+
+    this.consumeContext(UMB_AUTH_CONTEXT, (instance) => {
+      this.#authContext = instance;
+    });
   }
 
   async requestSearchDocument(unique, indexAlias) {
@@ -15,11 +21,13 @@ export class UmbSearchExamineProviderRepository extends UmbRepositoryBase {
       return { error: new Error('Index alias is not provided') };
     }
 
+    const openApiConfig = await this.#authContext.getOpenApiConfiguration();
+
     try {
-      const data = await fetch(`/umbraco/examine/api/v1/${indexAlias}/document/${unique}`, {
-        credentials: 'include',
+      const data = await fetch(`${openApiConfig.base}/umbraco/examine/api/v1/${indexAlias}/document/${unique}`, {
+        credentials: openApiConfig.credentials,
         headers: {
-          'Authorization': `Bearer [redacted]`,
+          'Authorization': `Bearer ${await openApiConfig.token()}`,
         }
       }).then((response) => {
         if (!response.ok) {
