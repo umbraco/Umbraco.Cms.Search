@@ -99,10 +99,13 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
     return html`
       <tr class="field-row">
         <td class="field-name">
-          ${field.name}
-          ${field.type
-            ? html`<uui-icon name="icon-info" title="${field.type}" class="type-icon"></uui-icon>`
-            : nothing}
+          <span class="field-name-text">
+            ${field.name}
+            ${field.type
+              ? html`<uui-icon name="icon-info" title="${field.type}" class="type-icon"></uui-icon>`
+              : nothing}
+          </span>
+          <uui-button-copy-text class="copy-button" .text=${field.name} look="placeholder" compact></uui-button-copy-text>
         </td>
         <td class="field-value">
           ${field.values.map((value, index) => this.#renderValue(field, value, index, showIndex))}
@@ -227,10 +230,24 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
       }
 
       .field-name {
+        display: flex;
+        align-items: center;
+        gap: var(--uui-size-2);
+      }
+
+      .field-name-text {
         font-weight: 600;
         font-family: var(--uui-font-family-monospace);
         word-break: break-word;
-        white-space: nowrap;
+      }
+
+      .field-name .copy-button {
+        opacity: 0;
+        transition: opacity 0.15s ease;
+      }
+
+      .field-name:hover .copy-button {
+        opacity: 1;
       }
 
       .type-icon {
