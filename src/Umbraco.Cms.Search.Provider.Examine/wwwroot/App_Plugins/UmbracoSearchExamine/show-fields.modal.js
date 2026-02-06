@@ -18,6 +18,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
     super();
     this._filterQuery = '';
     this._expandedFields = new Set();
+    this._isLoading = true;
   }
 
   async firstUpdated() {
@@ -250,7 +251,8 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
         transition: opacity 0.15s ease;
       }
 
-      .field-name:hover .copy-button {
+      .field-name:hover .copy-button,
+      .field-name:focus-within .copy-button {
         opacity: 1;
       }
 
@@ -295,7 +297,8 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
         flex-shrink: 0;
       }
 
-      .value-item:hover .copy-button {
+      .value-item:hover .copy-button,
+      .value-item:focus-within .copy-button {
         opacity: 1;
       }
 

@@ -9,5 +9,5 @@ namespace Umbraco.Cms.Search.Provider.Examine.Controllers;
 [ApiController]
 [BackOfficeRoute("examine/api/v{version:apiVersion}")]
 [Authorize(Policy = AuthorizationPolicies.SectionAccessSettings)]
-[MapToApi("Examine")]
+[MapToApi(Constants.Api.Name)]
 public abstract class ExamineApiControllerBase : ControllerBase;

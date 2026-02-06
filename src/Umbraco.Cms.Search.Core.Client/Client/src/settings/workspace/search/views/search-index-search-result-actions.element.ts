@@ -34,8 +34,7 @@ export class UmbSearchIndexSearchResultActionsElement extends UmbLitElement {
   @state()
   private _actions: Array<ActionController> = [];
 
-  override connectedCallback() {
-    super.connectedCallback();
+  override firstUpdated() {
     this.#initializeActions();
   }
 

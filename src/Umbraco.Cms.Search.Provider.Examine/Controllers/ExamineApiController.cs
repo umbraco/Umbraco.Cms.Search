@@ -2,13 +2,14 @@ using Asp.Versioning;
 using Examine;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using Umbraco.Cms.Search.Provider.Examine.Models.ViewModels;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Controllers;
 
 [ApiVersion("1.0")]
-[ApiExplorerSettings(GroupName = "Examine")]
+[ApiExplorerSettings(GroupName = Constants.Api.Name)]
 public class ExamineApiController : ExamineApiControllerBase
 {
     private readonly IExamineManager _examineManager;
@@ -31,10 +32,10 @@ public class ExamineApiController : ExamineApiControllerBase
             .CreateQuery()
             .Field(
                 FieldNameHelper.FieldName(Core.Constants.FieldNames.Id, Constants.FieldValues.Keywords),
-                documentId)
+                documentKey.AsKeyword())
             .Execute();
 
-        ISearchResult? result = results.FirstOrDefault();
+        ISearchResult? result = results.FirstOrDefault(r => r.Id == documentId);
         if (result is null)
         {
             return NotFound(
