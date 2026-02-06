@@ -20,6 +20,5 @@
     <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="17.0.0" />
     <PackageVersion Include="Umbraco.Cms.Tests.Integration" Version="17.0.0" />
     <PackageVersion Include="Umbraco.Cms.Web.Common" Version="17.0.0" />
-    <PackageVersion Include="uSync" Version="17.0.2" />
   </ItemGroup>
 </Project>
