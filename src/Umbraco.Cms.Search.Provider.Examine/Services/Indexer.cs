@@ -4,7 +4,6 @@ using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
-using Umbraco.Cms.Search.Core.Models.ViewModels;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using CoreConstants = Umbraco.Cms.Search.Core.Constants;
@@ -157,40 +156,33 @@ public class Indexer : IExamineIndexer
         return Task.CompletedTask;
     }
 
-    public Task<long> GetDocumentCountAsync(string indexAlias)
+    public Task<IndexMetadata> GetMetadataAsync(string indexAlias)
     {
-        if (_examineManager.TryGetIndex(indexAlias, out IIndex? index))
+        if (_examineManager.TryGetIndex(indexAlias, out IIndex? index) is false)
         {
-            if (index is IIndexStats stats)
+            return Task.FromResult(new IndexMetadata(0, HealthStatus.Unknown));
+        }
+
+        var documentCount = 0L;
+
+        if (index is IIndexStats stats)
+        {
+            documentCount = stats.GetDocumentCount();
+            if (documentCount == 0L)
             {
-                return Task.FromResult(stats.GetDocumentCount());
+                return Task.FromResult(new IndexMetadata(0, HealthStatus.Empty));
             }
-        }
-
-        return Task.FromResult(0L);
-    }
-
-    public Task<HealthStatus> GetHealthStatus(string indexAlias)
-    {
-        if (_examineManager.TryGetIndex(indexAlias, out IIndex? index) is false || index.IndexExists() is false)
-        {
-            return Task.FromResult(HealthStatus.Unknown);
-        }
-
-        if (index is IIndexStats stats && stats.GetDocumentCount() == 0)
-        {
-            return Task.FromResult(HealthStatus.Empty);
         }
 
         // Attempt to query the index to verify it's readable and not corrupted
         try
         {
             index.Searcher.CreateQuery().ManagedQuery("__healthcheck__").Execute(new QueryOptions(0, 1));
-            return Task.FromResult(HealthStatus.Healthy);
+            return Task.FromResult(new IndexMetadata(documentCount, HealthStatus.Healthy));
         }
         catch
         {
-            return Task.FromResult(HealthStatus.Corrupted);
+            return Task.FromResult(new IndexMetadata(documentCount, HealthStatus.Corrupted));
         }
     }
 

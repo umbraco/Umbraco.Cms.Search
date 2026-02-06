@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Umbraco.Cms.Api.Common.ViewModels.Pagination;
 using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Cms.Search.Core.Models.Configuration;
+using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.ViewModels;
 using Umbraco.Cms.Search.Core.Services;
@@ -51,12 +52,14 @@ public class SearchApiController : SearchApiControllerBase
                 continue;
             }
 
+            IndexMetadata indexMetadata = await indexer.GetMetadataAsync(indexRegistration.IndexAlias);
+
             indexes.Add(
                 new IndexViewModel
                 {
                     IndexAlias = indexRegistration.IndexAlias,
-                    DocumentCount = await indexer.GetDocumentCountAsync(indexRegistration.IndexAlias),
-                    HealthStatus = await indexer.GetHealthStatus(indexRegistration.IndexAlias),
+                    DocumentCount = indexMetadata.DocumentCount,
+                    HealthStatus = indexMetadata.HealthStatus,
                 });
         }
 
@@ -85,11 +88,13 @@ public class SearchApiController : SearchApiControllerBase
             return NotFound("Could not resolve the indexer for the specified index.");
         }
 
+        IndexMetadata indexMetadata = await indexer.GetMetadataAsync(indexRegistration.IndexAlias);
+
         return Ok(new IndexViewModel
         {
             IndexAlias = indexRegistration.IndexAlias,
-            DocumentCount = await indexer.GetDocumentCountAsync(indexAlias),
-            HealthStatus = await indexer.GetHealthStatus(indexAlias),
+            DocumentCount = indexMetadata.DocumentCount,
+            HealthStatus = indexMetadata.HealthStatus,
         });
     }
 

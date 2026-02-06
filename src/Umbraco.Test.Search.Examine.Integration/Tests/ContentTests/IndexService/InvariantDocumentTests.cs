@@ -150,7 +150,7 @@ public class InvariantDocumentTests : IndexTestBase
     public async Task CanGetDocumentCount(bool publish)
     {
         var indexAlias = GetIndexAlias(publish);
-        var count = await Indexer.GetDocumentCountAsync(indexAlias);
+        var count = (await Indexer.GetMetadataAsync(indexAlias)).DocumentCount;
         Assert.That(count, Is.EqualTo(1));
     }
 
@@ -166,7 +166,7 @@ public class InvariantDocumentTests : IndexTestBase
             return Task.CompletedTask;
         });
 
-        var count = await Indexer.GetDocumentCountAsync(indexAlias);
+        var count = (await Indexer.GetMetadataAsync(indexAlias)).DocumentCount;
         Assert.That(count, Is.EqualTo(0));
     }
 

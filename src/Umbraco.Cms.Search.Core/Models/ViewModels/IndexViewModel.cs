@@ -1,4 +1,6 @@
-﻿namespace Umbraco.Cms.Search.Core.Models.ViewModels;
+﻿using Umbraco.Cms.Search.Core.Models.Indexing;
+
+namespace Umbraco.Cms.Search.Core.Models.ViewModels;
 
 public class IndexViewModel
 {

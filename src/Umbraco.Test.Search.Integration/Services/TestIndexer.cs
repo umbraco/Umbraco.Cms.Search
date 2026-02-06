@@ -46,9 +46,7 @@ public class TestIndexer : IIndexer, ISearcher
         return Task.CompletedTask;
     }
 
-    public Task<long> GetDocumentCountAsync(string indexAlias) => Task.FromResult((long)GetIndex(indexAlias).Count);
-
-    public Task<HealthStatus> GetHealthStatus(string indexAlias) => Task.FromResult(HealthStatus.Healthy);
+    public Task<IndexMetadata> GetMetadataAsync(string indexAlias) => Task.FromResult(new IndexMetadata(GetIndex(indexAlias).Count, HealthStatus.Healthy));
 
     public IReadOnlyList<TestIndexDocument> Dump(string indexAlias) => GetIndex(indexAlias).Values.ToList();
 
