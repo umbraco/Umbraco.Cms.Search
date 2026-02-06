@@ -60,7 +60,7 @@ export class UmbSearchQueryServerDataSource {
 
   #mapDocument(apiDoc: DocumentModel): UmbSearchDocument {
     return {
-      id: apiDoc.id,
+      unique: apiDoc.id,
       objectType: String(apiDoc.objectType),
     };
   }
