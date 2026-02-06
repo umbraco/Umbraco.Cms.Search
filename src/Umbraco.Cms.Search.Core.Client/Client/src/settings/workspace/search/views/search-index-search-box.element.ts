@@ -148,6 +148,11 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
               aria-label=${this.localize.term('search_searchInputAriaLabel', this._indexAlias)}
               aria-describedby="search-hint"
             >
+              <uui-icon
+                name="icon-search"
+                slot="prepend"
+                style="padding-left:var(--uui-size-space-2)"
+              ></uui-icon>
             </uui-input>
             <uui-button
               look="primary"

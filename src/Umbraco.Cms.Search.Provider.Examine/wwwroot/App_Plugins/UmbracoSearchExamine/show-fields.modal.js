@@ -70,7 +70,12 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
     const indexPrefix = showIndex ? html`<span class="value-index" title="Value ${index + 1}">[${index}]</span>` : nothing;
 
     if (!isLong) {
-      return html`<div class="value-item">${indexPrefix}${value}</div>`;
+      return html`
+        <div class="value-item">
+          ${indexPrefix}${value}
+          <uui-button-copy-text class="copy-button" .text=${value} look="placeholder" compact></uui-button-copy-text>
+        </div>
+      `;
     }
 
     return html`
@@ -80,6 +85,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
         <button class="see-more" @click=${() => this.#toggleExpanded(fieldKey)}>
           ${isExpanded ? 'See less' : 'See more'}
         </button>
+        <uui-button-copy-text class="copy-button" .text=${value} look="placeholder" compact></uui-button-copy-text>
       </div>
     `;
   }
@@ -116,7 +122,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
                   placeholder="Filter fields..."
                   .value=${this._filterQuery}
                   @input=${this.#onFilterInput}>
-                  <uui-icon name="icon-search" slot="prepend"></uui-icon>
+                  <uui-icon name="icon-search" slot="prepend" style="padding-left:var(--uui-size-space-2)"></uui-icon>
                 </uui-input>
                 <span class="field-count">${this.#filteredAndSortedFields.length} fields</span>
               </div>
@@ -239,6 +245,9 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
       }
 
       .value-item {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--uui-size-2);
         padding: var(--uui-size-2);
         background-color: var(--uui-color-surface-alt);
         border-radius: var(--uui-border-radius);
@@ -248,6 +257,17 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
 
       .value-item:last-child {
         margin-bottom: 0;
+      }
+
+      .copy-button {
+        opacity: 0;
+        transition: opacity 0.15s ease;
+        margin-left: auto;
+        flex-shrink: 0;
+      }
+
+      .value-item:hover .copy-button {
+        opacity: 1;
       }
 
       .value-index {
