@@ -171,7 +171,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
         border-bottom: 1px solid var(--uui-color-border);
         position: sticky;
         top: 0;
-        background: var(--uui-color-surface);
+        background: var(--uui-color-background);
         z-index: 1;
       }
 
@@ -199,7 +199,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
         border-bottom: 1px solid var(--uui-color-border);
         position: sticky;
         top: 52px;
-        background: var(--uui-color-surface);
+        background: var(--uui-color-background);
       }
 
       .th-name {
