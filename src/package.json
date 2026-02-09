@@ -13,7 +13,8 @@
     "lint:fix": "npm run lint:fix --workspaces --if-present",
     "lint:errors-only": "npm run lint:errors-only --workspaces --if-present",
     "format": "npm run format --workspaces --if-present",
-    "format:check": "npm run format:check --workspaces --if-present"
+    "format:check": "npm run format:check --workspaces --if-present",
+    "generate-client": "npm run generate-client --workspaces"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
