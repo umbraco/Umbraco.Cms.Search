@@ -76,8 +76,13 @@ export class UmbSearchQueryServerDataSource extends UmbControllerBase {
     const entityTypes = [...new Set(documents.map((doc) => doc.entityType))];
 
     // Resolve the default content language for variant name lookup
-    const languageContext = await this.getContext(UMB_APP_LANGUAGE_CONTEXT);
-    const defaultLanguage = languageContext?.getAppCulture() ?? null;
+    let defaultLanguage: string | null = null;
+    try {
+      const languageContext = await this.getContext(UMB_APP_LANGUAGE_CONTEXT);
+      defaultLanguage = languageContext?.getAppCulture() ?? null;
+    } catch {
+      defaultLanguage = null;
+    }
 
     await Promise.all(
       entityTypes.map(async (entityType) => {
