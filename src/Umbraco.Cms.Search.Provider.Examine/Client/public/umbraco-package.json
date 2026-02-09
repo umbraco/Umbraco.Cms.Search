@@ -5,25 +5,10 @@
   "allowTelemetry": true,
   "extensions": [
     {
-      "type": "entityAction",
-      "kind": "default",
-      "alias": "Umbraco.Cms.Search.Provider.Examine.EntityAction.ShowFields",
-      "name": "Umbraco Search Provider Examine - Show Fields",
-      "weight": 100,
-      "api": "/App_Plugins/UmbracoSearchExamine/examine-bundle.js",
-      "forEntityTypes": ["search-document"],
-      "meta": {
-        "icon": "icon-search",
-        "label": "Show Fields",
-        "additionalOptions": false
-      }
-    },
-    {
-      "type": "modal",
-      "alias": "Umbraco.Cms.Search.Provider.Examine.Modal.Fields",
-      "name": "Umbraco Search Provider Examine - Fields Modal",
-      "element": "/App_Plugins/UmbracoSearchExamine/examine-bundle.js",
-      "elementName": "umb-search-examine-show-fields-modal"
+      "type": "bundle",
+      "alias": "Umbraco.Cms.Search.Provider.Examine.Bundle",
+      "name": "Umbraco Search Examine Bundle",
+      "js": "/App_Plugins/UmbracoSearchExamine/examine-bundle.js"
     }
   ]
 }
