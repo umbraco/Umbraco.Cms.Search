@@ -1,5 +1,5 @@
 import { UmbSearchExamineProviderRepository } from './examine-provider.repository.js';
-import type { ExamineField } from './examine-provider.repository.js';
+import type { ExamineField } from './types.js';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { html, repeat, when, css, nothing, state } from '@umbraco-cms/backoffice/external/lit';
 
@@ -77,7 +77,12 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
     const fieldKey = `${field.name}-${index}`;
     const isExpanded = this._expandedFields.has(fieldKey);
     const indexPrefix = showIndex
-      ? html`<span class="value-index" title=${this.localize.term('searchExamine_valueIndex', index + 1)}>[${index}]</span>`
+      ? html`<span
+          class="value-index"
+          title=${this.localize.term('searchExamine_valueIndex', index + 1)}
+        >
+          [${index}]
+        </span>`
       : nothing;
 
     if (!isLong) {
@@ -90,7 +95,8 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
             .text=${value}
             look="placeholder"
             compact
-            label=${this.localize.term('searchExamine_copyValue')}></uui-button-copy-text>
+            label=${this.localize.term('searchExamine_copyValue')}
+          ></uui-button-copy-text>
         </div>
       `;
     }
@@ -101,7 +107,9 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
         <span class="value-content">
           ${isExpanded ? value : `${value.substring(0, MAX_VALUE_LENGTH)}...`}
           <button class="see-more" @click=${() => this.#toggleExpanded(fieldKey)}>
-            ${isExpanded ? this.localize.term('searchExamine_seeLess') : this.localize.term('searchExamine_seeMore')}
+            ${isExpanded
+              ? this.localize.term('searchExamine_seeLess')
+              : this.localize.term('searchExamine_seeMore')}
           </button>
         </span>
         <uui-button-copy-text
@@ -109,7 +117,8 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
           .text=${value}
           look="placeholder"
           compact
-          label=${this.localize.term('searchExamine_copyValue')}></uui-button-copy-text>
+          label=${this.localize.term('searchExamine_copyValue')}
+        ></uui-button-copy-text>
       </div>
     `;
   }
@@ -125,7 +134,8 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
             ? html`<uui-icon
                 name="icon-info"
                 title=${this.localize.term('searchExamine_fieldType', field.type)}
-                class="type-icon"></uui-icon>`
+                class="type-icon"
+              ></uui-icon>`
             : nothing}
         </td>
         <td class="field-value">
@@ -149,13 +159,20 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
                   placeholder=${this.localize.term('searchExamine_filterPlaceholder')}
                   label=${this.localize.term('searchExamine_filterLabel')}
                   .value=${this._filterQuery}
-                  @input=${this.#onFilterInput}>
+                  @input=${this.#onFilterInput}
+                >
                   <uui-icon
                     name="icon-search"
                     slot="prepend"
-                    style="padding-left:var(--uui-size-space-2)"></uui-icon>
+                    style="padding-left:var(--uui-size-space-2)"
+                  ></uui-icon>
                 </uui-input>
-                <span class="field-count">${this.localize.term('searchExamine_fieldCount', this.#filteredAndSortedFields.length)}</span>
+                <span class="field-count">
+                  ${this.localize.term(
+                    'searchExamine_fieldCount',
+                    this.#filteredAndSortedFields.length,
+                  )}
+                </span>
               </div>
               ${when(
                 this.#filteredAndSortedFields.length > 0,
@@ -164,8 +181,12 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
                     <table class="fields-table">
                       <thead>
                         <tr>
-                          <th class="th-name">${this.localize.term('searchExamine_tableColumnName')}</th>
-                          <th class="th-value">${this.localize.term('searchExamine_tableColumnValue')}</th>
+                          <th class="th-name">
+                            ${this.localize.term('searchExamine_tableColumnName')}
+                          </th>
+                          <th class="th-value">
+                            ${this.localize.term('searchExamine_tableColumnValue')}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -178,7 +199,10 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
                     </table>
                   </uui-box>
                 `,
-                () => html`<div class="empty-state">${this.localize.term('searchExamine_noFieldsMatch')}</div>`,
+                () =>
+                  html`<div class="empty-state">
+                    ${this.localize.term('searchExamine_noFieldsMatch')}
+                  </div>`,
               )}
             `,
           )}
@@ -187,7 +211,8 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
           <uui-button
             look="primary"
             label=${this.localize.term('general_close')}
-            @click=${() => this.modalContext?.reject()}></uui-button>
+            @click=${() => this.modalContext?.reject()}
+          ></uui-button>
         </div>
       </umb-body-layout>
     `;
