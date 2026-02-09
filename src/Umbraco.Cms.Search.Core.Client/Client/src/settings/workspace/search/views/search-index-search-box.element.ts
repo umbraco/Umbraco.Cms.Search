@@ -31,10 +31,6 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
 
   private _tableColumns: Array<UmbTableColumn> = [
     {
-      name: this.localize.term('search_tableColumnDocumentId'),
-      alias: 'documentId',
-    },
-    {
       name: this.localize.term('search_tableColumnName'),
       alias: 'name',
     },
@@ -245,20 +241,19 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
       icon: doc.icon,
       data: [
         {
-          columnAlias: 'documentId',
-          value: doc.id,
-        },
-        {
           columnAlias: 'name',
           value: html`
-            <uui-button
-              look="secondary"
-              label="Open"
-              aria-label=${this.localize.term('search_openEntity', doc.entityType, doc.id)}
-              href=${this.#getModalUrl(doc.id, doc.entityType)}
-            >
-              ${doc.name}
-            </uui-button>
+            <div style="padding: var(--uui-size-2) 0;">
+              <uui-button
+                look="secondary"
+                label="Open"
+                aria-label=${this.localize.term('search_openEntity', doc.entityType, doc.id)}
+                href=${this.#getModalUrl(doc.id, doc.entityType)}
+              >
+                ${doc.name}
+              </uui-button>
+              <div><small>${doc.id}</small></div>
+            </div>
           `,
         },
         {

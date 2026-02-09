@@ -10,15 +10,16 @@ import type { SearchRequestModel, FacetResultModel } from '../api';
 import { UmbDocumentItemRepository } from '@umbraco-cms/backoffice/document';
 import { UmbMediaItemRepository } from '@umbraco-cms/backoffice/media';
 import { UMB_APP_LANGUAGE_CONTEXT } from '@umbraco-cms/backoffice/language';
-import { firstValueFrom } from '@umbraco-cms/backoffice/external/rxjs';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { client } from '@umbraco-cms/backoffice/external/backend-api';
 import type { UmbDataSourceResponse } from '@umbraco-cms/backoffice/repository';
 import { UmbControllerBase } from '@umbraco-cms/backoffice/class-api';
+import { UmbMemberItemRepository } from '@umbraco-cms/backoffice/member';
 
 export class UmbSearchQueryServerDataSource extends UmbControllerBase {
   #documentItemRepository = new UmbDocumentItemRepository(this);
   #mediaItemRepository = new UmbMediaItemRepository(this);
+  #memberItemRepository = new UmbMemberItemRepository(this);
 
   async search(request: UmbSearchRequest): Promise<UmbDataSourceResponse<UmbSearchResult>> {
     // Map domain types to API types
@@ -76,13 +77,12 @@ export class UmbSearchQueryServerDataSource extends UmbControllerBase {
 
     // Resolve the default content language for variant name lookup
     const languageContext = await this.getContext(UMB_APP_LANGUAGE_CONTEXT);
-    const defaultLanguage = languageContext ? await firstValueFrom(languageContext.appDefaultLanguage) : undefined;
-    const culture = defaultLanguage?.unique ?? null;
+    const defaultLanguage = languageContext?.getAppCulture() ?? null;
 
     await Promise.all(
       entityTypes.map(async (entityType) => {
         const ids = documents.filter((doc) => doc.entityType === entityType).map((doc) => doc.id);
-        const resolved = await this.#resolveItems(entityType, ids, culture);
+        const resolved = await this.#resolveItems(entityType, ids, defaultLanguage);
 
         for (const item of resolved) {
           const doc = docById.get(item.id);
@@ -105,12 +105,17 @@ export class UmbSearchQueryServerDataSource extends UmbControllerBase {
         return this.#resolveDocumentItems(ids, culture);
       case 'media':
         return this.#resolveMediaItems(ids, culture);
+      case 'member':
+        return this.#resolveMemberItems(ids, culture);
       default:
         return [];
     }
   }
 
-  async #resolveDocumentItems(ids: string[], culture: string | null): Promise<Array<{ id: string; name: string; icon?: string }>> {
+  async #resolveDocumentItems(
+    ids: string[],
+    culture: string | null,
+  ): Promise<Array<{ id: string; name: string; icon?: string }>> {
     const { data: items } = await this.#documentItemRepository.requestItems(ids);
     if (!items) return [];
 
@@ -121,7 +126,10 @@ export class UmbSearchQueryServerDataSource extends UmbControllerBase {
     }));
   }
 
-  async #resolveMediaItems(ids: string[], culture: string | null): Promise<Array<{ id: string; name: string; icon?: string }>> {
+  async #resolveMediaItems(
+    ids: string[],
+    culture: string | null,
+  ): Promise<Array<{ id: string; name: string; icon?: string }>> {
     const { data: items } = await this.#mediaItemRepository.requestItems(ids);
     if (!items) return [];
 
@@ -132,7 +140,24 @@ export class UmbSearchQueryServerDataSource extends UmbControllerBase {
     }));
   }
 
-  #resolveVariantName(variants: Array<{ name: string; culture: string | null }>, culture: string | null): string {
+  async #resolveMemberItems(
+    ids: string[],
+    culture: string | null,
+  ): Promise<Array<{ id: string; name: string; icon?: string }>> {
+    const { data: items } = await this.#memberItemRepository.requestItems(ids);
+    if (!items) return [];
+
+    return items.map((item) => ({
+      id: item.unique,
+      name: this.#resolveVariantName(item.variants, culture) ?? item.name ?? 'Unknown',
+      icon: item.memberType.icon,
+    }));
+  }
+
+  #resolveVariantName(
+    variants: Array<{ name: string; culture: string | null }>,
+    culture: string | null,
+  ): string {
     const variant =
       variants.find((v) => v.culture === culture) ??
       variants.find((v) => v.culture === null) ??
