@@ -271,11 +271,115 @@ stages:
             displayName: Stop SQL Server LocalDB (Windows)
             condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
+  - stage: AcceptanceTests
+    displayName: Acceptance Tests
+    dependsOn: Build
+    jobs:
+      - job: AcceptanceTests
+        displayName: Run Acceptance Tests
+        pool:
+          vmImage: 'ubuntu-latest'
+        timeoutInMinutes: 30
+        variables:
+          testSiteUrl: 'https://localhost:44324'
+        steps:
+          # Setup environment
+          - task: DownloadPipelineArtifact@2
+            displayName: Download build artifacts
+            inputs:
+              artifact: build_output
+              path: $(Build.SourcesDirectory)
+
+          - task: UseDotNet@2
+            displayName: Use .NET SDK from global.json
+            inputs:
+              useGlobalJson: true
+
+          - task: NodeTool@0
+            displayName: Use Node.js
+            inputs:
+              versionSpec: '22.x'
+
+          # Install acceptance test dependencies
+          - script: npm ci --no-fund --no-audit
+            displayName: Install acceptance test NPM packages
+            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
+
+          - script: npx playwright install --with-deps chromium
+            displayName: Install Playwright browsers
+            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
+
+          # Publish and run the test site
+          - script: dotnet publish src/Umbraco.Web.TestSite.V17/Umbraco.Web.TestSite.V17.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/testsite
+            displayName: Publish test site
+
+          - script: |
+              cd $(Build.ArtifactStagingDirectory)/testsite
+              nohup dotnet Umbraco.Web.TestSite.V17.dll --urls="$(testSiteUrl)" > testsite.log 2>&1 &
+              echo $! > testsite.pid
+              echo "Test site started with PID $(cat testsite.pid)"
+            displayName: Start test site
+
+          - script: |
+              echo "Waiting for test site to be ready..."
+              for i in {1..30}; do
+                if curl -k -s -o /dev/null -w "%{http_code}" $(testSiteUrl) | grep -q "200\|301\|302"; then
+                  echo "Test site is ready!"
+                  exit 0
+                fi
+                echo "Attempt $i: Test site not ready yet, waiting..."
+                sleep 5
+              done
+              echo "Test site failed to start"
+              cat $(Build.ArtifactStagingDirectory)/testsite/testsite.log
+              exit 1
+            displayName: Wait for test site to be ready
+
+          # Run acceptance tests
+          - script: |
+              echo "UMBRACO_USER_LOGIN=admin@localhost.local" > .env
+              echo "UMBRACO_USER_PASSWORD=1234567890" >> .env
+              echo "URL=$(testSiteUrl)" >> .env
+            displayName: Create .env file
+            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
+
+          - script: npm run test
+            displayName: Run Playwright tests
+            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
+            env:
+              CI: true
+
+          # Publish test results
+          - task: PublishTestResults@2
+            displayName: Publish test results
+            condition: always()
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: 'src/Umbraco.Test.Search.AcceptanceTest/results/results.xml'
+              testRunTitle: 'Acceptance Tests'
+              failTaskOnFailedTests: true
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish Playwright report
+            condition: always()
+            inputs:
+              targetPath: src/Umbraco.Test.Search.AcceptanceTest/results
+              artifactName: acceptance-test-results
+
+          # Stop test site
+          - script: |
+              if [ -f $(Build.ArtifactStagingDirectory)/testsite/testsite.pid ]; then
+                kill $(cat $(Build.ArtifactStagingDirectory)/testsite/testsite.pid) || true
+              fi
+            displayName: Stop test site
+            condition: always()
+
   - stage: Dependency_Track
     displayName: Dependency Track
     dependsOn:
       - Build
       - IntegrationTests
+      - AcceptanceTests
     # Only upload the SBOM when it's from the main branch, as we don't need to for every PR.
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
