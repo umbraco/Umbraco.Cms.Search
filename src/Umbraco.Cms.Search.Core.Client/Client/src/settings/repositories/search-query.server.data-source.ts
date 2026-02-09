@@ -52,7 +52,7 @@ export class UmbSearchQueryServerDataSource extends UmbControllerBase {
 
     // Map API documents to domain types with defaults
     const documents: UmbSearchDocument[] = data.documents.map((apiDoc) => ({
-      id: apiDoc.id,
+      unique: apiDoc.id,
       objectType: String(apiDoc.objectType),
       entityType: this.#getEntityType(apiDoc.objectType),
       name: 'Unknown',
@@ -72,7 +72,7 @@ export class UmbSearchQueryServerDataSource extends UmbControllerBase {
   }
 
   async #enrichDocuments(documents: UmbSearchDocument[]): Promise<void> {
-    const docById = new Map(documents.map((doc) => [doc.id, doc]));
+    const docById = new Map(documents.map((doc) => [doc.unique, doc]));
     const entityTypes = [...new Set(documents.map((doc) => doc.entityType))];
 
     // Resolve the default content language for variant name lookup
@@ -86,7 +86,9 @@ export class UmbSearchQueryServerDataSource extends UmbControllerBase {
 
     await Promise.all(
       entityTypes.map(async (entityType) => {
-        const ids = documents.filter((doc) => doc.entityType === entityType).map((doc) => doc.id);
+        const ids = documents
+          .filter((doc) => doc.entityType === entityType)
+          .map((doc) => doc.unique);
         const resolved = await this.#resolveItems(entityType, ids, defaultLanguage);
 
         for (const item of resolved) {

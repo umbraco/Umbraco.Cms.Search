@@ -305,9 +305,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     const initialPage = this.#initialPage;
     this.#initialPage = undefined;
 
-    const skip = initialPage
-      ? (initialPage - 1) * PAGE_SIZE
-      : this.#pagination.getSkip();
+    const skip = initialPage ? (initialPage - 1) * PAGE_SIZE : this.#pagination.getSkip();
 
     const request: UmbSearchRequest = {
       indexAlias: this._indexAlias,
@@ -339,7 +337,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
 
   #createTableItems(results: UmbSearchResult) {
     this._tableItems = results.documents.map((doc) => ({
-      id: doc.id,
+      id: doc.unique,
       icon: doc.icon,
       data: [
         {
@@ -349,12 +347,12 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
               <uui-button
                 look="secondary"
                 label="Open"
-                aria-label=${this.localize.term('search_openEntity', doc.entityType, doc.id)}
-                href=${this.#getModalUrl(doc.id, doc.entityType)}
+                aria-label=${this.localize.term('search_openEntity', doc.entityType, doc.unique)}
+                href=${this.#getModalUrl(doc.unique, doc.entityType)}
               >
                 ${doc.name}
               </uui-button>
-              <div><small>${doc.id}</small></div>
+              <div><small>${doc.unique}</small></div>
             </div>
           `,
         },
