@@ -16,7 +16,7 @@ The Umbraco Search backoffice client uses a **three-bundle code-splitting patter
 
 ## Build Commands
 
-This workspace is part of an **npm workspaces monorepo** rooted at `src/`. Shared config (`tsconfig.base.json`, `.prettierrc.json`, `.nvmrc`) lives there.
+This workspace is part of an **npm workspaces monorepo** rooted at `src/`. Shared config (`tsconfig.json`, `.prettierrc.json`, `.nvmrc`) lives there.
 
 ```bash
 # From the monorepo root (src/)
@@ -247,11 +247,11 @@ export default defineConfig({
 
 ### tsconfig.json
 
-Extends the shared base config (`src/tsconfig.base.json`) and adds workspace-specific path mappings for type-checking:
+Extends the shared base config (`src/tsconfig.json`) and adds workspace-specific path mappings for type-checking:
 
 ```json
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {

@@ -12,7 +12,7 @@ This is a simpler client than the Core Client - it uses a **single-bundle patter
 
 ## Build Commands
 
-This workspace is part of an **npm workspaces monorepo** rooted at `src/`. Shared config (`tsconfig.base.json`, `.prettierrc.json`, `.nvmrc`) lives there.
+This workspace is part of an **npm workspaces monorepo** rooted at `src/`. Shared config (`tsconfig.json`, `.prettierrc.json`, `.nvmrc`) lives there.
 
 ```bash
 # From the monorepo root (src/)
@@ -139,7 +139,7 @@ Extends the shared base config. No path mappings needed (no importmap pattern):
 
 ```json
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "types": ["@umbraco-cms/backoffice/extension-types"]
   },

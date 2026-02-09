@@ -51,7 +51,7 @@ The client code uses an **npm workspaces monorepo** rooted at `src/`. Two worksp
 
 Shared config lives in `src/`:
 - `src/package.json` - Workspace root with aggregate scripts
-- `src/tsconfig.base.json` - Shared TypeScript compiler options (both workspaces extend this)
+- `src/tsconfig.json` - Shared TypeScript compiler options (both workspaces extend this)
 - `src/.nvmrc` - Node.js version (24)
 - `src/.prettierrc.json` - Shared Prettier config
 
