@@ -1,8 +1,16 @@
+using Asp.Versioning;
 using Examine;
 using Examine.Lucene.Directories;
 using Examine.Lucene.Providers;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
+using Microsoft.OpenApi;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using Umbraco.Cms.Api.Common.OpenApi;
+using Umbraco.Cms.Api.Management.OpenApi;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Hosting;
 using Umbraco.Cms.Core.Notifications;
@@ -40,6 +48,34 @@ public static class UmbracoBuilderExtensions
 
         builder.Services.AddExamineSearchProviderServices();
 
+        builder.Services.AddSingleton<IOperationIdHandler, ExamineOperationHandler>();
+
+        builder.Services.Configure<SwaggerGenOptions>(opt =>
+        {
+            opt.SwaggerDoc(Constants.Api.Name, new OpenApiInfo
+            {
+                Title = "Examine API",
+                Version = "1.0",
+            });
+
+            opt.OperationFilter<ExamineOperationSecurityFilter>();
+        });
+
         return builder;
+    }
+
+    private class ExamineOperationSecurityFilter : BackOfficeSecurityRequirementsOperationFilterBase
+    {
+        protected override string ApiName => Constants.Api.Name;
+    }
+
+    private class ExamineOperationHandler(IOptions<ApiVersioningOptions> apiVersioningOptions)
+        : OperationIdHandler(apiVersioningOptions)
+    {
+        protected override bool CanHandle(ApiDescription apiDescription, ControllerActionDescriptor controllerActionDescriptor)
+            => controllerActionDescriptor.ControllerTypeInfo.Namespace?.StartsWith("Umbraco.Cms.Search.Provider.Examine.Controllers", StringComparison.InvariantCultureIgnoreCase) is true;
+
+        public override string Handle(ApiDescription apiDescription)
+            => $"{apiDescription.ActionDescriptor.RouteValues["action"]}";
     }
 }

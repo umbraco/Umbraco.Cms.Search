@@ -1,7 +1,6 @@
 import { UmbSearchQueryRepository } from '../../../repositories/search-query.repository.js';
 import type { UmbSearchRequest, UmbSearchResult, UmbHealthStatusModel } from '../../../types.js';
 import { UMB_SEARCH_WORKSPACE_CONTEXT } from '../search-workspace.context-token.js';
-import { UMB_SEARCH_DOCUMENT_ENTITY_TYPE } from '@umbraco-cms/search/global';
 
 import {
   css,
@@ -21,6 +20,8 @@ import type {
 } from '@umbraco-cms/backoffice/components';
 import { UmbModalRouteRegistrationController } from '@umbraco-cms/backoffice/router';
 import { UMB_WORKSPACE_MODAL } from '@umbraco-cms/backoffice/workspace';
+
+import './search-index-search-result-actions.element.js';
 
 const PAGE_SIZE = 10;
 
@@ -230,13 +231,18 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
               aria-label=${this.localize.term('search_searchInputAriaLabel', this._indexAlias)}
               aria-describedby="search-hint"
             >
+              <uui-icon
+                name="icon-search"
+                slot="prepend"
+                style="padding-left:var(--uui-size-space-2)"
+              ></uui-icon>
             </uui-input>
             <uui-button
               look="primary"
               color="positive"
               @click=${this.#handleButtonClick}
               ?disabled=${this.#isSearchDisabled || this._isSearching || !this.#inputValue.trim()}
-              aria-label=${this.localize.term('search_searchButtonAriaLabel')}
+              label=${this.localize.term('search_searchButtonAriaLabel')}
             >
               <umb-localize key="search_searchButton">Search</umb-localize>
             </uui-button>
@@ -358,13 +364,12 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
         },
         {
           columnAlias: 'actions',
-          value: html`<umb-entity-actions-table-column-view
-            .value=${{
-              entityType: UMB_SEARCH_DOCUMENT_ENTITY_TYPE,
-              unique: doc.id,
-              name: doc.id,
-            }}
-          ></umb-entity-actions-table-column-view>`,
+          value: html`
+            <umb-search-index-search-result-actions
+              .searchDocument=${doc}
+              .indexAlias=${this._indexAlias!}
+            ></umb-search-index-search-result-actions>
+          `,
         },
       ],
     }));

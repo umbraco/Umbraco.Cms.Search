@@ -11,6 +11,7 @@ export interface ManifestSearchIndexDetailBox
 
 export interface MetaSearchIndexDetailBox {
   label?: string;
+  column?: 'left' | 'right';
 }
 
 declare global {
