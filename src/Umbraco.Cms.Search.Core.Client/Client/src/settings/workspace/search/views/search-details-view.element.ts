@@ -1,4 +1,5 @@
 import type { UmbSearchIndexState } from '../../../types.js';
+import type { ManifestSearchIndexDetailBox } from '../../../../bundle/types.js';
 import { UMB_SEARCH_WORKSPACE_CONTEXT } from '../search-workspace.context-token.js';
 import { css, customElement, html, state } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
@@ -35,10 +36,19 @@ export class UmbSearchDetailsViewElement extends UmbLitElement {
       `;
     }
 
-    // Normal state - show all extension boxes
+    // Normal state - show all extension boxes in two-column layout
     return html`
       <div class="container">
-        <umb-extension-slot type="searchIndexDetailBox"></umb-extension-slot>
+        <div class="column">
+          <umb-extension-slot
+            type="searchIndexDetailBox"
+            .filter=${(ext: ManifestSearchIndexDetailBox) => ext.meta?.column === 'left'}></umb-extension-slot>
+        </div>
+        <div class="column">
+          <umb-extension-slot
+            type="searchIndexDetailBox"
+            .filter=${(ext: ManifestSearchIndexDetailBox) => ext.meta?.column !== 'left'}></umb-extension-slot>
+        </div>
       </div>
     `;
   }
@@ -52,6 +62,12 @@ export class UmbSearchDetailsViewElement extends UmbLitElement {
       }
 
       .container {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: var(--uui-size-layout-1);
+      }
+
+      .column {
         display: flex;
         flex-direction: column;
         gap: var(--uui-size-layout-1);

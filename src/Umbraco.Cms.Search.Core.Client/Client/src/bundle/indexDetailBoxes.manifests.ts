@@ -8,6 +8,7 @@ export const manifests: Array<UmbExtensionManifest> = [
     elementName: 'umb-search-index-stats-box',
     meta: {
       label: '#search_statsBoxLabel',
+      column: 'right',
     },
   },
   {
@@ -19,6 +20,7 @@ export const manifests: Array<UmbExtensionManifest> = [
     elementName: 'umb-search-index-search-box',
     meta: {
       label: '#search_searchBoxLabel',
+      column: 'left',
     },
   },
 ];
