@@ -3,7 +3,14 @@ import type { UmbSearchRequest, UmbSearchResult, UmbHealthStatusModel } from '..
 import { UMB_SEARCH_WORKSPACE_CONTEXT } from '../search-workspace.context-token.js';
 import { UMB_SEARCH_DOCUMENT_ENTITY_TYPE } from '@umbraco-cms/search/global';
 
-import { css, customElement, html, nothing, state, when } from '@umbraco-cms/backoffice/external/lit';
+import {
+  css,
+  customElement,
+  html,
+  nothing,
+  state,
+  when,
+} from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
 import { debounce, UmbPaginationManager } from '@umbraco-cms/backoffice/utils';
