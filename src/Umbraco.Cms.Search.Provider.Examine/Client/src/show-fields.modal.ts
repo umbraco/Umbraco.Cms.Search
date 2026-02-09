@@ -5,17 +5,6 @@ import { html, repeat, when, css, nothing, state } from '@umbraco-cms/backoffice
 
 const MAX_VALUE_LENGTH = 100;
 
-const FIELD_TYPE_LABELS: Record<string, string> = {
-  keywords: 'Keyword (exact match)',
-  texts: 'Full Text',
-  textsr1: 'Full Text (Boost: High)',
-  textsr2: 'Full Text (Boost: Medium)',
-  textsr3: 'Full Text (Boost: Low)',
-  integers: 'Integer',
-  decimals: 'Decimal',
-  datetimeoffsets: 'Date/Time',
-};
-
 export interface ShowFieldsModalData {
   searchDocument: { unique: string };
   indexAlias: string;
@@ -88,7 +77,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
     const fieldKey = `${field.name}-${index}`;
     const isExpanded = this._expandedFields.has(fieldKey);
     const indexPrefix = showIndex
-      ? html`<span class="value-index" title="Value ${index + 1}">[${index}]</span>`
+      ? html`<span class="value-index" title=${this.localize.term('searchExamine_valueIndex', index + 1)}>[${index}]</span>`
       : nothing;
 
     if (!isLong) {
@@ -101,7 +90,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
             .text=${value}
             look="placeholder"
             compact
-            label="Copy value"></uui-button-copy-text>
+            label=${this.localize.term('searchExamine_copyValue')}></uui-button-copy-text>
         </div>
       `;
     }
@@ -112,7 +101,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
         <span class="value-content">
           ${isExpanded ? value : `${value.substring(0, MAX_VALUE_LENGTH)}...`}
           <button class="see-more" @click=${() => this.#toggleExpanded(fieldKey)}>
-            ${isExpanded ? 'See less' : 'See more'}
+            ${isExpanded ? this.localize.term('searchExamine_seeLess') : this.localize.term('searchExamine_seeMore')}
           </button>
         </span>
         <uui-button-copy-text
@@ -120,7 +109,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
           .text=${value}
           look="placeholder"
           compact
-          label="Copy value"></uui-button-copy-text>
+          label=${this.localize.term('searchExamine_copyValue')}></uui-button-copy-text>
       </div>
     `;
   }
@@ -132,10 +121,10 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
       <tr class="field-row">
         <td class="field-name">
           ${field.name}
-          ${field.type && FIELD_TYPE_LABELS[field.type]
+          ${field.type
             ? html`<uui-icon
                 name="icon-info"
-                title="${FIELD_TYPE_LABELS[field.type]}"
+                title=${this.localize.term('searchExamine_fieldType', field.type)}
                 class="type-icon"></uui-icon>`
             : nothing}
         </td>
@@ -148,7 +137,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
 
   override render() {
     return html`
-      <umb-body-layout headline="Search Document Fields">
+      <umb-body-layout headline=${this.localize.term('searchExamine_headline')}>
         <uui-scroll-container id="field-viewer">
           ${when(
             this._isLoading,
@@ -157,8 +146,8 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
               <div class="filter-bar">
                 <uui-input
                   type="search"
-                  placeholder="Filter fields by name or value..."
-                  label="Filter fields by name or value"
+                  placeholder=${this.localize.term('searchExamine_filterPlaceholder')}
+                  label=${this.localize.term('searchExamine_filterLabel')}
                   .value=${this._filterQuery}
                   @input=${this.#onFilterInput}>
                   <uui-icon
@@ -166,7 +155,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
                     slot="prepend"
                     style="padding-left:var(--uui-size-space-2)"></uui-icon>
                 </uui-input>
-                <span class="field-count">${this.#filteredAndSortedFields.length} fields</span>
+                <span class="field-count">${this.localize.term('searchExamine_fieldCount', this.#filteredAndSortedFields.length)}</span>
               </div>
               ${when(
                 this.#filteredAndSortedFields.length > 0,
@@ -175,8 +164,8 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
                     <table class="fields-table">
                       <thead>
                         <tr>
-                          <th class="th-name">Name</th>
-                          <th class="th-value">Value</th>
+                          <th class="th-name">${this.localize.term('searchExamine_tableColumnName')}</th>
+                          <th class="th-value">${this.localize.term('searchExamine_tableColumnValue')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -189,7 +178,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
                     </table>
                   </uui-box>
                 `,
-                () => html`<div class="empty-state">No fields match your filter.</div>`,
+                () => html`<div class="empty-state">${this.localize.term('searchExamine_noFieldsMatch')}</div>`,
               )}
             `,
           )}

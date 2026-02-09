@@ -1,3 +1,5 @@
+import { manifests as langManifests } from './lang/manifests.js';
+
 export const manifests: Array<UmbExtensionManifest> = [
   {
     type: 'entityAction',
@@ -12,7 +14,7 @@ export const manifests: Array<UmbExtensionManifest> = [
     forEntityTypes: ['search-document'],
     meta: {
       icon: 'icon-search',
-      label: 'Show Fields',
+      label: '#searchExamine_showFields',
       additionalOptions: false,
     },
   },
@@ -23,4 +25,5 @@ export const manifests: Array<UmbExtensionManifest> = [
     element: () => import('./show-fields.modal.js'),
     elementName: 'umb-search-examine-show-fields-modal',
   },
+  ...langManifests,
 ];
