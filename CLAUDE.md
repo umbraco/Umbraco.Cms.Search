@@ -194,7 +194,7 @@ Uses **code-splitting with importmap pattern** for optimal loading:
 **Custom Extension Type:**
 - `searchIndexDetailBox` - Allows adding custom UI boxes to the index detail view via extension slot
 
-**See [Client CLAUDE.md](src/Umbraco.Cms.Search.Core.Client/Client/CLAUDE.md) for detailed client architecture, manifest patterns, and development workflow.**
+**See [Core Client CLAUDE.md](src/Umbraco.Cms.Search.Core.Client/CLAUDE.md) for detailed client architecture, manifest patterns, and development workflow.**
 
 #### Examine Client (Umbraco.Cms.Search.Provider.Examine)
 
@@ -204,6 +204,19 @@ A simpler **single-bundle** workspace (`examine-bundle.js` ~11kb) that provides:
 - `UmbSearchExamineShowFieldsModal` - Modal displaying indexed fields with filtering, expand/collapse, and copy
 
 Output goes to `wwwroot/App_Plugins/UmbracoSearchExamine/` (gitignored, built by Vite).
+
+**See [Examine Client CLAUDE.md](src/Umbraco.Cms.Search.Provider.Examine/CLAUDE.md) for detailed Examine client architecture and development workflow.**
+
+#### Monorepo Dependency Management
+
+All shared dependencies are hoisted to the root `src/package.json`:
+- **`@umbraco-cms/backoffice`** (runtime dependency) - Umbraco backoffice SDK
+- **Dev dependencies**: `typescript`, `vite`, `eslint`, `prettier`, and related plugins
+- **Script utilities**: `chalk`, `node-fetch`, `cross-env` (used by shared `generate-openapi.js`)
+
+Workspace `package.json` files (`Core.Client/Client/package.json`, `Provider.Examine/Client/package.json`) contain **scripts only** - no dependency declarations. npm workspaces resolves all imports from the hoisted root `node_modules/`.
+
+A shared OpenAPI generation script lives at `src/scripts/generate-openapi.js`. Both workspaces call it with different swagger URLs and output directories via their `generate-client` npm scripts.
 
 ## Key Concepts
 
