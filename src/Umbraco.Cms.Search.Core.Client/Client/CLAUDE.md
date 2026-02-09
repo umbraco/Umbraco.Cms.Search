@@ -16,21 +16,29 @@ The Umbraco Search backoffice client uses a **three-bundle code-splitting patter
 
 ## Build Commands
 
+This workspace is part of an **npm workspaces monorepo** rooted at `src/`. Shared config (`tsconfig.base.json`, `.prettierrc.json`, `.nvmrc`) lives there.
+
 ```bash
-# Install dependencies
+# From the monorepo root (src/)
+cd src
+
+# Install all workspaces (run from src/, not from this directory)
 npm install
 
-# Build for production
+# Build all workspaces
 npm run build
 
-# Watch mode for development
-npm run watch
+# Build only this workspace
+npm run build --workspace=Umbraco.Cms.Search.Core.Client/Client
+
+# Watch only this workspace
+npm run watch --workspace=Umbraco.Cms.Search.Core.Client/Client
 
 # Generate OpenAPI client (requires test site at https://localhost:44324)
-npm run generate-client
+npm run generate-client --workspace=Umbraco.Cms.Search.Core.Client/Client
 ```
 
-**Requirements:** Node.js 24 (see `.nvmrc`)
+**Requirements:** Node.js 24 (see `src/.nvmrc`)
 
 ## Architecture Pattern
 
@@ -239,16 +247,20 @@ export default defineConfig({
 
 ### tsconfig.json
 
-Maps logical imports to physical files for type-checking:
+Extends the shared base config (`src/tsconfig.base.json`) and adds workspace-specific path mappings for type-checking:
 
 ```json
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "baseUrl": ".",
     "paths": {
       "@umbraco-cms/search/global": ["./src/global/index.ts"],
       "@umbraco-cms/search/settings": ["./src/settings/index.ts"]
-    }
-  }
+    },
+    "types": ["@umbraco-cms/backoffice/extension-types"]
+  },
+  "include": ["src"]
 }
 ```
 
@@ -617,14 +629,13 @@ This ensures UI state stays synchronized with actual server state after reloads.
 The client is tested through the test site. To run the test site:
 
 ```bash
-cd ../../../Umbraco.Web.TestSite.V17
-dotnet run
+dotnet run --project src/Umbraco.Web.TestSite.V17
 ```
 
 For client-side debugging:
 
 1. Run test site (command above)
-2. Run watch mode: `npm run watch`
+2. Run watch mode from monorepo root: `cd src && npm run watch`
 3. Changes auto-rebuild and hot-reload in browser
 
 See [main CLAUDE.md](../../../CLAUDE.md) for full test site details and server-side testing.

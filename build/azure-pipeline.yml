@@ -43,7 +43,7 @@ stages:
             retryCountOnTaskFailure: 3
             inputs:
               versionSource: 'fromFile'
-              versionFilePath: src/Umbraco.Cms.Search.Core.Client/Client/.nvmrc
+              versionFilePath: src/.nvmrc
 
           - bash: |
               echo "##[command]Install nbgv"
@@ -54,12 +54,14 @@ stages:
               echo "##[debug]Version: $PACKAGE_VERSION"
               cd src/Umbraco.Cms.Search.Core.Client/Client
               npm version $PACKAGE_VERSION --allow-same-version --no-git-tag-version
+              cd ../../Umbraco.Cms.Search.Provider.Examine/Client
+              npm version $PACKAGE_VERSION --allow-same-version --no-git-tag-version
             displayName: Set NPM Version
 
           - task: Cache@2
             displayName: Cache node_modules
             inputs:
-              key: '"npm_client" | "$(Agent.OS)"| $(Build.SourcesDirectory)/src/Umbraco.Cms.Search.Core.Client/Client/package-lock.json'
+              key: '"npm_client" | "$(Agent.OS)"| $(Build.SourcesDirectory)/src/package-lock.json'
               restoreKeys: |
                 "npm_client" | "$(Agent.OS)"
                 "npm_client"
@@ -67,15 +69,15 @@ stages:
 
           - script: npm ci --no-fund --no-audit --prefer-offline
             displayName: Install NPM packages
-            workingDirectory: src/Umbraco.Cms.Search.Core.Client/Client
+            workingDirectory: src
 
           - script: npm run lint:errors-only
             displayName: Lint Client (errors only)
-            workingDirectory: src/Umbraco.Cms.Search.Core.Client/Client
+            workingDirectory: src
 
           - script: npm run build
             displayName: Build Client
-            workingDirectory: src/Umbraco.Cms.Search.Core.Client/Client
+            workingDirectory: src
 
           # Cache and restore NuGet packages
           - task: Cache@2

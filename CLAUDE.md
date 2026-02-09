@@ -45,25 +45,40 @@ dotnet test --filter "FullyQualifiedName~ContentExtensionsTests"
 
 ### Client Development (Backoffice UI)
 
-The backoffice client is in `src/Umbraco.Cms.Search.Core.Client/Client/`:
+The client code uses an **npm workspaces monorepo** rooted at `src/`. Two workspaces:
+- **Core Client**: `src/Umbraco.Cms.Search.Core.Client/Client/` - Main backoffice UI (TypeScript + Vite, 3-bundle code-splitting)
+- **Examine Client**: `src/Umbraco.Cms.Search.Provider.Examine/Client/` - Examine provider UI (TypeScript + Vite, single bundle)
+
+Shared config lives in `src/`:
+- `src/package.json` - Workspace root with aggregate scripts
+- `src/tsconfig.base.json` - Shared TypeScript compiler options (both workspaces extend this)
+- `src/.nvmrc` - Node.js version (24)
+- `src/.prettierrc.json` - Shared Prettier config
 
 ```bash
-cd src/Umbraco.Cms.Search.Core.Client/Client
+cd src
 
-# Install dependencies
+# Install all workspaces
 npm install
 
-# Build for production
+# Build all workspaces
 npm run build
 
-# Watch mode for development
+# Watch all workspaces
 npm run watch
 
-# Generate OpenAPI client (requires test site running at https://localhost:44324)
-npm run generate-client
+# Lint all workspaces (errors only)
+npm run lint:errors-only
+
+# Build a single workspace
+npm run build --workspace=Umbraco.Cms.Search.Core.Client/Client
+npm run build --workspace=Umbraco.Cms.Search.Provider.Examine/Client
+
+# Generate OpenAPI client (Core Client only, requires test site at https://localhost:44324)
+npm run generate-client --workspace=Umbraco.Cms.Search.Core.Client/Client
 ```
 
-The client uses **Node.js 24** (see `.nvmrc`). Ensure you have Node.js 24 installed.
+Requires **Node.js 24** (see `src/.nvmrc`).
 
 ### Test Site
 
@@ -153,9 +168,13 @@ Provides backoffice search using the Search API. Registers a backoffice search p
 
 Replaces the default Delivery API querying with Search-based querying. Queries the `Umb_PublishedContent` index.
 
-### Client Architecture (Umbraco.Cms.Search.Core.Client)
+### Client Architecture (npm Workspaces Monorepo)
 
-The backoffice client uses **code-splitting with importmap pattern** for optimal loading:
+The backoffice clients are an **npm workspaces monorepo** rooted at `src/`, with shared TypeScript, Vite, ESLint, and Prettier configuration.
+
+#### Core Client (Umbraco.Cms.Search.Core.Client)
+
+Uses **code-splitting with importmap pattern** for optimal loading:
 
 **Three-Bundle Strategy:**
 - `search-bundle.js` (~3kb) - Manifest metadata, loaded upfront
@@ -176,6 +195,15 @@ The backoffice client uses **code-splitting with importmap pattern** for optimal
 - `searchIndexDetailBox` - Allows adding custom UI boxes to the index detail view via extension slot
 
 **See [Client CLAUDE.md](src/Umbraco.Cms.Search.Core.Client/Client/CLAUDE.md) for detailed client architecture, manifest patterns, and development workflow.**
+
+#### Examine Client (Umbraco.Cms.Search.Provider.Examine)
+
+A simpler **single-bundle** workspace (`examine-bundle.js` ~11kb) that provides:
+- `UmbSearchExamineProviderRepository` - Fetches search document fields from the Examine API
+- `UmbSearchExamineShowFieldsEntityAction` - Entity action to view document fields
+- `UmbSearchExamineShowFieldsModal` - Modal displaying indexed fields with filtering, expand/collapse, and copy
+
+Output goes to `wwwroot/App_Plugins/UmbracoSearchExamine/` (gitignored, built by Vite).
 
 ## Key Concepts
 

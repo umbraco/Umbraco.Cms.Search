@@ -1,10 +1,11 @@
 import { UmbSearchExamineProviderRepository } from './examine-provider.repository.js';
+import type { ExamineField } from './examine-provider.repository.js';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
-import { html, repeat, when, css, nothing } from '@umbraco-cms/backoffice/external/lit';
+import { html, repeat, when, css, nothing, state } from '@umbraco-cms/backoffice/external/lit';
 
 const MAX_VALUE_LENGTH = 100;
 
-const FIELD_TYPE_LABELS = {
+const FIELD_TYPE_LABELS: Record<string, string> = {
   keywords: 'Keyword (exact match)',
   texts: 'Full Text',
   textsr1: 'Full Text (Boost: High)',
@@ -15,24 +16,27 @@ const FIELD_TYPE_LABELS = {
   datetimeoffsets: 'Date/Time',
 };
 
-export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
-  static properties = {
-    _fields: { type: Array },
-    _isLoading: { type: Boolean },
-    _filterQuery: { type: String },
-    _expandedFields: { type: Object },
-  };
+export interface ShowFieldsModalData {
+  searchDocument: { unique: string };
+  indexAlias: string;
+}
+
+export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFieldsModalData> {
+  @state()
+  private _fields?: Array<ExamineField>;
+
+  @state()
+  private _isLoading = true;
+
+  @state()
+  private _filterQuery = '';
+
+  @state()
+  private _expandedFields = new Set<string>();
 
   #repository = new UmbSearchExamineProviderRepository(this);
 
-  constructor() {
-    super();
-    this._filterQuery = '';
-    this._expandedFields = new Set();
-    this._isLoading = true;
-  }
-
-  async firstUpdated() {
+  override firstUpdated() {
     void this.#requestSearchDocumentFields();
   }
 
@@ -49,11 +53,11 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
       return;
     }
 
-    this._fields = data.fields;
+    this._fields = data?.fields;
     this._isLoading = false;
   }
 
-  get #filteredAndSortedFields() {
+  get #filteredAndSortedFields(): Array<ExamineField> {
     if (!this._fields) return [];
 
     const query = this._filterQuery.toLowerCase();
@@ -66,11 +70,11 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  #onFilterInput(e) {
-    this._filterQuery = e.target.value;
+  #onFilterInput(e: InputEvent) {
+    this._filterQuery = (e.target as HTMLInputElement).value;
   }
 
-  #toggleExpanded(fieldName) {
+  #toggleExpanded(fieldName: string) {
     if (this._expandedFields.has(fieldName)) {
       this._expandedFields.delete(fieldName);
     } else {
@@ -79,18 +83,25 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
     this.requestUpdate();
   }
 
-  #renderValue(field, value, index, showIndex) {
+  #renderValue(field: ExamineField, value: string, index: number, showIndex: boolean) {
     const isLong = value.length > MAX_VALUE_LENGTH;
     const fieldKey = `${field.name}-${index}`;
     const isExpanded = this._expandedFields.has(fieldKey);
-    const indexPrefix = showIndex ? html`<span class="value-index" title="Value ${index + 1}">[${index}]</span>` : nothing;
+    const indexPrefix = showIndex
+      ? html`<span class="value-index" title="Value ${index + 1}">[${index}]</span>`
+      : nothing;
 
     if (!isLong) {
       return html`
         <div class="value-item">
           ${indexPrefix}
           <span class="value-content">${value}</span>
-          <uui-button-copy-text class="copy-button" .text=${value} look="placeholder" compact label="Copy value"></uui-button-copy-text>
+          <uui-button-copy-text
+            class="copy-button"
+            .text=${value}
+            look="placeholder"
+            compact
+            label="Copy value"></uui-button-copy-text>
         </div>
       `;
     }
@@ -104,12 +115,17 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
             ${isExpanded ? 'See less' : 'See more'}
           </button>
         </span>
-        <uui-button-copy-text class="copy-button" .text=${value} look="placeholder" compact label="Copy value"></uui-button-copy-text>
+        <uui-button-copy-text
+          class="copy-button"
+          .text=${value}
+          look="placeholder"
+          compact
+          label="Copy value"></uui-button-copy-text>
       </div>
     `;
   }
 
-  #renderField(field) {
+  #renderField(field: ExamineField) {
     const showIndex = field.values.length > 1;
 
     return html`
@@ -117,7 +133,10 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
         <td class="field-name">
           ${field.name}
           ${field.type && FIELD_TYPE_LABELS[field.type]
-            ? html`<uui-icon name="icon-info" title="${FIELD_TYPE_LABELS[field.type]}" class="type-icon"></uui-icon>`
+            ? html`<uui-icon
+                name="icon-info"
+                title="${FIELD_TYPE_LABELS[field.type]}"
+                class="type-icon"></uui-icon>`
             : nothing}
         </td>
         <td class="field-value">
@@ -127,7 +146,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
     `;
   }
 
-  render() {
+  override render() {
     return html`
       <umb-body-layout headline="Search Document Fields">
         <uui-scroll-container id="field-viewer">
@@ -142,7 +161,10 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
                   label="Filter fields by name or value"
                   .value=${this._filterQuery}
                   @input=${this.#onFilterInput}>
-                  <uui-icon name="icon-search" slot="prepend" style="padding-left:var(--uui-size-space-2)"></uui-icon>
+                  <uui-icon
+                    name="icon-search"
+                    slot="prepend"
+                    style="padding-left:var(--uui-size-space-2)"></uui-icon>
                 </uui-input>
                 <span class="field-count">${this.#filteredAndSortedFields.length} fields</span>
               </div>
@@ -158,7 +180,11 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
                         </tr>
                       </thead>
                       <tbody>
-                        ${repeat(this.#filteredAndSortedFields, (field) => field.name, (field) => this.#renderField(field))}
+                        ${repeat(
+                          this.#filteredAndSortedFields,
+                          (field) => field.name,
+                          (field) => this.#renderField(field),
+                        )}
                       </tbody>
                     </table>
                   </uui-box>
@@ -178,7 +204,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
     `;
   }
 
-  static styles = [
+  static override styles = [
     css`
       #field-viewer {
         height: 100%;

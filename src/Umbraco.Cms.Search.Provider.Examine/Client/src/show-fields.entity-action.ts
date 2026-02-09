@@ -1,9 +1,14 @@
 import { UmbEntityActionBase } from '@umbraco-cms/backoffice/entity-action';
 import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 
-export class UmbSearchExamineShowFieldsEntityAction extends UmbEntityActionBase {
-  async execute() {
-    if (!this.args.searchDocument) {
+export class UmbSearchExamineShowFieldsEntityAction extends UmbEntityActionBase<never> {
+  override async execute() {
+    const args = this.args as typeof this.args & {
+      searchDocument?: { unique: string };
+      indexAlias?: string;
+    };
+
+    if (!args.searchDocument) {
       throw new Error('Search document is not provided');
     }
 
@@ -13,9 +18,9 @@ export class UmbSearchExamineShowFieldsEntityAction extends UmbEntityActionBase 
         size: 'large',
       },
       data: {
-        searchDocument: this.args.searchDocument,
-        indexAlias: this.args.indexAlias,
-      }
+        searchDocument: args.searchDocument,
+        indexAlias: args.indexAlias,
+      },
     }).catch(() => undefined);
   }
 }

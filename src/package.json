@@ -1,0 +1,21 @@
+{
+  "name": "@umbraco-cms/search-monorepo",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "Umbraco.Cms.Search.Core.Client/Client",
+    "Umbraco.Cms.Search.Provider.Examine/Client"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "watch": "npm run watch --workspaces",
+    "lint": "npm run lint --workspaces --if-present",
+    "lint:fix": "npm run lint:fix --workspaces --if-present",
+    "lint:errors-only": "npm run lint:errors-only --workspaces --if-present",
+    "format": "npm run format --workspaces --if-present",
+    "format:check": "npm run format:check --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
