@@ -432,7 +432,6 @@ stages:
     dependsOn:
       - Build
       - IntegrationTests
-      - AcceptanceTests
     # Only upload the SBOM when it's from the main branch, as we don't need to for every PR.
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
