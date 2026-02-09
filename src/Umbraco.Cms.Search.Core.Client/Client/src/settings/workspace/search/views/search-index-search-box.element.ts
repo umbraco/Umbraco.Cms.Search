@@ -35,8 +35,12 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
       alias: 'documentId',
     },
     {
-      name: this.localize.term('search_tableColumnObjectType'),
-      alias: 'objectType',
+      name: this.localize.term('search_tableColumnName'),
+      alias: 'name',
+    },
+    {
+      name: this.localize.term('search_tableColumnEntityType'),
+      alias: 'entityType',
     },
     {
       name: '',
@@ -238,23 +242,28 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   #createTableItems(results: UmbSearchResult) {
     this._tableItems = results.documents.map((doc) => ({
       id: doc.id,
+      icon: doc.icon,
       data: [
         {
           columnAlias: 'documentId',
+          value: doc.id,
+        },
+        {
+          columnAlias: 'name',
           value: html`
             <uui-button
               look="secondary"
               label="Open"
-              aria-label=${this.localize.term('search_openEntity', doc.objectType, doc.id)}
-              href=${this.#getModalUrl(doc.id, doc.objectType)}
+              aria-label=${this.localize.term('search_openEntity', doc.entityType, doc.id)}
+              href=${this.#getModalUrl(doc.id, doc.entityType)}
             >
-              ${doc.id}
+              ${doc.name}
             </uui-button>
           `,
         },
         {
-          columnAlias: 'objectType',
-          value: doc.objectType || 'Unknown',
+          columnAlias: 'entityType',
+          value: doc.entityType,
         },
         {
           columnAlias: 'actions',
@@ -270,28 +279,12 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     }));
   }
 
-  #getEntityType(objectType: string): string {
-    // Map UmbracoObjectTypes enum values to entity type strings
-    const typeMap: Record<string, string> = {
-      Document: 'document',
-      Media: 'media',
-      Member: 'member',
-      DocumentType: 'document-type',
-      MediaType: 'media-type',
-      MemberType: 'member-type',
-      DataType: 'data-type',
-    };
-
-    return typeMap[objectType] || objectType.toLowerCase();
-  }
-
-  #getModalUrl(id: string, objectType: string): string {
+  #getModalUrl(id: string, entityType: string): string {
     if (!this.#routeBuilder) {
       console.error('Route builder not initialized');
       return '#';
     }
 
-    const entityType = this.#getEntityType(objectType);
     const modalPath = this.#routeBuilder({ entityType });
     return `${modalPath}edit/${id}`;
   }

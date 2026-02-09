@@ -38,7 +38,7 @@ export default {
     noResults: 'No results found',
     resultsCount: (count: number) => `Found ${count} result${count !== 1 ? 's' : ''}`,
     tableColumnDocumentId: 'Document ID',
-    tableColumnObjectType: 'Object Type',
+    tableColumnEntityType: 'Entity Type',
     statsBoxLabel: 'Statistics',
     searchBoxLabel: 'Search',
     // Accessibility labels
