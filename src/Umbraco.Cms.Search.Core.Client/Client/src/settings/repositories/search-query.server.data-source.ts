@@ -9,6 +9,7 @@ import type { SearchRequestModel, FacetResultModel } from '../api';
 
 import { UmbDocumentItemRepository } from '@umbraco-cms/backoffice/document';
 import { UmbMediaItemRepository } from '@umbraco-cms/backoffice/media';
+import { UMB_APP_LANGUAGE_CONTEXT } from '@umbraco-cms/backoffice/language';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { client } from '@umbraco-cms/backoffice/external/backend-api';
 import type { UmbDataSourceResponse } from '@umbraco-cms/backoffice/repository';
@@ -72,10 +73,14 @@ export class UmbSearchQueryServerDataSource extends UmbControllerBase {
     const docById = new Map(documents.map((doc) => [doc.id, doc]));
     const entityTypes = [...new Set(documents.map((doc) => doc.entityType))];
 
+    // Resolve the current app culture for variant name lookup
+    const languageContext = await this.getContext(UMB_APP_LANGUAGE_CONTEXT);
+    const appCulture = languageContext?.getAppCulture() ?? null;
+
     await Promise.all(
       entityTypes.map(async (entityType) => {
         const ids = documents.filter((doc) => doc.entityType === entityType).map((doc) => doc.id);
-        const resolved = await this.#resolveItems(entityType, ids);
+        const resolved = await this.#resolveItems(entityType, ids, appCulture);
 
         for (const item of resolved) {
           const doc = docById.get(item.id);
@@ -91,43 +96,46 @@ export class UmbSearchQueryServerDataSource extends UmbControllerBase {
   async #resolveItems(
     entityType: string,
     ids: string[],
+    culture: string | null,
   ): Promise<Array<{ id: string; name: string; icon?: string }>> {
     switch (entityType) {
       case 'document':
-        return this.#resolveDocumentItems(ids);
+        return this.#resolveDocumentItems(ids, culture);
       case 'media':
-        return this.#resolveMediaItems(ids);
+        return this.#resolveMediaItems(ids, culture);
       default:
         return [];
     }
   }
 
-  async #resolveDocumentItems(ids: string[]): Promise<Array<{ id: string; name: string; icon?: string }>> {
+  async #resolveDocumentItems(ids: string[], culture: string | null): Promise<Array<{ id: string; name: string; icon?: string }>> {
     const { data: items } = await this.#documentItemRepository.requestItems(ids);
     if (!items) return [];
 
-    return items.map((item) => {
-      const variant = item.variants.find((v) => v.culture === null) ?? item.variants[0];
-      return {
-        id: item.unique,
-        name: variant?.name ?? 'Unknown',
-        icon: item.documentType.icon,
-      };
-    });
+    return items.map((item) => ({
+      id: item.unique,
+      name: this.#resolveVariantName(item.variants, culture),
+      icon: item.documentType.icon,
+    }));
   }
 
-  async #resolveMediaItems(ids: string[]): Promise<Array<{ id: string; name: string; icon?: string }>> {
+  async #resolveMediaItems(ids: string[], culture: string | null): Promise<Array<{ id: string; name: string; icon?: string }>> {
     const { data: items } = await this.#mediaItemRepository.requestItems(ids);
     if (!items) return [];
 
-    return items.map((item) => {
-      const variant = item.variants.find((v) => v.culture === null) ?? item.variants[0];
-      return {
-        id: item.unique,
-        name: variant?.name ?? item.name ?? 'Unknown',
-        icon: item.mediaType.icon,
-      };
-    });
+    return items.map((item) => ({
+      id: item.unique,
+      name: this.#resolveVariantName(item.variants, culture) ?? item.name ?? 'Unknown',
+      icon: item.mediaType.icon,
+    }));
+  }
+
+  #resolveVariantName(variants: Array<{ name: string; culture: string | null }>, culture: string | null): string {
+    const variant =
+      variants.find((v) => v.culture === culture) ??
+      variants.find((v) => v.culture === null) ??
+      variants[0];
+    return variant?.name ?? 'Unknown';
   }
 
   #mapFacetResult(apiFacet: FacetResultModel): UmbSearchFacetResult {
