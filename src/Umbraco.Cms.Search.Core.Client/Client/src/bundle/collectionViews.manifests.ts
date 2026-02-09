@@ -10,9 +10,12 @@ export const manifests: Array<UmbExtensionManifest> = [
     kind: 'default',
     name: 'Umbraco Search - Root Collection',
     alias: UMB_SEARCH_ROOT_COLLECTION_ALIAS,
-    api: () => import('@umbraco-cms/search/settings').then(m => ({ default: m.UmbSearchCollectionContext })),
+    api: () =>
+      import('@umbraco-cms/search/settings').then((m) => ({
+        default: m.UmbSearchCollectionContext,
+      })),
     meta: {
-      repositoryAlias: UMB_SEARCH_COLLECTION_REPOSITORY_ALIAS
+      repositoryAlias: UMB_SEARCH_COLLECTION_REPOSITORY_ALIAS,
     },
   },
   {
@@ -24,13 +27,13 @@ export const manifests: Array<UmbExtensionManifest> = [
     meta: {
       label: '#search_treeHeader',
       icon: 'icon-search',
-      pathName: 'table'
+      pathName: 'table',
     },
     conditions: [
       {
         alias: 'Umb.Condition.CollectionAlias',
-        match: UMB_SEARCH_ROOT_COLLECTION_ALIAS
-      }
-    ]
-  }
+        match: UMB_SEARCH_ROOT_COLLECTION_ALIAS,
+      },
+    ],
+  },
 ];

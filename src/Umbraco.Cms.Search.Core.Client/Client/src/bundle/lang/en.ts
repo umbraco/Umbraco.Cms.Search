@@ -21,9 +21,11 @@ export default {
     collectionActionReload: 'Refresh list',
     entityActionRebuildIndex: 'Rebuild Index',
     rebuildConfirmHeadline: 'Rebuild Search Index',
-    rebuildConfirmMessage: 'Are you sure you want to rebuild the search index? This operation may take a while depending on the size of your content.',
+    rebuildConfirmMessage:
+      'Are you sure you want to rebuild the search index? This operation may take a while depending on the size of your content.',
     rebuildConfirmLabel: 'Rebuild Index',
-    rebuildStartedMessage: 'The rebuild of search index "{0}" has started. You can continue working while the process runs in the background.',
+    rebuildStartedMessage:
+      'The rebuild of search index "{0}" has started. You can continue working while the process runs in the background.',
     rebuildCompletedTitle: 'Search Index Rebuild Completed',
     rebuildCompletedMessage: 'The rebuild of search index "{0}" has completed successfully.',
     rebuildingIndex: 'Rebuilding index...',
@@ -42,7 +44,8 @@ export default {
     // Accessibility labels
     searching: 'Searching...',
     searchFailed: 'Search failed',
-    searchComplete: (count: number) => `Search complete. Found ${count} result${count !== 1 ? 's' : ''}`,
+    searchComplete: (count: number) =>
+      `Search complete. Found ${count} result${count !== 1 ? 's' : ''}`,
     openEntity: (type: string, id: string) => `Open ${type} with ID ${id}`,
     searchFormLabel: (indexAlias: string) => `Search ${indexAlias} index`,
     searchInputLabel: 'Search query',
@@ -53,5 +56,5 @@ export default {
     resultsRegion: 'Search results',
     resultsTable: 'Search results table',
     searchDisabled: 'Search is disabled because the index is not healthy. Current status:',
-  }
+  },
 } satisfies UmbLocalizationDictionary;

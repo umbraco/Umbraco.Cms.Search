@@ -117,10 +117,12 @@ The detail view uses an **extensible box pattern** for composable UI:
 ```
 
 **Built-in boxes:**
+
 - **Stats Box** (weight: 100) - Displays index alias, document count, health status with color coding
 - **Search Box** (weight: 200) - Test search functionality within the workspace
 
 **Extension type definition** (`bundle/types.ts`):
+
 ```typescript
 interface ManifestSearchIndexDetailBox extends ManifestElement, ManifestWithDynamicConditions {
   type: 'searchIndexDetailBox';
@@ -129,6 +131,7 @@ interface ManifestSearchIndexDetailBox extends ManifestElement, ManifestWithDyna
 ```
 
 **Kind registration** (`bundle/indexDetailBoxKind.manifests.ts`):
+
 ```typescript
 {
   type: 'kind',
@@ -143,19 +146,23 @@ interface ManifestSearchIndexDetailBox extends ManifestElement, ManifestWithDyna
 Instead of importing files directly, use logical module identifiers that resolve differently in each context:
 
 **What you write:**
+
 ```typescript
 import { UmbSearchRepository } from '@umbraco-cms/search/settings';
 ```
 
 **Development (TypeScript):**
+
 - `tsconfig.json` paths resolve to `./src/settings/index.ts`
 - Full IntelliSense and type safety
 
 **Build (Vite):**
+
 - Marked as external in `rollupOptions`
 - Not bundled, left as import statement
 
 **Runtime (Browser):**
+
 - `umbraco-package.json` importmap resolves to `/App_Plugins/UmbracoSearch/search-settings.js`
 - Lazy-loaded when first used
 
@@ -168,9 +175,11 @@ export const manifests: Array<UmbExtensionManifest> = [
   {
     type: 'repository',
     alias: 'Umb.Repository.SearchCollection',
-    api: () => import('@umbraco-cms/search/settings')
-      .then(m => ({ default: m.UmbSearchCollectionRepository })),
-  }
+    api: () =>
+      import('@umbraco-cms/search/settings').then((m) => ({
+        default: m.UmbSearchCollectionRepository,
+      })),
+  },
 ];
 ```
 
@@ -185,7 +194,7 @@ export const manifests: Array<UmbExtensionManifest> = [
     alias: 'Umb.CollectionView.SearchRoot',
     element: '@umbraco-cms/search/settings',
     elementName: 'umb-search-root-collection-view',
-  }
+  },
 ];
 ```
 
@@ -215,14 +224,14 @@ export default defineConfig({
   build: {
     lib: {
       entry: {
-        "search-bundle": "src/bundle/search-bundle.ts",
-        "search-global": "src/global/search-global.ts",
-        "search-settings": "src/settings/search-settings.ts"
+        'search-bundle': 'src/bundle/search-bundle.ts',
+        'search-global': 'src/global/search-global.ts',
+        'search-settings': 'src/settings/search-settings.ts',
       },
-      formats: ["es"],
+      formats: ['es'],
     },
     rollupOptions: {
-      external: [/^@umbraco/]  // Don't bundle @umbraco imports
+      external: [/^@umbraco/], // Don't bundle @umbraco imports
     },
   },
 });
@@ -308,21 +317,21 @@ All entity types, aliases, and event types are centralized in `src/global/consta
 
 ```typescript
 // Entity types
-UMB_SEARCH_ROOT_ENTITY_TYPE = 'search-root'
-UMB_SEARCH_ENTITY_TYPE = 'search'
-UMB_SEARCH_INDEX_ENTITY_TYPE = 'Umb.Search.Index'
+UMB_SEARCH_ROOT_ENTITY_TYPE = 'search-root';
+UMB_SEARCH_ENTITY_TYPE = 'search';
+UMB_SEARCH_INDEX_ENTITY_TYPE = 'Umb.Search.Index';
 
 // Repository/Store aliases
-UMB_SEARCH_COLLECTION_REPOSITORY_ALIAS = 'UMB_SEARCH_COLLECTION_REPOSITORY'
-UMB_SEARCH_DETAIL_REPOSITORY_ALIAS = 'UmbSearchDetailRepository'
-UMB_SEARCH_DETAIL_STORE_ALIAS = 'UmbSearchStore'
+UMB_SEARCH_COLLECTION_REPOSITORY_ALIAS = 'UMB_SEARCH_COLLECTION_REPOSITORY';
+UMB_SEARCH_DETAIL_REPOSITORY_ALIAS = 'UmbSearchDetailRepository';
+UMB_SEARCH_DETAIL_STORE_ALIAS = 'UmbSearchStore';
 
 // Workspace aliases
-UMB_SEARCH_ROOT_WORKSPACE_ALIAS = 'Umbraco.Search.Workspace.Root'
-UMB_SEARCH_WORKSPACE_ALIAS = 'Umbraco.Search.Workspace'
+UMB_SEARCH_ROOT_WORKSPACE_ALIAS = 'Umbraco.Search.Workspace.Root';
+UMB_SEARCH_WORKSPACE_ALIAS = 'Umbraco.Search.Workspace';
 
 // Server events
-UMB_SEARCH_SERVER_EVENT_TYPE = 'IndexRebuildCompleted'
+UMB_SEARCH_SERVER_EVENT_TYPE = 'IndexRebuildCompleted';
 ```
 
 ## Common Patterns
@@ -400,8 +409,7 @@ This pattern keeps SignalR knowledge centralized in the global context.
 
 ```typescript
 // In a manifest
-api: () => import('@umbraco-cms/search/settings')
-  .then(m => ({ default: m.UmbSearchRepository }))
+api: () => import('@umbraco-cms/search/settings').then((m) => ({ default: m.UmbSearchRepository }));
 
 // Or in code
 const { UmbSearchRepository } = await import('@umbraco-cms/search/settings');
@@ -411,7 +419,7 @@ const { UmbSearchRepository } = await import('@umbraco-cms/search/settings');
 
 ```typescript
 // src/settings/repositories/search.repository.ts
-export class UmbSearchRepository { }
+export class UmbSearchRepository {}
 
 // src/settings/index.ts
 export * from './repositories/search.repository.js';
@@ -432,7 +440,7 @@ export class MyElement extends UmbLitElement {
     new UmbModalRouteRegistrationController(this, UMB_WORKSPACE_MODAL)
       .addAdditionalPath(':entityType')
       .onSetup((routingInfo) => ({
-        data: { entityType: routingInfo.entityType, preset: {} }
+        data: { entityType: routingInfo.entityType, preset: {} },
       }))
       .observeRouteBuilder((routeBuilder) => {
         this.#routeBuilder = routeBuilder;
@@ -447,9 +455,7 @@ export class MyElement extends UmbLitElement {
 
   render() {
     return html`
-      <uui-button
-        look="secondary"
-        href=${this.#getModalUrl(doc.id, doc.objectType)}>
+      <uui-button look="secondary" href=${this.#getModalUrl(doc.id, doc.objectType)}>
         ${doc.id}
       </uui-button>
     `;
@@ -458,6 +464,7 @@ export class MyElement extends UmbLitElement {
 ```
 
 **Key points:**
+
 - Store the route builder function itself, not a pre-built route
 - Call the route builder dynamically with the specific entityType for each link
 - Map object types to entity types (e.g., 'Document' → 'document', 'Media' → 'media')
@@ -513,13 +520,15 @@ Entity actions automatically appear in workspace header dropdowns - don't create
 
 ```typescript
 // ❌ DON'T: Create separate workspace action
-export class UmbSearchRebuildWorkspaceAction extends UmbWorkspaceActionBase { }
+export class UmbSearchRebuildWorkspaceAction extends UmbWorkspaceActionBase {}
 
 // ✅ DO: Create single entity action that works in both contexts
 export class UmbSearchRebuildIndexEntityAction extends UmbEntityActionBase<never> {
   override async execute() {
     // Check for workspace context (when triggered from workspace header)
-    const workspaceContext = await this.getContext(UMB_SEARCH_WORKSPACE_CONTEXT).catch(() => undefined);
+    const workspaceContext = await this.getContext(UMB_SEARCH_WORKSPACE_CONTEXT).catch(
+      () => undefined,
+    );
     if (workspaceContext) {
       workspaceContext.setState('loading');
     }
@@ -545,14 +554,14 @@ For operations that take time (like rebuild), manage state carefully to avoid ra
 // ✅ DO: Set loading state BEFORE API call
 const workspaceContext = await this.getContext(UMB_SEARCH_WORKSPACE_CONTEXT).catch(() => undefined);
 if (workspaceContext) {
-  workspaceContext.setState('loading');  // Set BEFORE
+  workspaceContext.setState('loading'); // Set BEFORE
 }
-await this.#repository.rebuildIndex(this.args.unique);  // Then call API
+await this.#repository.rebuildIndex(this.args.unique); // Then call API
 
 // ❌ DON'T: Set loading state AFTER API call
-await this.#repository.rebuildIndex(this.args.unique);  // API call first
+await this.#repository.rebuildIndex(this.args.unique); // API call first
 if (workspaceContext) {
-  workspaceContext.setState('loading');  // Too late! Race condition
+  workspaceContext.setState('loading'); // Too late! Race condition
 }
 ```
 
@@ -613,6 +622,7 @@ dotnet run
 ```
 
 For client-side debugging:
+
 1. Run test site (command above)
 2. Run watch mode: `npm run watch`
 3. Changes auto-rebuild and hot-reload in browser

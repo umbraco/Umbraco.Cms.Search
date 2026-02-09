@@ -1,7 +1,7 @@
 import {
   UMB_SEARCH_ROOT_ENTITY_TYPE,
   UMB_SEARCH_ROOT_COLLECTION_ALIAS,
-  UMB_SEARCH_ROOT_WORKSPACE_ALIAS
+  UMB_SEARCH_ROOT_WORKSPACE_ALIAS,
 } from '@umbraco-cms/search/global';
 
 export const manifests: Array<UmbExtensionManifest> = [
@@ -13,7 +13,7 @@ export const manifests: Array<UmbExtensionManifest> = [
     meta: {
       entityType: UMB_SEARCH_ROOT_ENTITY_TYPE,
       headline: '#search_treeHeader',
-    }
+    },
   },
   {
     type: 'workspaceView',
@@ -24,13 +24,13 @@ export const manifests: Array<UmbExtensionManifest> = [
       label: '#search_treeHeader',
       pathname: 'indexes',
       icon: 'icon-search',
-      collectionAlias: UMB_SEARCH_ROOT_COLLECTION_ALIAS
+      collectionAlias: UMB_SEARCH_ROOT_COLLECTION_ALIAS,
     },
     conditions: [
       {
         alias: 'Umb.Condition.WorkspaceAlias',
-        match: UMB_SEARCH_ROOT_WORKSPACE_ALIAS
-      }
-    ]
+        match: UMB_SEARCH_ROOT_WORKSPACE_ALIAS,
+      },
+    ],
   },
 ];

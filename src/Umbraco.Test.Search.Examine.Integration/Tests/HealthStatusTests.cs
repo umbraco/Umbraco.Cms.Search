@@ -1,6 +1,6 @@
 using NUnit.Framework;
 using Umbraco.Cms.Search.Core;
-using Umbraco.Cms.Search.Core.Models.ViewModels;
+using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Services;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests;
@@ -16,7 +16,7 @@ public class HealthStatusTests : SearcherTestBase
     {
         IIndexer indexer = GetRequiredService<IIndexer>();
 
-        HealthStatus status = await indexer.GetHealthStatus(IndexAlias);
+        HealthStatus status = (await indexer.GetMetadataAsync(IndexAlias)).HealthStatus;
 
         Assert.That(status, Is.EqualTo(HealthStatus.Healthy));
     }
@@ -30,7 +30,7 @@ public class HealthStatusTests : SearcherTestBase
         // Reset to ensure index exists but is empty
         await indexer.ResetAsync(IndexAlias);
 
-        HealthStatus status = await indexer.GetHealthStatus(IndexAlias);
+        HealthStatus status = (await indexer.GetMetadataAsync(IndexAlias)).HealthStatus;
 
         Assert.That(status, Is.EqualTo(HealthStatus.Empty));
     }
@@ -41,7 +41,7 @@ public class HealthStatusTests : SearcherTestBase
     {
         IIndexer indexer = GetRequiredService<IIndexer>();
 
-        HealthStatus status = await indexer.GetHealthStatus("NonExistentIndex");
+        HealthStatus status = (await indexer.GetMetadataAsync("NonExistentIndex")).HealthStatus;
 
         Assert.That(status, Is.EqualTo(HealthStatus.Unknown));
     }

@@ -4,22 +4,37 @@ using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Indexing;
-using Umbraco.Cms.Search.Core.Models.ViewModels;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using CoreConstants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
-internal sealed class Indexer : IExamineIndexer
+public class Indexer : IExamineIndexer
 {
     private readonly IExamineManager _examineManager;
-    private readonly FieldOptions _fieldOptions;
 
     public Indexer(IExamineManager examineManager, IOptions<FieldOptions> fieldOptions)
     {
         _examineManager = examineManager;
-        _fieldOptions = fieldOptions.Value;
+        FieldOptions = fieldOptions.Value;
+    }
+
+    /// <summary>
+    /// Gets the field options configuration for use in derived classes.
+    /// </summary>
+    protected FieldOptions FieldOptions { get; }
+
+    /// <summary>
+    /// Override this method to append custom <see cref="IndexValue"/> properties in derived classes.
+    /// This method is called for each <see cref="IndexField"/> during indexing, allowing you to
+    /// add custom values to the index dictionary.
+    /// </summary>
+    /// <param name="field">The index field being processed.</param>
+    /// <param name="result">The dictionary to add custom index values to. Keys are field names, values are the data to index.</param>
+    protected virtual void AppendCustomIndexValues(IndexField field, Dictionary<string, IEnumerable<object>> result)
+    {
+        // No-op by default. Override in derived classes to handle custom IndexValue types.
     }
 
     public Task AddOrUpdateAsync(
@@ -89,7 +104,14 @@ internal sealed class Indexer : IExamineIndexer
         return results.Select(x => x.Value);
     }
 
-    private IndexValue MergeIndexValue(IndexValue original, IndexValue toMerge) =>
+    /// <summary>
+    /// Merges two <see cref="IndexValue"/> instances when the same field appears multiple times.
+    /// Override this method in derived classes to handle custom <see cref="IndexValue"/> properties.
+    /// </summary>
+    /// <param name="original">The original IndexValue.</param>
+    /// <param name="toMerge">The IndexValue to merge into the original.</param>
+    /// <returns>A new IndexValue containing the merged values.</returns>
+    protected virtual IndexValue MergeIndexValue(IndexValue original, IndexValue toMerge) =>
         new()
         {
             Keywords = MergeValues(original.Keywords, toMerge.Keywords),
@@ -102,7 +124,10 @@ internal sealed class Indexer : IExamineIndexer
             TextsR3 = MergeValues(original.TextsR3, toMerge.TextsR3),
         };
 
-    private static IEnumerable<T>? MergeValues<T>(IEnumerable<T>? one, IEnumerable<T>? other)
+    /// <summary>
+    /// Merges two value collections by concatenating and removing duplicates.
+    /// </summary>
+    protected static IEnumerable<T>? MergeValues<T>(IEnumerable<T>? one, IEnumerable<T>? other)
     {
         IEnumerable<T>? list = one;
         if (list is null)
@@ -131,40 +156,33 @@ internal sealed class Indexer : IExamineIndexer
         return Task.CompletedTask;
     }
 
-    public Task<long> GetDocumentCountAsync(string indexAlias)
+    public Task<IndexMetadata> GetMetadataAsync(string indexAlias)
     {
-        if (_examineManager.TryGetIndex(indexAlias, out IIndex? index))
+        if (_examineManager.TryGetIndex(indexAlias, out IIndex? index) is false)
         {
-            if (index is IIndexStats stats)
+            return Task.FromResult(new IndexMetadata(0, HealthStatus.Unknown));
+        }
+
+        var documentCount = 0L;
+
+        if (index is IIndexStats stats)
+        {
+            documentCount = stats.GetDocumentCount();
+            if (documentCount == 0L)
             {
-                return Task.FromResult(stats.GetDocumentCount());
+                return Task.FromResult(new IndexMetadata(0, HealthStatus.Empty));
             }
-        }
-
-        return Task.FromResult(0L);
-    }
-
-    public Task<HealthStatus> GetHealthStatus(string indexAlias)
-    {
-        if (_examineManager.TryGetIndex(indexAlias, out IIndex? index) is false || index.IndexExists() is false)
-        {
-            return Task.FromResult(HealthStatus.Unknown);
-        }
-
-        if (index is IIndexStats stats && stats.GetDocumentCount() == 0)
-        {
-            return Task.FromResult(HealthStatus.Empty);
         }
 
         // Attempt to query the index to verify it's readable and not corrupted
         try
         {
             index.Searcher.CreateQuery().ManagedQuery("__healthcheck__").Execute(new QueryOptions(0, 1));
-            return Task.FromResult(HealthStatus.Healthy);
+            return Task.FromResult(new IndexMetadata(documentCount, HealthStatus.Healthy));
         }
         catch
         {
-            return Task.FromResult(HealthStatus.Corrupted);
+            return Task.FromResult(new IndexMetadata(documentCount, HealthStatus.Corrupted));
         }
     }
 
@@ -239,7 +257,7 @@ internal sealed class Indexer : IExamineIndexer
                 // add field for keyword filtering (will be indexed as RAW)
                 var fieldName = FieldNameHelper.FieldName(field, Constants.FieldValues.Keywords);
                 result.Add(fieldName, field.Value.Keywords);
-                FieldOptions.Field? fieldConfiguration = _fieldOptions.Fields.FirstOrDefault(f
+                FieldOptions.Field? fieldConfiguration = FieldOptions.Fields.FirstOrDefault(f
                     => f.PropertyName == field.FieldName && f.FieldValues == FieldValues.Keywords);
                 if (fieldConfiguration?.Sortable is true || fieldConfiguration?.Facetable is true)
                 {
@@ -284,6 +302,8 @@ internal sealed class Indexer : IExamineIndexer
                 result.Add(FieldNameHelper.FieldName(field, Constants.FieldValues.TextsR3), field.Value.TextsR3);
                 AddToAggregatedTexts(aggregatedR3TextsBySegment, field.Segment, field.Value.TextsR3);
             }
+
+            AppendCustomIndexValues(field, result);
         }
 
         // Add segment-specific aggregated text fields

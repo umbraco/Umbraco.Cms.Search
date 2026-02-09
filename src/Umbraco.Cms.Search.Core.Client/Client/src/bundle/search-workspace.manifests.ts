@@ -10,7 +10,10 @@ export const manifests: Array<UmbExtensionManifest> = [
     kind: 'routable',
     alias: UMB_SEARCH_WORKSPACE_ALIAS,
     name: 'Search Workspace',
-    api: () => import('@umbraco-cms/search/settings').then(m => ({ default: m.UmbSearchWorkspaceContext })),
+    api: () =>
+      import('@umbraco-cms/search/settings').then((m) => ({
+        default: m.UmbSearchWorkspaceContext,
+      })),
     meta: {
       entityType: UMB_SEARCH_INDEX_ENTITY_TYPE,
     },

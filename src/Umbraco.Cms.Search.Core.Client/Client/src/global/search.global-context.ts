@@ -47,26 +47,30 @@ export class UmbSearchContext extends UmbContextBase {
   }
 
   #observeSearchIndexChanges() {
-    this.observe(this.#serverEventContext?.byEventSource(UMB_SEARCH_SERVER_EVENT_TYPE), (args) => {
-      if (!args?.eventSource) return;
+    this.observe(
+      this.#serverEventContext?.byEventSource(UMB_SEARCH_SERVER_EVENT_TYPE),
+      (args) => {
+        if (!args?.eventSource) return;
 
-      const indexAlias = String(args.eventSource);
+        const indexAlias = String(args.eventSource);
 
-      // Emit on the public observable for subscribers
-      this.#indexRebuilt.setValue(indexAlias);
+        // Emit on the public observable for subscribers
+        this.#indexRebuilt.setValue(indexAlias);
 
-      // Handle user notification if they were waiting
-      if (this.#isUserWaitingForIndexUpdate(indexAlias)) {
-        this.setUserWaitingForIndexUpdate(indexAlias, false);
+        // Handle user notification if they were waiting
+        if (this.#isUserWaitingForIndexUpdate(indexAlias)) {
+          this.setUserWaitingForIndexUpdate(indexAlias, false);
 
-        this.#notificationContext?.peek('positive', {
-          data: {
-            title: this.#localize.term('search_rebuildCompletedTitle'),
-            message: this.#localize.term('search_rebuildCompletedMessage', indexAlias),
-          },
-        });
-      }
-    }, 'index-rebuild-notification-observer');
+          this.#notificationContext?.peek('positive', {
+            data: {
+              title: this.#localize.term('search_rebuildCompletedTitle'),
+              message: this.#localize.term('search_rebuildCompletedMessage', indexAlias),
+            },
+          });
+        }
+      },
+      'index-rebuild-notification-observer',
+    );
   }
 }
 

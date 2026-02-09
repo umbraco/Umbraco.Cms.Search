@@ -34,9 +34,11 @@ export default {
     collectionActionReload: 'Opdater liste',
     entityActionRebuildIndex: 'Genopbyg indeks',
     rebuildConfirmHeadline: 'Genopbyg søgeindeks',
-    rebuildConfirmMessage: 'Er du sikker på, at du vil genopbygge søgeindekset? Denne handling kan tage et stykke tid afhængigt af størrelsen på dit indhold.',
+    rebuildConfirmMessage:
+      'Er du sikker på, at du vil genopbygge søgeindekset? Denne handling kan tage et stykke tid afhængigt af størrelsen på dit indhold.',
     rebuildConfirmLabel: 'Genopbyg indeks',
-    rebuildStartedMessage: 'Genopbygningen af søgeindeks "{0}" er startet. Du kan fortsætte med at arbejde, mens processen kører i baggrunden.',
+    rebuildStartedMessage:
+      'Genopbygningen af søgeindeks "{0}" er startet. Du kan fortsætte med at arbejde, mens processen kører i baggrunden.',
     rebuildCompletedTitle: 'Genopbygning af søgeindeks fuldført',
     rebuildCompletedMessage: 'Genopbygningen af søgeindeks "{0}" er blevet fuldført.',
     rebuildingIndex: 'Genopbygger indeks...',
@@ -55,16 +57,18 @@ export default {
     // Accessibility labels
     searching: 'Søger...',
     searchFailed: 'Søgning fejlede',
-    searchComplete: (count: number) => `Søgning færdig. Fandt ${count} resultat${count !== 1 ? 'er' : ''}`,
+    searchComplete: (count: number) =>
+      `Søgning færdig. Fandt ${count} resultat${count !== 1 ? 'er' : ''}`,
     openEntity: (type: string, id: string) => `Åbn ${type} med ID ${id}`,
     searchFormLabel: (indexAlias: string) => `Søg i ${indexAlias} indeks`,
     searchInputLabel: 'Søgeforespørgsel',
-    searchInputAriaLabel: (indexAlias: string) => `Indtast søgeforespørgsel for ${indexAlias} indeks`,
+    searchInputAriaLabel: (indexAlias: string) =>
+      `Indtast søgeforespørgsel for ${indexAlias} indeks`,
     searchButtonAriaLabel: 'Udfør søgning',
     searchHint: 'Tryk Enter eller klik på Søg-knappen for at udføre søgningen',
     loading: 'Indlæser søgeresultater',
     resultsRegion: 'Søgeresultater',
     resultsTable: 'Tabel med søgeresultater',
     searchDisabled: 'Søgning er deaktiveret, fordi indekset ikke er sundt. Nuværende status:',
-  }
+  },
 } satisfies UmbLocalizationDictionary;

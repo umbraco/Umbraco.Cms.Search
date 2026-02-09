@@ -24,7 +24,9 @@ export class UmbSearchRebuildIndexEntityAction extends UmbEntityActionBase<never
 
     // Set loading states BEFORE API call for immediate feedback
     // Check for workspace context (when triggered from workspace header)
-    const workspaceContext = await this.getContext(UMB_SEARCH_WORKSPACE_CONTEXT).catch(() => undefined);
+    const workspaceContext = await this.getContext(UMB_SEARCH_WORKSPACE_CONTEXT).catch(
+      () => undefined,
+    );
     if (workspaceContext) {
       workspaceContext.setState('loading');
     }

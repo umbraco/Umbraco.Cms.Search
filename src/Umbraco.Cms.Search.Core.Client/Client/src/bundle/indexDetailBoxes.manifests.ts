@@ -3,12 +3,13 @@ export const manifests: Array<UmbExtensionManifest> = [
     type: 'searchIndexDetailBox',
     alias: 'Umb.SearchIndexDetailBox.Stats',
     name: 'Search Index Stats Box',
-    weight: 200,
+    weight: 100,
     element: '@umbraco-cms/search/settings',
     elementName: 'umb-search-index-stats-box',
     meta: {
       label: '#search_statsBoxLabel',
-    }
+      column: 'right',
+    },
   },
   {
     type: 'searchIndexDetailBox',
@@ -19,6 +20,7 @@ export const manifests: Array<UmbExtensionManifest> = [
     elementName: 'umb-search-index-search-box',
     meta: {
       label: '#search_searchBoxLabel',
-    }
+      column: 'left',
+    },
   },
 ];
