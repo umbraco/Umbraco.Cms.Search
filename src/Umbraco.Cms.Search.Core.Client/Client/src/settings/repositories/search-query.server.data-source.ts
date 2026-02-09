@@ -10,6 +10,7 @@ import type { SearchRequestModel, FacetResultModel } from '../api';
 import { UmbDocumentItemRepository } from '@umbraco-cms/backoffice/document';
 import { UmbMediaItemRepository } from '@umbraco-cms/backoffice/media';
 import { UMB_APP_LANGUAGE_CONTEXT } from '@umbraco-cms/backoffice/language';
+import { firstValueFrom } from '@umbraco-cms/backoffice/external/rxjs';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { client } from '@umbraco-cms/backoffice/external/backend-api';
 import type { UmbDataSourceResponse } from '@umbraco-cms/backoffice/repository';
@@ -73,14 +74,15 @@ export class UmbSearchQueryServerDataSource extends UmbControllerBase {
     const docById = new Map(documents.map((doc) => [doc.id, doc]));
     const entityTypes = [...new Set(documents.map((doc) => doc.entityType))];
 
-    // Resolve the current app culture for variant name lookup
+    // Resolve the default content language for variant name lookup
     const languageContext = await this.getContext(UMB_APP_LANGUAGE_CONTEXT);
-    const appCulture = languageContext?.getAppCulture() ?? null;
+    const defaultLanguage = languageContext ? await firstValueFrom(languageContext.appDefaultLanguage) : undefined;
+    const culture = defaultLanguage?.unique ?? null;
 
     await Promise.all(
       entityTypes.map(async (entityType) => {
         const ids = documents.filter((doc) => doc.entityType === entityType).map((doc) => doc.id);
-        const resolved = await this.#resolveItems(entityType, ids, appCulture);
+        const resolved = await this.#resolveItems(entityType, ids, culture);
 
         for (const item of resolved) {
           const doc = docById.get(item.id);
