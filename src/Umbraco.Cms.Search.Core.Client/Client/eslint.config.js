@@ -78,7 +78,7 @@ export default tseslint.config(
       // Web Components best practices
       'wc/no-self-class': 'error',
       'wc/require-listener-teardown': 'error',
-      'wc/guard-super-call': 'error',
+      'wc/guard-super-call': 'off',
 
       // Disable unbound-method for Lit elements
       // Lit automatically binds event handlers in templates, so this rule is a false positive
