@@ -45,19 +45,6 @@ stages:
               versionSource: 'fromFile'
               versionFilePath: src/.nvmrc
 
-          - bash: |
-              echo "##[command]Install nbgv"
-              dotnet tool install --tool-path . nbgv
-              echo "##[command]Running nbgv get-version"
-              PACKAGE_VERSION=$(nbgv get-version -v NpmPackageVersion)
-              echo "##[command]Running npm version"
-              echo "##[debug]Version: $PACKAGE_VERSION"
-              cd src/Umbraco.Cms.Search.Core.Client/Client
-              npm version $PACKAGE_VERSION --allow-same-version --no-git-tag-version
-              cd ../../Umbraco.Cms.Search.Provider.Examine/Client
-              npm version $PACKAGE_VERSION --allow-same-version --no-git-tag-version
-            displayName: Set NPM Version
-
           - task: Cache@2
             displayName: Cache node_modules
             inputs:
