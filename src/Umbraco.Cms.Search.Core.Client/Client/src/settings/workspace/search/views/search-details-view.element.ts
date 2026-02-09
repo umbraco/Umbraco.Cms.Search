@@ -42,12 +42,14 @@ export class UmbSearchDetailsViewElement extends UmbLitElement {
         <div class="column">
           <umb-extension-slot
             type="searchIndexDetailBox"
-            .filter=${(ext: ManifestSearchIndexDetailBox) => ext.meta?.column === 'left'}></umb-extension-slot>
+            .filter=${(ext: ManifestSearchIndexDetailBox) => ext.meta?.column === 'left'}
+          ></umb-extension-slot>
         </div>
         <div class="column">
           <umb-extension-slot
             type="searchIndexDetailBox"
-            .filter=${(ext: ManifestSearchIndexDetailBox) => ext.meta?.column !== 'left'}></umb-extension-slot>
+            .filter=${(ext: ManifestSearchIndexDetailBox) => ext.meta?.column !== 'left'}
+          ></umb-extension-slot>
         </div>
       </div>
     `;

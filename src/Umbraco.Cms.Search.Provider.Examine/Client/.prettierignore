@@ -4,6 +4,9 @@ dist/
 # Dependencies
 node_modules/
 
+# Generated code
+src/api/
+
 # Lock files
 package-lock.json
 

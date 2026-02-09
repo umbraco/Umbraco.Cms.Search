@@ -11,7 +11,7 @@ export default tseslint.config(
 
   // Global ignores
   {
-    ignores: ['node_modules/**', 'dist/**', '**/*.js', '**/*.d.ts', 'vite.config.ts'],
+    ignores: ['node_modules/**', 'dist/**', '**/*.js', '**/*.d.ts', 'src/api/**', 'vite.config.ts'],
   },
 
   // TypeScript configuration
