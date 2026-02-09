@@ -296,8 +296,11 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     this._error = undefined;
     this._searchStatusMessage = this.localize.term('search_searching');
 
-    const skip = this.#initialPage
-      ? (this.#initialPage - 1) * PAGE_SIZE
+    const initialPage = this.#initialPage;
+    this.#initialPage = undefined;
+
+    const skip = initialPage
+      ? (initialPage - 1) * PAGE_SIZE
       : this.#pagination.getSkip();
 
     const request: UmbSearchRequest = {
@@ -317,9 +320,8 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     } else {
       this._searchResults = data;
       this.#pagination.setTotalItems(data.total);
-      if (this.#initialPage) {
-        this.#pagination.setCurrentPageNumber(this.#initialPage);
-        this.#initialPage = undefined;
+      if (initialPage) {
+        this.#pagination.setCurrentPageNumber(initialPage);
       }
       this.#createTableItems(data);
       this._searchStatusMessage = this.localize.term('search_searchComplete', data.total);
@@ -453,6 +455,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
               <uui-pagination
                 .current=${this._currentPage}
                 .total=${this._totalPages}
+                ?disabled=${this._isSearching}
                 @change=${this.#onPageChange}
                 aria-label=${this.localize.term('search_paginationLabel')}
               ></uui-pagination>

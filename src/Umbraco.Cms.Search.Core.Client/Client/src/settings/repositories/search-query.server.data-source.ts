@@ -140,7 +140,7 @@ export class UmbSearchQueryServerDataSource extends UmbControllerBase {
 
     return items.map((item) => ({
       id: item.unique,
-      name: this.#resolveVariantName(item.variants, culture) ?? item.name ?? 'Unknown',
+      name: this.#resolveVariantName(item.variants, culture),
       icon: item.mediaType.icon,
     }));
   }
@@ -154,7 +154,7 @@ export class UmbSearchQueryServerDataSource extends UmbControllerBase {
 
     return items.map((item) => ({
       id: item.unique,
-      name: this.#resolveVariantName(item.variants, culture) ?? item.name ?? 'Unknown',
+      name: this.#resolveVariantName(item.variants, culture),
       icon: item.memberType.icon,
     }));
   }
