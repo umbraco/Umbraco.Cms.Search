@@ -3,10 +3,10 @@ import type { UmbSearchRequest, UmbSearchResult, UmbHealthStatusModel } from '..
 import { UMB_SEARCH_WORKSPACE_CONTEXT } from '../search-workspace.context-token.js';
 import { UMB_SEARCH_DOCUMENT_ENTITY_TYPE } from '@umbraco-cms/search/global';
 
-import { css, customElement, html, state, when } from '@umbraco-cms/backoffice/external/lit';
+import { css, customElement, html, nothing, state, when } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
-import { debounce } from '@umbraco-cms/backoffice/utils';
+import { debounce, UmbPaginationManager } from '@umbraco-cms/backoffice/utils';
 import type {
   UmbTableColumn,
   UmbTableConfig,
@@ -14,6 +14,8 @@ import type {
 } from '@umbraco-cms/backoffice/components';
 import { UmbModalRouteRegistrationController } from '@umbraco-cms/backoffice/router';
 import { UMB_WORKSPACE_MODAL } from '@umbraco-cms/backoffice/workspace';
+
+const PAGE_SIZE = 10;
 
 @customElement('umb-search-index-search-box')
 export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
@@ -24,6 +26,9 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   #debouncedSearch = debounce(() => {
     void this.#handleSearch();
   }, 300);
+
+  #pagination = new UmbPaginationManager();
+  #initialPage?: number;
 
   private _tableConfig: UmbTableConfig = {
     allowSelection: false,
@@ -69,8 +74,32 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   @state()
   private _searchStatusMessage = ''; // For screen reader announcements
 
+  @state()
+  private _currentPage = 1;
+
+  @state()
+  private _totalPages = 1;
+
   constructor() {
     super();
+
+    this.#pagination.setPageSize(PAGE_SIZE);
+
+    this.observe(
+      this.#pagination.currentPage,
+      (page) => {
+        this._currentPage = page;
+      },
+      '_observeCurrentPage',
+    );
+
+    this.observe(
+      this.#pagination.totalPages,
+      (totalPages) => {
+        this._totalPages = totalPages;
+      },
+      '_observeTotalPages',
+    );
 
     // Register modal route for opening entities
     new UmbModalRouteRegistrationController(this, UMB_WORKSPACE_MODAL)
@@ -93,6 +122,53 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
       this.#observeIndexAlias();
       this.#observeHealthStatus();
     });
+  }
+
+  override connectedCallback() {
+    super.connectedCallback();
+    this.#readUrlParams();
+  }
+
+  #readUrlParams() {
+    const url = new URL(window.location.href);
+    const query = url.searchParams.get('query');
+    const page = url.searchParams.get('page');
+
+    if (query) {
+      this.#inputValue = query;
+      this._searchQuery = query;
+
+      if (page) {
+        const pageNumber = parseInt(page, 10);
+        if (!isNaN(pageNumber) && pageNumber >= 1) {
+          this.#initialPage = pageNumber;
+        }
+      }
+
+      // Trigger search after microtask to ensure context is ready
+      void this.updateComplete.then(() => {
+        void this.#handleSearch();
+      });
+    }
+  }
+
+  #updateUrlParams() {
+    const url = new URL(window.location.href);
+
+    if (this._searchQuery.trim()) {
+      url.searchParams.set('query', this._searchQuery);
+      const currentPage = this.#pagination.getCurrentPageNumber();
+      if (currentPage > 1) {
+        url.searchParams.set('page', String(currentPage));
+      } else {
+        url.searchParams.delete('page');
+      }
+    } else {
+      url.searchParams.delete('query');
+      url.searchParams.delete('page');
+    }
+
+    history.replaceState(null, '', url.toString());
   }
 
   #observeHealthStatus() {
@@ -205,6 +281,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
 
     if (!this._indexAlias || !this._searchQuery.trim()) {
       this._searchResults = undefined;
+      this.#updateUrlParams();
       return;
     }
 
@@ -212,11 +289,15 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     this._error = undefined;
     this._searchStatusMessage = this.localize.term('search_searching');
 
+    const skip = this.#initialPage
+      ? (this.#initialPage - 1) * PAGE_SIZE
+      : this.#pagination.getSkip();
+
     const request: UmbSearchRequest = {
       indexAlias: this._indexAlias,
       query: this._searchQuery,
-      skip: 0,
-      take: 10,
+      skip,
+      take: PAGE_SIZE,
     };
 
     const { data, error } = await this.#queryRepository.search(request);
@@ -228,11 +309,17 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
       this._searchStatusMessage = this.localize.term('search_searchFailed');
     } else {
       this._searchResults = data;
+      this.#pagination.setTotalItems(data.total);
+      if (this.#initialPage) {
+        this.#pagination.setCurrentPageNumber(this.#initialPage);
+        this.#initialPage = undefined;
+      }
       this.#createTableItems(data);
       this._searchStatusMessage = this.localize.term('search_searchComplete', data.total);
     }
 
     this._isSearching = false;
+    this.#updateUrlParams();
   }
 
   #createTableItems(results: UmbSearchResult) {
@@ -292,8 +379,13 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     if (!this.#inputValue.trim()) {
       this._searchResults = undefined;
       this._error = undefined;
+      this.#pagination.setCurrentPageNumber(1);
+      this.#updateUrlParams();
       return;
     }
+
+    // Reset to page 1 on new query input
+    this.#pagination.setCurrentPageNumber(1);
 
     // Trigger debounced search
     this.#debouncedSearch();
@@ -311,8 +403,14 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     void this.#handleSearch();
   }
 
+  #onPageChange(event: Event) {
+    const target = event.target as HTMLElement & { current: number };
+    this.#pagination.setCurrentPageNumber(target.current);
+    void this.#handleSearch();
+  }
+
   #renderResults() {
-    if (!this._searchResults) return '';
+    if (!this._searchResults) return nothing;
 
     if (this._searchResults.total === 0) {
       return html`
@@ -343,6 +441,16 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
           aria-label=${this.localize.term('search_resultsTable')}
         >
         </umb-table>
+        ${this._totalPages > 1
+          ? html`
+              <uui-pagination
+                .current=${this._currentPage}
+                .total=${this._totalPages}
+                @change=${this.#onPageChange}
+                aria-label=${this.localize.term('search_paginationLabel')}
+              ></uui-pagination>
+            `
+          : nothing}
       </div>
     `;
   }
@@ -410,6 +518,11 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
         padding-bottom: var(--uui-size-space-2);
         border-bottom: 1px solid var(--uui-color-border);
         margin-bottom: var(--uui-size-space-3);
+      }
+
+      uui-pagination {
+        display: flex;
+        justify-content: center;
       }
     `,
   ];

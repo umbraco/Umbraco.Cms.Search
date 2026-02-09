@@ -69,6 +69,7 @@ export default {
     loading: 'Indlæser søgeresultater',
     resultsRegion: 'Søgeresultater',
     resultsTable: 'Tabel med søgeresultater',
+    paginationLabel: 'Sider med søgeresultater',
     searchDisabled: 'Søgning er deaktiveret, fordi indekset ikke er sundt. Nuværende status:',
   },
 } satisfies UmbLocalizationDictionary;
