@@ -1,7 +1,7 @@
 {
   "id": "Umbraco.Cms.Search.Core",
   "name": "@umbraco-cms/search",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "allowTelemetry": true,
   "extensions": [
     {

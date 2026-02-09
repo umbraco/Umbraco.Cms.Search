@@ -51,7 +51,7 @@ export type UmbSearchRequest = {
 
 // Search result types
 export type UmbSearchDocument = {
-  id: string;
+  unique: string;
   objectType: string;
 };
 

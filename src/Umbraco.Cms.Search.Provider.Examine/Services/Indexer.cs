@@ -57,7 +57,7 @@ public class Indexer : IExamineIndexer
 
         foreach (IGrouping<string?, Variation> variationGroup in variationGroups)
         {
-            var indexKey = CalculateIndexKey(key, variationGroup.Key);
+            var indexKey = DocumentIdHelper.CalculateDocumentId(key, variationGroup.Key);
             IEnumerable<IndexField> fieldsToMap = MapFields(fieldsAsArray.Where(x => x.Culture is null || x.Culture == variationGroup.Key), variationGroup.Key);
 
             valuesToIndex.Add(new ValueSet(
@@ -184,18 +184,6 @@ public class Indexer : IExamineIndexer
         {
             return Task.FromResult(new IndexMetadata(documentCount, HealthStatus.Corrupted));
         }
-    }
-
-    private static string CalculateIndexKey(Guid key, string? culture)
-    {
-        var result = key.ToString().ToLowerInvariant();
-
-        if (culture is not null)
-        {
-            result += $"_{culture}";
-        }
-
-        return result;
     }
 
     private void DeleteSingleDoc(IIndex index, Guid key)
