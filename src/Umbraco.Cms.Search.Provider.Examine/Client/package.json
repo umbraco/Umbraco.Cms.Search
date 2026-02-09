@@ -6,26 +6,11 @@
   "scripts": {
     "watch": "vite build --watch",
     "build": "tsc && vite build",
+    "generate-client": "node ../../scripts/generate-openapi.js https://localhost:44324/umbraco/swagger/Examine/swagger.json src/api",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "lint:errors-only": "eslint . --quiet",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.39.2",
-    "@typescript-eslint/eslint-plugin": "^8.54.0",
-    "@typescript-eslint/parser": "^8.54.0",
-    "eslint": "^9.39.2",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-lit": "^2.1.1",
-    "eslint-plugin-wc": "^3.0.2",
-    "prettier": "^3.8.1",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.54.0",
-    "vite": "^7.3.1"
-  },
-  "dependencies": {
-    "@umbraco-cms/backoffice": "17.0.0"
   }
 }
