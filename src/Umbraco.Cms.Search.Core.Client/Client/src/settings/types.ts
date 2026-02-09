@@ -53,6 +53,9 @@ export type UmbSearchRequest = {
 export type UmbSearchDocument = {
   unique: string;
   objectType: string;
+  entityType: string; // Mapped from objectType for easier handling in the UI
+  name: string;
+  icon?: string;
 };
 
 export type UmbSearchFacetValue = {
