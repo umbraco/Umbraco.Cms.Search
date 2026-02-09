@@ -4,6 +4,17 @@ import { html, repeat, when, css, nothing } from '@umbraco-cms/backoffice/extern
 
 const MAX_VALUE_LENGTH = 100;
 
+const FIELD_TYPE_LABELS = {
+  keywords: 'Keyword (exact match)',
+  texts: 'Full Text',
+  textsr1: 'Full Text (Boost: High)',
+  textsr2: 'Full Text (Boost: Medium)',
+  textsr3: 'Full Text (Boost: Low)',
+  integers: 'Integer',
+  decimals: 'Decimal',
+  datetimeoffsets: 'Date/Time',
+};
+
 export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
   static properties = {
     _fields: { type: Array },
@@ -104,13 +115,10 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
     return html`
       <tr class="field-row">
         <td class="field-name">
-          <span class="field-name-text">
-            ${field.name}
-            ${field.type
-              ? html`<uui-icon name="icon-info" title="${field.type}" class="type-icon"></uui-icon>`
-              : nothing}
-          </span>
-          <uui-button-copy-text class="copy-button" .text=${field.name} look="placeholder" compact label="Copy name"></uui-button-copy-text>
+          ${field.name}
+          ${field.type && FIELD_TYPE_LABELS[field.type]
+            ? html`<uui-icon name="icon-info" title="${FIELD_TYPE_LABELS[field.type]}" class="type-icon"></uui-icon>`
+            : nothing}
         </td>
         <td class="field-value">
           ${field.values.map((value, index) => this.#renderValue(field, value, index, showIndex))}
@@ -141,17 +149,19 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
               ${when(
                 this.#filteredAndSortedFields.length > 0,
                 () => html`
-                  <table class="fields-table">
-                    <thead>
-                      <tr>
-                        <th class="th-name">Name</th>
-                        <th class="th-value">Value</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${repeat(this.#filteredAndSortedFields, (field) => field.name, (field) => this.#renderField(field))}
-                    </tbody>
-                  </table>
+                  <uui-box>
+                    <table class="fields-table">
+                      <thead>
+                        <tr>
+                          <th class="th-name">Name</th>
+                          <th class="th-value">Value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${repeat(this.#filteredAndSortedFields, (field) => field.name, (field) => this.#renderField(field))}
+                      </tbody>
+                    </table>
+                  </uui-box>
                 `,
                 () => html`<div class="empty-state">No fields match your filter.</div>`,
               )}
@@ -236,25 +246,9 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
       }
 
       .field-name {
-        display: flex;
-        align-items: center;
-        gap: var(--uui-size-2);
-      }
-
-      .field-name-text {
         font-weight: 600;
         font-family: var(--uui-font-family-monospace);
         word-break: break-word;
-      }
-
-      .field-name .copy-button {
-        opacity: 0;
-        transition: opacity 0.15s ease;
-      }
-
-      .field-name:hover .copy-button,
-      .field-name:focus-within .copy-button {
-        opacity: 1;
       }
 
       .type-icon {
@@ -276,7 +270,6 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement {
         align-items: flex-start;
         gap: var(--uui-size-2);
         padding: var(--uui-size-2);
-        background-color: var(--uui-color-surface-alt);
         border-radius: var(--uui-border-radius);
         margin-bottom: var(--uui-size-2);
         word-break: break-word;
