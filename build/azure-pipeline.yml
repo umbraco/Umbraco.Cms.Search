@@ -304,6 +304,10 @@ stages:
         variables:
           testSiteUrl: 'https://localhost:44324'
         steps:
+          # Checkout source (full clone for Nerdbank.GitVersioning)
+          - checkout: self
+            fetchDepth: 0
+
           # Setup environment
           - task: DownloadPipelineArtifact@2
             displayName: Download build artifacts
