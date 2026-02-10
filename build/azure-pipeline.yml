@@ -324,6 +324,13 @@ stages:
             inputs:
               versionSpec: '22.x'
 
+          - pwsh: |
+              "UMBRACO_USER_LOGIN=$(UMBRACO__CMS__UNATTENDED__UNATTENDEDUSEREMAIL)
+              UMBRACO_USER_PASSWORD=$(UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERPASSWORD)
+              URL=$(testSiteUrl)" | Out-File .env
+            displayName: Generate .env
+            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
+
           # Cache npm packages
           - script: mkdir -p $(npm_config_cache_e2e)
             displayName: Create npm cache directory
@@ -415,13 +422,6 @@ stages:
             displayName: Wait for test site to be ready
 
           # Run acceptance tests
-          - script: |
-              echo "UMBRACO_USER_LOGIN=$(UMBRACO__CMS__UNATTENDED__UNATTENDEDUSEREMAIL)" > .env
-              echo "UMBRACO_USER_PASSWORD=$(UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERPASSWORD)" >> .env
-              echo "URL=$(testSiteUrl)" >> .env
-            displayName: Create .env file
-            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
-
           - script: npm run test
             displayName: Run Playwright tests
             workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
