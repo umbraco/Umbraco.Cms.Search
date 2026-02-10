@@ -292,13 +292,8 @@ stages:
       # SQLite connection string
       CONNECTIONSTRINGS__UMBRACODBDSN: "Data Source=|DataDirectory|/Umbraco.sqlite.db;Cache=Shared;Foreign Keys=True;Pooling=True"
       CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME: Microsoft.Data.Sqlite
-      # Enable console logging
-      SERILOG__WRITETO__0__NAME: Async
-      SERILOG__WRITETO__0__ARGS__CONFIGURE__0__NAME: Console
-      # uSync settings - import content at startup
-      USYNC__SETTINGS__IMPORTATSTARTUP: All
-      USYNC__SETTINGS__EXPORTATSTARTUP: None
-      USYNC__SETTINGS__IMPORTONSTARTUP: true
+      # Note: uSync settings are configured in appsettings.Development.json
+      # which uses "../_uSync/Shared/" path - we copy _uSync as sibling of testsite
     jobs:
       - job:
         displayName: E2E Tests (SQLite)
@@ -357,16 +352,30 @@ stages:
           - script: dotnet publish src/Umbraco.Web.TestSite.V17/Umbraco.Web.TestSite.V17.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/testsite
             displayName: Publish test site
 
-          - script: cp -r $(Build.SourcesDirectory)/src/_uSync $(Build.ArtifactStagingDirectory)/testsite/
-            displayName: Copy uSync data to test site
+          # Copy _uSync as sibling of testsite to match Development config path "../_uSync/Shared/"
+          - script: |
+              echo "=== Copying uSync data ==="
+              cp -r $(Build.SourcesDirectory)/src/_uSync $(Build.ArtifactStagingDirectory)/
+              echo "=== Verifying folder structure ==="
+              ls -la $(Build.ArtifactStagingDirectory)/
+              echo "=== uSync folder contents ==="
+              find $(Build.ArtifactStagingDirectory)/_uSync -type f | head -20
+            displayName: Copy uSync data
 
           - script: |
               cd $(Build.ArtifactStagingDirectory)/testsite
+              echo "=== Environment ==="
+              echo "ASPNETCORE_ENVIRONMENT=$ASPNETCORE_ENVIRONMENT"
+              echo "Working directory: $(pwd)"
+              echo "=== Verifying uSync path ==="
+              ls -la ../_uSync/Shared/ || echo "uSync folder not found at ../_uSync/Shared/"
+              echo "=== Starting test site ==="
               nohup dotnet Umbraco.Web.TestSite.V17.dll --urls="$(testSiteUrl)" > testsite.log 2>&1 &
               echo $! > testsite.pid
               echo "Test site started with PID $(cat testsite.pid)"
             displayName: Start test site
             env:
+              ASPNETCORE_ENVIRONMENT: Development
               ASPNETCORE_URLS: $(testSiteUrl)
               UMBRACO__CMS__UNATTENDED__INSTALLUNATTENDED: $(UMBRACO__CMS__UNATTENDED__INSTALLUNATTENDED)
               UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERNAME: $(UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERNAME)
@@ -381,23 +390,23 @@ stages:
               UMBRACO__CMS__KEEPALIVE__DISABLEKEEPALIVETASK: $(UMBRACO__CMS__KEEPALIVE__DISABLEKEEPALIVETASK)
               CONNECTIONSTRINGS__UMBRACODBDSN: $(CONNECTIONSTRINGS__UMBRACODBDSN)
               CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME: $(CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME)
-              SERILOG__WRITETO__0__NAME: $(SERILOG__WRITETO__0__NAME)
-              SERILOG__WRITETO__0__ARGS__CONFIGURE__0__NAME: $(SERILOG__WRITETO__0__ARGS__CONFIGURE__0__NAME)
-              USYNC__SETTINGS__IMPORTATSTARTUP: $(USYNC__SETTINGS__IMPORTATSTARTUP)
-              USYNC__SETTINGS__EXPORTATSTARTUP: $(USYNC__SETTINGS__EXPORTATSTARTUP)
-              USYNC__SETTINGS__IMPORTONSTARTUP: $(USYNC__SETTINGS__IMPORTONSTARTUP)
 
           - script: |
               echo "Waiting for test site to be ready..."
               for i in {1..60}; do
                 if curl -k -s -o /dev/null -w "%{http_code}" $(testSiteUrl) | grep -q "200\|301\|302"; then
                   echo "Test site is ready!"
+                  echo "=== Last 50 lines of testsite.log ==="
+                  tail -50 $(Build.ArtifactStagingDirectory)/testsite/testsite.log || true
+                  echo "=== Checking for uSync messages ==="
+                  grep -i "usync" $(Build.ArtifactStagingDirectory)/testsite/testsite.log || echo "No uSync messages found"
                   exit 0
                 fi
                 echo "Attempt $i: Test site not ready yet, waiting..."
                 sleep 5
               done
               echo "Test site failed to start"
+              echo "=== Full testsite.log ==="
               cat $(Build.ArtifactStagingDirectory)/testsite/testsite.log
               exit 1
             displayName: Wait for test site to be ready
