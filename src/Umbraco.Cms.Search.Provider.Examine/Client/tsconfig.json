@@ -1,0 +1,7 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["@umbraco-cms/backoffice/extension-types"]
+  },
+  "include": ["src"]
+}
