@@ -325,6 +325,9 @@ stages:
               versionSpec: '22.x'
 
           # Cache npm packages
+          - script: mkdir -p $(npm_config_cache_e2e)
+            displayName: Create npm cache directory
+
           - task: Cache@2
             displayName: Cache npm packages
             inputs:
