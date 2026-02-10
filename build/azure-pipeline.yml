@@ -295,6 +295,10 @@ stages:
       # Enable console logging
       SERILOG__WRITETO__0__NAME: Async
       SERILOG__WRITETO__0__ARGS__CONFIGURE__0__NAME: Console
+      # uSync settings - import content at startup
+      USYNC__SETTINGS__IMPORTATSTARTUP: All
+      USYNC__SETTINGS__EXPORTATSTARTUP: None
+      USYNC__SETTINGS__IMPORTONSTARTUP: true
     jobs:
       - job:
         displayName: E2E Tests (SQLite)
@@ -353,6 +357,9 @@ stages:
           - script: dotnet publish src/Umbraco.Web.TestSite.V17/Umbraco.Web.TestSite.V17.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/testsite
             displayName: Publish test site
 
+          - script: cp -r $(Build.SourcesDirectory)/src/_uSync $(Build.ArtifactStagingDirectory)/testsite/
+            displayName: Copy uSync data to test site
+
           - script: |
               cd $(Build.ArtifactStagingDirectory)/testsite
               nohup dotnet Umbraco.Web.TestSite.V17.dll --urls="$(testSiteUrl)" > testsite.log 2>&1 &
@@ -376,6 +383,9 @@ stages:
               CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME: $(CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME)
               SERILOG__WRITETO__0__NAME: $(SERILOG__WRITETO__0__NAME)
               SERILOG__WRITETO__0__ARGS__CONFIGURE__0__NAME: $(SERILOG__WRITETO__0__ARGS__CONFIGURE__0__NAME)
+              USYNC__SETTINGS__IMPORTATSTARTUP: $(USYNC__SETTINGS__IMPORTATSTARTUP)
+              USYNC__SETTINGS__EXPORTATSTARTUP: $(USYNC__SETTINGS__EXPORTATSTARTUP)
+              USYNC__SETTINGS__IMPORTONSTARTUP: $(USYNC__SETTINGS__IMPORTONSTARTUP)
 
           - script: |
               echo "Waiting for test site to be ready..."
