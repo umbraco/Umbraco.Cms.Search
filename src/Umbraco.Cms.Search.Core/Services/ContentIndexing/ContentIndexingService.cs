@@ -1,12 +1,12 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.HostedServices;
-using Umbraco.Cms.Core.Models.ServerEvents;
-using Umbraco.Cms.Core.ServerEvents;
 using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Cms.Search.Core.Models.Configuration;
 using Umbraco.Cms.Search.Core.Models.Indexing;
+using Umbraco.Cms.Search.Core.Notifications;
 using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
@@ -14,23 +14,23 @@ namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 internal sealed class ContentIndexingService : IContentIndexingService
 {
     private readonly IBackgroundTaskQueue _backgroundTaskQueue;
+    private readonly IEventAggregator _eventAggregator;
     private readonly ILogger<ContentIndexingService> _logger;
     private readonly IndexOptions _indexOptions;
     private readonly IServiceProvider _serviceProvider;
-    private readonly IServerEventRouter _serverEventRouter;
 
     public ContentIndexingService(
         IBackgroundTaskQueue backgroundTaskQueue,
+        IEventAggregator eventAggregator,
         ILogger<ContentIndexingService> logger,
         IOptions<IndexOptions> indexOptions,
-        IServiceProvider serviceProvider,
-        IServerEventRouter serverEventRouter)
+        IServiceProvider serviceProvider)
     {
         _backgroundTaskQueue = backgroundTaskQueue;
+        _eventAggregator = eventAggregator;
         _logger = logger;
         _indexOptions = indexOptions.Value;
         _serviceProvider = serviceProvider;
-        _serverEventRouter = serverEventRouter;
     }
 
     public void Handle(IEnumerable<ContentChange> changes)
@@ -89,13 +89,11 @@ internal sealed class ContentIndexingService : IContentIndexingService
             return;
         }
 
+        await _eventAggregator.PublishAsync(new IndexRebuildStartingNotification(indexRegistration.IndexAlias), cancellationToken);
+
         await contentChangeStrategy.RebuildAsync(new IndexInfo(indexRegistration.IndexAlias, indexRegistration.ContainedObjectTypes, indexer), cancellationToken);
 
-        await _serverEventRouter.BroadcastEventAsync(new ServerEvent
-        {
-            EventType = "IndexRebuildCompleted",
-            EventSource = indexRegistration.IndexAlias,
-        });
+        await _eventAggregator.PublishAsync(new IndexRebuildCompletedNotification(indexRegistration.IndexAlias), cancellationToken);
     }
 
     private bool TryGetContentChangeStrategy(Type type, [NotNullWhen(true)] out IContentChangeStrategy? contentChangeStrategy)

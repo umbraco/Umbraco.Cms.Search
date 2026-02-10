@@ -10,6 +10,7 @@ using Umbraco.Cms.Api.Management.OpenApi;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Search.Core.Cache;
+using Umbraco.Cms.Search.Core.Notifications;
 using Umbraco.Cms.Search.Core.Cache.Content;
 using Umbraco.Cms.Search.Core.Cache.Media;
 using Umbraco.Cms.Search.Core.Cache.PublicAccess;
@@ -53,7 +54,9 @@ public static class UmbracoBuilderExtensions
             .AddNotificationAsyncHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>()
             .AddNotificationAsyncHandler<ContentTypeChangedNotification, RebuildIndexesNotificationHandler>()
             .AddNotificationAsyncHandler<MemberTypeChangedNotification, RebuildIndexesNotificationHandler>()
-            .AddNotificationAsyncHandler<MediaTypeChangedNotification, RebuildIndexesNotificationHandler>();
+            .AddNotificationAsyncHandler<MediaTypeChangedNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationAsyncHandler<IndexRebuildStartingNotification, IndexRebuildServerEventNotificationHandler>()
+            .AddNotificationAsyncHandler<IndexRebuildCompletedNotification, IndexRebuildServerEventNotificationHandler>();
 
         builder
             .AddNotificationHandler<DraftContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
