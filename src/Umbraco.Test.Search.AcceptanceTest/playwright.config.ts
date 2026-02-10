@@ -14,7 +14,9 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1,
-  reporter: process.env.CI ? [['junit', {outputFile: 'results/results.xml'}]] : [['html', {outputFolder: 'results/playwright-report', open: 'never'}]],
+  reporter: process.env.CI
+    ? [['list'], ['junit', {outputFile: 'results/results.xml'}]]
+    : [['html', {outputFolder: 'results/playwright-report', open: 'never'}]],
   use: {
     ...devices['Desktop Chrome'],
     actionTimeout: 0,
