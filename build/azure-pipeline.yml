@@ -371,7 +371,7 @@ stages:
               echo "=== Verifying uSync path ==="
               ls -la ../_uSync/Shared/ || echo "uSync folder not found at ../_uSync/Shared/"
               echo "=== Starting test site ==="
-              nohup dotnet Umbraco.Web.TestSite.V17.dll --urls="$(testSiteUrl)" > testsite.log 2>&1 &
+              nohup dotnet Umbraco.Web.TestSite.V17.dll --urls="$(ASPNETCORE_URLS)" > testsite.log 2>&1 &
               echo $! > testsite.pid
               echo "Test site started with PID $(cat testsite.pid)"
             displayName: Start test site
@@ -379,7 +379,7 @@ stages:
           - script: |
               echo "Waiting for test site to be ready..."
               for i in {1..60}; do
-                if curl -k -s -o /dev/null -w "%{http_code}" $(testSiteUrl) | grep -q "200\|301\|302"; then
+                if curl -k -s -o /dev/null -w "%{http_code}" $(ASPNETCORE_URLS) | grep -q "200\|301\|302"; then
                   echo "Test site is ready!"
                   echo "=== Last 50 lines of testsite.log ==="
                   tail -50 $(Build.ArtifactStagingDirectory)/testsite/testsite.log || true
