@@ -19,14 +19,12 @@ public class ExamineApiController : ExamineApiControllerBase
     [HttpGet("{indexAlias}/document/{documentKey:guid}")]
     [ProducesResponseType<DocumentViewModel>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public IActionResult GetDocument(string indexAlias, Guid documentKey, [FromQuery] string? culture = null)
+    public IActionResult GetDocument(string indexAlias, Guid documentKey)
     {
         if (_examineManager.TryGetIndex(indexAlias, out IIndex? index) is false)
         {
             return NotFound($"Could not find index with alias '{indexAlias}'");
         }
-
-        var documentId = DocumentIdHelper.CalculateDocumentId(documentKey, culture);
 
         ISearchResults results = index.Searcher
             .CreateQuery()
@@ -35,24 +33,28 @@ public class ExamineApiController : ExamineApiControllerBase
                 documentKey.AsKeyword())
             .Execute();
 
-        ISearchResult? result = results.FirstOrDefault(r => r.Id == documentId);
-        if (result is null)
+        if (results.Any() is false)
         {
             return NotFound(
-                $"Could not find document with key '{documentKey}'{(culture is not null ? $" and culture '{culture}'" : string.Empty)} in index '{indexAlias}'");
+                $"Could not find document with key '{documentKey}' in index '{indexAlias}'");
         }
 
-        var viewModel = new DocumentViewModel
+        var indexDocumentViewModels = results.Select(result => new IndexDocumentViewModel()
+            {
+                Fields = result.AllValues.Select(kvp => ParseField(kvp.Key, kvp.Value))
+                    .ToList()
+                    .AsReadOnly(),
+            })
+            .ToList();
+
+        var documentViewModel = new DocumentViewModel()
         {
             Key = documentKey,
-            Culture = culture,
-            Fields = result.AllValues
-                .Select(kvp => ParseField(kvp.Key, kvp.Value))
-                .ToList()
-                .AsReadOnly(),
+            Documents = indexDocumentViewModels,
         };
 
-        return Ok(viewModel);
+
+        return Ok(documentViewModel);
     }
 
     private static FieldViewModel ParseField(string fieldName, IEnumerable<string> values)
