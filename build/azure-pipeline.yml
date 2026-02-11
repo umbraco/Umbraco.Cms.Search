@@ -148,7 +148,7 @@ stages:
         steps:
           - checkout: self
             submodules: false
-            lfs: false,
+            lfs: false
             fetchDepth: 1
             fetchFilter: tree:0
 
@@ -431,7 +431,7 @@ stages:
             inputs:
               testResultsFormat: 'JUnit'
               testResultsFiles: '*.xml'
-              testResultsFiles: 'src/Umbraco.Test.Search.AcceptanceTest/results'
+              searchFolder: 'src/Umbraco.Test.Search.AcceptanceTest/results'
               testRunTitle: 'Acceptance Test Results'
               failTaskOnFailedTests: true
 
