@@ -37,8 +37,8 @@ export default {
     searchButton: 'Search',
     noResults: 'No results found',
     resultsCount: (count: number) => `Found ${count} result${count !== 1 ? 's' : ''}`,
-    tableColumnDocumentId: 'Document ID',
-    tableColumnObjectType: 'Object Type',
+    tableColumnName: 'Name',
+    tableColumnEntityType: 'Entity Type',
     statsBoxLabel: 'Statistics',
     searchBoxLabel: 'Search',
     // Accessibility labels
@@ -55,6 +55,7 @@ export default {
     loading: 'Loading search results',
     resultsRegion: 'Search results',
     resultsTable: 'Search results table',
+    paginationLabel: 'Search results pages',
     searchDisabled: 'Search is disabled because the index is not healthy. Current status:',
   },
 } satisfies UmbLocalizationDictionary;

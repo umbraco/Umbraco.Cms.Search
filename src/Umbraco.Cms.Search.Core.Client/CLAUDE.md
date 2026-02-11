@@ -1,8 +1,8 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with the backoffice client code in this directory.
+This file provides guidance to Claude Code (claude.ai/code) when working with the backoffice client code in this project.
 
-**See also:** [Main repository CLAUDE.md](../../../CLAUDE.md) for server-side architecture and build commands.
+**See also:** [Main repository CLAUDE.md](../../CLAUDE.md) for server-side architecture and build commands.
 
 ## Overview
 
@@ -16,28 +16,36 @@ The Umbraco Search backoffice client uses a **three-bundle code-splitting patter
 
 ## Build Commands
 
+This workspace is part of an **npm workspaces monorepo** rooted at `src/`. Shared config (`tsconfig.json`, `.prettierrc.json`, `.nvmrc`) lives there.
+
 ```bash
-# Install dependencies
+# From the monorepo root (src/)
+cd src
+
+# Install all workspaces (run from src/, not from this directory)
 npm install
 
-# Build for production
+# Build all workspaces
 npm run build
 
-# Watch mode for development
-npm run watch
+# Build only this workspace
+npm run build --workspace=Umbraco.Cms.Search.Core.Client/Client
+
+# Watch only this workspace
+npm run watch --workspace=Umbraco.Cms.Search.Core.Client/Client
 
 # Generate OpenAPI client (requires test site at https://localhost:44324)
-npm run generate-client
+npm run generate-client --workspace=Umbraco.Cms.Search.Core.Client/Client
 ```
 
-**Requirements:** Node.js 24 (see `.nvmrc`)
+**Requirements:** Node.js 24 (see `src/.nvmrc`)
 
 ## Architecture Pattern
 
 ### Bundle Structure
 
 ```
-src/
+Client/src/
 ├── bundle/                          → search-bundle.js (manifests only)
 │   ├── search-bundle.ts             (Entry point, aggregates all manifests)
 │   ├── bundle.manifests.ts          (Aggregates all manifest files)
@@ -239,16 +247,20 @@ export default defineConfig({
 
 ### tsconfig.json
 
-Maps logical imports to physical files for type-checking:
+Extends the shared base config (`src/tsconfig.json`) and adds workspace-specific path mappings for type-checking:
 
 ```json
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "baseUrl": ".",
     "paths": {
       "@umbraco-cms/search/global": ["./src/global/index.ts"],
       "@umbraco-cms/search/settings": ["./src/settings/index.ts"]
-    }
-  }
+    },
+    "types": ["@umbraco-cms/backoffice/extension-types"]
+  },
+  "include": ["src"]
 }
 ```
 
@@ -275,24 +287,24 @@ Provides runtime resolution via importmap:
 
 ### Adding a New Collection Action
 
-1. Create implementation in `src/settings/collectionActions/`
-2. Export from `src/settings/index.ts`
-3. Add manifest in `src/bundle/collectionActions.manifests.ts`
+1. Create implementation in `Client/src/settings/collectionActions/`
+2. Export from `Client/src/settings/index.ts`
+3. Add manifest in `Client/src/bundle/collectionActions.manifests.ts`
 4. Use `api: () => import('@umbraco-cms/search/settings').then(m => ({ default: m.YourAction }))`
 
 ### Adding a New Global Context
 
-1. Create context in `src/global/`
+1. Create context in `Client/src/global/`
 2. Create context token in same file or separate file
-3. Export both from `src/global/index.ts`
+3. Export both from `Client/src/global/index.ts`
 4. **Important:** Global contexts load upfront, so keep them lightweight
 
 ### Adding a New Index Detail Box
 
-1. Create element in `src/settings/workspace/search/views/`
+1. Create element in `Client/src/settings/workspace/search/views/`
 2. Extend `UmbLitElement` and consume `UMB_SEARCH_WORKSPACE_CONTEXT`
-3. Export from `src/settings/index.ts`
-4. Add manifest in `src/bundle/indexDetailBoxes.manifests.ts`:
+3. Export from `Client/src/settings/index.ts`
+4. Add manifest in `Client/src/bundle/indexDetailBoxes.manifests.ts`:
 
 ```typescript
 {
@@ -308,12 +320,12 @@ Provides runtime resolution via importmap:
 ### Adding a New API Endpoint
 
 1. Run `npm run generate-client` after adding endpoint to server
-2. Generated types appear in `src/settings/api/` (should be moved to new module if consumed by other parts of the Backoffice in the future)
+2. Generated types appear in `Client/src/settings/api/` (should be moved to new module if consumed by other parts of the Backoffice in the future)
 3. Use generated services in repositories or contexts
 
 ## Global Constants
 
-All entity types, aliases, and event types are centralized in `src/global/constants.ts`:
+All entity types, aliases, and event types are centralized in `Client/src/global/constants.ts`:
 
 ```typescript
 // Entity types
@@ -519,10 +531,10 @@ render() {
 Entity actions automatically appear in workspace header dropdowns - don't create duplicate workspace actions:
 
 ```typescript
-// ❌ DON'T: Create separate workspace action
+// In DON'T: Create separate workspace action
 export class UmbSearchRebuildWorkspaceAction extends UmbWorkspaceActionBase {}
 
-// ✅ DO: Create single entity action that works in both contexts
+// DO: Create single entity action that works in both contexts
 export class UmbSearchRebuildIndexEntityAction extends UmbEntityActionBase<never> {
   override async execute() {
     // Check for workspace context (when triggered from workspace header)
@@ -551,14 +563,14 @@ export class UmbSearchRebuildIndexEntityAction extends UmbEntityActionBase<never
 For operations that take time (like rebuild), manage state carefully to avoid race conditions:
 
 ```typescript
-// ✅ DO: Set loading state BEFORE API call
+// DO: Set loading state BEFORE API call
 const workspaceContext = await this.getContext(UMB_SEARCH_WORKSPACE_CONTEXT).catch(() => undefined);
 if (workspaceContext) {
   workspaceContext.setState('loading'); // Set BEFORE
 }
 await this.#repository.rebuildIndex(this.args.unique); // Then call API
 
-// ❌ DON'T: Set loading state AFTER API call
+// DON'T: Set loading state AFTER API call
 await this.#repository.rebuildIndex(this.args.unique); // API call first
 if (workspaceContext) {
   workspaceContext.setState('loading'); // Too late! Race condition
@@ -617,14 +629,13 @@ This ensures UI state stays synchronized with actual server state after reloads.
 The client is tested through the test site. To run the test site:
 
 ```bash
-cd ../../../Umbraco.Web.TestSite.V17
-dotnet run
+dotnet run --project src/Umbraco.Web.TestSite.V17
 ```
 
 For client-side debugging:
 
 1. Run test site (command above)
-2. Run watch mode: `npm run watch`
+2. Run watch mode from monorepo root: `cd src && npm run watch`
 3. Changes auto-rebuild and hot-reload in browser
 
-See [main CLAUDE.md](../../../CLAUDE.md) for full test site details and server-side testing.
+See [main CLAUDE.md](../../CLAUDE.md) for full test site details and server-side testing.
