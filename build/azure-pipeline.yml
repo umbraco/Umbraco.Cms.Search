@@ -276,24 +276,25 @@ stages:
     dependsOn: Build
     variables:
       npm_config_cache_e2e: $(Pipeline.Workspace)/.npm_e2e
-      # Umbraco unattended install settings
+      # Enable console logging in Release mode
+      SERILOG__WRITETO__0__NAME: Async
+      SERILOG__WRITETO__0__ARGS__CONFIGURE__0__NAME: Console
+      # Set unattended install settings
       UMBRACO__CMS__UNATTENDED__INSTALLUNATTENDED: true
       UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERNAME: Playwright Test
-      UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERPASSWORD: "1234567890"
-      UMBRACO__CMS__UNATTENDED__UNATTENDEDUSEREMAIL: admin@localhost.local
-      # Umbraco settings
-      UMBRACO__CMS__GLOBAL__INSTALLMISSINGDATABASE: true
-      UMBRACO__CMS__GLOBAL__USEHTTPS: true
-      UMBRACO__CMS__GLOBAL__DISABLEELECTIONFORSINGLESERVER: true
-      UMBRACO__CMS__GLOBAL__VERSIONCHECKPERIOD: 0
+      UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERPASSWORD: UmbracoAcceptance123!
+      UMBRACO__CMS__UNATTENDED__UNATTENDEDUSEREMAIL: playwright@umbraco.com
+      # Custom Umbraco settings
       UMBRACO__CMS__CONTENT__CONTENTVERSIONCLEANUPPOLICY__ENABLECLEANUP: false
+      UMBRACO__CMS__GLOBAL__DISABLEELECTIONFORSINGLESERVER: true
+      UMBRACO__CMS__GLOBAL__INSTALLMISSINGDATABASE: true
+      UMBRACO__CMS__GLOBAL__ID: 00000000-0000-0000-0000-000000000042
+      UMBRACO__CMS__GLOBAL__VERSIONCHECKPERIOD: 0
+      UMBRACO__CMS__GLOBAL__USEHTTPS: true
       UMBRACO__CMS__HEALTHCHECKS__NOTIFICATION__ENABLED: false
       UMBRACO__CMS__KEEPALIVE__DISABLEKEEPALIVETASK: true
-      # SQLite connection string
-      CONNECTIONSTRINGS__UMBRACODBDSN: "Data Source=|DataDirectory|/Umbraco.sqlite.db;Cache=Shared;Foreign Keys=True;Pooling=True"
-      CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME: Microsoft.Data.Sqlite
-      # Note: uSync settings are configured in appsettings.Development.json
-      # which uses "../_uSync/Shared/" path - we copy _uSync as sibling of testsite
+      UMBRACO__CMS__WEBROUTING__UMBRACOAPPLICATIONURL: https://localhost:44324/
+      ASPNETCORE_URLS: https://localhost:44324
     jobs:
       - job:
         displayName: E2E Tests (SQLite)
@@ -301,7 +302,8 @@ stages:
           vmImage: 'ubuntu-latest'
         timeoutInMinutes: 30
         variables:
-          testSiteUrl: 'https://localhost:44324'
+          CONNECTIONSTRINGS__UMBRACODBDSN: "Data Source=|DataDirectory|/Umbraco.sqlite.db;Cache=Shared;Foreign Keys=True;Pooling=True"
+          CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME: Microsoft.Data.Sqlite
         steps:
           # Checkout source (full clone for Nerdbank.GitVersioning)
           - checkout: self
@@ -309,10 +311,10 @@ stages:
 
           # Setup environment
           - task: DownloadPipelineArtifact@2
-            displayName: Download build artifacts
+            displayName: Download NuGet artifacts
             inputs:
-              artifact: build_output
-              path: $(Build.SourcesDirectory)
+              artifact: nupkg
+              path: $(Agent.BuildDirectory)/app/nupkg
 
           - task: UseDotNet@2
             displayName: Use .NET SDK from global.json
@@ -327,31 +329,31 @@ stages:
           - pwsh: |
               "UMBRACO_USER_LOGIN=$(UMBRACO__CMS__UNATTENDED__UNATTENDEDUSEREMAIL)
               UMBRACO_USER_PASSWORD=$(UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERPASSWORD)
-              URL=$(testSiteUrl)" | Out-File .env
+              URL=$(ASPNETCORE_URLS)" | Out-File .env
             displayName: Generate .env
-            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
+            workingDirectory: $(Build.SourcesDirectory)/src/Umbraco.Test.Search.AcceptanceTest
 
-          # Cache npm packages
+          # Cache NPM packages
           - script: mkdir -p $(npm_config_cache_e2e)
-            displayName: Create npm cache directory
+            displayName: Create NPM cache directory
 
           - task: Cache@2
-            displayName: Cache npm packages
+            displayName: Cache NPM packages
             inputs:
-              key: '"npm_e2e" | "$(Agent.OS)" | src/Umbraco.Test.Search.AcceptanceTest/package-lock.json'
+              key: '"npm_e2e" | "$(Agent.OS)" | $(Build.SourcesDirectory)/src/Umbraco.Test.Search.AcceptanceTest/package-lock.json'
               restoreKeys: |
                 "npm_e2e" | "$(Agent.OS)"
                 "npm_e2e"
               path: $(npm_config_cache_e2e)
 
-          # Install acceptance test dependencies
+          # Restore NPM packages
           - script: npm ci --no-fund --no-audit --prefer-offline
-            displayName: Install acceptance test NPM packages
-            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
+            displayName: Restore NPM packages
+            workingDirectory: $(Build.SourcesDirectory)/src/Umbraco.Test.Search.AcceptanceTest
 
           - script: npx playwright install --with-deps chromium
             displayName: Install Playwright browsers
-            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
+            workingDirectory: $(Build.SourcesDirectory)/src/Umbraco.Test.Search.AcceptanceTest
 
           # Generate HTTPS dev certificate
           - script: dotnet dev-certs https --trust
@@ -384,22 +386,6 @@ stages:
               echo $! > testsite.pid
               echo "Test site started with PID $(cat testsite.pid)"
             displayName: Start test site
-            env:
-              ASPNETCORE_ENVIRONMENT: Development
-              ASPNETCORE_URLS: $(testSiteUrl)
-              UMBRACO__CMS__UNATTENDED__INSTALLUNATTENDED: $(UMBRACO__CMS__UNATTENDED__INSTALLUNATTENDED)
-              UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERNAME: $(UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERNAME)
-              UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERPASSWORD: $(UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERPASSWORD)
-              UMBRACO__CMS__UNATTENDED__UNATTENDEDUSEREMAIL: $(UMBRACO__CMS__UNATTENDED__UNATTENDEDUSEREMAIL)
-              UMBRACO__CMS__GLOBAL__INSTALLMISSINGDATABASE: $(UMBRACO__CMS__GLOBAL__INSTALLMISSINGDATABASE)
-              UMBRACO__CMS__GLOBAL__USEHTTPS: $(UMBRACO__CMS__GLOBAL__USEHTTPS)
-              UMBRACO__CMS__GLOBAL__DISABLEELECTIONFORSINGLESERVER: $(UMBRACO__CMS__GLOBAL__DISABLEELECTIONFORSINGLESERVER)
-              UMBRACO__CMS__GLOBAL__VERSIONCHECKPERIOD: $(UMBRACO__CMS__GLOBAL__VERSIONCHECKPERIOD)
-              UMBRACO__CMS__CONTENT__CONTENTVERSIONCLEANUPPOLICY__ENABLECLEANUP: $(UMBRACO__CMS__CONTENT__CONTENTVERSIONCLEANUPPOLICY__ENABLECLEANUP)
-              UMBRACO__CMS__HEALTHCHECKS__NOTIFICATION__ENABLED: $(UMBRACO__CMS__HEALTHCHECKS__NOTIFICATION__ENABLED)
-              UMBRACO__CMS__KEEPALIVE__DISABLEKEEPALIVETASK: $(UMBRACO__CMS__KEEPALIVE__DISABLEKEEPALIVETASK)
-              CONNECTIONSTRINGS__UMBRACODBDSN: $(CONNECTIONSTRINGS__UMBRACODBDSN)
-              CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME: $(CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME)
 
           - script: |
               echo "Waiting for test site to be ready..."
@@ -421,6 +407,11 @@ stages:
               exit 1
             displayName: Wait for test site to be ready
 
+          # Install Playwright and dependencies
+          - pwsh: npx playwright install chromium
+            displayName: Install Playwright only with Chromium browser
+            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
+
           # Run acceptance tests
           - script: npm run test
             displayName: Run Playwright tests
@@ -428,22 +419,32 @@ stages:
             env:
               CI: true
 
+          # Copy artifacts
+          - pwsh: |
+              if (Test-Path src/Umbraco.Test.Search.AcceptanceTest/results*) {
+                Copy-Item src/Umbraco.Test.Search.AcceptanceTest/results/* $(Build.ArtifactStagingDirectory) -Recurse
+              }
+            displayName: Copy Playwright results
+            condition: succeededOrFailed()
+
+          # Publish test artifacts
+          - task: PublishPipelineArtifact@1
+            displayName: Publish test artifacts
+            condition: succeededOrFailed()
+            inputs:
+              targetPath: $(Build.ArtifactStagingDirectory)
+              artifactName: acceptance-test-results
+              
           # Publish test results
           - task: PublishTestResults@2
             displayName: Publish test results
             condition: succeededOrFailed()
             inputs:
               testResultsFormat: 'JUnit'
-              testResultsFiles: 'src/Umbraco.Test.Search.AcceptanceTest/results/results.xml'
+              testResultsFiles: '*.xml'
+              testResultsFiles: 'src/Umbraco.Test.Search.AcceptanceTest/results'
               testRunTitle: 'Acceptance Test Results'
               failTaskOnFailedTests: true
-
-          - task: PublishPipelineArtifact@1
-            displayName: Publish test artifacts
-            condition: succeededOrFailed()
-            inputs:
-              targetPath: src/Umbraco.Test.Search.AcceptanceTest/results
-              artifactName: acceptance-test-results
 
           # Stop test site
           - script: |
