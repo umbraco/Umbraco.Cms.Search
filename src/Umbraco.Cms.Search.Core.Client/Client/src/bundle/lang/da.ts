@@ -70,6 +70,7 @@ export default {
     resultsRegion: 'Søgeresultater',
     resultsTable: 'Tabel med søgeresultater',
     paginationLabel: 'Sider med søgeresultater',
+    cultureSelectLabel: 'Kultur',
     searchDisabled: 'Søgning er deaktiveret, fordi indekset ikke er sundt. Nuværende status:',
   },
 } satisfies UmbLocalizationDictionary;

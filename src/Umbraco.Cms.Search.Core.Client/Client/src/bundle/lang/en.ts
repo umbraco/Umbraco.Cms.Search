@@ -56,6 +56,7 @@ export default {
     resultsRegion: 'Search results',
     resultsTable: 'Search results table',
     paginationLabel: 'Search results pages',
+    cultureSelectLabel: 'Culture',
     searchDisabled: 'Search is disabled because the index is not healthy. Current status:',
   },
 } satisfies UmbLocalizationDictionary;
