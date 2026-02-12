@@ -2,6 +2,7 @@ import { UmbModalRouteRegistrationController } from '@umbraco-cms/backoffice/rou
 import { UMB_ENTITY_WORKSPACE_CONTEXT } from '@umbraco-cms/backoffice/workspace';
 import { customElement, nothing } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
+import { ShowFieldsModalData } from './types.ts';
 
 const MODAL_ALIAS = 'Umbraco.Cms.Search.Modal.DocumentFields';
 
@@ -20,7 +21,7 @@ export class UmbExamineFieldsRouteProviderElement extends UmbLitElement {
       this.#indexAlias = context.getUnique() ?? undefined;
     });
 
-    new UmbModalRouteRegistrationController(this, MODAL_ALIAS)
+    new UmbModalRouteRegistrationController<ShowFieldsModalData>(this, MODAL_ALIAS)
       .addAdditionalPath(':documentUnique/:culture')
       .onSetup((params) => {
         return {
@@ -29,7 +30,7 @@ export class UmbExamineFieldsRouteProviderElement extends UmbLitElement {
             size: 'large',
           },
           data: {
-            searchDocument: { unique: params.documentUnique },
+            documentUnique: params.documentUnique,
             indexAlias: this.#indexAlias ?? '',
             culture: params.culture,
           },

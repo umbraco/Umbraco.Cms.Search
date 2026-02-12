@@ -1,5 +1,5 @@
 import { UmbSearchExamineProviderRepository } from './examine-provider.repository.js';
-import type { ExamineField, ExamineIndexDocument } from './types.js';
+import type { ExamineField, ExamineIndexDocument, ShowFieldsModalData } from './types.js';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { html, when, css, nothing, state } from '@umbraco-cms/backoffice/external/lit';
 
@@ -7,12 +7,6 @@ import './document-fields.element.js';
 
 const CULTURE_FIELD_NAME = 'Sys_Culture';
 const INVARIANT_CULTURE = 'none';
-
-export interface ShowFieldsModalData {
-  searchDocument: { unique: string };
-  indexAlias: string;
-  culture?: string;
-}
 
 interface CultureDocument {
   culture: string;
@@ -39,7 +33,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
   async #requestSearchDocumentFields() {
     this._isLoading = true;
     const { data, error } = await this.#repository.requestSearchDocument(
-      this.data?.searchDocument.unique,
+      this.data?.documentUnique,
       this.data?.indexAlias,
     );
 
