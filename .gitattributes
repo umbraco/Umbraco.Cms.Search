@@ -1,0 +1,9 @@
+# Generated OpenAPI client types
+src/Umbraco.Cms.Search.Core.Client/Client/src/settings/api/** linguist-generated
+src/Umbraco.Cms.Search.Provider.Examine/Client/src/api/** linguist-generated
+
+# uSync shared configuration (test site data)
+src/_uSync/Shared/** linguist-generated
+
+# ModelsBuilder generated models
+src/Umbraco.Web.TestSite.V17/umbraco/models/*.generated.cs linguist-generated
