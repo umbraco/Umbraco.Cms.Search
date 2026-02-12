@@ -1,13 +1,14 @@
+import type { ShowFieldsModalData } from './types.js';
 import { UmbModalRouteRegistrationController } from '@umbraco-cms/backoffice/router';
+import type { UmbModalRouteBuilder } from '@umbraco-cms/backoffice/router';
 import { UMB_ENTITY_WORKSPACE_CONTEXT } from '@umbraco-cms/backoffice/workspace';
 import { customElement, nothing } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
-import { ShowFieldsModalData } from './types.ts';
 
 const MODAL_ALIAS = 'Umbraco.Cms.Search.Modal.DocumentFields';
 
 /** Module-level export shared with the entity action for URL construction. */
-export let fieldsRouteBuilder: ((params: { [key: string]: string | number }) => string) | undefined;
+export let fieldsRouteBuilder: UmbModalRouteBuilder | undefined;
 
 @customElement('umb-examine-fields-route-provider')
 export class UmbExamineFieldsRouteProviderElement extends UmbLitElement {
