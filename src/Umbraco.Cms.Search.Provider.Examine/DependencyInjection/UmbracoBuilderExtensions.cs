@@ -7,21 +7,30 @@ using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Hosting;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Infrastructure.Examine;
+using Umbraco.Cms.Search.Core.Notifications;
 using Umbraco.Cms.Search.Provider.Examine.NotificationHandlers;
+using Umbraco.Cms.Search.Provider.Examine.Services;
 
 namespace Umbraco.Cms.Search.Provider.Examine.DependencyInjection;
 
 public static class UmbracoBuilderExtensions
 {
+    private static readonly string[] IndexAliases =
+    [
+        Core.Constants.IndexAliases.DraftContent,
+        Core.Constants.IndexAliases.PublishedContent,
+        Core.Constants.IndexAliases.DraftMedia,
+        Core.Constants.IndexAliases.DraftMembers,
+    ];
+
     public static IUmbracoBuilder AddExamineSearchProvider(this IUmbracoBuilder builder)
     {
-        builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.DraftContent, _ => { });
-
-        builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.PublishedContent, _ => { });
-
-        builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.DraftMedia, _ => { });
-
-        builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.DraftMembers, _ => { });
+        // Register two physical indexes per logical alias for zero-downtime reindexing (blue/green)
+        foreach (var alias in IndexAliases)
+        {
+            builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(alias + ActiveIndexManager.SuffixA, _ => { });
+            builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(alias + ActiveIndexManager.SuffixB, _ => { });
+        }
 
         // This is needed, due to locking of indexes on Azure, to read more on this issue go here: https://github.com/umbraco/Umbraco-CMS/pull/15571
         builder.Services.AddSingleton<UmbracoTempEnvFileSystemDirectoryFactory>();
@@ -37,6 +46,8 @@ public static class UmbracoBuilderExtensions
             });
 
         builder.AddNotificationHandler<UmbracoApplicationStartedNotification, RebuildNotificationHandler>();
+        builder.AddNotificationAsyncHandler<IndexRebuildStartingNotification, ZeroDowntimeRebuildNotificationHandler>();
+        builder.AddNotificationAsyncHandler<IndexRebuildCompletedNotification, ZeroDowntimeRebuildNotificationHandler>();
 
         builder.Services.AddExamineSearchProviderServices();
 

@@ -23,8 +23,11 @@ namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
 public class Searcher : IExamineSearcher
 {
-    public Searcher(IExamineManager examineManager, IOptions<SearcherOptions> searcherOptions)
+    private readonly IActiveIndexManager _activeIndexManager;
+
+    public Searcher(IExamineManager examineManager, IOptions<SearcherOptions> searcherOptions, IActiveIndexManager activeIndexManager)
     {
+        _activeIndexManager = activeIndexManager;
         ExamineManager = examineManager;
         SearcherOptions = searcherOptions.Value;
     }
@@ -58,7 +61,8 @@ public class Searcher : IExamineSearcher
             return new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>());
         }
 
-        if (ExamineManager.TryGetIndex(indexAlias, out IIndex? index) is false)
+        var physicalIndexName = _activeIndexManager.ResolveActiveIndexName(indexAlias);
+        if (ExamineManager.TryGetIndex(physicalIndexName, out IIndex? index) is false)
         {
             return new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>());
         }
