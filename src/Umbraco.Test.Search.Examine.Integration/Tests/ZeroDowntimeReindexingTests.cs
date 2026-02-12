@@ -285,6 +285,29 @@ public class ZeroDowntimeReindexingTests : TestBase
 
     [TestCase(true)]
     [TestCase(false)]
+    public async Task FullRebuild_SwapsActiveAndShadowIndexes(bool publish)
+    {
+        await SetUpContent(publish);
+        var indexAlias = GetIndexAlias(publish);
+
+        var activeBeforeRebuild = ActiveIndexManager.ResolveActiveIndexName(indexAlias);
+        var shadowBeforeRebuild = ActiveIndexManager.ResolveShadowIndexName(indexAlias);
+
+        // Trigger full rebuild (synchronous with ImmediateBackgroundTaskQueue).
+        // The ZeroDowntimeRebuildNotificationHandler should detect the healthy shadow and swap.
+        ContentIndexingService.Rebuild(indexAlias);
+
+        var activeAfterRebuild = ActiveIndexManager.ResolveActiveIndexName(indexAlias);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(activeAfterRebuild, Is.EqualTo(shadowBeforeRebuild), "Active index should have swapped to the former shadow after rebuild");
+            Assert.That(ActiveIndexManager.ResolveShadowIndexName(indexAlias), Is.EqualTo(activeBeforeRebuild), "Shadow index should have swapped to the former active after rebuild");
+        });
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
     public async Task IndexerReset_TargetsShadowDuringRebuild(bool publish)
     {
         await SetUpContent(publish);

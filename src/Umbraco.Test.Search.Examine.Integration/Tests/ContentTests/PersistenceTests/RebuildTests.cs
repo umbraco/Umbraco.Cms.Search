@@ -105,11 +105,7 @@ public class RebuildTests : UmbracoIntegrationTest
         }
 
         // Trigger rebuild
-        await WaitForIndexing(indexAlias, () =>
-        {
-            ContentIndexingService.Rebuild(indexAlias);
-            return Task.CompletedTask;
-        });
+        ContentIndexingService.Rebuild(indexAlias);
 
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
@@ -138,11 +134,7 @@ public class RebuildTests : UmbracoIntegrationTest
         }
 
         // Trigger rebuild
-        await WaitForIndexing(indexAlias, () =>
-        {
-            ContentIndexingService.Rebuild(indexAlias);
-            return Task.CompletedTask;
-        });
+        ContentIndexingService.Rebuild(indexAlias);
 
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
@@ -194,11 +186,7 @@ public class RebuildTests : UmbracoIntegrationTest
         }
 
         // Trigger rebuild with useDatabase=false (should recalculate, not use stale DB data)
-        await WaitForIndexing(indexAlias, () =>
-        {
-            ContentIndexingService.Rebuild(indexAlias);
-            return Task.CompletedTask;
-        });
+        ContentIndexingService.Rebuild(indexAlias);
 
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
