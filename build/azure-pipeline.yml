@@ -302,8 +302,8 @@ stages:
           - task: DownloadPipelineArtifact@2
             displayName: Download NuGet artifacts
             inputs:
-              artifact: nupkg
-              path: $(Agent.BuildDirectory)/app/nupkg
+              artifact: build_output
+              path: $(Build.SourcesDirectory)
 
           - task: UseDotNet@2
             displayName: Use .NET SDK from global.json
@@ -329,7 +329,7 @@ stages:
           - task: Cache@2
             displayName: Cache NPM packages
             inputs:
-              key: '"npm_e2e" | "$(Agent.OS)" | $(Build.SourcesDirectory)/src/Umbraco.Test.Search.AcceptanceTest/package-lock.json'
+              key: '"npm_e2e" | "$(Agent.OS)" | src/Umbraco.Test.Search.AcceptanceTest/package-lock.json'
               restoreKeys: |
                 "npm_e2e" | "$(Agent.OS)"
                 "npm_e2e"
@@ -338,11 +338,11 @@ stages:
           # Restore NPM packages
           - script: npm ci --no-fund --no-audit --prefer-offline
             displayName: Restore NPM packages
-            workingDirectory: $(Build.SourcesDirectory)/src/Umbraco.Test.Search.AcceptanceTest
+            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
 
           - script: npx playwright install --with-deps chromium
             displayName: Install Playwright browsers
-            workingDirectory: $(Build.SourcesDirectory)/src/Umbraco.Test.Search.AcceptanceTest
+            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
 
           # Generate HTTPS dev certificate
           - script: dotnet dev-certs https --trust
@@ -375,6 +375,22 @@ stages:
               echo $! > testsite.pid
               echo "Test site started with PID $(cat testsite.pid)"
             displayName: Start test site
+            env:
+              ASPNETCORE_ENVIRONMENT: Development
+              ASPNETCORE_URLS: $(ASPNETCORE_URLS)
+              UMBRACO__CMS__UNATTENDED__INSTALLUNATTENDED: $(UMBRACO__CMS__UNATTENDED__INSTALLUNATTENDED)
+              UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERNAME: $(UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERNAME)
+              UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERPASSWORD: $(UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERPASSWORD)
+              UMBRACO__CMS__UNATTENDED__UNATTENDEDUSEREMAIL: $(UMBRACO__CMS__UNATTENDED__UNATTENDEDUSEREMAIL)
+              UMBRACO__CMS__GLOBAL__INSTALLMISSINGDATABASE: $(UMBRACO__CMS__GLOBAL__INSTALLMISSINGDATABASE)
+              UMBRACO__CMS__GLOBAL__USEHTTPS: $(UMBRACO__CMS__GLOBAL__USEHTTPS)
+              UMBRACO__CMS__GLOBAL__DISABLEELECTIONFORSINGLESERVER: $(UMBRACO__CMS__GLOBAL__DISABLEELECTIONFORSINGLESERVER)
+              UMBRACO__CMS__GLOBAL__VERSIONCHECKPERIOD: $(UMBRACO__CMS__GLOBAL__VERSIONCHECKPERIOD)
+              UMBRACO__CMS__CONTENT__CONTENTVERSIONCLEANUPPOLICY__ENABLECLEANUP: $(UMBRACO__CMS__CONTENT__CONTENTVERSIONCLEANUPPOLICY__ENABLECLEANUP)
+              UMBRACO__CMS__HEALTHCHECKS__NOTIFICATION__ENABLED: $(UMBRACO__CMS__HEALTHCHECKS__NOTIFICATION__ENABLED)
+              UMBRACO__CMS__KEEPALIVE__DISABLEKEEPALIVETASK: $(UMBRACO__CMS__KEEPALIVE__DISABLEKEEPALIVETASK)
+              CONNECTIONSTRINGS__UMBRACODBDSN: $(CONNECTIONSTRINGS__UMBRACODBDSN)
+              CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME: $(CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME)
 
           - script: |
               echo "Waiting for test site to be ready..."
@@ -408,20 +424,12 @@ stages:
             env:
               CI: true
 
-          # Copy artifacts
-          - pwsh: |
-              if (Test-Path src/Umbraco.Test.Search.AcceptanceTest/results*) {
-                Copy-Item src/Umbraco.Test.Search.AcceptanceTest/results/* $(Build.ArtifactStagingDirectory) -Recurse
-              }
-            displayName: Copy Playwright results
-            condition: succeededOrFailed()
-
           # Publish test artifacts
           - task: PublishPipelineArtifact@1
             displayName: Publish test artifacts
             condition: succeededOrFailed()
             inputs:
-              targetPath: $(Build.ArtifactStagingDirectory)
+              targetPath: src/Umbraco.Test.Search.AcceptanceTest/results
               artifactName: acceptance-test-results
               
           # Publish test results
@@ -430,8 +438,7 @@ stages:
             condition: succeededOrFailed()
             inputs:
               testResultsFormat: 'JUnit'
-              testResultsFiles: '*.xml'
-              searchFolder: 'src/Umbraco.Test.Search.AcceptanceTest/results'
+              testResultsFiles: 'src/Umbraco.Test.Search.AcceptanceTest/results/results.xml'
               testRunTitle: 'Acceptance Test Results'
               failTaskOnFailedTests: true
 
