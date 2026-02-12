@@ -19,28 +19,32 @@ export class UmbExamineFieldsRouteProviderElement extends UmbLitElement {
 
     this.consumeContext(UMB_ENTITY_WORKSPACE_CONTEXT, (context) => {
       if (!context) return;
-      this.#indexAlias = context.getUnique() ?? undefined;
-    });
 
-    new UmbModalRouteRegistrationController<ShowFieldsModalData>(this, MODAL_ALIAS)
-      .addAdditionalPath(':documentUnique/:culture')
-      .onSetup((params) => {
-        return {
-          modal: {
-            type: 'sidebar',
-            size: 'large',
-          },
-          data: {
-            documentUnique: params.documentUnique,
-            indexAlias: this.#indexAlias ?? '',
-            culture: params.culture,
-          },
-          value: undefined,
-        };
-      })
-      .observeRouteBuilder((routeBuilder) => {
-        fieldsRouteBuilder = routeBuilder ?? undefined;
-      });
+      // Avoid re-initializing if the context callback is invoked multiple times.
+      if (this.#indexAlias) return;
+
+      this.#indexAlias = context.getUnique() ?? undefined;
+
+      new UmbModalRouteRegistrationController<ShowFieldsModalData>(this, MODAL_ALIAS)
+        .addAdditionalPath(':documentUnique/:culture')
+        .onSetup((params) => {
+          return {
+            modal: {
+              type: 'sidebar',
+              size: 'large',
+            },
+            data: {
+              documentUnique: params.documentUnique,
+              indexAlias: this.#indexAlias ?? '',
+              culture: params.culture,
+            },
+            value: undefined,
+          };
+        })
+        .observeRouteBuilder((routeBuilder) => {
+          fieldsRouteBuilder = routeBuilder ?? undefined;
+        });
+    });
   }
 
   override disconnectedCallback() {
