@@ -140,20 +140,28 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
       });
 
     // Observe the index alias state for template updates and pending URL searches
-    this.observe(this.#indexAlias.asObservable(), (alias) => {
-      this._indexAlias = alias;
-      if (alias && this.#pendingUrlSearch) {
-        this.#pendingUrlSearch = false;
-        void this.#handleSearch();
-      }
-    }, '_observeIndexAlias');
+    this.observe(
+      this.#indexAlias.asObservable(),
+      (alias) => {
+        this._indexAlias = alias;
+        if (alias && this.#pendingUrlSearch) {
+          this.#pendingUrlSearch = false;
+          void this.#handleSearch();
+        }
+      },
+      '_observeIndexAlias',
+    );
 
     this.consumeContext(UMB_SEARCH_WORKSPACE_CONTEXT, (workspaceContext) => {
       if (!workspaceContext) return;
       this.#workspaceContext = workspaceContext;
-      this.observe(workspaceContext.name, (alias) => {
-        this.#indexAlias.setValue(alias ?? undefined);
-      }, '_observeWorkspaceName');
+      this.observe(
+        workspaceContext.name,
+        (alias) => {
+          this.#indexAlias.setValue(alias ?? undefined);
+        },
+        '_observeWorkspaceName',
+      );
       this.#observeHealthStatus();
     });
 

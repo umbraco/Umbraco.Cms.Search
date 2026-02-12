@@ -10,45 +10,45 @@ export let fieldsRouteBuilder: ((params: { [key: string]: string | number }) => 
 
 @customElement('umb-examine-fields-route-provider')
 export class UmbExamineFieldsRouteProviderElement extends UmbLitElement {
-	#indexAlias?: string;
+  #indexAlias?: string;
 
-	constructor() {
-		super();
+  constructor() {
+    super();
 
-		this.consumeContext(UMB_ENTITY_WORKSPACE_CONTEXT, (context) => {
-			if (!context) return;
-			this.#indexAlias = context.getUnique() ?? undefined;
-		});
+    this.consumeContext(UMB_ENTITY_WORKSPACE_CONTEXT, (context) => {
+      if (!context) return;
+      this.#indexAlias = context.getUnique() ?? undefined;
+    });
 
-		new UmbModalRouteRegistrationController(this, MODAL_ALIAS)
-			.addAdditionalPath(':documentUnique/:culture')
-			.onSetup((params) => {
-				return {
-					modal: {
-						type: 'sidebar',
-						size: 'large',
-					},
-					data: {
-						searchDocument: { unique: params.documentUnique },
-						indexAlias: this.#indexAlias ?? '',
-						culture: params.culture,
-					},
-					value: undefined,
-				};
-			})
-			.observeRouteBuilder((routeBuilder) => {
-				fieldsRouteBuilder = routeBuilder ?? undefined;
-			});
-	}
+    new UmbModalRouteRegistrationController(this, MODAL_ALIAS)
+      .addAdditionalPath(':documentUnique/:culture')
+      .onSetup((params) => {
+        return {
+          modal: {
+            type: 'sidebar',
+            size: 'large',
+          },
+          data: {
+            searchDocument: { unique: params.documentUnique },
+            indexAlias: this.#indexAlias ?? '',
+            culture: params.culture,
+          },
+          value: undefined,
+        };
+      })
+      .observeRouteBuilder((routeBuilder) => {
+        fieldsRouteBuilder = routeBuilder ?? undefined;
+      });
+  }
 
-	override disconnectedCallback() {
-		super.disconnectedCallback();
-		fieldsRouteBuilder = undefined;
-	}
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    fieldsRouteBuilder = undefined;
+  }
 
-	override render() {
-		return nothing;
-	}
+  override render() {
+    return nothing;
+  }
 }
 
 export default UmbExamineFieldsRouteProviderElement;

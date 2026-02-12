@@ -88,7 +88,8 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
             <uui-tab
               label=${doc.label}
               ?active=${this._activeCulture === doc.culture}
-              @click=${() => (this._activeCulture = doc.culture)}>
+              @click=${() => (this._activeCulture = doc.culture)}
+            >
               <uui-icon slot="icon" name="icon-globe"></uui-icon>
               ${doc.label}
             </uui-tab>

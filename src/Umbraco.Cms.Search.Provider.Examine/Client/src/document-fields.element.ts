@@ -1,5 +1,13 @@
 import type { ExamineField } from './types.js';
-import { html, repeat, when, css, nothing, state, property } from '@umbraco-cms/backoffice/external/lit';
+import {
+  html,
+  repeat,
+  when,
+  css,
+  nothing,
+  state,
+  property,
+} from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 
 const MAX_VALUE_LENGTH = 100;
@@ -140,12 +148,8 @@ export class UmbSearchExamineDocumentFieldsElement extends UmbLitElement {
             <table class="fields-table">
               <thead>
                 <tr>
-                  <th class="th-name">
-                    ${this.localize.term('searchExamine_tableColumnName')}
-                  </th>
-                  <th class="th-value">
-                    ${this.localize.term('searchExamine_tableColumnValue')}
-                  </th>
+                  <th class="th-name">${this.localize.term('searchExamine_tableColumnName')}</th>
+                  <th class="th-value">${this.localize.term('searchExamine_tableColumnValue')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -159,9 +163,7 @@ export class UmbSearchExamineDocumentFieldsElement extends UmbLitElement {
           </uui-box>
         `,
         () =>
-          html`<div class="empty-state">
-            ${this.localize.term('searchExamine_noFieldsMatch')}
-          </div>`,
+          html`<div class="empty-state">${this.localize.term('searchExamine_noFieldsMatch')}</div>`,
       )}
     `;
   }
@@ -317,7 +319,4 @@ export class UmbSearchExamineDocumentFieldsElement extends UmbLitElement {
   ];
 }
 
-customElements.define(
-  'umb-search-examine-document-fields',
-  UmbSearchExamineDocumentFieldsElement,
-);
+customElements.define('umb-search-examine-document-fields', UmbSearchExamineDocumentFieldsElement);
