@@ -11,7 +11,7 @@ import {
   when,
 } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
-import { UmbStringState } from '@umbraco-cms/backoffice/observable-api';
+import { observeMultiple, UmbStringState } from '@umbraco-cms/backoffice/observable-api';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
 import { debounce, UmbPaginationManager } from '@umbraco-cms/backoffice/utils';
 import type {
@@ -44,8 +44,8 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
 
   #pagination = new UmbPaginationManager();
   #initialPage?: number;
-  #pendingUrlSearch = false;
   #indexAlias = new UmbStringState(undefined);
+  #selectedCulture = new UmbStringState(undefined);
 
   private _tableConfig: UmbTableConfig = {
     allowSelection: false,
@@ -109,6 +109,9 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   constructor() {
     super();
 
+    // Read URL params first, before any observers or context consumers fire
+    this.#readUrlParams();
+
     this.#pagination.setPageSize(PAGE_SIZE);
 
     this.observe(
@@ -143,17 +146,17 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
         this.#routeBuilder = routeBuilder;
       });
 
-    // Observe the index alias state for template updates and pending URL searches
+    // Trigger initial search when both alias and culture are ready
     this.observe(
-      this.#indexAlias.asObservable(),
-      (alias) => {
+      observeMultiple([this.#indexAlias.asObservable(), this.#selectedCulture.asObservable()]),
+      ([alias, culture]) => {
         this._indexAlias = alias;
-        if (alias && this.#pendingUrlSearch) {
-          this.#pendingUrlSearch = false;
+        this._selectedCulture = culture;
+        if (alias && culture) {
           void this.#handleSearch();
         }
       },
-      '_observeIndexAlias',
+      '_observeSearchReady',
     );
 
     this.consumeContext(UMB_SEARCH_WORKSPACE_CONTEXT, (workspaceContext) => {
@@ -184,18 +187,13 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
       this.observe(
         languageContext.appLanguageCulture,
         (culture) => {
-          if (!this._selectedCulture && culture) {
-            this._selectedCulture = culture;
+          if (!this.#selectedCulture.getValue() && culture) {
+            this.#selectedCulture.setValue(culture);
           }
         },
         '_observeAppLanguageCulture',
       );
     });
-  }
-
-  override connectedCallback() {
-    super.connectedCallback();
-    this.#readUrlParams();
   }
 
   #readUrlParams() {
@@ -205,22 +203,19 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     const culture = url.searchParams.get('culture');
 
     if (culture) {
-      this._selectedCulture = culture;
+      this.#selectedCulture.setValue(culture);
     }
 
     if (query) {
       this.#inputValue = query;
       this._searchQuery = query;
+    }
 
-      if (page) {
-        const pageNumber = parseInt(page, 10);
-        if (!isNaN(pageNumber) && pageNumber >= 1) {
-          this.#initialPage = pageNumber;
-        }
+    if (page) {
+      const pageNumber = parseInt(page, 10);
+      if (!isNaN(pageNumber) && pageNumber >= 1) {
+        this.#initialPage = pageNumber;
       }
-
-      // Mark pending — the #indexAlias observer will trigger search when alias arrives
-      this.#pendingUrlSearch = true;
     }
   }
 
@@ -229,14 +224,14 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
 
     if (this._searchQuery.trim()) {
       url.searchParams.set('query', this._searchQuery);
-      const currentPage = this.#pagination.getCurrentPageNumber();
-      if (currentPage > 1) {
-        url.searchParams.set('page', String(currentPage));
-      } else {
-        url.searchParams.delete('page');
-      }
     } else {
       url.searchParams.delete('query');
+    }
+
+    const currentPage = this.#pagination.getCurrentPageNumber();
+    if (currentPage > 1) {
+      url.searchParams.set('page', String(currentPage));
+    } else {
       url.searchParams.delete('page');
     }
 
@@ -325,7 +320,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
               look="primary"
               color="positive"
               @click=${this.#handleButtonClick}
-              ?disabled=${this.#isSearchDisabled || this._isSearching || !this.#inputValue.trim()}
+              ?disabled=${this.#isSearchDisabled || this._isSearching}
               label=${this.localize.term('search_searchButtonAriaLabel')}
             >
               <umb-localize key="search_searchButton">Search</umb-localize>
@@ -366,9 +361,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     // Sync state with current input value
     this._searchQuery = this.#inputValue;
 
-    if (!this._indexAlias || !this._searchQuery.trim()) {
-      this._searchResults = undefined;
-      this.#updateUrlParams();
+    if (!this._indexAlias) {
       return;
     }
 
@@ -462,20 +455,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   #handleInputChange(e: Event) {
     const input = e.target as UUIInputElement;
     this.#inputValue = input.value as string;
-
-    // Clear results if input is empty
-    if (!this.#inputValue.trim()) {
-      this._searchResults = undefined;
-      this._error = undefined;
-      this.#pagination.setCurrentPageNumber(1);
-      this.#updateUrlParams();
-      return;
-    }
-
-    // Reset to page 1 on new query input
     this.#pagination.setCurrentPageNumber(1);
-
-    // Trigger debounced search
     this.#debouncedSearch();
   }
 
@@ -493,12 +473,9 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
 
   #handleCultureChange(e: Event) {
     const select = e.target as UUISelectElement;
-    this._selectedCulture = select.value as string;
-    this.#updateUrlParams();
-    // Re-trigger search with new culture if there's an active query
-    if (this._searchQuery.trim()) {
-      void this.#handleSearch();
-    }
+    this.#pagination.setCurrentPageNumber(1);
+    // Setting the state triggers the observeMultiple callback which fires #handleSearch
+    this.#selectedCulture.setValue(select.value as string);
   }
 
   #onPageChange(event: Event) {
