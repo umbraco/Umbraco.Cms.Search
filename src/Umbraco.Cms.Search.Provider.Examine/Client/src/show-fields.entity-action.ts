@@ -1,30 +1,19 @@
-import { UmbEntityActionBase } from '@umbraco-cms/backoffice/entity-action';
 import { fieldsRouteBuilder } from './fields-route-provider.element.js';
+import { UmbEntityActionBase } from '@umbraco-cms/backoffice/entity-action';
 
 export class UmbSearchExamineShowFieldsEntityAction extends UmbEntityActionBase<never> {
-  override execute(): Promise<void> {
-    const args = this.args as typeof this.args & {
-      searchDocument?: { unique: string };
-    };
-
-    if (!args.searchDocument) {
-      throw new Error('Search document is not provided');
-    }
+  // eslint-disable-next-line @typescript-eslint/require-await
+  override async getHref() {
+    const unique = this.args.unique ?? null;
+    if (!unique) return '#';
 
     const culture = new URL(window.location.href).searchParams.get('culture') ?? '_';
 
-    if (fieldsRouteBuilder) {
-      history.pushState(
-        {},
-        '',
-        fieldsRouteBuilder({
-          documentUnique: args.searchDocument.unique,
-          culture,
-        }),
-      );
-    }
+    return fieldsRouteBuilder?.({ documentUnique: unique, culture }) ?? '#';
+  }
 
-    return Promise.resolve();
+  override execute(): Promise<void> {
+    return Promise.resolve(undefined);
   }
 }
 

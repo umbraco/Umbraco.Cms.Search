@@ -35,9 +35,9 @@ export class UmbSearchExamineDocumentFieldsElement extends UmbLitElement {
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  #onFilterInput(e: InputEvent) {
+  #onFilterInput = (e: InputEvent) => {
     this._filterQuery = (e.target as HTMLInputElement).value;
-  }
+  };
 
   #toggleExpanded(fieldKey: string) {
     if (this._expandedFields.has(fieldKey)) {

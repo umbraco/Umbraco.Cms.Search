@@ -23,8 +23,7 @@ import { UmbModalRouteRegistrationController } from '@umbraco-cms/backoffice/rou
 import { UMB_WORKSPACE_MODAL } from '@umbraco-cms/backoffice/workspace';
 import { UMB_APP_LANGUAGE_CONTEXT } from '@umbraco-cms/backoffice/language';
 import type { UmbLanguageDetailModel } from '@umbraco-cms/backoffice/language';
-
-import './search-index-search-result-actions.element.js';
+import { UMB_SEARCH_DOCUMENT_ENTITY_TYPE } from '@umbraco-cms/search/global';
 
 const PAGE_SIZE = 10;
 
@@ -408,7 +407,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
 
   #createTableItems(results: UmbSearchResult) {
     this._tableItems = results.documents.map((doc) => ({
-      id: doc.unique,
+      id: `${doc.unique}_${this._selectedCulture}`,
       icon: doc.icon,
       data: [
         {
@@ -433,12 +432,13 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
         },
         {
           columnAlias: 'actions',
-          value: html`
-            <umb-search-index-search-result-actions
-              .searchDocument=${doc}
-              .indexAlias=${this._indexAlias!}
-            ></umb-search-index-search-result-actions>
-          `,
+          value: html`<umb-entity-actions-table-column-view
+            .value=${{
+              unique: doc.unique,
+              entityType: UMB_SEARCH_DOCUMENT_ENTITY_TYPE,
+              name: doc.name,
+            }}
+          ></umb-entity-actions-table-column-view>`,
         },
       ],
     }));
