@@ -10,12 +10,26 @@
 	<title>Book search</title>
 	<script>window.__CULTURE__ = "@culture";</script>
 	<script src="js/script.js" asp-append-version="true"></script>
+	<style>
+:root { color-scheme: light dark; }
+body {
+	background-color: light-dark(oldlace, #121212);
+	color: light-dark(#121212, oldlace);
+	font-family: 'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', P052, serif;
+	margin: auto;
+	max-width: 1200px;
+}
+#searchPanel {display: flex;flex-direction: row;}
+#searchFilters {flex: 1;}
+#searchResults {flex: 4;}
+input, select {font-family: inherit;}
+</style>
 </head>
-<body style="margin: auto; max-width: 1200px;">
+<body>
 <h1>Book search</h1>
-<div style="display: flex;flex-direction: row;">
-	<div style="flex: 1" id="searchFilters"><em>Loading...</em></div>
-	<div style="flex: 4" id="searchResults"></div>
+<div id="searchPanel">
+	<div id="searchFilters"><em>Loading...</em></div>
+	<div id="searchResults"></div>
 </div>
 </body>
 </html>
