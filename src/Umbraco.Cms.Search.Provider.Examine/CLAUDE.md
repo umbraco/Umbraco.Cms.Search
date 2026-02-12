@@ -89,8 +89,9 @@ The modal uses `UmbModalRouteRegistrationController` for URL-based routing. This
 
 **`show-fields.entity-action.ts`** — Entity action that provides a routable URL:
 - Imports `fieldsRouteBuilder` from the route provider module
+- Imports `UMB_SEARCH_WORKSPACE_CONTEXT` from `@umbraco-cms/search/settings` (via tsconfig path mapping)
 - Implements `getHref()` (not `execute()`) to return a URL built from `documentUnique` and `culture`
-- Reads culture from the current URL's `?culture=` search param at call time
+- Reads culture from the workspace context via `getSelectedCulture()` (not from URL params)
 - The Core Client renders this as a navigable link via `umb-entity-actions-table-column-view`
 
 **Flow (click-triggered):**
@@ -112,7 +113,7 @@ The modal uses `UmbModalRouteRegistrationController` for URL-based routing. This
 **`show-fields.modal.ts`** — Sidebar modal orchestrating the field display:
 - Extends `UmbModalBaseElement<ShowFieldsModalData>` — receives `documentUnique`, `indexAlias`, and `culture` from route params
 - Loads field data from repository, groups by culture, shows culture tabs when multiple cultures exist
-- Sorts culture documents so the selected culture tab appears first
+- Sets the active tab to the preferred culture without reordering tabs (stable tab order)
 - Delegates field rendering to `document-fields.element.ts`
 
 **`document-fields.element.ts`** — Reusable field table component:
@@ -176,12 +177,17 @@ export default defineConfig({
 
 ### tsconfig.json
 
-Extends the shared base config. No path mappings needed (no importmap pattern):
+Extends the shared base config. Path mappings allow importing from the Core Client's `@umbraco-cms/search/settings` and `@umbraco-cms/search/global` modules (e.g., `UMB_SEARCH_WORKSPACE_CONTEXT`). Vite externalizes these at build time; the importmap resolves them at runtime:
 
 ```json
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@umbraco-cms/search/settings": ["../../Umbraco.Cms.Search.Core.Client/Client/src/settings/index.ts"],
+      "@umbraco-cms/search/global": ["../../Umbraco.Cms.Search.Core.Client/Client/src/global/index.ts"]
+    },
     "types": ["@umbraco-cms/backoffice/extension-types"]
   },
   "include": ["src"]
@@ -214,7 +220,7 @@ Simple bundle declaration:
 | Bundle strategy | 3 bundles (importmap) | 1 bundle (simple) |
 | Entry points | 3 (bundle, global, settings) | 1 (examine-bundle) |
 | Code-splitting | Via importmap + lazy imports | Via Vite's built-in chunking |
-| tsconfig paths | Yes (logical imports) | No (relative imports) |
+| tsconfig paths | Yes (logical imports) | Yes (for `@umbraco-cms/search/settings` and `global`) |
 | API generation | Yes (OpenAPI) | Yes (OpenAPI, separate Examine swagger) |
 | Output directory | `UmbracoSearch/` | `UmbracoSearchExamine/` |
 
@@ -230,7 +236,11 @@ Simple bundle declaration:
 
 5. **`getHref()` vs `execute()`**: The entity action uses `getHref()` to provide a routable URL rather than `execute()` with `history.pushState()`. This allows `umb-entity-actions-table-column-view` to render it as a standard navigable link.
 
-6. **Entity Action Culture Refresh**: `umb-entity-actions-table-column-view` caches entity action instances by table row. Include culture in the table item `id` (e.g., `id: \`${doc.unique}_${culture}\``) so the Core Client forces fresh instances when culture changes, ensuring `getHref()` returns the correct culture URL.
+6. **Entity Action Culture via Workspace Context**: The entity action reads culture from `UMB_SEARCH_WORKSPACE_CONTEXT.getSelectedCulture()`, not from URL params. The Core Client includes culture in the table item `id` (e.g., `id: \`${doc.unique}_${culture}\``) to force fresh entity action instances when culture changes.
+
+11. **Cross-Package Context Import**: Importing `UMB_SEARCH_WORKSPACE_CONTEXT` from `@umbraco-cms/search/settings` requires tsconfig path mappings for both `settings` and `global` (settings depends on global transitively). ESLint may flag `@typescript-eslint/no-unsafe-argument` and `@typescript-eslint/no-unsafe-call` on the context usage — use eslint-disable comments.
+
+12. **Invariant Culture Value**: The Examine index uses `"none"` as the `Sys_Culture` field for invariant documents. When the entity action has no culture from the workspace context, it falls back to `'none'` to match this convention.
 
 7. **Auth Token**: Use `UMB_AUTH_CONTEXT.getLatestToken()` for authentication, not raw `config.auth()`.
 

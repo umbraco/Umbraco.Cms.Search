@@ -45,17 +45,11 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
 
     this._cultureDocuments = (data?.documents ?? []).map((doc) => this.#mapCultureDocument(doc));
 
-    // sort so the selected culture comes first (if present)
+    // Set active tab to the preferred culture if it exists, otherwise default to the first
     const preferredCulture = this.data?.culture;
-    if (preferredCulture) {
-      this._cultureDocuments.sort((a, b) => {
-        const aMatch = a.culture === preferredCulture ? -1 : 0;
-        const bMatch = b.culture === preferredCulture ? -1 : 0;
-        return aMatch - bMatch;
-      });
-    }
-
-    this._activeCulture = this._cultureDocuments[0]?.culture;
+    const hasPreferred =
+      preferredCulture && this._cultureDocuments.some((d) => d.culture === preferredCulture);
+    this._activeCulture = hasPreferred ? preferredCulture : this._cultureDocuments[0]?.culture;
     this._isLoading = false;
   }
 
