@@ -11,6 +11,7 @@ import {
   when,
 } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
+import { UmbStringState } from '@umbraco-cms/backoffice/observable-api';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
 import { debounce, UmbPaginationManager } from '@umbraco-cms/backoffice/utils';
 import type {
@@ -20,6 +21,8 @@ import type {
 } from '@umbraco-cms/backoffice/components';
 import { UmbModalRouteRegistrationController } from '@umbraco-cms/backoffice/router';
 import { UMB_WORKSPACE_MODAL } from '@umbraco-cms/backoffice/workspace';
+import { UMB_APP_LANGUAGE_CONTEXT } from '@umbraco-cms/backoffice/language';
+import type { UmbLanguageDetailModel } from '@umbraco-cms/backoffice/language';
 
 import './search-index-search-result-actions.element.js';
 
@@ -37,6 +40,8 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
 
   #pagination = new UmbPaginationManager();
   #initialPage?: number;
+  #pendingUrlSearch = false;
+  #indexAlias = new UmbStringState(undefined);
 
   private _tableConfig: UmbTableConfig = {
     allowSelection: false,
@@ -62,7 +67,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   private _tableItems: Array<UmbTableItem> = [];
 
   @state()
-  private _indexAlias?: string;
+  private _indexAlias?: string; // driven by #indexAlias state, kept for template reactivity
 
   @state()
   private _healthStatus?: UmbHealthStatusModel;
@@ -87,6 +92,15 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
 
   @state()
   private _totalPages = 1;
+
+  @state()
+  private _languages: Array<UmbLanguageDetailModel> = [];
+
+  @state()
+  private _selectedCulture?: string;
+
+  @state()
+  private _hasMultipleLanguages = false;
 
   constructor() {
     super();
@@ -125,10 +139,45 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
         this.#routeBuilder = routeBuilder;
       });
 
-    this.consumeContext(UMB_SEARCH_WORKSPACE_CONTEXT, (context) => {
-      this.#workspaceContext = context;
-      this.#observeIndexAlias();
+    // Observe the index alias state for template updates and pending URL searches
+    this.observe(this.#indexAlias.asObservable(), (alias) => {
+      this._indexAlias = alias;
+      if (alias && this.#pendingUrlSearch) {
+        this.#pendingUrlSearch = false;
+        void this.#handleSearch();
+      }
+    }, '_observeIndexAlias');
+
+    this.consumeContext(UMB_SEARCH_WORKSPACE_CONTEXT, (workspaceContext) => {
+      if (!workspaceContext) return;
+      this.#workspaceContext = workspaceContext;
+      this.observe(workspaceContext.name, (alias) => {
+        this.#indexAlias.setValue(alias ?? undefined);
+      }, '_observeWorkspaceName');
       this.#observeHealthStatus();
+    });
+
+    this.consumeContext(UMB_APP_LANGUAGE_CONTEXT, (languageContext) => {
+      if (!languageContext) return;
+
+      this.observe(
+        languageContext.languages,
+        (languages) => {
+          this._languages = languages;
+          this._hasMultipleLanguages = languages.length > 1;
+        },
+        '_observeLanguages',
+      );
+
+      this.observe(
+        languageContext.appLanguageCulture,
+        (culture) => {
+          if (!this._selectedCulture && culture) {
+            this._selectedCulture = culture;
+          }
+        },
+        '_observeAppLanguageCulture',
+      );
     });
   }
 
@@ -141,6 +190,11 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     const url = new URL(window.location.href);
     const query = url.searchParams.get('query');
     const page = url.searchParams.get('page');
+    const culture = url.searchParams.get('culture');
+
+    if (culture) {
+      this._selectedCulture = culture;
+    }
 
     if (query) {
       this.#inputValue = query;
@@ -153,10 +207,8 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
         }
       }
 
-      // Trigger search after microtask to ensure context is ready
-      void this.updateComplete.then(() => {
-        void this.#handleSearch();
-      });
+      // Mark pending — the #indexAlias observer will trigger search when alias arrives
+      this.#pendingUrlSearch = true;
     }
   }
 
@@ -174,6 +226,12 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     } else {
       url.searchParams.delete('query');
       url.searchParams.delete('page');
+    }
+
+    if (this._selectedCulture) {
+      url.searchParams.set('culture', this._selectedCulture);
+    } else {
+      url.searchParams.delete('culture');
     }
 
     history.replaceState(null, '', url.toString());
@@ -237,6 +295,20 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
                 style="padding-left:var(--uui-size-space-2)"
               ></uui-icon>
             </uui-input>
+            ${when(
+              this._hasMultipleLanguages,
+              () => html`
+                <uui-select
+                  label=${this.localize.term('search_cultureSelectLabel')}
+                  .options=${this._languages.map((lang) => ({
+                    name: lang.name,
+                    value: lang.unique,
+                    selected: lang.unique === this._selectedCulture,
+                  }))}
+                  @change=${this.#handleCultureChange}
+                ></uui-select>
+              `,
+            )}
             <uui-button
               look="primary"
               color="positive"
@@ -273,16 +345,6 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     `;
   }
 
-  #observeIndexAlias() {
-    this.observe(
-      this.#workspaceContext?.name,
-      (alias) => {
-        this._indexAlias = alias ?? 'Unknown';
-      },
-      '_observeIndexAlias',
-    );
-  }
-
   async #handleSearch() {
     // Prevent concurrent searches
     if (this._isSearching) {
@@ -310,6 +372,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     const request: UmbSearchRequest = {
       indexAlias: this._indexAlias,
       query: this._searchQuery,
+      culture: this._selectedCulture,
       skip,
       take: PAGE_SIZE,
     };
@@ -413,6 +476,16 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   #handleButtonClick() {
     // Execute search immediately (debounced search will be skipped if already searching)
     void this.#handleSearch();
+  }
+
+  #handleCultureChange(e: Event) {
+    const select = e.target as HTMLSelectElement;
+    this._selectedCulture = select.value;
+    this.#updateUrlParams();
+    // Re-trigger search with new culture if there's an active query
+    if (this._searchQuery.trim()) {
+      void this.#handleSearch();
+    }
   }
 
   #onPageChange(event: Event) {

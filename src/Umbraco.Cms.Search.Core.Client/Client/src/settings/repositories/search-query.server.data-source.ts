@@ -60,7 +60,7 @@ export class UmbSearchQueryServerDataSource extends UmbControllerBase {
     }));
 
     // Enrich documents with name/icon from item repositories
-    await this.#enrichDocuments(documents);
+    await this.#enrichDocuments(documents, request.culture);
 
     const result: UmbSearchResult = {
       total: data.total,
@@ -71,17 +71,19 @@ export class UmbSearchQueryServerDataSource extends UmbControllerBase {
     return { data: result };
   }
 
-  async #enrichDocuments(documents: UmbSearchDocument[]): Promise<void> {
+  async #enrichDocuments(documents: UmbSearchDocument[], culture?: string): Promise<void> {
     const docById = new Map(documents.map((doc) => [doc.unique, doc]));
     const entityTypes = [...new Set(documents.map((doc) => doc.entityType))];
 
     // Resolve the default content language for variant name lookup
-    let defaultLanguage: string | null = null;
-    try {
-      const languageContext = await this.getContext(UMB_APP_LANGUAGE_CONTEXT);
-      defaultLanguage = languageContext?.getAppCulture() ?? null;
-    } catch {
-      defaultLanguage = null;
+    let defaultLanguage: string | null = culture ?? null;
+    if (defaultLanguage === null) {
+      try {
+        const languageContext = await this.getContext(UMB_APP_LANGUAGE_CONTEXT);
+        defaultLanguage = languageContext?.getAppCulture() ?? null;
+      } catch {
+        defaultLanguage = null;
+      }
     }
 
     await Promise.all(

@@ -12,6 +12,9 @@ export class UmbSearchExamineShowFieldsEntityAction extends UmbEntityActionBase<
       throw new Error('Search document is not provided');
     }
 
+    // Read culture from URL params — always reflects the current search state
+    const culture = new URL(window.location.href).searchParams.get('culture') ?? undefined;
+
     await umbOpenModal(this, 'Umbraco.Cms.Search.Provider.Examine.Modal.Fields', {
       modal: {
         type: 'sidebar',
@@ -20,6 +23,7 @@ export class UmbSearchExamineShowFieldsEntityAction extends UmbEntityActionBase<
       data: {
         searchDocument: args.searchDocument,
         indexAlias: args.indexAlias,
+        culture,
       },
     }).catch(() => undefined);
   }
