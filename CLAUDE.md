@@ -366,6 +366,12 @@ Repositories abstract API calls and provide clean interfaces for UI components. 
 
 10. **Server-Driven State**: UI state should be derived from server health status (e.g., `healthStatus: 'Rebuilding'` → `state: 'loading'`). This keeps the UI synchronized with actual server state after reloads.
 
+11. **Invariant Culture in Examine Index**: The Examine provider uses `"none"` as the `Sys_Culture` field value for invariant documents. Sending `culture: "en-US"` to `SearchAsync` searches `Sys_Culture: "en-US" OR "none"`, so invariant content is always included. Sending `culture: null` returns invariant-only. Always send a real culture code from the client; use `"none"` as the fallback for invariant-only contexts.
+
+12. **Culture State on Workspace Context**: The `UmbSearchWorkspaceContext` owns `selectedCulture` state (observable + getter/setter). The search box writes it, entity actions read it via `getContext()`. Don't read culture from `window.location.href` — use the workspace context as the source of truth. URL params (`?culture=`) are for persistence/bookmarking only.
+
+13. **Examine Client Cross-Package Imports**: The Examine Client can import from `@umbraco-cms/search/settings` (e.g., `UMB_SEARCH_WORKSPACE_CONTEXT`) via tsconfig path mappings. Both `settings` and `global` paths are needed since settings depends on global transitively. Vite externalizes these; the importmap resolves at runtime.
+
 ## Coding Conventions
 
 - Follow Umbraco CMS coding standards (StyleCop, .editorconfig)

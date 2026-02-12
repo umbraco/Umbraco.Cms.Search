@@ -11,7 +11,7 @@ import {
   when,
 } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
-import { observeMultiple, UmbStringState } from '@umbraco-cms/backoffice/observable-api';
+import { observeMultiple } from '@umbraco-cms/backoffice/observable-api';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
 import { debounce, UmbPaginationManager } from '@umbraco-cms/backoffice/utils';
 import type {
@@ -44,8 +44,8 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
 
   #pagination = new UmbPaginationManager();
   #initialPage?: number;
-  #indexAlias = new UmbStringState(undefined);
-  #selectedCulture = new UmbStringState(undefined);
+  #urlCulture?: string; // Temporary storage for culture from URL params before workspace context connects
+  #defaultAppCulture?: string; // App default culture from UMB_APP_LANGUAGE_CONTEXT
 
   private _tableConfig: UmbTableConfig = {
     allowSelection: false,
@@ -146,29 +146,29 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
         this.#routeBuilder = routeBuilder;
       });
 
-    // Trigger initial search when both alias and culture are ready
-    this.observe(
-      observeMultiple([this.#indexAlias.asObservable(), this.#selectedCulture.asObservable()]),
-      ([alias, culture]) => {
-        this._indexAlias = alias;
-        this._selectedCulture = culture;
-        if (alias && culture) {
-          void this.#handleSearch();
-        }
-      },
-      '_observeSearchReady',
-    );
-
     this.consumeContext(UMB_SEARCH_WORKSPACE_CONTEXT, (workspaceContext) => {
       if (!workspaceContext) return;
       this.#workspaceContext = workspaceContext;
+
+      // Seed culture from URL params or app default (URL takes precedence)
+      const initialCulture = this.#urlCulture ?? this.#defaultAppCulture;
+      if (initialCulture && !workspaceContext.getSelectedCulture()) {
+        workspaceContext.setSelectedCulture(initialCulture);
+      }
+
+      // Trigger search when both alias and culture are ready on the workspace context
       this.observe(
-        workspaceContext.name,
-        (alias) => {
-          this.#indexAlias.setValue(alias ?? undefined);
+        observeMultiple([workspaceContext.name, workspaceContext.selectedCulture]),
+        ([alias, culture]) => {
+          this._indexAlias = alias ?? undefined;
+          this._selectedCulture = culture;
+          if (alias && culture) {
+            void this.#handleSearch();
+          }
         },
-        '_observeWorkspaceName',
+        '_observeSearchReady',
       );
+
       this.#observeHealthStatus();
     });
 
@@ -187,8 +187,10 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
       this.observe(
         languageContext.appLanguageCulture,
         (culture) => {
-          if (!this.#selectedCulture.getValue() && culture) {
-            this.#selectedCulture.setValue(culture);
+          this.#defaultAppCulture = culture;
+          // If workspace context is ready and no culture set yet, apply default
+          if (culture && !this.#workspaceContext?.getSelectedCulture()) {
+            this.#workspaceContext?.setSelectedCulture(culture);
           }
         },
         '_observeAppLanguageCulture',
@@ -203,7 +205,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     const culture = url.searchParams.get('culture');
 
     if (culture) {
-      this.#selectedCulture.setValue(culture);
+      this.#urlCulture = culture;
     }
 
     if (query) {
@@ -474,8 +476,8 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   #handleCultureChange(e: Event) {
     const select = e.target as UUISelectElement;
     this.#pagination.setCurrentPageNumber(1);
-    // Setting the state triggers the observeMultiple callback which fires #handleSearch
-    this.#selectedCulture.setValue(select.value as string);
+    // Setting culture on workspace context triggers the observeMultiple callback which fires #handleSearch
+    this.#workspaceContext?.setSelectedCulture(select.value as string);
   }
 
   #onPageChange(event: Event) {
