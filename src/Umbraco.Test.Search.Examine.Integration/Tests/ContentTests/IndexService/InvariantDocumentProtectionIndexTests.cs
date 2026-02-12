@@ -34,7 +34,7 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
                 });
         });
 
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         IReadOnlyList<string> indexedAccessKeys = results.First().AllValues.First(x => x.Key == Constants.SystemFields.Protection).Value;
         Assert.That(indexedAccessKeys, Has.Count.EqualTo(1));
@@ -62,7 +62,7 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
                 });
         });
 
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         IReadOnlyList<string> indexedAccessKeys = results.First().AllValues.First(x => x.Key == Constants.SystemFields.Protection).Value;
         Assert.That(indexedAccessKeys, Has.Count.EqualTo(5));
@@ -76,7 +76,7 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
     [Test]
     public void DoesNotIndexContentProtectionIfNoneExists()
     {
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results.First().AllValues.SelectMany(x => x.Value), Does.Not.Contain(Constants.SystemFields.Protection));
     }

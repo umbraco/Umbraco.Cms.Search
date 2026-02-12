@@ -13,7 +13,7 @@ public partial class InvariantDocumentTreeTests
     public async Task DraftStructure_YieldsAllDocuments()
     {
         await CreateInvariantDocumentTree(false);
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
         ISearchResult[] results = index.Searcher.CreateQuery().All().Execute().ToArray();
 
@@ -30,7 +30,7 @@ public partial class InvariantDocumentTreeTests
     public async Task DraftStructure_YieldsNoPublishedDocuments()
     {
         await CreateInvariantDocumentTree(false);
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results.Count(), Is.EqualTo(0));
@@ -48,7 +48,7 @@ public partial class InvariantDocumentTreeTests
             return Task.CompletedTask;
         });
 
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
         ISearchResult[] results = index.Searcher.CreateQuery().All().Execute().ToArray();
 
         Assert.Multiple(() =>
@@ -72,7 +72,7 @@ public partial class InvariantDocumentTreeTests
             return Task.CompletedTask;
         });
 
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
         ISearchResult[] results = index.Searcher.CreateQuery().All().Execute().ToArray();
 
         Assert.Multiple(() =>
@@ -94,7 +94,7 @@ public partial class InvariantDocumentTreeTests
         });
 
 
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftContent);
         ISearchResult[] results = index.Searcher.CreateQuery().All().Execute().ToArray();
 
         Assert.Multiple(() =>

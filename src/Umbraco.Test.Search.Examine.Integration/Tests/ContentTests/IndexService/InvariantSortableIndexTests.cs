@@ -20,7 +20,7 @@ public class InvariantSortableIndexTests : IndexTestBase
     {
         await CreateTitleDocuments(["C Title", "A Title", "B Title"]);
 
-        IIndex index = ExamineManager.GetIndex(publish
+        IIndex index = GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 

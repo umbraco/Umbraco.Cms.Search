@@ -10,7 +10,7 @@ public partial class InvariantDocumentTreeTests : IndexTestBase
     public async Task PublishedStructure_YieldsAllPublishedDocuments()
     {
         await CreateInvariantDocumentTree(true);
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         ISearchResult[] results = index.Searcher.CreateQuery().All().Execute().ToArray();
 
         Assert.Multiple(() =>
@@ -26,7 +26,7 @@ public partial class InvariantDocumentTreeTests : IndexTestBase
     public async Task PublishedStructure_AlsoIndexesDraftStructure()
     {
         await CreateInvariantDocumentTree(true);
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         ISearchResult[] results = index.Searcher.CreateQuery().All().Execute().ToArray();
 
         Assert.Multiple(() =>
@@ -49,7 +49,7 @@ public partial class InvariantDocumentTreeTests : IndexTestBase
             return Task.CompletedTask;
         });
 
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         ISearchResults publishedResultsRoot = index.Searcher.CreateQuery().All().Execute();
         Assert.That(publishedResultsRoot.TotalItemCount, Is.EqualTo(0));
     }
@@ -65,7 +65,7 @@ public partial class InvariantDocumentTreeTests : IndexTestBase
             return Task.CompletedTask;
         });
 
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         ISearchResult[] results = index.Searcher.CreateQuery().All().Execute().ToArray();
         Assert.Multiple(() =>
         {
@@ -85,7 +85,7 @@ public partial class InvariantDocumentTreeTests : IndexTestBase
             return Task.CompletedTask;
         });
 
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         ISearchResult[] results = index.Searcher.CreateQuery().All().Execute().ToArray();
         Assert.Multiple(() =>
         {
@@ -106,7 +106,7 @@ public partial class InvariantDocumentTreeTests : IndexTestBase
             return Task.CompletedTask;
         });
 
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         ISearchResults publishedResultsRoot = index.Searcher.CreateQuery().All().Execute();
         Assert.That(publishedResultsRoot.TotalItemCount, Is.EqualTo(0));
     }
@@ -122,7 +122,7 @@ public partial class InvariantDocumentTreeTests : IndexTestBase
             return Task.CompletedTask;
         });
 
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         ISearchResult[] results = index.Searcher.CreateQuery().All().Execute().ToArray();
         Assert.Multiple(() =>
         {
@@ -142,7 +142,7 @@ public partial class InvariantDocumentTreeTests : IndexTestBase
             return Task.CompletedTask;
         });
 
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         ISearchResult[] results = index.Searcher.CreateQuery().All().Execute().ToArray();
         Assert.Multiple(() =>
         {

@@ -85,7 +85,7 @@ public class ExplicitSegmentIndexTests : IndexTestBase
     public void DocumentWithMultipleSegments_IndexesAsSingleDocumentPerCulture(bool publish, string culture)
     {
         var indexAlias = GetIndexAlias(publish);
-        IIndex index = ExamineManager.GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
 
         // Get all documents for this key
         var documents = GetDocumentsByKey(index, DocumentWithAllSegmentsKey)
@@ -103,7 +103,7 @@ public class ExplicitSegmentIndexTests : IndexTestBase
     public void DocumentWithMultipleSegments_ContainsNullSegmentProperty(bool publish, string culture)
     {
         var indexAlias = GetIndexAlias(publish);
-        IIndex index = ExamineManager.GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
 
         ISearchResult? document = GetDocumentByKeyAndCulture(index, DocumentWithAllSegmentsKey, culture);
         Assert.That(document, Is.Not.Null);
@@ -123,7 +123,7 @@ public class ExplicitSegmentIndexTests : IndexTestBase
     public void DocumentWithMultipleSegments_ContainsExplicitSegmentProperty(bool publish, string culture, string segment)
     {
         var indexAlias = GetIndexAlias(publish);
-        IIndex index = ExamineManager.GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
 
         ISearchResult? document = GetDocumentByKeyAndCulture(index, DocumentWithAllSegmentsKey, culture);
         Assert.That(document, Is.Not.Null);
@@ -141,7 +141,7 @@ public class ExplicitSegmentIndexTests : IndexTestBase
     public void DocumentWithMultipleSegments_ContainsAllSegmentPropertiesOnSameDocument(bool publish, string culture)
     {
         var indexAlias = GetIndexAlias(publish);
-        IIndex index = ExamineManager.GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
 
         ISearchResult? document = GetDocumentByKeyAndCulture(index, DocumentWithAllSegmentsKey, culture);
         Assert.That(document, Is.Not.Null);
@@ -164,7 +164,7 @@ public class ExplicitSegmentIndexTests : IndexTestBase
     public void DocumentWithOnlyNullSegment_IndexesWithOnlyNullSegmentProperty(bool publish, string culture)
     {
         var indexAlias = GetIndexAlias(publish);
-        IIndex index = ExamineManager.GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
 
         ISearchResult? document = GetDocumentByKeyAndCulture(index, DocumentWithOnlyNullSegmentKey, culture);
         Assert.That(document, Is.Not.Null);
@@ -183,7 +183,7 @@ public class ExplicitSegmentIndexTests : IndexTestBase
     public void DocumentWithOnlyExplicitSegment_IndexesWithOnlyThatSegmentProperty(bool publish, string culture)
     {
         var indexAlias = GetIndexAlias(publish);
-        IIndex index = ExamineManager.GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
 
         ISearchResult? document = GetDocumentByKeyAndCulture(index, DocumentWithOnlySegment1Key, culture);
         Assert.That(document, Is.Not.Null);
@@ -203,7 +203,7 @@ public class ExplicitSegmentIndexTests : IndexTestBase
     public void TotalIndexedDocuments_MatchesCultureCount_NotCultureTimesSegmentCount(bool publish)
     {
         var indexAlias = GetIndexAlias(publish);
-        IIndex index = ExamineManager.GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
 
         // Get all documents for our test keys
         var allDocs = GetDocumentsByKey(index, DocumentWithAllSegmentsKey)
@@ -231,7 +231,7 @@ public class ExplicitSegmentIndexTests : IndexTestBase
     public void AggregatedTexts_ContainsNullSegmentAggregatedTexts(bool publish, string culture)
     {
         var indexAlias = GetIndexAlias(publish);
-        IIndex index = ExamineManager.GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
 
         ISearchResult? document = GetDocumentByKeyAndCulture(index, DocumentWithAllSegmentsKey, culture);
         Assert.That(document, Is.Not.Null);
@@ -252,7 +252,7 @@ public class ExplicitSegmentIndexTests : IndexTestBase
     public void AggregatedTexts_ContainsExplicitSegmentAggregatedTexts(bool publish, string culture, string segment)
     {
         var indexAlias = GetIndexAlias(publish);
-        IIndex index = ExamineManager.GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
 
         ISearchResult? document = GetDocumentByKeyAndCulture(index, DocumentWithAllSegmentsKey, culture);
         Assert.That(document, Is.Not.Null);
@@ -272,7 +272,7 @@ public class ExplicitSegmentIndexTests : IndexTestBase
     public void AggregatedTexts_NullSegmentDoesNotContainExplicitSegmentValues(bool publish, string culture)
     {
         var indexAlias = GetIndexAlias(publish);
-        IIndex index = ExamineManager.GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
 
         ISearchResult? document = GetDocumentByKeyAndCulture(index, DocumentWithAllSegmentsKey, culture);
         Assert.That(document, Is.Not.Null);
@@ -290,7 +290,7 @@ public class ExplicitSegmentIndexTests : IndexTestBase
     public void AggregatedTexts_ExplicitSegmentDoesNotContainOtherSegmentValues(bool publish, string culture)
     {
         var indexAlias = GetIndexAlias(publish);
-        IIndex index = ExamineManager.GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
 
         ISearchResult? document = GetDocumentByKeyAndCulture(index, DocumentWithAllSegmentsKey, culture);
         Assert.That(document, Is.Not.Null);
@@ -309,7 +309,7 @@ public class ExplicitSegmentIndexTests : IndexTestBase
     public void AggregatedTexts_DocumentWithOnlyNullSegment_HasOnlyNullSegmentAggregatedTexts(bool publish, string culture)
     {
         var indexAlias = GetIndexAlias(publish);
-        IIndex index = ExamineManager.GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
 
         ISearchResult? document = GetDocumentByKeyAndCulture(index, DocumentWithOnlyNullSegmentKey, culture);
         Assert.That(document, Is.Not.Null);
@@ -330,7 +330,7 @@ public class ExplicitSegmentIndexTests : IndexTestBase
     public void AggregatedTexts_DocumentWithOnlyExplicitSegment_HasOnlyThatSegmentAggregatedTexts(bool publish, string culture)
     {
         var indexAlias = GetIndexAlias(publish);
-        IIndex index = ExamineManager.GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
 
         ISearchResult? document = GetDocumentByKeyAndCulture(index, DocumentWithOnlySegment1Key, culture);
         Assert.That(document, Is.Not.Null);
@@ -351,7 +351,7 @@ public class ExplicitSegmentIndexTests : IndexTestBase
     public void DocumentWithSpecialCharacterSegments_IndexesAsSingleDocumentPerCulture(bool publish, string culture)
     {
         var indexAlias = GetIndexAlias(publish);
-        IIndex index = ExamineManager.GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
 
         var documents = GetDocumentsByKey(index, DocumentWithSpecialCharacterSegmentsKey)
             .Where(d => d.Values.TryGetValue(Constants.SystemFields.Culture, out var c) && c == culture)
@@ -365,7 +365,7 @@ public class ExplicitSegmentIndexTests : IndexTestBase
     public void DocumentWithSpecialCharacterSegments_ContainsAllSegmentPropertiesOnSameDocument(bool publish, string culture)
     {
         var indexAlias = GetIndexAlias(publish);
-        IIndex index = ExamineManager.GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
 
         ISearchResult? document = GetDocumentByKeyAndCulture(index, DocumentWithSpecialCharacterSegmentsKey, culture);
         Assert.That(document, Is.Not.Null);

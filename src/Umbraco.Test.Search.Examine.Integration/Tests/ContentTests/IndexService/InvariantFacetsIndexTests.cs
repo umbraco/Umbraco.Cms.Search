@@ -22,7 +22,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
     {
         await CreateCountDocuments([1, 2]);
 
-        IIndex index = ExamineManager.GetIndex(publish
+        IIndex index = GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
@@ -47,7 +47,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
     {
         await CreateDecimalDocuments([3.6, 600.4]);
 
-        IIndex index = ExamineManager.GetIndex(publish
+        IIndex index = GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
@@ -72,7 +72,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
     {
         await CreateTitleDocuments(["Title", "Title", "Another"]);
 
-        IIndex index = ExamineManager.GetIndex(publish
+        IIndex index = GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 
@@ -98,7 +98,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
     {
         await CreateCountDocuments([1, 2, 99, 101, 170]);
 
-        IIndex index = ExamineManager.GetIndex(publish
+        IIndex index = GetIndex(publish
             ? Cms.Search.Core.Constants.IndexAliases.PublishedContent
             : Cms.Search.Core.Constants.IndexAliases.DraftContent);
 

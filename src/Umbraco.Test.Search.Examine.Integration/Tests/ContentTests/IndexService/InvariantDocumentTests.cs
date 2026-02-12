@@ -16,7 +16,7 @@ public class InvariantDocumentTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexAnyDocument(bool publish)
     {
-        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
+        IIndex index = GetIndex(GetIndexAlias(publish));
 
         ISearchResult[] results = index.Searcher.CreateQuery().All().Execute().ToArray();
         Assert.That(results.Length, Is.EqualTo(1));
@@ -35,7 +35,7 @@ public class InvariantDocumentTests : IndexTestBase
             return Task.CompletedTask;
         });
 
-        IIndex index = ExamineManager.GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results, Is.Empty);
     }
@@ -51,7 +51,7 @@ public class InvariantDocumentTests : IndexTestBase
         });
 
 
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results, Is.Empty);
     }
@@ -60,7 +60,7 @@ public class InvariantDocumentTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexTextProperty(bool publish)
     {
-        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
+        IIndex index = GetIndex(GetIndexAlias(publish));
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
         var fieldName = FieldNameHelper.FieldName("title", Constants.FieldValues.Texts);
@@ -74,7 +74,7 @@ public class InvariantDocumentTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexIntegerValues(bool publish)
     {
-        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
+        IIndex index = GetIndex(GetIndexAlias(publish));
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
         var fieldName = FieldNameHelper.FieldName("count", Constants.FieldValues.Integers);
@@ -88,7 +88,7 @@ public class InvariantDocumentTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexDecimalValues(bool publish)
     {
-        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
+        IIndex index = GetIndex(GetIndexAlias(publish));
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
         var fieldName = FieldNameHelper.FieldName("decimalproperty", Constants.FieldValues.Decimals);
@@ -104,7 +104,7 @@ public class InvariantDocumentTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexDateTimeValues(bool publish)
     {
-        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
+        IIndex index = GetIndex(GetIndexAlias(publish));
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
         var fieldName = FieldNameHelper.FieldName("datetime", Constants.FieldValues.DateTimeOffsets);
@@ -125,7 +125,7 @@ public class InvariantDocumentTests : IndexTestBase
     {
         await UpdateProperty(propertyName, updatedValue, publish);
 
-        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
+        IIndex index = GetIndex(GetIndexAlias(publish));
 
         ISearchResults results = index.Searcher.Search(updatedValue.ToString()!);
         Assert.That(results, Is.Not.Empty);
@@ -136,7 +136,7 @@ public class InvariantDocumentTests : IndexTestBase
     [TestCase(false)]
     public void CanIndexAggregatedTexts(bool publish)
     {
-        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
+        IIndex index = GetIndex(GetIndexAlias(publish));
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
         queryBuilder.SelectField(Constants.SystemFields.AggregatedTexts);
