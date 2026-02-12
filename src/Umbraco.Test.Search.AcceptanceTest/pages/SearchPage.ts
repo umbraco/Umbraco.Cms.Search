@@ -32,27 +32,26 @@ export class SearchPage extends BasePage {
   }
 
   async waitForSearchResults() {
-    await this.searchResults.waitFor({state: 'visible'});
-    await this.page.waitForSelector('#searchResults h2');
+    await this.waitForVisible(this.searchResults);
+    await this.waitForAttached(this.resultsHeading);
   }
 
   async search(query: string) {
-    await this.searchInput.fill(query);
-    await this.searchInput.press('Enter');
+    await this.enterText(this.searchInput, query);
+    await this.pressKey(this.searchInput, 'Enter');
     await this.waitForSearchResults();
   }
 
   async clearSearch() {
-    await this.searchInput.clear();
-    await this.searchInput.press('Enter');
+    await this.clearText(this.searchInput);
+    await this.pressKey(this.searchInput, 'Enter');
     await this.waitForSearchResults();
   }
 
   async getResultCount(): Promise<number> {
-    const headingText = await this.resultsHeading.textContent();
+    const headingText = await this.getText(this.resultsHeading);
     if (!headingText) return 0;
 
-    // Match "Found X book(s)" or "No books found"
     const match = headingText.match(/Found (\d+) books?/);
     if (match) {
       return parseInt(match[1], 10);
@@ -81,11 +80,11 @@ export class SearchPage extends BasePage {
   }
 
   async expectResultCountToBe(count: number) {
-    await expect(this.resultsHeading).toContainText(`Found ${count} book`);
+    await this.containsText(this.resultsHeading, `Found ${count} book`);
   }
 
   async expectNoResults() {
-    await expect(this.resultsHeading).toContainText('No books found');
+    await this.containsText(this.resultsHeading, 'No books found');
   }
 
   async expectResultsContainBook(bookTitle: string) {
@@ -94,13 +93,13 @@ export class SearchPage extends BasePage {
   }
 
   async expectResultsForQuery(query: string) {
-    await expect(this.resultsHeading).toContainText(`for "${query}"`);
+    await this.containsText(this.resultsHeading, `for "${query}"`);
   }
 
   // Facet interactions
   async toggleFacet(facetName: string, value: string) {
     const checkbox = this.page.locator(`input[name="${facetName}"][value="${value}"]`);
-    await checkbox.click();
+    await this.click(checkbox);
     await this.waitForSearchResults();
   }
 
@@ -118,27 +117,27 @@ export class SearchPage extends BasePage {
 
   // Sorting
   async sortBy(sortOption: 'relevance' | 'title' | 'publishYear') {
-    await this.sortByDropdown.selectOption(sortOption);
+    await this.selectByValue(this.sortByDropdown, sortOption);
     await this.waitForSearchResults();
   }
 
   async setSortDirection(direction: 'asc' | 'desc') {
-    await this.sortDirectionDropdown.selectOption(direction);
+    await this.selectByValue(this.sortDirectionDropdown, direction);
     await this.waitForSearchResults();
   }
 
   // Pagination
   async goToPage(pageNumber: number) {
     const pageButton = this.paginationButtons.nth(pageNumber - 1);
-    await pageButton.click();
+    await this.click(pageButton);
     await this.waitForSearchResults();
   }
 
   async expectPaginationVisible() {
-    await expect(this.paginationButtons.first()).toBeVisible();
+    await this.isVisible(this.paginationButtons.first());
   }
 
   async expectNoPagination() {
-    await expect(this.paginationButtons).toHaveCount(0);
+    await this.hasCount(this.paginationButtons, 0);
   }
 }

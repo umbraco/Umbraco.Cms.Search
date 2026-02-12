@@ -25,11 +25,11 @@ export class HomePage extends BasePage {
   }
 
   async expectHeadingText(text: string) {
-    await expect(this.heading).toHaveText(text);
+    await this.hasText(this.heading, text);
   }
 
   async search(query: string) {
-    await this.searchInput.fill(query);
-    await this.searchButton.click();
+    await this.enterText(this.searchInput, query);
+    await this.click(this.searchButton);
   }
 }
