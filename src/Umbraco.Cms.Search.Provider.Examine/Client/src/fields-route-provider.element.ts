@@ -1,0 +1,54 @@
+import { UmbModalRouteRegistrationController } from '@umbraco-cms/backoffice/router';
+import { UMB_ENTITY_WORKSPACE_CONTEXT } from '@umbraco-cms/backoffice/workspace';
+import { customElement, nothing } from '@umbraco-cms/backoffice/external/lit';
+import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
+
+const MODAL_ALIAS = 'Umbraco.Cms.Search.Modal.DocumentFields';
+
+/** Module-level export shared with the entity action for URL construction. */
+export let fieldsRouteBuilder: ((params: { [key: string]: string | number }) => string) | undefined;
+
+@customElement('umb-examine-fields-route-provider')
+export class UmbExamineFieldsRouteProviderElement extends UmbLitElement {
+	#indexAlias?: string;
+
+	constructor() {
+		super();
+
+		this.consumeContext(UMB_ENTITY_WORKSPACE_CONTEXT, (context) => {
+			if (!context) return;
+			this.#indexAlias = context.getUnique() ?? undefined;
+		});
+
+		new UmbModalRouteRegistrationController(this, MODAL_ALIAS)
+			.addAdditionalPath(':documentUnique/:culture')
+			.onSetup((params) => {
+				return {
+					modal: {
+						type: 'sidebar',
+						size: 'large',
+					},
+					data: {
+						searchDocument: { unique: params.documentUnique },
+						indexAlias: this.#indexAlias ?? '',
+						culture: params.culture,
+					},
+					value: undefined,
+				};
+			})
+			.observeRouteBuilder((routeBuilder) => {
+				fieldsRouteBuilder = routeBuilder ?? undefined;
+			});
+	}
+
+	override disconnectedCallback() {
+		super.disconnectedCallback();
+		fieldsRouteBuilder = undefined;
+	}
+
+	override render() {
+		return nothing;
+	}
+}
+
+export default UmbExamineFieldsRouteProviderElement;
