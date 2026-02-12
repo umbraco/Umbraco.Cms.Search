@@ -24,6 +24,11 @@ import { UMB_WORKSPACE_MODAL } from '@umbraco-cms/backoffice/workspace';
 import { UMB_APP_LANGUAGE_CONTEXT } from '@umbraco-cms/backoffice/language';
 import type { UmbLanguageDetailModel } from '@umbraco-cms/backoffice/language';
 import { UMB_SEARCH_DOCUMENT_ENTITY_TYPE } from '@umbraco-cms/search/global';
+import type {
+  UUIInputElement,
+  UUIPaginationElement,
+  UUISelectElement,
+} from '@umbraco-cms/backoffice/external/uui';
 
 const PAGE_SIZE = 10;
 
@@ -455,8 +460,8 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   }
 
   #handleInputChange(e: Event) {
-    const input = e.target as HTMLInputElement;
-    this.#inputValue = input.value;
+    const input = e.target as UUIInputElement;
+    this.#inputValue = input.value as string;
 
     // Clear results if input is empty
     if (!this.#inputValue.trim()) {
@@ -487,8 +492,8 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   }
 
   #handleCultureChange(e: Event) {
-    const select = e.target as HTMLSelectElement;
-    this._selectedCulture = select.value;
+    const select = e.target as UUISelectElement;
+    this._selectedCulture = select.value as string;
     this.#updateUrlParams();
     // Re-trigger search with new culture if there's an active query
     if (this._searchQuery.trim()) {
@@ -497,7 +502,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
   }
 
   #onPageChange(event: Event) {
-    const target = event.target as HTMLElement & { current: number };
+    const target = event.target as UUIPaginationElement;
     this.#pagination.setCurrentPageNumber(target.current);
     void this.#handleSearch();
   }
