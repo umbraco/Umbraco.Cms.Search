@@ -9,11 +9,11 @@ test.describe('Full-Text Search', () => {
     await searchPage.goto();
   });
 
-  test('can load search page with initial results', {tag: '@smoke'}, async () => {
+  test('can load search page with initial results', async () => {
     await searchPage.expectResultCountGreaterThan(0);
   });
 
-  test('can search for books by title', {tag: '@smoke'}, async () => {
+  test('can search for books by title', async () => {
     await searchPage.search('Ulysses');
 
     await searchPage.expectResultsForQuery('Ulysses');
