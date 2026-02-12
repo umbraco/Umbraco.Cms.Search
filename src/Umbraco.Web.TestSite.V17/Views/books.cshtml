@@ -11,9 +11,10 @@
 	<script>window.__CULTURE__ = "@culture";</script>
 	<script src="js/script.js" asp-append-version="true"></script>
 	<style>
+:root { color-scheme: light dark; }
 body {
-	background-color: oldlace;
-	color: black;
+	background-color: light-dark(oldlace, #121212);
+	color: light-dark(#121212, oldlace);
 	font-family: 'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', P052, serif;
 	margin: auto;
 	max-width: 1200px;
