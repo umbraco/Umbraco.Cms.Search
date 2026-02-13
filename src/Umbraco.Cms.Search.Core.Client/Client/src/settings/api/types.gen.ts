@@ -14,6 +14,8 @@ export type DirectionModel = 'Ascending' | 'Descending';
 export type DocumentModel = {
     id: string;
     objectType: UmbracoObjectTypesModel;
+    name?: string | null;
+    icon?: string | null;
 };
 
 export type FacetModel = {
