@@ -11,5 +11,6 @@ public class DocumentViewModel
     public required UmbracoObjectTypes ObjectType { get; set; }
 
     public string? Name { get; set; }
+
     public string? Icon { get; set; }
 }
