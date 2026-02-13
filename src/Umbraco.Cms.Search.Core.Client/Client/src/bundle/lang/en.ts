@@ -58,5 +58,6 @@ export default {
     paginationLabel: 'Search results pages',
     cultureSelectLabel: 'Culture',
     searchDisabled: 'Search is disabled because the index is not healthy. Current status:',
+    searchError: 'An error occurred while searching. Please try again.',
   },
 } satisfies UmbLocalizationDictionary;

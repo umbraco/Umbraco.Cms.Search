@@ -24,6 +24,9 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
   @state()
   private _isLoading = true;
 
+  @state()
+  private _error?: string;
+
   #repository = new UmbSearchExamineProviderRepository(this);
 
   override firstUpdated() {
@@ -39,7 +42,7 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
 
     if (error) {
       this._isLoading = false;
-      console.error(error.message);
+      this._error = this.localize.term('searchExamine_loadError');
       return;
     }
 
@@ -106,7 +109,10 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
           ${when(
             this._isLoading,
             () => html`<uui-loader></uui-loader>`,
-            () => this.#renderDocuments(),
+            () =>
+              this._error
+                ? html`<div class="error-message">${this._error}</div>`
+                : this.#renderDocuments(),
           )}
         </uui-scroll-container>
         <div slot="actions">
@@ -129,6 +135,12 @@ export class UmbSearchExamineShowFieldsModal extends UmbModalBaseElement<ShowFie
 
       umb-search-examine-document-fields[hidden] {
         display: none;
+      }
+
+      .error-message {
+        padding: var(--uui-size-6);
+        text-align: center;
+        color: var(--uui-color-danger);
       }
 
       uui-tab-group {

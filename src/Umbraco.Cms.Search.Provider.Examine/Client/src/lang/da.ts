@@ -20,6 +20,8 @@ export default {
     seeMore: 'Se mere',
     seeLess: 'Se mindre',
     noFieldsMatch: 'Ingen felter matcher dit filter.',
+    noFields: 'Dette dokument har ingen indekserede felter.',
+    loadError: 'Kunne ikke indl\u00E6se dokumentfelter. Pr\u00F8v venligst igen.',
     valueIndex: (index: number) => `V\u00E6rdi ${index}`,
     fieldType: (type: string) => {
       switch (type) {

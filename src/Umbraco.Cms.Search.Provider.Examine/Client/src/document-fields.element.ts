@@ -142,28 +142,40 @@ export class UmbSearchExamineDocumentFieldsElement extends UmbLitElement {
         </span>
       </div>
       ${when(
-        this.#filteredAndSortedFields.length > 0,
-        () => html`
-          <uui-box>
-            <table class="fields-table">
-              <thead>
-                <tr>
-                  <th class="th-name">${this.localize.term('searchExamine_tableColumnName')}</th>
-                  <th class="th-value">${this.localize.term('searchExamine_tableColumnValue')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${repeat(
-                  this.#filteredAndSortedFields,
-                  (field) => field.name,
-                  (field) => this.#renderField(field),
-                )}
-              </tbody>
-            </table>
-          </uui-box>
-        `,
+        this.fields.length === 0,
         () =>
-          html`<div class="empty-state">${this.localize.term('searchExamine_noFieldsMatch')}</div>`,
+          html`<div class="empty-state">${this.localize.term('searchExamine_noFields')}</div>`,
+        () =>
+          when(
+            this.#filteredAndSortedFields.length > 0,
+            () => html`
+              <uui-box>
+                <table class="fields-table">
+                  <thead>
+                    <tr>
+                      <th class="th-name">
+                        ${this.localize.term('searchExamine_tableColumnName')}
+                      </th>
+                      <th class="th-value">
+                        ${this.localize.term('searchExamine_tableColumnValue')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${repeat(
+                      this.#filteredAndSortedFields,
+                      (field) => field.name,
+                      (field) => this.#renderField(field),
+                    )}
+                  </tbody>
+                </table>
+              </uui-box>
+            `,
+            () =>
+              html`<div class="empty-state">
+                ${this.localize.term('searchExamine_noFieldsMatch')}
+              </div>`,
+          ),
       )}
     `;
   }
@@ -172,6 +184,7 @@ export class UmbSearchExamineDocumentFieldsElement extends UmbLitElement {
     css`
       :host {
         display: block;
+        --umb-search-filter-bar-height: 53px;
       }
 
       .filter-bar {
@@ -209,7 +222,7 @@ export class UmbSearchExamineDocumentFieldsElement extends UmbLitElement {
         color: var(--uui-color-text-muted);
         border-bottom: 1px solid var(--uui-color-border);
         position: sticky;
-        top: 52px;
+        top: var(--umb-search-filter-bar-height);
         background: var(--uui-color-background);
       }
 
@@ -306,8 +319,15 @@ export class UmbSearchExamineDocumentFieldsElement extends UmbLitElement {
         white-space: nowrap;
       }
 
-      .see-more:hover {
+      .see-more:hover,
+      .see-more:focus-visible {
         color: var(--uui-color-interactive-emphasis);
+      }
+
+      .see-more:focus-visible {
+        outline: 2px solid var(--uui-color-focus);
+        outline-offset: 2px;
+        border-radius: var(--uui-border-radius);
       }
 
       .empty-state {

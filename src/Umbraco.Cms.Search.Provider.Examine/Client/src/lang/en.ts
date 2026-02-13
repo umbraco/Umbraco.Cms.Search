@@ -20,6 +20,8 @@ export default {
     seeMore: 'See more',
     seeLess: 'See less',
     noFieldsMatch: 'No fields match your filter.',
+    noFields: 'This document has no indexed fields.',
+    loadError: 'Failed to load document fields. Please try again.',
     valueIndex: (index: number) => `Value ${index}`,
     fieldType: (type: string) => {
       switch (type) {

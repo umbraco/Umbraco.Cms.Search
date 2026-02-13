@@ -387,7 +387,7 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
     const { data, error } = await this.#queryRepository.search(request);
 
     if (error || !data) {
-      this._error = error?.message ?? 'An error occurred while searching';
+      this._error = error?.message ?? this.localize.term('search_searchError');
       this._searchResults = undefined;
       this._tableItems = [];
       this._searchStatusMessage = this.localize.term('search_searchFailed');

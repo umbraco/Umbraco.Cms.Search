@@ -72,5 +72,6 @@ export default {
     paginationLabel: 'Sider med søgeresultater',
     cultureSelectLabel: 'Kultur',
     searchDisabled: 'Søgning er deaktiveret, fordi indekset ikke er sundt. Nuværende status:',
+    searchError: 'Der opstod en fejl under søgningen. Prøv venligst igen.',
   },
 } satisfies UmbLocalizationDictionary;
