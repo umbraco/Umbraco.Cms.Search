@@ -45,6 +45,7 @@ internal sealed class ZeroDowntimeRebuildNotificationHandler :
         if (IsShadowIndexHealthy(shadowIndexName))
         {
             _activeIndexManager.CompleteRebuilding(notification.IndexAlias);
+            ClearShadowIndex(notification.IndexAlias);
         }
         else
         {
@@ -102,6 +103,19 @@ internal sealed class ZeroDowntimeRebuildNotificationHandler :
         {
             luceneIndex.IndexCommitted -= OnCommitted;
         }
+    }
+
+    private void ClearShadowIndex(string indexAlias)
+    {
+        var shadowIndexName = _activeIndexManager.ResolveShadowIndexName(indexAlias);
+
+        if (_examineManager.TryGetIndex(shadowIndexName, out IIndex? index) is false)
+        {
+            return;
+        }
+
+        _logger.LogInformation("Clearing shadow index {ShadowIndex} after successful swap for {IndexAlias}.", shadowIndexName, indexAlias);
+        index.CreateIndex();
     }
 
     private bool IsShadowIndexHealthy(string physicalIndexName)

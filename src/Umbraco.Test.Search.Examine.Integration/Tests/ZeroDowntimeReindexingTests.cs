@@ -308,6 +308,34 @@ public class ZeroDowntimeReindexingTests : TestBase
 
     [TestCase(true)]
     [TestCase(false)]
+    public async Task FullRebuild_ClearsShadowIndexAfterSwap(bool publish)
+    {
+        await SetUpContent(publish);
+        var indexAlias = GetIndexAlias(publish);
+
+        var activeBeforeRebuild = ActiveIndexManager.ResolveActiveIndexName(indexAlias);
+
+        // Trigger full rebuild (synchronous with ImmediateBackgroundTaskQueue).
+        ContentIndexingService.Rebuild(indexAlias);
+
+        // Verify the swap happened
+        var activeAfterRebuild = ActiveIndexManager.ResolveActiveIndexName(indexAlias);
+        Assert.That(activeAfterRebuild, Is.Not.EqualTo(activeBeforeRebuild), "Active index should have swapped after rebuild");
+
+        // After the rebuild and swap, the shadow index (old active) should be cleared to free disk space
+        var shadowPhysicalName = ActiveIndexManager.ResolveShadowIndexName(indexAlias);
+        Assert.That(shadowPhysicalName, Is.EqualTo(activeBeforeRebuild), "Shadow should be the old active");
+
+        IIndex shadowIndex = ExamineManager.GetIndex(shadowPhysicalName);
+
+        if (shadowIndex is IIndexStats stats)
+        {
+            Assert.That(stats.GetDocumentCount(), Is.EqualTo(0), "Shadow index should be cleared after a successful rebuild and swap");
+        }
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
     public async Task IndexerReset_TargetsShadowDuringRebuild(bool publish)
     {
         await SetUpContent(publish);
