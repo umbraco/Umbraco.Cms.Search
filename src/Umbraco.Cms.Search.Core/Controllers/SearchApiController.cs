@@ -63,7 +63,7 @@ public class SearchApiController : ApiControllerBase
         return Ok(new SearchResultViewModel
         {
             Total = result.Total,
-            Documents = ToDocumentViewModels(result.Documents),
+            Documents = CreateDocumentViewModels(result.Documents),
             Facets = result.Facets.Select(f => new FacetResultViewModel
             {
                 FieldName = f.FieldName,
@@ -72,7 +72,7 @@ public class SearchApiController : ApiControllerBase
         });
     }
 
-    private IEnumerable<DocumentViewModel> ToDocumentViewModels(IEnumerable<Document> documents)
+    private IEnumerable<DocumentViewModel> CreateDocumentViewModels(IEnumerable<Document> documents)
     {
         foreach (IGrouping<UmbracoObjectTypes, Document> group in documents.GroupBy(d => d.ObjectType))
         {
@@ -81,27 +81,14 @@ public class SearchApiController : ApiControllerBase
 
             // Default to an empty lookup; for unknown or unsupported object types
             // we will skip the entity lookup and return documents with null name/icon.
-            Dictionary<Guid, IEntitySlim> namesByKey = new();
-
-            if (group.Key != UmbracoObjectTypes.Unknown)
-            {
-                try
-                {
-                    namesByKey = _entityService
-                        .GetAll(group.Key, keys)
-                        .ToDictionary(e => e.Key, e => e);
-                }
-                catch (ArgumentException)
-                {
-                    // If the object type is not supported by IEntityService.GetAll,
-                    // fall back to an empty lookup so we still return documents.
-                    namesByKey = new Dictionary<Guid, IEntitySlim>();
-                }
-            }
+            Dictionary<Guid, IEntitySlim> entitiesByKey =
+                group.Key is UmbracoObjectTypes.Document or UmbracoObjectTypes.Media or UmbracoObjectTypes.Member
+                    ? _entityService.GetAll(group.Key, keys).ToDictionary(e => e.Key)
+                    : new Dictionary<Guid, IEntitySlim>();
 
             foreach (Document document in groupDocuments)
             {
-                IEntitySlim? entity = namesByKey.GetValueOrDefault(document.Id);
+                IEntitySlim? entity = entitiesByKey.GetValueOrDefault(document.Id);
                 yield return new DocumentViewModel
                 {
                     Id = document.Id,
