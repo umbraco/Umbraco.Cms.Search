@@ -269,7 +269,7 @@ stages:
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - job: sbom
-        displayName: Upload SBOM to DependencyTrack
+        displayName: Upload SBOMs to DependencyTrack
         steps:
           - checkout: self
             fetchDepth: 0
@@ -284,22 +284,47 @@ stages:
                 Write-Host "Version from version.json: $version"
                 Write-Host "##vso[task.setvariable variable=VersionNumber]$version"
 
+          # NuGet SBOM
           - script: dotnet tool install --global CycloneDX
             displayName: 'Install CycloneDX .NET Tool'
 
           - script: dotnet CycloneDX $(solution)
             displayName: 'Generate NuGet SBOM'
 
-          # This is step optional. Allows download of artifact from pipeline run view in ADO.
           - publish: bom.xml
             artifact: sbom
             displayName: 'Publish NuGet SBOM Artifact'
 
           - task: upload-bom-dtrack@1
-            displayName: 'Upload SBOM to Dependency-Track'
+            displayName: 'Upload NuGet SBOM to Dependency-Track'
             inputs:
               bomFilePath: bom.xml
               dtrackProjName: $(Build.Repository.Name)
+              dtrackProjVersion: $(VersionNumber)
+              dtrackAPIKey: $(DT_API_KEY)
+              dtrackURI: $(DT_API_URL)
+              dtrackProjAutoCreate: true
+
+          # NPM SBOM
+          - task: NodeTool@0
+            displayName: Use Node.js
+            inputs:
+              versionSource: 'fromFile'
+              versionFilePath: src/.nvmrc
+
+          - script: npx --yes @cyclonedx/cyclonedx-npm --package-lock-only --output-file $(Build.SourcesDirectory)/bom-npm.xml
+            displayName: 'Generate NPM SBOM'
+            workingDirectory: src
+
+          - publish: bom-npm.xml
+            artifact: sbom-npm
+            displayName: 'Publish NPM SBOM Artifact'
+
+          - task: upload-bom-dtrack@1
+            displayName: 'Upload NPM SBOM to Dependency-Track'
+            inputs:
+              bomFilePath: bom-npm.xml
+              dtrackProjName: $(Build.Repository.Name)-client
               dtrackProjVersion: $(VersionNumber)
               dtrackAPIKey: $(DT_API_KEY)
               dtrackURI: $(DT_API_URL)
