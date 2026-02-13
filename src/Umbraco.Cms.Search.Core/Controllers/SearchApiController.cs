@@ -68,7 +68,7 @@ public class SearchApiController : ApiControllerBase
         foreach (IGrouping<UmbracoObjectTypes, Document> group in documents.GroupBy(d => d.ObjectType))
         {
             Document[] groupDocuments = group.ToArray();
-            Guid[] keys = groupDocuments.Select(d => d.Id).ToArray();
+            Guid[] keys = groupDocuments.Select(d => d.Id).Distinct().ToArray();
 
             // Default to an empty lookup; for unknown or unsupported object types
             // we will skip the entity lookup and return documents with null name/icon.
