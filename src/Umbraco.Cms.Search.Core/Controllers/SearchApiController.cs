@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Entities;
+using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.ViewModels;
@@ -15,11 +16,16 @@ public class SearchApiController : ApiControllerBase
 {
     private readonly ISearcherResolver _searcherResolver;
     private readonly IEntityService _entityService;
+    private readonly IVariationContextAccessor _variationContextAccessor;
 
-    public SearchApiController(ISearcherResolver searcherResolver, IEntityService entityService)
+    public SearchApiController(
+        ISearcherResolver searcherResolver,
+        IEntityService entityService,
+        IVariationContextAccessor variationContextAccessor)
     {
         _searcherResolver = searcherResolver;
         _entityService = entityService;
+        _variationContextAccessor = variationContextAccessor;
     }
 
     [HttpPost("search")]
@@ -50,6 +56,9 @@ public class SearchApiController : ApiControllerBase
             request.AccessContext,
             skip,
             take);
+
+        // set the variation context so EntityService renders the correct culture variant
+        _variationContextAccessor.VariationContext = new VariationContext(request.Culture);
 
         return Ok(new SearchResultViewModel
         {
@@ -89,6 +98,7 @@ public class SearchApiController : ApiControllerBase
                     namesByKey = new Dictionary<Guid, IEntitySlim>();
                 }
             }
+
             foreach (Document document in groupDocuments)
             {
                 IEntitySlim? entity = namesByKey.GetValueOrDefault(document.Id);
@@ -96,12 +106,21 @@ public class SearchApiController : ApiControllerBase
                 {
                     Id = document.Id,
                     ObjectType = document.ObjectType,
-                    Name = entity?.Name,
+                    Name = GetCultureNameForEntity(entity),
                     Icon = GetIconForEntity(entity),
                 };
             }
         }
     }
+
+    private string? GetCultureNameForEntity(IEntitySlim? entity) =>
+        entity switch
+        {
+            IDocumentEntitySlim documentEntitySlim when documentEntitySlim.CultureNames.TryGetValue(
+                _variationContextAccessor.VariationContext!.Culture,
+                out var name) => name,
+            _ => entity?.Name,
+        };
 
     private static string? GetIconForEntity(IEntitySlim? entity)
     {
