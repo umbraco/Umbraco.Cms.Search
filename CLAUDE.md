@@ -11,6 +11,68 @@ Umbraco Search is a new search abstraction for Umbraco CMS v16+ that will eventu
 
 The project uses a **provider-based architecture** where search technology implementations (currently Examine/Lucene) plug into core abstractions.
 
+## Development Philosophy
+
+Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+
+### 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+### 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+### 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+### 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
 ## Build & Test Commands
 
 ### Building the Solution
@@ -115,10 +177,10 @@ ContentIndexingService (orchestration)
 ```
 
 **Index Aliases** (see `Constants.IndexAliases`):
-- `Umb_PublishedContent` - Published content index
-- `Umb_Content` - Draft content index
-- `Umb_Media` - Media index
-- `Umb_Members` - Members index
+- `PublishedContent` = `"Umb_PublishedContent"` - Published content index
+- `DraftContent` = `"Umb_Content"` - Draft content index
+- `DraftMedia` = `"Umb_Media"` - Media index
+- `DraftMembers` = `"Umb_Members"` - Members index
 
 **System Field Names** (see `Constants.FieldNames`):
 - All system fields are prefixed with `Umb_`
@@ -139,16 +201,20 @@ The Examine provider implements the core abstractions using Examine/Lucene:
 
 ### Property Value Handlers (Umbraco.Cms.Search.Core/PropertyValueHandlers)
 
-Property values are indexed based on property editor type. Each handler knows how to extract and transform values:
+Property values are indexed based on property editor type. Each handler implements `IPropertyValueHandler` with a `CanHandle(string propertyEditorAlias)` method that determines which property editors it supports. Handlers are auto-discovered via `TypeLoader.GetTypes<IPropertyValueHandler>()`.
 
+**Key handlers:**
 - `ContentPickerPropertyValueHandler` - Extracts content IDs (Keywords)
-- `DateTimePropertyValueHandler` - Indexes dates as DateTimeOffset
-- `NumericPropertyValueHandler` - Indexes integers/decimals
+- `DateTimeOffsetPropertyValueHandler` - Indexes dates as DateTimeOffset
+- `IntegerPropertyValueHandler` / `DecimalPropertyValueHandler` - Indexes numeric values
 - `RichTextPropertyValueHandler` - Extracts text with relevance levels (H1=R1, H2=R2, H3=R3, body=R4)
 - `TagsPropertyValueHandler` - Accumulates tags into `Umb_Tags` system field
-- `BlockPropertyValueHandler` - Recursively indexes nested block content
-
-See README.md Appendix A for complete property editor mapping.
+- `BlockListPropertyValueHandler` / `BlockGridPropertyValueHandler` - Recursively indexes nested block content (extend `BlockEditorPropertyValueHandler`)
+- `KeywordStringPropertyValueHandler` - Exact-match string fields (dropdowns, radio buttons, etc.)
+- `PlainStringPropertyValueHandler` - Full-text searchable strings (textbox, textarea)
+- `MarkdownPropertyValueHandler` - Strips markdown, indexes as text
+- `BooleanPropertyValueHandler`, `LabelPropertyValueHandler`, `SliderPropertyValueHandler`, `MultiNodeTreePickerPropertyValueHandler`, `MultiUrlPickerPropertyValueHandler`, `MultipleTextstringPropertyValueHandler`
+- `NoopPropertyValueHandler` - Fallback for unsupported property editors (indexes nothing)
 
 ### Change Tracking Strategies
 
@@ -158,7 +224,7 @@ Content changes are tracked via notification handlers that trigger indexing:
 - `IPublishedContentChangeStrategy` - Tracks published content changes (for `Umb_PublishedContent` index)
 - `IDraftContentChangeStrategy` - Tracks draft content changes (for `Umb_Content` index)
 
-Implementations use **MessagePack caching** to detect actual changes (not just saves).
+Index documents are persisted via `IndexDocumentRepository` using **MessagePack serialization** (with Lz4 compression) for efficient change detection — only actual field changes trigger re-indexing, not every save.
 
 ### Backoffice Integration (Umbraco.Cms.Search.BackOffice)
 
@@ -194,8 +260,6 @@ Uses **code-splitting with importmap pattern** for optimal loading:
 **Custom Extension Type:**
 - `searchIndexDetailBox` - Allows adding custom UI boxes to the index detail view via extension slot
 
-**See [Core Client CLAUDE.md](src/Umbraco.Cms.Search.Core.Client/CLAUDE.md) for detailed client architecture, manifest patterns, and development workflow.**
-
 #### Examine Client (Umbraco.Cms.Search.Provider.Examine)
 
 A simpler **single-bundle** workspace (`examine-bundle.js` ~11kb) that provides:
@@ -204,8 +268,6 @@ A simpler **single-bundle** workspace (`examine-bundle.js` ~11kb) that provides:
 - `UmbSearchExamineShowFieldsModal` - Modal displaying indexed fields with filtering, expand/collapse, and copy
 
 Output goes to `wwwroot/App_Plugins/UmbracoSearchExamine/` (gitignored, built by Vite).
-
-**See [Examine Client CLAUDE.md](src/Umbraco.Cms.Search.Provider.Examine/CLAUDE.md) for detailed Examine client architecture and development workflow.**
 
 #### Monorepo Dependency Management
 
@@ -266,9 +328,8 @@ Pass `AccessContext` to `SearchAsync` to include protected content in results.
 ### Adding a New Property Value Handler
 
 1. Create handler in `src/Umbraco.Cms.Search.Core/PropertyValueHandlers/`
-2. Implement `IPropertyValueHandler` interface
-3. Register in `PropertyValueHandlerCollection` via composer
-4. Define which property editor aliases it handles via `PropertyEditorAlias` attribute
+2. Implement `IPropertyValueHandler` interface (specifically the `CanHandle(string propertyEditorAlias)` method)
+3. The handler is auto-discovered via `TypeLoader.GetTypes<IPropertyValueHandler>()` — no manual registration needed
 
 ### Adding a New Filter Type
 
@@ -391,8 +452,26 @@ Repositories abstract API calls and provide clean interfaces for UI components. 
 - **Node.js**: 24 (for client build)
 - **Versioning**: Uses Nerdbank.GitVersioning (see `version.json`)
 
-## References
+## Further Reading
 
+The `README.md` covers installation, setup, and usage. The `docs/` directory contains detailed documentation:
+
+- [README.md](README.md) - Installation, NuGet packages, composer setup
+- [docs/searching.md](docs/searching.md) - The `ISearcher` API: filtering, faceting, sorting, pagination, content variations, and protected content
+- [docs/examine-provider.md](docs/examine-provider.md) - Configuring the Examine/Lucene provider: directory factory, field options, searcher options
+- [docs/custom-extensibility.md](docs/custom-extensibility.md) - Custom `IndexValue`, `Indexer`, `Filter`, `Searcher`, and `IContentIndexer` implementations
+- [docs/backoffice.md](docs/backoffice.md) - User guide for interacting with search indexes in the Umbraco backoffice
+- [docs/backoffice-extensions.md](docs/backoffice-extensions.md) - Developer guide for adding detail boxes, entity actions, workspace views, and routable modals
+
+Sub-project CLAUDE.md files:
+- [Core Client CLAUDE.md](src/Umbraco.Cms.Search.Core.Client/CLAUDE.md) - Detailed client architecture, manifest patterns, and development workflow
+- [Examine Client CLAUDE.md](src/Umbraco.Cms.Search.Provider.Examine/CLAUDE.md) - Examine client architecture and development workflow
+
+External references:
 - RFC: ["The Future of Search"](https://github.com/umbraco/rfcs/blob/0027-the-future-of-search/cms/0027-the-future-of-search.md)
 - Main CMS Repo: [Umbraco-CMS](https://github.com/umbraco/Umbraco-CMS)
 - Examine: [Shazwazza/Examine](https://github.com/Shazwazza/Examine)
+
+---
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
