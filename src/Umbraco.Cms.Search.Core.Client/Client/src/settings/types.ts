@@ -14,37 +14,11 @@ export type UmbSearchIndex = {
   state: UmbSearchIndexState;
 };
 
-// Search request types
-export type UmbSearchDirection = 'Ascending' | 'Descending';
-
-export type UmbSearchFilter = {
-  fieldName: string;
-  negate: boolean;
-};
-
-export type UmbSearchFacet = {
-  fieldName: string;
-};
-
-export type UmbSearchSorter = {
-  fieldName: string;
-  direction: UmbSearchDirection;
-};
-
-export type UmbSearchAccessContext = {
-  principalId: string;
-  groupIds?: string[];
-};
-
 export type UmbSearchRequest = {
   indexAlias: string;
   query?: string;
-  filters?: UmbSearchFilter[];
-  facets?: UmbSearchFacet[];
-  sorters?: UmbSearchSorter[];
   culture?: string;
   segment?: string;
-  accessContext?: UmbSearchAccessContext;
   skip?: number;
   take?: number;
 };
@@ -54,21 +28,11 @@ export type UmbSearchDocument = {
   unique: string;
   objectType: string;
   entityType: string; // Mapped from objectType for easier handling in the UI
-  name: string;
+  name?: string;
   icon?: string;
-};
-
-export type UmbSearchFacetValue = {
-  count: number;
-};
-
-export type UmbSearchFacetResult = {
-  fieldName: string;
-  values: UmbSearchFacetValue[];
 };
 
 export type UmbSearchResult = {
   total: number;
   documents: UmbSearchDocument[];
-  facets: UmbSearchFacetResult[];
 };
