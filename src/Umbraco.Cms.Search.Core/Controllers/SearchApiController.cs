@@ -1,6 +1,9 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Models.Entities;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.ViewModels;
 using Umbraco.Cms.Search.Core.Services;
@@ -11,9 +14,13 @@ namespace Umbraco.Cms.Search.Core.Controllers;
 public class SearchApiController : ApiControllerBase
 {
     private readonly ISearcherResolver _searcherResolver;
+    private readonly IEntityService _entityService;
 
-    public SearchApiController(ISearcherResolver searcherResolver)
-        => _searcherResolver = searcherResolver;
+    public SearchApiController(ISearcherResolver searcherResolver, IEntityService entityService)
+    {
+        _searcherResolver = searcherResolver;
+        _entityService = entityService;
+    }
 
     [HttpPost("search")]
     [ProducesResponseType<SearchResultViewModel>(StatusCodes.Status200OK)]
@@ -47,16 +54,34 @@ public class SearchApiController : ApiControllerBase
         return Ok(new SearchResultViewModel
         {
             Total = result.Total,
-            Documents = result.Documents.Select(d => new DocumentViewModel
-            {
-                Id = d.Id,
-                ObjectType = d.ObjectType,
-            }),
+            Documents = ToDocumentViewModels(result.Documents),
             Facets = result.Facets.Select(f => new FacetResultViewModel
             {
                 FieldName = f.FieldName,
                 Values = f.Values,
             }),
         });
+    }
+
+    private IEnumerable<DocumentViewModel> ToDocumentViewModels(IEnumerable<Document> documents)
+    {
+        foreach (IGrouping<UmbracoObjectTypes, Document> group in documents.GroupBy(d => d.ObjectType))
+        {
+            Document[] groupDocuments = group.ToArray();
+            Guid[] keys = groupDocuments.Select(d => d.Id).ToArray();
+            var namesByKey = _entityService
+                .GetAll(group.Key, keys)
+                .ToDictionary(e => e.Key, e => e.Name ?? string.Empty);
+
+            foreach (Document document in groupDocuments)
+            {
+                yield return new DocumentViewModel
+                {
+                    Id = document.Id,
+                    ObjectType = document.ObjectType,
+                    Name = namesByKey.GetValueOrDefault(document.Id),
+                };
+            }
+        }
     }
 }

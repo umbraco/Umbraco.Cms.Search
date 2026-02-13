@@ -9,4 +9,6 @@ public class DocumentViewModel
 
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public required UmbracoObjectTypes ObjectType { get; set; }
+
+    public string? Name { get; set; }
 }
