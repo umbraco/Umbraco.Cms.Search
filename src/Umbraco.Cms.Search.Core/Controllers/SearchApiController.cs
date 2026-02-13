@@ -71,17 +71,29 @@ public class SearchApiController : ApiControllerBase
             Guid[] keys = groupDocuments.Select(d => d.Id).ToArray();
             var namesByKey = _entityService
                 .GetAll(group.Key, keys)
-                .ToDictionary(e => e.Key, e => e.Name ?? string.Empty);
+                .ToDictionary(e => e.Key, e => e);
 
             foreach (Document document in groupDocuments)
             {
+                IEntitySlim? entity = namesByKey.GetValueOrDefault(document.Id);
                 yield return new DocumentViewModel
                 {
                     Id = document.Id,
                     ObjectType = document.ObjectType,
-                    Name = namesByKey.GetValueOrDefault(document.Id),
+                    Name = entity?.Name,
+                    Icon = GetIconForEntity(entity),
                 };
             }
         }
+    }
+
+    private static string? GetIconForEntity(IEntitySlim? entity)
+    {
+        if (entity is IContentEntitySlim slim)
+        {
+            return slim.ContentTypeIcon;
+        }
+
+        return null;
     }
 }
