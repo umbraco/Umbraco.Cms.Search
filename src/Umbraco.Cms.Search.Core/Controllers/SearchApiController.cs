@@ -69,10 +69,26 @@ public class SearchApiController : ApiControllerBase
         {
             Document[] groupDocuments = group.ToArray();
             Guid[] keys = groupDocuments.Select(d => d.Id).ToArray();
-            var namesByKey = _entityService
-                .GetAll(group.Key, keys)
-                .ToDictionary(e => e.Key, e => e);
 
+            // Default to an empty lookup; for unknown or unsupported object types
+            // we will skip the entity lookup and return documents with null name/icon.
+            Dictionary<Guid, IEntitySlim> namesByKey = new();
+
+            if (group.Key != UmbracoObjectTypes.Unknown)
+            {
+                try
+                {
+                    namesByKey = _entityService
+                        .GetAll(group.Key, keys)
+                        .ToDictionary(e => e.Key, e => e);
+                }
+                catch (ArgumentException)
+                {
+                    // If the object type is not supported by IEntityService.GetAll,
+                    // fall back to an empty lookup so we still return documents.
+                    namesByKey = new Dictionary<Guid, IEntitySlim>();
+                }
+            }
             foreach (Document document in groupDocuments)
             {
                 IEntitySlim? entity = namesByKey.GetValueOrDefault(document.Id);
