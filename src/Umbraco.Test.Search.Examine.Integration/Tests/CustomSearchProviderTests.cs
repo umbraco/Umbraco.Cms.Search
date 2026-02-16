@@ -466,6 +466,9 @@ internal static class CustomIndexerServiceCollectionExtensions
         // Add base Examine services first
         services.AddExamineSearchProviderServices();
 
+        // Override to use ActiveIndexManager for zero-downtime reindexing in integration tests
+        services.AddSingleton<IActiveIndexManager, ActiveIndexManager>();
+
         // Override with our custom indexer and searcher
         services.AddTransient<IExamineIndexer, CustomIndexer>();
         services.AddTransient<IIndexer, CustomIndexer>();

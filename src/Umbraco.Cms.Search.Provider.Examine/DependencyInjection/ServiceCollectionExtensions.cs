@@ -17,7 +17,7 @@ internal static class ServiceCollectionExtensions
         ServicesCollectionExtensions.AddExamine(services);
         services.ConfigureOptions<ConfigureIndexOptions>();
 
-        services.AddSingleton<IActiveIndexManager, ActiveIndexManager>();
+        services.AddSingleton<IActiveIndexManager, NoopActiveIndexManager>();
 
         // register the in-memory searcher and indexer so they can be used explicitly for index registrations
         services.AddTransient<IExamineIndexer, Indexer>();

@@ -35,6 +35,9 @@ internal static class ServiceCollectionExtensions
 
         services.AddExamineSearchProviderServices();
 
+        // Override to use ActiveIndexManager for zero-downtime reindexing in integration tests
+        services.AddSingleton<IActiveIndexManager, ActiveIndexManager>();
+
         return services;
     }
 }
