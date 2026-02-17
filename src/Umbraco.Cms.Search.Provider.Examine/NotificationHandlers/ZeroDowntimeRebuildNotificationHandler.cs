@@ -61,13 +61,11 @@ internal sealed class ZeroDowntimeRebuildNotificationHandler :
 
     private void WaitForShadowCommit(string physicalIndexName)
     {
-        if (_examineManager.TryGetIndex(physicalIndexName, out IIndex? index) is false
-            || index is not LuceneIndex luceneIndex)
+        if (_examineManager.TryGetIndex(physicalIndexName, out IIndex? index) is false || index is not LuceneIndex luceneIndex)
         {
             return;
         }
 
-        // If documents are already visible, the commit has already happened.
         if (index is IIndexStats stats && stats.GetDocumentCount() > 0)
         {
             return;
@@ -94,9 +92,7 @@ internal sealed class ZeroDowntimeRebuildNotificationHandler :
 
             if (!committed)
             {
-                _logger.LogWarning(
-                    "Timed out waiting for shadow index {ShadowIndex} to commit after rebuild",
-                    physicalIndexName);
+                _logger.LogWarning("Timed out waiting for shadow index {ShadowIndex} to commit after rebuild", physicalIndexName);
             }
         }
         finally

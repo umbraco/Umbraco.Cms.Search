@@ -8,7 +8,7 @@ internal sealed class ActiveIndexManager : IActiveIndexManager
 {
     private readonly IExamineManager _examineManager;
     private readonly ILogger<ActiveIndexManager> _logger;
-    private readonly ConcurrentDictionary<string, IndexSlot> _slots = new();
+    private readonly ConcurrentDictionary<string, Index> _indexes = new();
 
     internal const string SuffixA = "_a";
     internal const string SuffixB = "_b";
@@ -21,31 +21,22 @@ internal sealed class ActiveIndexManager : IActiveIndexManager
 
     public string ResolveActiveIndexName(string indexAlias)
     {
-        IndexSlot slot = GetOrCreateSlot(indexAlias);
+        Index slot = GetOrCreateSlot(indexAlias);
         return indexAlias + slot.ActiveSuffix;
     }
 
     public string ResolveShadowIndexName(string indexAlias)
     {
-        IndexSlot slot = GetOrCreateSlot(indexAlias);
+        Index slot = GetOrCreateSlot(indexAlias);
         return indexAlias + slot.ShadowSuffix;
     }
 
-    public bool IsRebuilding(string indexAlias)
-    {
-        if (_slots.TryGetValue(indexAlias, out IndexSlot? slot))
-        {
-            return slot.IsRebuilding;
-        }
+    public bool IsRebuilding(string indexAlias) => _indexes.TryGetValue(indexAlias, out Index? index) && index.IsRebuilding;
 
-        return false;
-    }
-
-    public void StartRebuilding(string indexAlias)
-    {
-        _slots.AddOrUpdate(
+    public void StartRebuilding(string indexAlias) =>
+        _indexes.AddOrUpdate(
             indexAlias,
-            _ => new IndexSlot(SuffixA, true),
+            _ => new Index(SuffixA, true),
             (_, current) =>
             {
                 if (current.IsRebuilding)
@@ -55,20 +46,18 @@ internal sealed class ActiveIndexManager : IActiveIndexManager
                 }
 
                 _logger.LogInformation(
-                    "Starting zero-downtime rebuild for {IndexAlias}. Active: {Active}, Shadow: {Shadow}",
+                    "Starting rebuild for {IndexAlias}. Active: {Active}, Shadow: {Shadow}",
                     indexAlias,
                     indexAlias + current.ActiveSuffix,
                     indexAlias + current.ShadowSuffix);
 
                 return current with { IsRebuilding = true };
             });
-    }
 
-    public void CompleteRebuilding(string indexAlias)
-    {
-        _slots.AddOrUpdate(
+    public void CompleteRebuilding(string indexAlias) =>
+        _indexes.AddOrUpdate(
             indexAlias,
-            _ => new IndexSlot(SuffixA, false),
+            _ => new Index(SuffixA, false),
             (_, current) =>
             {
                 if (current.IsRebuilding is false)
@@ -78,20 +67,18 @@ internal sealed class ActiveIndexManager : IActiveIndexManager
                 }
 
                 _logger.LogInformation(
-                    "Completing zero-downtime rebuild for {IndexAlias}. Swapping active from {OldActive} to {NewActive}.",
+                    "Completing rebuild for {IndexAlias}. Swapping active from {OldActive} to {NewActive}.",
                     indexAlias,
                     indexAlias + current.ActiveSuffix,
                     indexAlias + current.ShadowSuffix);
 
-                return new IndexSlot(current.ShadowSuffix, false);
+                return new Index(current.ShadowSuffix, false);
             });
-    }
 
-    public void CancelRebuilding(string indexAlias)
-    {
-        _slots.AddOrUpdate(
+    public void CancelRebuilding(string indexAlias) =>
+        _indexes.AddOrUpdate(
             indexAlias,
-            _ => new IndexSlot(SuffixA, false),
+            _ => new Index(SuffixA, false),
             (_, current) =>
             {
                 if (current.IsRebuilding is false)
@@ -102,12 +89,10 @@ internal sealed class ActiveIndexManager : IActiveIndexManager
                 _logger.LogWarning("Cancelling rebuild for {IndexAlias}. Active index remains {Active}.", indexAlias, indexAlias + current.ActiveSuffix);
                 return current with { IsRebuilding = false };
             });
-    }
 
-    private IndexSlot GetOrCreateSlot(string indexAlias)
-        => _slots.GetOrAdd(indexAlias, alias => DetermineInitialSlot(alias));
+    private Index GetOrCreateSlot(string indexAlias) => _indexes.GetOrAdd(indexAlias, DetermineInitialSlot);
 
-    private IndexSlot DetermineInitialSlot(string indexAlias)
+    private Index DetermineInitialSlot(string indexAlias)
     {
         var aExists = IndexHasData(indexAlias + SuffixA);
         var bExists = IndexHasData(indexAlias + SuffixB);
@@ -118,36 +103,26 @@ internal sealed class ActiveIndexManager : IActiveIndexManager
             var bCount = GetDocumentCount(indexAlias + SuffixB);
 
             var activeSuffix = bCount > aCount ? SuffixB : SuffixA;
-            _logger.LogInformation(
-                "Both slots exist for {IndexAlias}. Selecting {Active} as active (A: {ACount} docs, B: {BCount} docs).",
-                indexAlias, indexAlias + activeSuffix, aCount, bCount);
-            return new IndexSlot(activeSuffix, false);
+            _logger.LogInformation("Both indexes exist for {IndexAlias}. Selecting {Active} as active (A: {ACount} docs, B: {BCount} docs).", indexAlias, indexAlias + activeSuffix, aCount, bCount);
+            return new Index(activeSuffix, false);
         }
 
         if (bExists)
         {
-            _logger.LogInformation("Only _b slot exists for {IndexAlias}. Using _b as active.", indexAlias);
-            return new IndexSlot(SuffixB, false);
+            _logger.LogInformation("Only index _b exists for {IndexAlias}. Using _b as active.", indexAlias);
+            return new Index(SuffixB, false);
         }
 
         if (aExists)
         {
-            _logger.LogInformation("Only _a slot exists for {IndexAlias}. Using _a as active.", indexAlias);
+            _logger.LogInformation("Only index _a exists for {IndexAlias}. Using _a as active.", indexAlias);
         }
 
         // Default to _a (either _a exists or neither exists)
-        return new IndexSlot(SuffixA, false);
+        return new Index(SuffixA, false);
     }
 
-    private bool IndexHasData(string physicalIndexName)
-    {
-        if (_examineManager.TryGetIndex(physicalIndexName, out IIndex? index) is false)
-        {
-            return false;
-        }
-
-        return index.IndexExists();
-    }
+    private bool IndexHasData(string physicalIndexName) => _examineManager.TryGetIndex(physicalIndexName, out IIndex? index) && index.IndexExists();
 
     private long GetDocumentCount(string physicalIndexName)
     {
@@ -164,7 +139,7 @@ internal sealed class ActiveIndexManager : IActiveIndexManager
         return 0;
     }
 
-    private sealed record IndexSlot(string ActiveSuffix, bool IsRebuilding)
+    private sealed record Index(string ActiveSuffix, bool IsRebuilding)
     {
         public string ShadowSuffix => ActiveSuffix == SuffixA ? SuffixB : SuffixA;
     }
