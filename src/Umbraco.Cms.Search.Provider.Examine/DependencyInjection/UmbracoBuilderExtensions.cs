@@ -26,7 +26,6 @@ public static class UmbracoBuilderExtensions
 
         if (settings.ZeroDowntimeIndexing)
         {
-            // Register dual indexes (_a and _b) per logical alias for zero-downtime reindexing (blue/green).
             builder.AddActiveAndShadowIndex(Core.Constants.IndexAliases.DraftContent);
             builder.AddActiveAndShadowIndex(Core.Constants.IndexAliases.PublishedContent);
             builder.AddActiveAndShadowIndex(Core.Constants.IndexAliases.DraftMedia);
@@ -39,11 +38,12 @@ public static class UmbracoBuilderExtensions
         }
         else
         {
-            // Register a single index per logical alias (default, no zero-downtime reindexing).
             builder.AddSingleIndex(Core.Constants.IndexAliases.DraftContent);
             builder.AddSingleIndex(Core.Constants.IndexAliases.PublishedContent);
             builder.AddSingleIndex(Core.Constants.IndexAliases.DraftMedia);
             builder.AddSingleIndex(Core.Constants.IndexAliases.DraftMembers);
+
+            builder.Services.AddSingleton<IActiveIndexManager, NoopActiveIndexManager>();
         }
 
         // This is needed, due to locking of indexes on Azure, to read more on this issue go here: https://github.com/umbraco/Umbraco-CMS/pull/15571
