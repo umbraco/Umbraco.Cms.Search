@@ -46,10 +46,10 @@ public static class UmbracoBuilderExtensions
         }
         else
         {
-            builder.AddSingleIndex(Core.Constants.IndexAliases.DraftContent);
-            builder.AddSingleIndex(Core.Constants.IndexAliases.PublishedContent);
-            builder.AddSingleIndex(Core.Constants.IndexAliases.DraftMedia);
-            builder.AddSingleIndex(Core.Constants.IndexAliases.DraftMembers);
+            builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.DraftContent, _ => { });
+            builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.PublishedContent, _ => { });
+            builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.DraftMedia, _ => { });
+            builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.DraftMembers, _ => { });
 
             builder.Services.AddSingleton<IActiveIndexManager, NoopActiveIndexManager>();
         }
@@ -106,10 +106,5 @@ public static class UmbracoBuilderExtensions
     {
         builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(alias + ActiveIndexManager.SuffixA, _ => { });
         builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(alias + ActiveIndexManager.SuffixB, _ => { });
-    }
-
-    private static void AddSingleIndex(this IUmbracoBuilder builder, string alias)
-    {
-        builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(alias, _ => { });
-    }
+}
 }
