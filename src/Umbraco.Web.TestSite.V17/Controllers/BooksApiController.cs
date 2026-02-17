@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Site.Models;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.DeliveryApi;
+using Umbraco.Cms.Core.Models.PublishedContent;
 using Umbraco.Cms.Core.PublishedCache;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Extensions;
@@ -25,6 +26,7 @@ public class BooksApiController : ControllerBase
     private readonly IApiContentBuilder _apiContentBuilder;
     private readonly ICacheManager _cacheManager;
     private readonly IContentTypeService _contentTypeService;
+    private readonly IVariationContextAccessor _variationContextAccessor;
     private readonly ILogger<BooksApiController> _logger;
 
     public BooksApiController(
@@ -32,12 +34,14 @@ public class BooksApiController : ControllerBase
         IApiContentBuilder apiContentBuilder,
         ICacheManager cacheManager,
         IContentTypeService contentTypeService,
+        IVariationContextAccessor variationContextAccessor,
         ILogger<BooksApiController> logger)
     {
         _searcherResolver = searcherResolver;
         _apiContentBuilder = apiContentBuilder;
         _cacheManager = cacheManager;
         _contentTypeService = contentTypeService;
+        _variationContextAccessor = variationContextAccessor;
         _logger = logger;
     }
 
@@ -60,12 +64,15 @@ public class BooksApiController : ControllerBase
             filters,
             facets,
             sorters,
-            culture: null,
+            request.Culture,
             segment: null,
             accessContext: null,
             request.Skip,
             request.Take
         );
+
+        // set the variation context so IApiContentBuilder renders the correct culture variant
+        _variationContextAccessor.VariationContext = new VariationContext(request.Culture);
 
         // build response models for the search results (the Delivery API output format)
         var documents = result.Documents

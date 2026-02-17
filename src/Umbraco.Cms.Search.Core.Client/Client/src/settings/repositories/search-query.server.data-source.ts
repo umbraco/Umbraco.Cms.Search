@@ -1,39 +1,23 @@
 import { search } from '../api';
-import type {
-  UmbSearchRequest,
-  UmbSearchResult,
-  UmbSearchDocument,
-  UmbSearchFacetResult,
-} from '../types.js';
-import type { SearchRequestModel, DocumentModel, FacetResultModel } from '../api';
+import type { UmbSearchRequest, UmbSearchResult, UmbSearchDocument } from '../types.js';
+import type { SearchRequestModel } from '../api';
 
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { client } from '@umbraco-cms/backoffice/external/backend-api';
 import type { UmbDataSourceResponse } from '@umbraco-cms/backoffice/repository';
-import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
+import { UmbControllerBase } from '@umbraco-cms/backoffice/class-api';
 
-export class UmbSearchQueryServerDataSource {
-  readonly #host: UmbControllerHost;
-
-  constructor(host: UmbControllerHost) {
-    this.#host = host;
-  }
-
+export class UmbSearchQueryServerDataSource extends UmbControllerBase {
   async search(request: UmbSearchRequest): Promise<UmbDataSourceResponse<UmbSearchResult>> {
     // Map domain types to API types
     const apiRequest: SearchRequestModel = {
       indexAlias: request.indexAlias,
       query: request.query ?? null,
-      filters: request.filters ?? null,
-      facets: request.facets ?? null,
-      sorters: request.sorters ?? null,
       culture: request.culture ?? null,
-      segment: request.segment ?? null,
-      accessContext: request.accessContext ?? null,
     };
 
     const { data, error } = await tryExecute(
-      this.#host,
+      this,
       search({
         body: apiRequest,
         query: {
@@ -48,27 +32,35 @@ export class UmbSearchQueryServerDataSource {
       return { error };
     }
 
-    // Map API types to domain types
+    // Map API documents to domain types with defaults
+    const documents: UmbSearchDocument[] = data.documents.map((apiDoc) => ({
+      unique: apiDoc.id,
+      objectType: String(apiDoc.objectType),
+      entityType: this.#getEntityType(apiDoc.objectType),
+      name: apiDoc.name ?? 'Unknown',
+      icon: apiDoc.icon ?? 'icon-document',
+    }));
+
     const result: UmbSearchResult = {
       total: data.total,
-      documents: data.documents.map(this.#mapDocument),
-      facets: data.facets.map(this.#mapFacetResult),
+      documents,
     };
 
     return { data: result };
   }
 
-  #mapDocument(apiDoc: DocumentModel): UmbSearchDocument {
-    return {
-      id: apiDoc.id,
-      objectType: String(apiDoc.objectType),
+  #getEntityType(objectType: string): string {
+    // Map UmbracoObjectTypes enum values to entity type strings
+    const typeMap: Record<string, string> = {
+      Document: 'document',
+      Media: 'media',
+      Member: 'member',
+      DocumentType: 'document-type',
+      MediaType: 'media-type',
+      MemberType: 'member-type',
+      DataType: 'data-type',
     };
-  }
 
-  #mapFacetResult(apiFacet: FacetResultModel): UmbSearchFacetResult {
-    return {
-      fieldName: apiFacet.fieldName,
-      values: apiFacet.values.map((v) => ({ count: v.count })),
-    };
+    return typeMap[objectType] || objectType.toLowerCase();
   }
 }

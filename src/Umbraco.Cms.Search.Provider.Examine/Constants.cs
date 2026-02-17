@@ -2,6 +2,11 @@
 
 internal static class Constants
 {
+    public static class Api
+    {
+        public const string Name = "Examine";
+    }
+
     public static class Variance
     {
         public const string Invariant = "none";

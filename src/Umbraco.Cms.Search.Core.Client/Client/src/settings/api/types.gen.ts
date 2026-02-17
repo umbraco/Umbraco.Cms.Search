@@ -14,9 +14,9 @@ export type DirectionModel = 'Ascending' | 'Descending';
 export type DocumentModel = {
     id: string;
     objectType: UmbracoObjectTypesModel;
+    name?: string | null;
+    icon?: string | null;
 };
-
-export type EventMessageTypeModel = 'Default' | 'Info' | 'Error' | 'Success' | 'Warning';
 
 export type FacetModel = {
     fieldName: string;
@@ -42,12 +42,6 @@ export type IndexModel = {
     indexAlias: string;
     documentCount: number;
     healthStatus: HealthStatusModel;
-};
-
-export type NotificationHeaderModel = {
-    message: string;
-    category: string;
-    type: EventMessageTypeModel;
 };
 
 export type PagedIndexModel = {

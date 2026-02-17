@@ -16,6 +16,7 @@ import {
   type UmbRoutableWorkspaceContext,
 } from '@umbraco-cms/backoffice/workspace';
 import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
+import { UmbStringState } from '@umbraco-cms/backoffice/observable-api';
 
 export class UmbSearchWorkspaceContext
   extends UmbEntityNamedDetailWorkspaceContextBase<UmbSearchIndex, UmbSearchDetailRepository>
@@ -27,6 +28,17 @@ export class UmbSearchWorkspaceContext
   );
   public readonly healthStatus = this._data.createObservablePartOfPersisted((x) => x?.healthStatus);
   public readonly state = this._data.createObservablePartOfCurrent((x) => x?.state);
+
+  #selectedCulture = new UmbStringState(undefined);
+  public readonly selectedCulture = this.#selectedCulture.asObservable();
+
+  getSelectedCulture(): string | undefined {
+    return this.#selectedCulture.getValue();
+  }
+
+  setSelectedCulture(culture: string | undefined) {
+    this.#selectedCulture.setValue(culture);
+  }
 
   constructor(host: UmbControllerHost) {
     super(host, {

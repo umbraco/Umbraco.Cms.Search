@@ -11,6 +11,68 @@ Umbraco Search is a new search abstraction for Umbraco CMS v16+ that will eventu
 
 The project uses a **provider-based architecture** where search technology implementations (currently Examine/Lucene) plug into core abstractions.
 
+## Development Philosophy
+
+Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+
+### 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+### 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+### 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+### 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
 ## Build & Test Commands
 
 ### Building the Solution
@@ -45,25 +107,40 @@ dotnet test --filter "FullyQualifiedName~ContentExtensionsTests"
 
 ### Client Development (Backoffice UI)
 
-The backoffice client is in `src/Umbraco.Cms.Search.Core.Client/Client/`:
+The client code uses an **npm workspaces monorepo** rooted at `src/`. Two workspaces:
+- **Core Client**: `src/Umbraco.Cms.Search.Core.Client/Client/` - Main backoffice UI (TypeScript + Vite, 3-bundle code-splitting)
+- **Examine Client**: `src/Umbraco.Cms.Search.Provider.Examine/Client/` - Examine provider UI (TypeScript + Vite, single bundle)
+
+Shared config lives in `src/`:
+- `src/package.json` - Workspace root with aggregate scripts
+- `src/tsconfig.json` - Shared TypeScript compiler options (both workspaces extend this)
+- `src/.nvmrc` - Node.js version (24)
+- `src/.prettierrc.json` - Shared Prettier config
 
 ```bash
-cd src/Umbraco.Cms.Search.Core.Client/Client
+cd src
 
-# Install dependencies
+# Install all workspaces
 npm install
 
-# Build for production
+# Build all workspaces
 npm run build
 
-# Watch mode for development
+# Watch all workspaces
 npm run watch
 
-# Generate OpenAPI client (requires test site running at https://localhost:44324)
-npm run generate-client
+# Lint all workspaces (errors only)
+npm run lint:errors-only
+
+# Build a single workspace
+npm run build --workspace=Umbraco.Cms.Search.Core.Client/Client
+npm run build --workspace=Umbraco.Cms.Search.Provider.Examine/Client
+
+# Generate OpenAPI client (Core Client only, requires test site at https://localhost:44324)
+npm run generate-client --workspace=Umbraco.Cms.Search.Core.Client/Client
 ```
 
-The client uses **Node.js 24** (see `.nvmrc`). Ensure you have Node.js 24 installed.
+Requires **Node.js 24** (see `src/.nvmrc`).
 
 ### Test Site
 
@@ -100,10 +177,10 @@ ContentIndexingService (orchestration)
 ```
 
 **Index Aliases** (see `Constants.IndexAliases`):
-- `Umb_PublishedContent` - Published content index
-- `Umb_Content` - Draft content index
-- `Umb_Media` - Media index
-- `Umb_Members` - Members index
+- `PublishedContent` = `"Umb_PublishedContent"` - Published content index
+- `DraftContent` = `"Umb_Content"` - Draft content index
+- `DraftMedia` = `"Umb_Media"` - Media index
+- `DraftMembers` = `"Umb_Members"` - Members index
 
 **System Field Names** (see `Constants.FieldNames`):
 - All system fields are prefixed with `Umb_`
@@ -124,16 +201,20 @@ The Examine provider implements the core abstractions using Examine/Lucene:
 
 ### Property Value Handlers (Umbraco.Cms.Search.Core/PropertyValueHandlers)
 
-Property values are indexed based on property editor type. Each handler knows how to extract and transform values:
+Property values are indexed based on property editor type. Each handler implements `IPropertyValueHandler` with a `CanHandle(string propertyEditorAlias)` method that determines which property editors it supports. Handlers are auto-discovered via `TypeLoader.GetTypes<IPropertyValueHandler>()`.
 
+**Key handlers:**
 - `ContentPickerPropertyValueHandler` - Extracts content IDs (Keywords)
-- `DateTimePropertyValueHandler` - Indexes dates as DateTimeOffset
-- `NumericPropertyValueHandler` - Indexes integers/decimals
+- `DateTimeOffsetPropertyValueHandler` - Indexes dates as DateTimeOffset
+- `IntegerPropertyValueHandler` / `DecimalPropertyValueHandler` - Indexes numeric values
 - `RichTextPropertyValueHandler` - Extracts text with relevance levels (H1=R1, H2=R2, H3=R3, body=R4)
 - `TagsPropertyValueHandler` - Accumulates tags into `Umb_Tags` system field
-- `BlockPropertyValueHandler` - Recursively indexes nested block content
-
-See README.md Appendix A for complete property editor mapping.
+- `BlockListPropertyValueHandler` / `BlockGridPropertyValueHandler` - Recursively indexes nested block content (extend `BlockEditorPropertyValueHandler`)
+- `KeywordStringPropertyValueHandler` - Exact-match string fields (dropdowns, radio buttons, etc.)
+- `PlainStringPropertyValueHandler` - Full-text searchable strings (textbox, textarea)
+- `MarkdownPropertyValueHandler` - Strips markdown, indexes as text
+- `BooleanPropertyValueHandler`, `LabelPropertyValueHandler`, `SliderPropertyValueHandler`, `MultiNodeTreePickerPropertyValueHandler`, `MultiUrlPickerPropertyValueHandler`, `MultipleTextstringPropertyValueHandler`
+- `NoopPropertyValueHandler` - Fallback for unsupported property editors (indexes nothing)
 
 ### Change Tracking Strategies
 
@@ -143,7 +224,7 @@ Content changes are tracked via notification handlers that trigger indexing:
 - `IPublishedContentChangeStrategy` - Tracks published content changes (for `Umb_PublishedContent` index)
 - `IDraftContentChangeStrategy` - Tracks draft content changes (for `Umb_Content` index)
 
-Implementations use **MessagePack caching** to detect actual changes (not just saves).
+Index documents are persisted via `IndexDocumentRepository` using **MessagePack serialization** (with Lz4 compression) for efficient change detection — only actual field changes trigger re-indexing, not every save.
 
 ### Backoffice Integration (Umbraco.Cms.Search.BackOffice)
 
@@ -153,9 +234,13 @@ Provides backoffice search using the Search API. Registers a backoffice search p
 
 Replaces the default Delivery API querying with Search-based querying. Queries the `Umb_PublishedContent` index.
 
-### Client Architecture (Umbraco.Cms.Search.Core.Client)
+### Client Architecture (npm Workspaces Monorepo)
 
-The backoffice client uses **code-splitting with importmap pattern** for optimal loading:
+The backoffice clients are an **npm workspaces monorepo** rooted at `src/`, with shared TypeScript, Vite, ESLint, and Prettier configuration.
+
+#### Core Client (Umbraco.Cms.Search.Core.Client)
+
+Uses **code-splitting with importmap pattern** for optimal loading:
 
 **Three-Bundle Strategy:**
 - `search-bundle.js` (~3kb) - Manifest metadata, loaded upfront
@@ -175,7 +260,25 @@ The backoffice client uses **code-splitting with importmap pattern** for optimal
 **Custom Extension Type:**
 - `searchIndexDetailBox` - Allows adding custom UI boxes to the index detail view via extension slot
 
-**See [Client CLAUDE.md](src/Umbraco.Cms.Search.Core.Client/Client/CLAUDE.md) for detailed client architecture, manifest patterns, and development workflow.**
+#### Examine Client (Umbraco.Cms.Search.Provider.Examine)
+
+A simpler **single-bundle** workspace (`examine-bundle.js` ~11kb) that provides:
+- `UmbSearchExamineProviderRepository` - Fetches search document fields from the Examine API
+- `UmbSearchExamineShowFieldsEntityAction` - Entity action to view document fields
+- `UmbSearchExamineShowFieldsModal` - Modal displaying indexed fields with filtering, expand/collapse, and copy
+
+Output goes to `wwwroot/App_Plugins/UmbracoSearchExamine/` (gitignored, built by Vite).
+
+#### Monorepo Dependency Management
+
+All shared dependencies are hoisted to the root `src/package.json`:
+- **`@umbraco-cms/backoffice`** (runtime dependency) - Umbraco backoffice SDK
+- **Dev dependencies**: `typescript`, `vite`, `eslint`, `prettier`, and related plugins
+- **Script utilities**: `chalk`, `node-fetch`, `cross-env` (used by shared `generate-openapi.js`)
+
+Workspace `package.json` files (`Core.Client/Client/package.json`, `Provider.Examine/Client/package.json`) contain **scripts only** - no dependency declarations. npm workspaces resolves all imports from the hoisted root `node_modules/`.
+
+A shared OpenAPI generation script lives at `src/scripts/generate-openapi.js`. Both workspaces call it with different swagger URLs and output directories via their `generate-client` npm scripts.
 
 ## Key Concepts
 
@@ -225,9 +328,8 @@ Pass `AccessContext` to `SearchAsync` to include protected content in results.
 ### Adding a New Property Value Handler
 
 1. Create handler in `src/Umbraco.Cms.Search.Core/PropertyValueHandlers/`
-2. Implement `IPropertyValueHandler` interface
-3. Register in `PropertyValueHandlerCollection` via composer
-4. Define which property editor aliases it handles via `PropertyEditorAlias` attribute
+2. Implement `IPropertyValueHandler` interface (specifically the `CanHandle(string propertyEditorAlias)` method)
+3. The handler is auto-discovered via `TypeLoader.GetTypes<IPropertyValueHandler>()` — no manual registration needed
 
 ### Adding a New Filter Type
 
@@ -325,6 +427,12 @@ Repositories abstract API calls and provide clean interfaces for UI components. 
 
 10. **Server-Driven State**: UI state should be derived from server health status (e.g., `healthStatus: 'Rebuilding'` → `state: 'loading'`). This keeps the UI synchronized with actual server state after reloads.
 
+11. **Invariant Culture in Examine Index**: The Examine provider uses `"none"` as the `Sys_Culture` field value for invariant documents. Sending `culture: "en-US"` to `SearchAsync` searches `Sys_Culture: "en-US" OR "none"`, so invariant content is always included. Sending `culture: null` returns invariant-only. Always send a real culture code from the client; use `"none"` as the fallback for invariant-only contexts.
+
+12. **Culture State on Workspace Context**: The `UmbSearchWorkspaceContext` owns `selectedCulture` state (observable + getter/setter). The search box writes it, entity actions read it via `getContext()`. Don't read culture from `window.location.href` — use the workspace context as the source of truth. URL params (`?culture=`) are for persistence/bookmarking only.
+
+13. **Examine Client Cross-Package Imports**: The Examine Client can import from `@umbraco-cms/search/settings` (e.g., `UMB_SEARCH_WORKSPACE_CONTEXT`) via tsconfig path mappings. Both `settings` and `global` paths are needed since settings depends on global transitively. Vite externalizes these; the importmap resolves at runtime.
+
 ## Coding Conventions
 
 - Follow Umbraco CMS coding standards (StyleCop, .editorconfig)
@@ -344,8 +452,26 @@ Repositories abstract API calls and provide clean interfaces for UI components. 
 - **Node.js**: 24 (for client build)
 - **Versioning**: Uses Nerdbank.GitVersioning (see `version.json`)
 
-## References
+## Further Reading
 
+The `README.md` covers installation, setup, and usage. The `docs/` directory contains detailed documentation:
+
+- [README.md](README.md) - Installation, NuGet packages, composer setup
+- [docs/searching.md](docs/searching.md) - The `ISearcher` API: filtering, faceting, sorting, pagination, content variations, and protected content
+- [docs/examine-provider.md](docs/examine-provider.md) - Configuring the Examine/Lucene provider: directory factory, field options, searcher options
+- [docs/custom-extensibility.md](docs/custom-extensibility.md) - Custom `IndexValue`, `Indexer`, `Filter`, `Searcher`, and `IContentIndexer` implementations
+- [docs/backoffice.md](docs/backoffice.md) - User guide for interacting with search indexes in the Umbraco backoffice
+- [docs/backoffice-extensions.md](docs/backoffice-extensions.md) - Developer guide for adding detail boxes, entity actions, workspace views, and routable modals
+
+Sub-project CLAUDE.md files:
+- [Core Client CLAUDE.md](src/Umbraco.Cms.Search.Core.Client/CLAUDE.md) - Detailed client architecture, manifest patterns, and development workflow
+- [Examine Client CLAUDE.md](src/Umbraco.Cms.Search.Provider.Examine/CLAUDE.md) - Examine client architecture and development workflow
+
+External references:
 - RFC: ["The Future of Search"](https://github.com/umbraco/rfcs/blob/0027-the-future-of-search/cms/0027-the-future-of-search.md)
 - Main CMS Repo: [Umbraco-CMS](https://github.com/umbraco/Umbraco-CMS)
 - Examine: [Shazwazza/Examine](https://github.com/Shazwazza/Examine)
+
+---
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.

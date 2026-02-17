@@ -50,8 +50,8 @@ export default {
     searchButton: 'Søg',
     noResults: 'Ingen resultater fundet',
     resultsCount: (count: number) => `Fandt ${count} resultat${count !== 1 ? 'er' : ''}`,
-    tableColumnDocumentId: 'Dokument ID',
-    tableColumnObjectType: 'Objekttype',
+    tableColumnName: 'Navn',
+    tableColumnEntityType: 'Objekttype',
     statsBoxLabel: 'Statistik',
     searchBoxLabel: 'Søgning',
     // Accessibility labels
@@ -69,6 +69,9 @@ export default {
     loading: 'Indlæser søgeresultater',
     resultsRegion: 'Søgeresultater',
     resultsTable: 'Tabel med søgeresultater',
+    paginationLabel: 'Sider med søgeresultater',
+    cultureSelectLabel: 'Kultur',
     searchDisabled: 'Søgning er deaktiveret, fordi indekset ikke er sundt. Nuværende status:',
+    searchError: 'Der opstod en fejl under søgningen. Prøv venligst igen.',
   },
 } satisfies UmbLocalizationDictionary;

@@ -1,8 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,6 +13,20 @@
   <ItemGroup>
     <PackageReference Include="Examine"/>
     <PackageReference Include="Umbraco.Cms.Examine.Lucene" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Dont include the client folder as part of packaging nuget build -->
+    <Content Remove="Client\**"/>
+
+    <!-- However make these files visible to the solution -->
+    <None Include="Client\public\umbraco-package.json" Pack="false"/>
+    <None Include="Client\package.json" Pack="false"/>
+    <None Include="Client\tsconfig.json" Pack="false"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\"/>
   </ItemGroup>
 
   <ItemGroup>

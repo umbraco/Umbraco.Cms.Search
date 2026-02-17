@@ -1,0 +1,16 @@
+{
+  "name": "@umbraco-cms/search-examine-client",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "watch": "vite build --watch",
+    "build": "tsc && vite build",
+    "generate-client": "node ../../scripts/generate-openapi.js https://localhost:44324/umbraco/swagger/Examine/swagger.json src/api",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "lint:errors-only": "eslint . --quiet",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  }
+}
