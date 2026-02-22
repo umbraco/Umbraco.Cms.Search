@@ -37,6 +37,7 @@ public static class UmbracoBuilderExtensions
 
         builder.Services.AddTransient<IContentIndexer, SystemFieldsContentIndexer>();
         builder.Services.AddTransient<IContentIndexer, PropertyValueFieldsContentIndexer>();
+        builder.Services.AddTransient<ISystemFieldsContentIndexer, SystemFieldsContentIndexer>();
 
         builder.Services.AddTransient<IDateTimeOffsetConverter, DateTimeOffsetConverter>();
         builder.Services.AddTransient<IContentProtectionProvider, ContentProtectionProvider>();
