@@ -94,3 +94,22 @@ If all (applicable) facet values should be included for all groups in the search
 ### Max facet values
 
 The Examine search provider limits the number of resulting facet values within a facet group to 100. This limit can be changed using `SearcherOptions.MaxFacetValues`.
+
+## Optimizing server resources
+
+If Umbraco Search powers both frontend search, backoffice search and the Delivery API (if applicable), the default Examine indexes from Umbraco CMS are no longer in use. However, Umbraco CMS continues to keep them up-to-date with content changes.
+
+Since this is a waste of server resources, the default Examine indexes can be explicitly disabled by means of composition:
+
+```csharp
+using Umbraco.Cms.Core.Composing;
+using Umbraco.Cms.Search.Provider.Examine.DependencyInjection;
+
+namespace Site.DependencyInjection;
+
+public class DisableDefaultIndexesComposer : IComposer
+{
+    public void Compose(IUmbracoBuilder builder)
+        => builder.DisableDefaultExamineIndexes();
+}
+```
