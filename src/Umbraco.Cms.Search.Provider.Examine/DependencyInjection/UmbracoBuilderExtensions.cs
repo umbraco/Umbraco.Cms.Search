@@ -41,8 +41,9 @@ public static class UmbracoBuilderExtensions
 
             builder.Services.AddSingleton<IActiveIndexManager, ActiveIndexManager>();
 
-            builder.AddNotificationAsyncHandler<IndexRebuildStartingNotification, ZeroDowntimeRebuildNotificationHandler>();
-            builder.AddNotificationAsyncHandler<IndexRebuildCompletedNotification, ZeroDowntimeRebuildNotificationHandler>();
+            // NOTE: this notification handler should ONLY be active when zero downtime reindexing is in effect
+            builder.AddNotificationHandler<IndexRebuildStartingNotification, ZeroDowntimeRebuildNotificationHandler>();
+            builder.AddNotificationHandler<IndexRebuildCompletedNotification, ZeroDowntimeRebuildNotificationHandler>();
         }
         else
         {

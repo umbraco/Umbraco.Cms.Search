@@ -7,9 +7,10 @@ using Umbraco.Cms.Search.Provider.Examine.Services;
 
 namespace Umbraco.Cms.Search.Provider.Examine.NotificationHandlers;
 
+// NOTE: This notification handler is only active when zero downtime reindexing is in effect
 internal sealed class ZeroDowntimeRebuildNotificationHandler :
-    INotificationAsyncHandler<IndexRebuildStartingNotification>,
-    INotificationAsyncHandler<IndexRebuildCompletedNotification>
+    INotificationHandler<IndexRebuildStartingNotification>,
+    INotificationHandler<IndexRebuildCompletedNotification>
 {
     private static readonly TimeSpan CommitTimeout = TimeSpan.FromSeconds(30);
 
@@ -27,13 +28,10 @@ internal sealed class ZeroDowntimeRebuildNotificationHandler :
         _logger = logger;
     }
 
-    public Task HandleAsync(IndexRebuildStartingNotification notification, CancellationToken cancellationToken)
-    {
-        _activeIndexManager.StartRebuilding(notification.IndexAlias);
-        return Task.CompletedTask;
-    }
+    public void Handle(IndexRebuildStartingNotification notification)
+        => _activeIndexManager.StartRebuilding(notification.IndexAlias);
 
-    public Task HandleAsync(IndexRebuildCompletedNotification notification, CancellationToken cancellationToken)
+    public void Handle(IndexRebuildCompletedNotification notification)
     {
         var shadowIndexName = _activeIndexManager.ResolveShadowIndexName(notification.IndexAlias);
 
@@ -55,8 +53,6 @@ internal sealed class ZeroDowntimeRebuildNotificationHandler :
                 notification.IndexAlias);
             _activeIndexManager.CancelRebuilding(notification.IndexAlias);
         }
-
-        return Task.CompletedTask;
     }
 
     private void WaitForShadowCommit(string physicalIndexName)
