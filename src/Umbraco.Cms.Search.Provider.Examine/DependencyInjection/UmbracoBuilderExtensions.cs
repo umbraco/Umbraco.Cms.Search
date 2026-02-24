@@ -20,11 +20,15 @@ using Umbraco.Cms.Search.Core.Notifications;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Search.Provider.Examine.NotificationHandlers;
 using Umbraco.Cms.Search.Provider.Examine.Services;
+using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Provider.Examine.DependencyInjection;
 
 public static class UmbracoBuilderExtensions
 {
+    /// <summary>
+    /// Adds the Umbraco Search provider for Examine.
+    /// </summary>
     public static IUmbracoBuilder AddExamineSearchProvider(this IUmbracoBuilder builder)
     {
         IConfigurationSection section = builder.Config.GetSection(ExamineSearchProviderSettings.SectionName);
@@ -84,6 +88,23 @@ public static class UmbracoBuilderExtensions
 
             opt.OperationFilter<ExamineOperationSecurityFilter>();
         });
+
+        return builder;
+    }
+
+    /// <summary>
+    /// Disables the handling of the default Examine indexes from Umbraco Core.
+    /// </summary>
+    /// <remarks>
+    /// This prevents Umbraco from maintaining the default Examine indexes, thus freeing up server resources.
+    ///
+    /// Only use this if the default Examine indexes are no longer used; that is, if Umbraco Search powers both
+    /// frontend search, backoffice search and the Delivery API (when applicable).
+    /// </remarks>
+    public static IUmbracoBuilder DisableDefaultExamineIndexes(this IUmbracoBuilder builder)
+    {
+        builder.Services.AddSingleton<ExamineManager>();
+        builder.Services.AddUnique<IExamineManager, MaskedCoreIndexesExamineManager>();
 
         return builder;
     }
