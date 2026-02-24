@@ -1,143 +1,121 @@
 using System.Collections.Concurrent;
 using Examine;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using IndexOptions = Umbraco.Cms.Search.Core.Configuration.IndexOptions;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
 internal sealed class ActiveIndexManager : IActiveIndexManager
 {
-    private readonly IExamineManager _examineManager;
     private readonly ILogger<ActiveIndexManager> _logger;
     private readonly ConcurrentDictionary<string, Index> _indexes = new();
 
     internal const string SuffixA = "_a";
     internal const string SuffixB = "_b";
 
-    public ActiveIndexManager(IExamineManager examineManager, ILogger<ActiveIndexManager> logger)
+    public ActiveIndexManager(IExamineManager examineManager, ILogger<ActiveIndexManager> logger, IOptions<IndexOptions> indexOptions)
     {
-        _examineManager = examineManager;
         _logger = logger;
+
+        foreach (var registration in indexOptions.Value.GetIndexRegistrations())
+        {
+            _indexes[registration.IndexAlias] = DetermineInitialSlot(registration.IndexAlias, examineManager);
+        }
     }
 
     public string ResolveActiveIndexName(string indexAlias)
-    {
-        Index slot = GetOrCreateSlot(indexAlias);
-        return indexAlias + slot.ActiveSuffix;
-    }
+        => indexAlias + (_indexes.TryGetValue(indexAlias, out Index? index) ? index.ActiveSuffix : SuffixA);
 
     public string ResolveShadowIndexName(string indexAlias)
-    {
-        Index slot = GetOrCreateSlot(indexAlias);
-        return indexAlias + slot.ShadowSuffix;
-    }
+        => indexAlias + (_indexes.TryGetValue(indexAlias, out Index? index) ? index.ShadowSuffix : SuffixB);
 
     public bool IsRebuilding(string indexAlias) => _indexes.TryGetValue(indexAlias, out Index? index) && index.IsRebuilding;
 
-    public void StartRebuilding(string indexAlias) =>
-        _indexes.AddOrUpdate(
-            indexAlias,
-            _ => new Index(SuffixA, true),
-            (_, current) =>
-            {
-                if (current.IsRebuilding)
-                {
-                    _logger.LogWarning("Rebuild already in progress for {IndexAlias}, ignoring start request.", indexAlias);
-                    return current;
-                }
-
-                _logger.LogInformation(
-                    "Starting rebuild for {IndexAlias}. Active: {Active}, Shadow: {Shadow}",
-                    indexAlias,
-                    indexAlias + current.ActiveSuffix,
-                    indexAlias + current.ShadowSuffix);
-
-                return current with { IsRebuilding = true };
-            });
-
-    public void CompleteRebuilding(string indexAlias) =>
-        _indexes.AddOrUpdate(
-            indexAlias,
-            _ => new Index(SuffixA, false),
-            (_, current) =>
-            {
-                if (current.IsRebuilding is false)
-                {
-                    _logger.LogWarning("No rebuild in progress for {IndexAlias}, ignoring complete request.", indexAlias);
-                    return current;
-                }
-
-                _logger.LogInformation(
-                    "Completing rebuild for {IndexAlias}. Swapping active from {OldActive} to {NewActive}.",
-                    indexAlias,
-                    indexAlias + current.ActiveSuffix,
-                    indexAlias + current.ShadowSuffix);
-
-                return new Index(current.ShadowSuffix, false);
-            });
-
-    public void CancelRebuilding(string indexAlias) =>
-        _indexes.AddOrUpdate(
-            indexAlias,
-            _ => new Index(SuffixA, false),
-            (_, current) =>
-            {
-                if (current.IsRebuilding is false)
-                {
-                    return current;
-                }
-
-                _logger.LogWarning("Cancelling rebuild for {IndexAlias}. Active index remains {Active}.", indexAlias, indexAlias + current.ActiveSuffix);
-                return current with { IsRebuilding = false };
-            });
-
-    private Index GetOrCreateSlot(string indexAlias) => _indexes.GetOrAdd(indexAlias, DetermineInitialSlot);
-
-    private Index DetermineInitialSlot(string indexAlias)
+    public void StartRebuilding(string indexAlias)
     {
-        var aExists = IndexHasData(indexAlias + SuffixA);
-        var bExists = IndexHasData(indexAlias + SuffixB);
-
-        if (aExists && bExists)
+        if (_indexes.TryGetValue(indexAlias, out Index? current) is false)
         {
-            var aCount = GetDocumentCount(indexAlias + SuffixA);
-            var bCount = GetDocumentCount(indexAlias + SuffixB);
-
-            var activeSuffix = bCount > aCount ? SuffixB : SuffixA;
-            _logger.LogInformation("Both indexes exist for {IndexAlias}. Selecting {Active} as active (A: {ACount} docs, B: {BCount} docs).", indexAlias, indexAlias + activeSuffix, aCount, bCount);
-            return new Index(activeSuffix, false);
+            _logger.LogWarning("No registered index found for {IndexAlias}, ignoring start rebuild request.", indexAlias);
+            return;
         }
 
-        if (bExists)
+        if (current.IsRebuilding)
         {
-            _logger.LogInformation("Only index _b exists for {IndexAlias}. Using _b as active.", indexAlias);
-            return new Index(SuffixB, false);
+            _logger.LogWarning("Rebuild already in progress for {IndexAlias}, ignoring start request.", indexAlias);
+            return;
         }
 
-        if (aExists)
-        {
-            _logger.LogInformation("Only index _a exists for {IndexAlias}. Using _a as active.", indexAlias);
-        }
+        _logger.LogInformation(
+            "Starting rebuild for {IndexAlias}. Active: {Active}, Shadow: {Shadow}",
+            indexAlias,
+            indexAlias + current.ActiveSuffix,
+            indexAlias + current.ShadowSuffix);
 
-        // Default to _a (either _a exists or neither exists)
-        return new Index(SuffixA, false);
+        _indexes[indexAlias] = current with { IsRebuilding = true };
     }
 
-    private bool IndexHasData(string physicalIndexName) => _examineManager.TryGetIndex(physicalIndexName, out IIndex? index) && index.IndexExists();
-
-    private long GetDocumentCount(string physicalIndexName)
+    public void CompleteRebuilding(string indexAlias)
     {
-        if (_examineManager.TryGetIndex(physicalIndexName, out IIndex? index) is false)
+        if (_indexes.TryGetValue(indexAlias, out Index? current) is false)
         {
-            return 0;
+            _logger.LogWarning("No registered index found for {IndexAlias}, ignoring complete rebuild request.", indexAlias);
+            return;
         }
 
-        if (index is IIndexStats stats)
+        if (current.IsRebuilding is false)
         {
-            return stats.GetDocumentCount();
+            _logger.LogWarning("No rebuild in progress for {IndexAlias}, ignoring complete request.", indexAlias);
+            return;
         }
 
-        return 0;
+        _logger.LogInformation(
+            "Completing rebuild for {IndexAlias}. Swapping active from {OldActive} to {NewActive}.",
+            indexAlias,
+            indexAlias + current.ActiveSuffix,
+            indexAlias + current.ShadowSuffix);
+
+        _indexes[indexAlias] = new Index(current.ShadowSuffix, false);
     }
+
+    public void CancelRebuilding(string indexAlias)
+    {
+        if (_indexes.TryGetValue(indexAlias, out Index? current) is false)
+        {
+            _logger.LogWarning("No registered index found for {IndexAlias}, ignoring cancel rebuild request.", indexAlias);
+            return;
+        }
+
+        if (current.IsRebuilding is false)
+        {
+            return;
+        }
+
+        _logger.LogWarning("Cancelling rebuild for {IndexAlias}. Active index remains {Active}.", indexAlias, indexAlias + current.ActiveSuffix);
+        _indexes[indexAlias] = current with { IsRebuilding = false };
+    }
+
+    private Index DetermineInitialSlot(string indexAlias, IExamineManager examineManager)
+    {
+        var aCount = GetDocumentCount(indexAlias + SuffixA, examineManager);
+        var bCount = GetDocumentCount(indexAlias + SuffixB, examineManager);
+
+        var activeSuffix = bCount > aCount ? SuffixB : SuffixA;
+
+        if (aCount > 0 || bCount > 0)
+        {
+            _logger.LogInformation(
+                "Selecting {Active} as active for {IndexAlias} (A: {ACount} docs, B: {BCount} docs).",
+                indexAlias + activeSuffix, indexAlias, aCount, bCount);
+        }
+
+        return new Index(activeSuffix, false);
+    }
+
+    private static long GetDocumentCount(string physicalIndexName, IExamineManager examineManager)
+        => examineManager.TryGetIndex(physicalIndexName, out IIndex? index) && index is IIndexStats stats
+            ? stats.GetDocumentCount()
+            : 0;
 
     private sealed record Index(string ActiveSuffix, bool IsRebuilding)
     {
