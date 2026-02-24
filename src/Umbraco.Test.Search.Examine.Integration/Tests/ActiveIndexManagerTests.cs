@@ -224,16 +224,26 @@ public class ActiveIndexManagerTests
     [Test]
     public void DetermineInitialSlot_WhenOnlySlotBHasData_SelectsB()
     {
-        // Index data into the _b slot directly BEFORE any call to ResolveActiveIndexName
-        // (which would trigger DetermineInitialSlot and cache the result)
+        // Index data into the _b slot BEFORE constructing ActiveIndexManager,
+        // since it now eagerly determines initial slots in its constructor.
+        var serviceCollection = new ServiceCollection();
+        serviceCollection
+            .AddExamineSearchProviderServicesForTest<TestIndex, TestInMemoryDirectoryFactory>()
+            .AddLogging();
+
+        // Build without resolving IActiveIndexManager yet
+        using var sp = serviceCollection.BuildServiceProvider();
+        var examineManager = sp.GetRequiredService<IExamineManager>();
+
         var bIndexName = IndexAlias + ActiveIndexManager.SuffixB;
-        IIndex bIndex = _examineManager.GetIndex(bIndexName);
+        IIndex bIndex = examineManager.GetIndex(bIndexName);
         bIndex.IndexItem(new ValueSet("test-1", "Document", new Dictionary<string, object> { { "name", "Test" } }));
 
         Thread.Sleep(3000);
 
-        // First resolve triggers DetermineInitialSlot, which should detect only _b has data
-        var activeIndexName = _activeIndexManager.ResolveActiveIndexName(IndexAlias);
+        // Now resolve ActiveIndexManager — constructor will see _b has data
+        var activeIndexManager = sp.GetRequiredService<IActiveIndexManager>();
+        var activeIndexName = activeIndexManager.ResolveActiveIndexName(IndexAlias);
 
         Assert.That(activeIndexName, Does.EndWith(ActiveIndexManager.SuffixB), "When only slot B has data, B should be selected as active");
     }
@@ -241,12 +251,22 @@ public class ActiveIndexManagerTests
     [Test]
     public void DetermineInitialSlot_WhenBothSlotsHaveData_SelectsSlotWithMoreDocuments()
     {
-        // Index more data into _b than _a BEFORE any call to ResolveActiveIndexName
+        // Index data into both slots BEFORE constructing ActiveIndexManager,
+        // since it now eagerly determines initial slots in its constructor.
+        var serviceCollection = new ServiceCollection();
+        serviceCollection
+            .AddExamineSearchProviderServicesForTest<TestIndex, TestInMemoryDirectoryFactory>()
+            .AddLogging();
+
+        // Build without resolving IActiveIndexManager yet
+        using var sp = serviceCollection.BuildServiceProvider();
+        var examineManager = sp.GetRequiredService<IExamineManager>();
+
         var aIndexName = IndexAlias + ActiveIndexManager.SuffixA;
         var bIndexName = IndexAlias + ActiveIndexManager.SuffixB;
 
-        IIndex aIndex = _examineManager.GetIndex(aIndexName);
-        IIndex bIndex = _examineManager.GetIndex(bIndexName);
+        IIndex aIndex = examineManager.GetIndex(aIndexName);
+        IIndex bIndex = examineManager.GetIndex(bIndexName);
 
         // _a gets 1 document
         aIndex.IndexItem(new ValueSet("a-1", "Document", new Dictionary<string, object> { { "name", "A1" } }));
@@ -258,8 +278,9 @@ public class ActiveIndexManagerTests
 
         Thread.Sleep(3000);
 
-        // First resolve triggers DetermineInitialSlot, which should pick _b (more docs)
-        var activeIndexName = _activeIndexManager.ResolveActiveIndexName(IndexAlias);
+        // Now resolve ActiveIndexManager — constructor will see both slots have data
+        var activeIndexManager = sp.GetRequiredService<IActiveIndexManager>();
+        var activeIndexName = activeIndexManager.ResolveActiveIndexName(IndexAlias);
 
         Assert.That(activeIndexName, Does.EndWith(ActiveIndexManager.SuffixB), "When both slots have data, the slot with more documents should be selected as active");
     }
