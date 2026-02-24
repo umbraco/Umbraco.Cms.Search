@@ -40,4 +40,25 @@ internal static class ServiceCollectionExtensions
 
         return services;
     }
+
+    public static IServiceCollection AddExamineSearchProviderServicesWithoutZeroDowntimeForTest<TIndex, TDirectoryFactory>(this IServiceCollection services)
+        where TIndex : LuceneIndex
+        where TDirectoryFactory : class, IDirectoryFactory
+    {
+        services.ConfigureOptions<TestIndexConfigureOptions>();
+        services.Configure<SearcherOptions>(options => options.MaxFacetValues = 250);
+        services.AddSingleton<TDirectoryFactory>();
+
+        // Register single indexes per alias (no zero-downtime reindexing)
+        foreach (var alias in IndexAliases)
+        {
+            services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(alias, _ => { });
+        }
+
+        services.AddExamineSearchProviderServices();
+
+        services.AddSingleton<IActiveIndexManager, NoopActiveIndexManager>();
+
+        return services;
+    }
 }
