@@ -59,6 +59,7 @@ export class UmbSearchQueryServerDataSource extends UmbControllerBase {
       MediaType: 'media-type',
       MemberType: 'member-type',
       DataType: 'data-type',
+      FormsForm: 'forms-form',
     };
 
     return typeMap[objectType] || objectType.toLowerCase();

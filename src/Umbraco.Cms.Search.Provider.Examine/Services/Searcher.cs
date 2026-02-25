@@ -158,8 +158,13 @@ public class Searcher : IExamineSearcher
         AddFacets(searchQuery, deduplicateFacets, culture, segment);
         AddSorters(searchQuery, sortersAsArray, culture, segment);
 
-        // We only need the IndexType and NodeId
-        var selectedFields = new HashSet<string> {Constants.SystemFields.IndexType, "__NodeId" };
+        var selectedFields = new HashSet<string>
+        {
+            Constants.SystemFields.IndexType,
+            "__NodeId",
+            FieldNameHelper.FieldName(Core.Constants.FieldNames.Name, Constants.FieldValues.TextsR1),
+            FieldNameHelper.FieldName(Core.Constants.FieldNames.Icon, Constants.FieldValues.Keywords),
+        };
         searchQuery.SelectFields(selectedFields);
 
         ISearchResults results;
@@ -522,16 +527,21 @@ public class Searcher : IExamineSearcher
 
         Enum.TryParse(objectTypeString, out UmbracoObjectTypes umbracoObjectType);
 
+        var name = item.Values.GetValueOrDefault(
+            FieldNameHelper.FieldName(Core.Constants.FieldNames.Name, Constants.FieldValues.TextsR1));
+        var icon = item.Values.GetValueOrDefault(
+            FieldNameHelper.FieldName(Core.Constants.FieldNames.Icon, Constants.FieldValues.Keywords));
+
         if (Guid.TryParse(item.Id, out Guid guidId))
         {
-            return new Document(guidId, umbracoObjectType);
+            return new Document(guidId, umbracoObjectType) { Name = name, Icon = icon };
         }
 
         // The id of an item may be appended with _{culture_{segment}, so strip those and map to guid.
         var indexofUnderscore = item.Id.IndexOf('_');
         var idWithOutCulture = item.Id.Remove(indexofUnderscore);
         return Guid.TryParse(idWithOutCulture, out Guid idWithoutCultureGuid)
-            ? new Document(idWithoutCultureGuid, umbracoObjectType)
+            ? new Document(idWithoutCultureGuid, umbracoObjectType) { Name = name, Icon = icon }
             : null;
     }
 

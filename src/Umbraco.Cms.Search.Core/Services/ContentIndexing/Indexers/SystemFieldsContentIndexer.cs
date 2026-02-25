@@ -57,6 +57,11 @@ internal sealed class SystemFieldsContentIndexer : ISystemFieldsContentIndexer
             new(Constants.FieldNames.SortOrder, new() { Integers = [content.SortOrder] }, null, null),
         };
 
+        if (string.IsNullOrEmpty(content.ContentType.Icon) is false)
+        {
+            fields.Add(new(Constants.FieldNames.Icon, new() { Keywords = [content.ContentType.Icon] }, null, null));
+        }
+
         fields.AddRange(GetCultureTagFields(content, cultures));
         fields.AddRange(GetCultureNameFields(content, cultures));
 

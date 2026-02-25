@@ -54,7 +54,7 @@ internal sealed class ContentIndexingService : IContentIndexingService
 
         IEnumerable<IGrouping<Type, IndexRegistration>> indexRegistrationsByStrategyType = _indexOptions
             .GetIndexRegistrations()
-            .GroupBy(r => r.ContentChangeStrategy);
+            .GroupBy(r => r.IndexRebuildStrategy);
 
         foreach (IGrouping<Type, IndexRegistration> group in indexRegistrationsByStrategyType)
         {
@@ -83,7 +83,7 @@ internal sealed class ContentIndexingService : IContentIndexingService
 
     private async Task RebuildAsync(IndexRegistration indexRegistration, CancellationToken cancellationToken)
     {
-        if (TryGetContentChangeStrategy(indexRegistration.ContentChangeStrategy, out IContentChangeStrategy? contentChangeStrategy) is false
+        if (TryGetIndexRebuildStrategy(indexRegistration.IndexRebuildStrategy, out IIndexRebuildStrategy? rebuildStrategy) is false
             || TryGetIndexer(indexRegistration.Indexer, out IIndexer? indexer) is false)
         {
             return;
@@ -91,9 +91,22 @@ internal sealed class ContentIndexingService : IContentIndexingService
 
         await _eventAggregator.PublishAsync(new IndexRebuildStartingNotification(indexRegistration.IndexAlias), cancellationToken);
 
-        await contentChangeStrategy.RebuildAsync(new IndexInfo(indexRegistration.IndexAlias, indexRegistration.ContainedObjectTypes, indexer), cancellationToken);
+        await rebuildStrategy.RebuildAsync(new IndexInfo(indexRegistration.IndexAlias, indexRegistration.ContainedObjectTypes, indexer), cancellationToken);
 
         await _eventAggregator.PublishAsync(new IndexRebuildCompletedNotification(indexRegistration.IndexAlias), cancellationToken);
+    }
+
+    private bool TryGetIndexRebuildStrategy(Type type, [NotNullWhen(true)] out IIndexRebuildStrategy? rebuildStrategy)
+    {
+        if (_serviceProvider.GetService(type) is IIndexRebuildStrategy resolvedRebuildStrategy)
+        {
+            rebuildStrategy = resolvedRebuildStrategy;
+            return true;
+        }
+
+        _logger.LogError($"Could not resolve type {{type}} as {nameof(IIndexRebuildStrategy)}. Make sure the type is registered in the DI.", type.FullName);
+        rebuildStrategy = null;
+        return false;
     }
 
     private bool TryGetContentChangeStrategy(Type type, [NotNullWhen(true)] out IContentChangeStrategy? contentChangeStrategy)
@@ -104,7 +117,6 @@ internal sealed class ContentIndexingService : IContentIndexingService
             return true;
         }
 
-        _logger.LogError($"Could not resolve type {{type}} as {nameof(IContentChangeStrategy)}. Make sure the type is registered in the DI.", type.FullName);
         contentChangeStrategy = null;
         return false;
     }
