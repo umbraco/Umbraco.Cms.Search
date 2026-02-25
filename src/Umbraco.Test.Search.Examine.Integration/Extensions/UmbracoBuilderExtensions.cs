@@ -2,6 +2,8 @@
 using Examine.Lucene.Providers;
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Search.Core.Notifications;
+using Umbraco.Cms.Search.Provider.Examine.NotificationHandlers;
 
 namespace Umbraco.Test.Search.Examine.Integration.Extensions;
 
@@ -17,6 +19,8 @@ internal static class UmbracoBuilderExtensions
         builder.AddNotificationHandler<MediaTreeChangeNotification, MediaTreeChangeDistributedCacheNotificationHandler>();
         builder.AddNotificationHandler<MemberSavedNotification, MemberSavedDistributedCacheNotificationHandler>();
         builder.AddNotificationHandler<MemberDeletedNotification, MemberDeletedDistributedCacheNotificationHandler>();
+        builder.AddNotificationHandler<IndexRebuildStartingNotification, ZeroDowntimeRebuildNotificationHandler>();
+        builder.AddNotificationHandler<IndexRebuildCompletedNotification, ZeroDowntimeRebuildNotificationHandler>();
 
         return builder;
     }

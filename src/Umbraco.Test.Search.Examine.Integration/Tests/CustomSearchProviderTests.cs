@@ -148,8 +148,7 @@ public class CustomSearchProviderTests
     public void CustomGuidsAreIndexed()
     {
         // Get the Examine index directly to verify custom fields were indexed
-        IExamineManager examineManager = GetRequiredService<IExamineManager>();
-        IIndex index = examineManager.GetIndex(IndexAlias);
+        IIndex index = GetPhysicalIndex(IndexAlias);
 
         // Search for a document by its custom guid
         Guid targetGuid = DocumentCustomGuids[1][0];
@@ -167,8 +166,7 @@ public class CustomSearchProviderTests
     public void CustomGuidsFieldIsIndexed()
     {
         // Verify that the custom guids field exists in the index
-        IExamineManager examineManager = GetRequiredService<IExamineManager>();
-        IIndex index = examineManager.GetIndex(IndexAlias);
+        IIndex index = GetPhysicalIndex(IndexAlias);
 
         // Get all documents
         ISearchResults allResults = index.Searcher.CreateQuery().All().Execute();
@@ -186,8 +184,7 @@ public class CustomSearchProviderTests
     [Test]
     public void AllDocumentsHaveCustomGuidFieldIndexed()
     {
-        IExamineManager examineManager = GetRequiredService<IExamineManager>();
-        IIndex index = examineManager.GetIndex(IndexAlias);
+        IIndex index = GetPhysicalIndex(IndexAlias);
 
         // Verify each document has its custom guids indexed
         foreach (KeyValuePair<int, Guid[]> kvp in DocumentCustomGuids)
@@ -214,8 +211,7 @@ public class CustomSearchProviderTests
     [Test]
     public void CanSearchForDocumentByCustomGuid()
     {
-        IExamineManager examineManager = GetRequiredService<IExamineManager>();
-        IIndex index = examineManager.GetIndex(IndexAlias);
+        IIndex index = GetPhysicalIndex(IndexAlias);
 
         // Pick a random document and search for it by its custom guid
         var targetDocNumber = 5;
@@ -359,6 +355,13 @@ public class CustomSearchProviderTests
     private async Task DeleteIndex()
         => await GetRequiredService<IIndexer>().ResetAsync(IndexAlias);
 
+    private IIndex GetPhysicalIndex(string indexAlias)
+    {
+        var activeIndexManager = GetRequiredService<IActiveIndexManager>();
+        var physicalName = activeIndexManager.ResolveActiveIndexName(indexAlias);
+        return GetRequiredService<IExamineManager>().GetIndex(physicalName);
+    }
+
     private T GetRequiredService<T>() where T : notnull
         => _serviceProvider.GetRequiredService<T>();
 }
@@ -383,8 +386,8 @@ public class CustomIndexer : Indexer
     // Use "keywords" suffix so the guids are indexed as RAW (unanalyzed) for exact matching
     private const string GuidsFieldSuffix = "keywords";
 
-    public CustomIndexer(IExamineManager examineManager, IOptions<FieldOptions> fieldOptions)
-        : base(examineManager, fieldOptions)
+    public CustomIndexer(IExamineManager examineManager, IOptions<FieldOptions> fieldOptions, IActiveIndexManager activeIndexManager)
+        : base(examineManager, fieldOptions, activeIndexManager)
     {
     }
 
@@ -446,25 +449,25 @@ internal static class CustomIndexerServiceCollectionExtensions
         services.Configure<SearcherOptions>(options => options.MaxFacetValues = 250);
         services.AddSingleton<TDirectoryFactory>();
 
-        // Register indexes
-        services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(
+        // Register dual indexes (_a and _b) per logical alias for zero-downtime reindexing
+        string[] aliases =
+        [
             Constants.IndexAliases.DraftContent,
-            _ => { });
-
-        services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(
             Constants.IndexAliases.PublishedContent,
-            _ => { });
-
-        services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(
             Constants.IndexAliases.DraftMedia,
-            _ => { });
-
-        services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(
             Constants.IndexAliases.DraftMembers,
-            _ => { });
+        ];
+        foreach (var alias in aliases)
+        {
+            services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(alias + ActiveIndexManager.SuffixA, _ => { });
+            services.AddExamineLuceneIndex<TIndex, TDirectoryFactory>(alias + ActiveIndexManager.SuffixB, _ => { });
+        }
 
         // Add base Examine services first
         services.AddExamineSearchProviderServices();
+
+        // Override to use ActiveIndexManager for zero-downtime reindexing in integration tests
+        services.AddSingleton<IActiveIndexManager, ActiveIndexManager>();
 
         // Override with our custom indexer and searcher
         services.AddTransient<IExamineIndexer, CustomIndexer>();
@@ -510,8 +513,8 @@ public record GuidFilter(string FieldName, Guid[] Values, bool Negate)
 /// </summary>
 public class CustomSearcher : Searcher
 {
-    public CustomSearcher(IExamineManager examineManager, IOptions<SearcherOptions> searcherOptions)
-        : base(examineManager, searcherOptions)
+    public CustomSearcher(IExamineManager examineManager, IOptions<SearcherOptions> searcherOptions, IActiveIndexManager activeIndexManager)
+        : base(examineManager, searcherOptions, activeIndexManager)
     {
     }
 

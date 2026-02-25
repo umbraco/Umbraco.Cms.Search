@@ -17,7 +17,7 @@ public class VariantDocumentTests : IndexTestBase
     public async Task CanIndexAnyDocument(bool publish)
     {
         await CreateVariantDocument();
-        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
+        IIndex index = GetIndex(GetIndexAlias(publish));
 
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results, Is.Not.Empty);
@@ -36,7 +36,7 @@ public class VariantDocumentTests : IndexTestBase
             return Task.CompletedTask;
         });
 
-        IIndex index = ExamineManager.GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results, Is.Empty);
     }
@@ -53,7 +53,7 @@ public class VariantDocumentTests : IndexTestBase
             return Task.CompletedTask;
         });
 
-        IIndex index = ExamineManager.GetIndex(indexAlias);
+        IIndex index = GetIndex(indexAlias);
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results.TotalItemCount, Is.EqualTo(2));
     }
@@ -67,7 +67,7 @@ public class VariantDocumentTests : IndexTestBase
     public async Task CanIndexVariantName(bool publish, string culture, string expectedValue)
     {
         await CreateVariantDocument();
-        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
+        IIndex index = GetIndex(GetIndexAlias(publish));
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
         queryBuilder.SelectField(Constants.SystemFields.AggregatedTextsR1);
@@ -92,7 +92,7 @@ public class VariantDocumentTests : IndexTestBase
     {
         await CreateVariantDocument();
         var field = FieldNameHelper.FieldName(property, fieldValues);
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
         queryBuilder.SelectField(field);
@@ -112,7 +112,7 @@ public class VariantDocumentTests : IndexTestBase
         await CreateVariantDocument();
         await UpdateProperty(propertyName, updatedValue, culture);
 
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
         ISearchResults results = index.Searcher.Search(updatedValue);
         Assert.That(results, Is.Not.Empty);
@@ -129,7 +129,7 @@ public class VariantDocumentTests : IndexTestBase
     public async Task CanIndexVariantTextByCulture(bool publish, string culture, string expectedValue)
     {
         await CreateVariantDocument();
-        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
+        IIndex index = GetIndex(GetIndexAlias(publish));
 
         IOrdering queryBuilder = index.Searcher.CreateQuery().All();
         var fieldName = FieldNameHelper.FieldName("title", Constants.FieldValues.Texts);
@@ -149,7 +149,7 @@ public class VariantDocumentTests : IndexTestBase
     public async Task CanIndexVariantTextBySegment(bool publish, string culture, string segment, string expectedValue)
     {
         await CreateVariantDocument();
-        IIndex index = ExamineManager.GetIndex(GetIndexAlias(publish));
+        IIndex index = GetIndex(GetIndexAlias(publish));
 
         ISearchResults results = index.Searcher.Search(expectedValue);
         Assert.That(results, Is.Not.Empty);

@@ -4,6 +4,7 @@ using Examine.Lucene.Directories;
 using Examine.Lucene.Providers;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -15,6 +16,8 @@ using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Hosting;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Infrastructure.Examine;
+using Umbraco.Cms.Search.Core.Notifications;
+using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Search.Provider.Examine.NotificationHandlers;
 using Umbraco.Cms.Search.Provider.Examine.Services;
 using Umbraco.Extensions;
@@ -28,13 +31,33 @@ public static class UmbracoBuilderExtensions
     /// </summary>
     public static IUmbracoBuilder AddExamineSearchProvider(this IUmbracoBuilder builder)
     {
-        builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.DraftContent, _ => { });
+        IConfigurationSection section = builder.Config.GetSection(ExamineSearchProviderSettings.SectionName);
+        builder.Services.Configure<ExamineSearchProviderSettings>(section);
 
-        builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.PublishedContent, _ => { });
+        ExamineSearchProviderSettings settings = section.Get<ExamineSearchProviderSettings>() ?? new ExamineSearchProviderSettings();
 
-        builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.DraftMedia, _ => { });
+        if (settings.ZeroDowntimeIndexing)
+        {
+            builder.AddActiveAndShadowIndex(Core.Constants.IndexAliases.DraftContent);
+            builder.AddActiveAndShadowIndex(Core.Constants.IndexAliases.PublishedContent);
+            builder.AddActiveAndShadowIndex(Core.Constants.IndexAliases.DraftMedia);
+            builder.AddActiveAndShadowIndex(Core.Constants.IndexAliases.DraftMembers);
 
-        builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.DraftMembers, _ => { });
+            builder.Services.AddSingleton<IActiveIndexManager, ActiveIndexManager>();
+
+            // NOTE: this notification handler should ONLY be active when zero downtime reindexing is in effect
+            builder.AddNotificationHandler<IndexRebuildStartingNotification, ZeroDowntimeRebuildNotificationHandler>();
+            builder.AddNotificationHandler<IndexRebuildCompletedNotification, ZeroDowntimeRebuildNotificationHandler>();
+        }
+        else
+        {
+            builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.DraftContent, _ => { });
+            builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.PublishedContent, _ => { });
+            builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.DraftMedia, _ => { });
+            builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(Core.Constants.IndexAliases.DraftMembers, _ => { });
+
+            builder.Services.AddSingleton<IActiveIndexManager, NoopActiveIndexManager>();
+        }
 
         // This is needed, due to locking of indexes on Azure, to read more on this issue go here: https://github.com/umbraco/Umbraco-CMS/pull/15571
         builder.Services.AddSingleton<UmbracoTempEnvFileSystemDirectoryFactory>();
@@ -100,4 +123,10 @@ public static class UmbracoBuilderExtensions
         public override string Handle(ApiDescription apiDescription)
             => $"{apiDescription.ActionDescriptor.RouteValues["action"]}";
     }
+
+    private static void AddActiveAndShadowIndex(this IUmbracoBuilder builder, string alias)
+    {
+        builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(alias + ActiveIndexManager.SuffixA, _ => { });
+        builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(alias + ActiveIndexManager.SuffixB, _ => { });
+}
 }

@@ -13,10 +13,12 @@ namespace Umbraco.Cms.Search.Provider.Examine.Services;
 public class Indexer : IExamineIndexer
 {
     private readonly IExamineManager _examineManager;
+    private readonly IActiveIndexManager _activeIndexManager;
 
-    public Indexer(IExamineManager examineManager, IOptions<FieldOptions> fieldOptions)
+    public Indexer(IExamineManager examineManager, IOptions<FieldOptions> fieldOptions, IActiveIndexManager activeIndexManager)
     {
         _examineManager = examineManager;
+        _activeIndexManager = activeIndexManager;
         FieldOptions = fieldOptions.Value;
     }
 
@@ -45,7 +47,7 @@ public class Indexer : IExamineIndexer
         IEnumerable<IndexField> fields,
         ContentProtection? protection)
     {
-        IIndex index = GetIndex(indexAlias);
+        IIndex index = GetWriteTargetIndex(indexAlias);
 
         DeleteSingleDoc(index, key);
 
@@ -147,18 +149,35 @@ public class Indexer : IExamineIndexer
 
     public Task ResetAsync(string indexAlias)
     {
-        // NOTE: the index might not exist at this point, so don't use GetIndex (it's throws an exception for non-existing indexes)
-        if (_examineManager.TryGetIndex(indexAlias, out IIndex? index) is false)
+        var physicalName = ResolveWriteTargetName(indexAlias);
+
+        // NOTE: the index might not exist at this point, so don't use GetIndex (it throws an exception for non-existing indexes)
+        if (_examineManager.TryGetIndex(physicalName, out IIndex? index) is false)
         {
             return Task.CompletedTask;
         }
+
         index.CreateIndex();
         return Task.CompletedTask;
     }
 
     public Task<IndexMetadata> GetMetadataAsync(string indexAlias)
     {
-        if (_examineManager.TryGetIndex(indexAlias, out IIndex? index) is false)
+        if (_activeIndexManager.IsRebuilding(indexAlias))
+        {
+            // During rebuild, report rebuilding status based on the active index's document count
+            var activePhysicalName = _activeIndexManager.ResolveActiveIndexName(indexAlias);
+            var activeDocCount = 0L;
+            if (_examineManager.TryGetIndex(activePhysicalName, out IIndex? activeIndex) && activeIndex is IIndexStats activeStats)
+            {
+                activeDocCount = activeStats.GetDocumentCount();
+            }
+
+            return Task.FromResult(new IndexMetadata(activeDocCount, HealthStatus.Rebuilding));
+        }
+
+        var physicalName = _activeIndexManager.ResolveActiveIndexName(indexAlias);
+        if (_examineManager.TryGetIndex(physicalName, out IIndex? index) is false)
         {
             return Task.FromResult(new IndexMetadata(0, HealthStatus.Unknown));
         }
@@ -205,7 +224,7 @@ public class Indexer : IExamineIndexer
 
     public Task DeleteAsync(string indexAlias, IEnumerable<Guid> keys)
     {
-        IIndex index = GetIndex(indexAlias);
+        IIndex index = GetWriteTargetIndex(indexAlias);
         var idsToDelete = new HashSet<string>();
 
         foreach (Guid key in keys)
@@ -340,8 +359,16 @@ public class Indexer : IExamineIndexer
         }
     }
 
-    private IIndex GetIndex(string indexName)
-        => _examineManager.TryGetIndex(indexName, out IIndex? index)
+    private string ResolveWriteTargetName(string indexAlias)
+        => _activeIndexManager.IsRebuilding(indexAlias)
+            ? _activeIndexManager.ResolveShadowIndexName(indexAlias)
+            : _activeIndexManager.ResolveActiveIndexName(indexAlias);
+
+    private IIndex GetWriteTargetIndex(string indexAlias)
+    {
+        var physicalName = ResolveWriteTargetName(indexAlias);
+        return _examineManager.TryGetIndex(physicalName, out IIndex? index)
             ? index
-            : throw new ArgumentException($"The index {indexName} could not be found.", nameof(indexName));
+            : throw new ArgumentException($"The index {physicalName} (for alias {indexAlias}) could not be found.", nameof(indexAlias));
+    }
 }

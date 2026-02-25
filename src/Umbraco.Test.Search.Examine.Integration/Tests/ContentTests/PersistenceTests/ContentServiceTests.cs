@@ -25,6 +25,7 @@ using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
 using Umbraco.Test.Search.Examine.Integration.Attributes;
+using Umbraco.Cms.Search.Provider.Examine.Services;
 using Umbraco.Test.Search.Examine.Integration.Extensions;
 using Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
 using Constants = Umbraco.Cms.Search.Core.Constants;
@@ -202,7 +203,11 @@ public class ContentServiceTests : UmbracoIntegrationTest
 
     protected async Task WaitForIndexing(string indexAlias, Func<Task> indexUpdatingAction)
     {
-        var index = (LuceneIndex)GetRequiredService<IExamineManager>().GetIndex(indexAlias);
+        var activeIndexManager = GetRequiredService<IActiveIndexManager>();
+        var physicalName = activeIndexManager.IsRebuilding(indexAlias)
+            ? activeIndexManager.ResolveShadowIndexName(indexAlias)
+            : activeIndexManager.ResolveActiveIndexName(indexAlias);
+        var index = (LuceneIndex)GetRequiredService<IExamineManager>().GetIndex(physicalName);
         index.IndexCommitted += IndexCommited;
 
         var hasDoneAction = false;
