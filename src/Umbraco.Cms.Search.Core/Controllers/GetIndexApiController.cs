@@ -39,7 +39,7 @@ public class GetIndexApiController : ApiControllerBase
             return BadRequest("The indexAlias parameter must be provided and cannot be empty.");
         }
 
-        IndexRegistration? indexRegistration = _options.GetIndexRegistration(indexAlias);
+        ContentIndexRegistration? indexRegistration = _options.GetContentIndexRegistration(indexAlias);
         if (indexRegistration is null)
         {
             return NotFound("The specified index alias was not found.");

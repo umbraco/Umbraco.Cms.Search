@@ -34,7 +34,7 @@ public class ContentTypeTests : ContentBaseTestBase
     [SetUp]
     public async Task SetupTest()
     {
-        Indexer.Reset();
+        IndexerAndSearcher.Reset();
 
         _contentType1 = await CreateContentType();
         _contentType2 = await CreateContentType();
@@ -79,18 +79,18 @@ public class ContentTypeTests : ContentBaseTestBase
     [Test]
     public async Task DeleteContentType1()
     {
-        IReadOnlyList<TestIndexDocument> draftDocuments = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> draftDocuments = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
         Assert.That(draftDocuments, Has.Count.EqualTo(6));
 
-        IReadOnlyList<TestIndexDocument> publishedDocuments = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> publishedDocuments = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(publishedDocuments, Has.Count.EqualTo(6));
 
         await ContentTypeService.DeleteAsync(_contentType1.Key, Constants.Security.SuperUserKey);
 
-        draftDocuments = Indexer.Dump(IndexAliases.DraftContent);
+        draftDocuments = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
         Assert.That(draftDocuments, Has.Count.EqualTo(4));
 
-        publishedDocuments = Indexer.Dump(IndexAliases.PublishedContent);
+        publishedDocuments = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(publishedDocuments, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -110,19 +110,19 @@ public class ContentTypeTests : ContentBaseTestBase
     [Test]
     public async Task DeleteContentType2And3()
     {
-        IReadOnlyList<TestIndexDocument> draftDocuments = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> draftDocuments = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
         Assert.That(draftDocuments, Has.Count.EqualTo(6));
 
-        IReadOnlyList<TestIndexDocument> publishedDocuments = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> publishedDocuments = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(publishedDocuments, Has.Count.EqualTo(6));
 
         await ContentTypeService.DeleteAsync(_contentType2.Key, Constants.Security.SuperUserKey);
         await ContentTypeService.DeleteAsync(_contentType3.Key, Constants.Security.SuperUserKey);
 
-        draftDocuments = Indexer.Dump(IndexAliases.DraftContent);
+        draftDocuments = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
         Assert.That(draftDocuments, Has.Count.EqualTo(2));
 
-        publishedDocuments = Indexer.Dump(IndexAliases.PublishedContent);
+        publishedDocuments = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(publishedDocuments, Has.Count.EqualTo(2));
 
         Assert.Multiple(() =>
@@ -138,20 +138,20 @@ public class ContentTypeTests : ContentBaseTestBase
     [Test]
     public async Task DeleteAllContentTypes()
     {
-        IReadOnlyList<TestIndexDocument> draftDocuments = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> draftDocuments = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
         Assert.That(draftDocuments, Has.Count.EqualTo(6));
 
-        IReadOnlyList<TestIndexDocument> publishedDocuments = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> publishedDocuments = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(publishedDocuments, Has.Count.EqualTo(6));
 
         await ContentTypeService.DeleteAsync(_contentType1.Key, Constants.Security.SuperUserKey);
         await ContentTypeService.DeleteAsync(_contentType2.Key, Constants.Security.SuperUserKey);
         await ContentTypeService.DeleteAsync(_contentType3.Key, Constants.Security.SuperUserKey);
 
-        draftDocuments = Indexer.Dump(IndexAliases.DraftContent);
+        draftDocuments = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
         Assert.That(draftDocuments, Is.Empty);
 
-        publishedDocuments = Indexer.Dump(IndexAliases.PublishedContent);
+        publishedDocuments = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(publishedDocuments, Is.Empty);
     }
 }
