@@ -38,7 +38,7 @@ internal sealed class ContentIndexingService : IContentIndexingService
 
     public void Rebuild(string indexAlias)
     {
-        IndexRegistration? indexRegistration = _indexOptions.GetIndexRegistration(indexAlias);
+        ContentIndexRegistration? indexRegistration = _indexOptions.GetContentIndexRegistration(indexAlias);
         if (indexRegistration is null)
         {
             _logger.LogError("Cannot rebuild index - no index registration found for alias: {indexAlias}", indexAlias);
@@ -52,21 +52,21 @@ internal sealed class ContentIndexingService : IContentIndexingService
     {
         ContentChange[] changesAsArray = changes as ContentChange[] ?? changes.ToArray();
 
-        IEnumerable<IGrouping<Type, IndexRegistration>> indexRegistrationsByStrategyType = _indexOptions
-            .GetIndexRegistrations()
+        IEnumerable<IGrouping<Type, ContentIndexRegistration>> indexRegistrationsByStrategyType = _indexOptions
+            .GetContentIndexRegistrations()
             .GroupBy(r => r.ContentChangeStrategy);
 
-        foreach (IGrouping<Type, IndexRegistration> group in indexRegistrationsByStrategyType)
+        foreach (IGrouping<Type, ContentIndexRegistration> group in indexRegistrationsByStrategyType)
         {
             if (TryGetContentChangeStrategy(group.Key, out IContentChangeStrategy? contentChangeStrategy) is false)
             {
                 continue;
             }
 
-            IndexInfo[] indexInfos = group
+            ContentIndexInfo[] indexInfos = group
                 .Select(g =>
                     TryGetIndexer(g.Indexer, out IIndexer? indexer)
-                        ? new IndexInfo(g.IndexAlias, g.ContainedObjectTypes, indexer)
+                        ? new ContentIndexInfo(g.IndexAlias, g.ContainedObjectTypes, indexer)
                         : null)
                 .WhereNotNull()
                 .ToArray();
@@ -81,7 +81,7 @@ internal sealed class ContentIndexingService : IContentIndexingService
         }
     }
 
-    private async Task RebuildAsync(IndexRegistration indexRegistration, CancellationToken cancellationToken)
+    private async Task RebuildAsync(ContentIndexRegistration indexRegistration, CancellationToken cancellationToken)
     {
         if (TryGetContentChangeStrategy(indexRegistration.ContentChangeStrategy, out IContentChangeStrategy? contentChangeStrategy) is false
             || TryGetIndexer(indexRegistration.Indexer, out IIndexer? indexer) is false)
@@ -91,7 +91,7 @@ internal sealed class ContentIndexingService : IContentIndexingService
 
         await _eventAggregator.PublishAsync(new IndexRebuildStartingNotification(indexRegistration.IndexAlias), cancellationToken);
 
-        await contentChangeStrategy.RebuildAsync(new IndexInfo(indexRegistration.IndexAlias, indexRegistration.ContainedObjectTypes, indexer), cancellationToken);
+        await contentChangeStrategy.RebuildAsync(new ContentIndexInfo(indexRegistration.IndexAlias, indexRegistration.ContainedObjectTypes, indexer), cancellationToken);
 
         await _eventAggregator.PublishAsync(new IndexRebuildCompletedNotification(indexRegistration.IndexAlias), cancellationToken);
     }

@@ -37,10 +37,10 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
         _eventAggregator = eventAggregator;
     }
 
-    public async Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
+    public async Task HandleAsync(IEnumerable<ContentIndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
     {
         // make sure all indexes can handle documents
-        IndexInfo[] indexInfosAsArray = indexInfos as IndexInfo[] ?? indexInfos.ToArray();
+        ContentIndexInfo[] indexInfosAsArray = indexInfos as ContentIndexInfo[] ?? indexInfos.ToArray();
         if (indexInfosAsArray.Any(indexInfo => indexInfo.ContainedObjectTypes.Contains(UmbracoObjectTypes.Document) is false))
         {
             _logger.LogWarning("One or more indexes for unsupported object types were detected and skipped. This strategy only supports Documents.");
@@ -79,11 +79,11 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
         await RemoveFromIndexAsync(indexInfosAsArray, pendingRemovals);
     }
 
-    public async Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
+    public async Task RebuildAsync(ContentIndexInfo indexInfo, CancellationToken cancellationToken)
     {
         await indexInfo.Indexer.ResetAsync(indexInfo.IndexAlias);
 
-        IndexInfo[] indexInfos = [indexInfo];
+        ContentIndexInfo[] indexInfos = [indexInfo];
         foreach (IContent content in _contentService.GetRootContent())
         {
             if (cancellationToken.IsCancellationRequested)
@@ -96,7 +96,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
         }
     }
 
-    private async Task ReindexAsync(IndexInfo[] indexInfos, IContentBase content, bool forceReindexDescendants, CancellationToken cancellationToken)
+    private async Task ReindexAsync(ContentIndexInfo[] indexInfos, IContentBase content, bool forceReindexDescendants, CancellationToken cancellationToken)
     {
         // index the content
         Variation[] indexedVariants = await UpdateIndexAsync(indexInfos, content, cancellationToken);
@@ -114,7 +114,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
         }
     }
 
-    private async Task ReindexDescendantsAsync(IndexInfo[] indexInfos, IContentBase content, CancellationToken cancellationToken)
+    private async Task ReindexDescendantsAsync(ContentIndexInfo[] indexInfos, IContentBase content, CancellationToken cancellationToken)
     {
         var removedDescendantIds = new List<int>();
         await EnumerateDescendantsByPath<IContent>(
@@ -145,7 +145,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
             });
     }
 
-    private async Task<Variation[]> UpdateIndexAsync(IndexInfo[] indexInfos, IContentBase content, CancellationToken cancellationToken)
+    private async Task<Variation[]> UpdateIndexAsync(ContentIndexInfo[] indexInfos, IContentBase content, CancellationToken cancellationToken)
     {
         Variation[] variations = RoutablePublishedVariations(content);
         if (variations.Length is 0)
@@ -165,9 +165,9 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
 
         ContentProtection? contentProtection = await _contentProtectionProvider.GetContentProtectionAsync(content);
 
-        foreach (IndexInfo indexInfo in indexInfos)
+        foreach (ContentIndexInfo indexInfo in indexInfos)
         {
-            var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, variations, fields);
+            var notification = new ContentIndexingNotification(indexInfo.IndexAlias, content.Key, UmbracoObjectTypes.Document, variations, fields);
             if (await _eventAggregator.PublishCancelableAsync(notification))
             {
                 // the indexing operation was cancelled for this index; continue with the rest of the indexes
@@ -180,17 +180,17 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
         return variations;
     }
 
-    private async Task RemoveFromIndexAsync(IndexInfo[] indexInfos, Guid id)
+    private async Task RemoveFromIndexAsync(ContentIndexInfo[] indexInfos, Guid id)
         => await RemoveFromIndexAsync(indexInfos, [id]);
 
-    private async Task RemoveFromIndexAsync(IndexInfo[] indexInfos, IReadOnlyCollection<Guid> ids)
+    private async Task RemoveFromIndexAsync(ContentIndexInfo[] indexInfos, IReadOnlyCollection<Guid> ids)
     {
         if (ids.Count is 0)
         {
             return;
         }
 
-        foreach (IndexInfo indexInfo in indexInfos)
+        foreach (ContentIndexInfo indexInfo in indexInfos)
         {
             await indexInfo.Indexer.DeleteAsync(indexInfo.IndexAlias, ids);
         }
