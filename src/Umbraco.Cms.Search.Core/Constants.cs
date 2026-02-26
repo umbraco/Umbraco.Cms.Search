@@ -39,6 +39,8 @@ public static class Constants
 
         public const string ObjectType = $"{FieldPrefix}ObjectType";
 
+        public const string Icon = $"{FieldPrefix}Icon";
+
         public const string Tags = $"{FieldPrefix}Tags";
     }
 
