@@ -15,7 +15,7 @@ public class VariantContentTests : VariantContentTestBase
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -49,7 +49,7 @@ public class VariantContentTests : VariantContentTestBase
         ContentService.Save(child);
         ContentService.Publish(Child(), ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         VerifyDocumentPropertyValues(
@@ -73,7 +73,7 @@ public class VariantContentTests : VariantContentTestBase
         ContentService.Save(child);
         ContentService.Publish(Child(), ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         VerifyDocumentPropertyValues(documents[1], "The updated child title", "The child message", 34);
@@ -90,7 +90,7 @@ public class VariantContentTests : VariantContentTestBase
         ContentService.Save(child);
         ContentService.Publish(Child(), ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         VerifyDocumentPropertyValues(documents[1], "The child title", "The child message", 123456);
@@ -102,7 +102,7 @@ public class VariantContentTests : VariantContentTestBase
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>

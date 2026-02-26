@@ -31,7 +31,7 @@ public class LabelPropertyValueHandlerTests : ContentTestBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         TestIndexDocument document = documents.Single();
@@ -74,7 +74,7 @@ public class LabelPropertyValueHandlerTests : ContentTestBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         TestIndexDocument document = documents.Single();
@@ -103,7 +103,7 @@ public class LabelPropertyValueHandlerTests : ContentTestBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         TestIndexDocument document = documents.Single();
@@ -157,6 +157,6 @@ public class LabelPropertyValueHandlerTests : ContentTestBase
 
         await ContentTypeService.CreateAsync(_contentType, Constants.Security.SuperUserKey);
 
-        IndexerAndSearcher.Reset();
+        Indexer.Reset();
     }
 }

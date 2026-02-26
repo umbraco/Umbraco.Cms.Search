@@ -12,7 +12,7 @@ public class MediaStructureTests : MediaTestBase
     {
         MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -32,7 +32,7 @@ public class MediaStructureTests : MediaTestBase
     {
         MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(0));
     }
 
@@ -41,7 +41,7 @@ public class MediaStructureTests : MediaTestBase
     {
         MediaService.Save(RootFolder());
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(1));
         Assert.That(documents[0].Id, Is.EqualTo(RootFolderKey));
     }
@@ -59,7 +59,7 @@ public class MediaStructureTests : MediaTestBase
             Assert.That(GrandchildMedia().Trashed, Is.True);
         });
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -84,7 +84,7 @@ public class MediaStructureTests : MediaTestBase
             Assert.That(MediaService.GetById(GrandchildMediaKey), Is.Null);
         });
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -100,12 +100,12 @@ public class MediaStructureTests : MediaTestBase
     {
         MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         await MediaTypeService.DeleteAsync(RootMedia().ContentType.Key, Constants.Security.SuperUserKey);
 
-        documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(2));
 
         Assert.Multiple(() =>

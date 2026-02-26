@@ -1,24 +1,29 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Configuration;
-using Umbraco.Cms.Search.Core.Extensions;
-using Umbraco.Cms.Search.Core.Models.Configuration;
-using Umbraco.Cms.Search.Core.Models.Indexing;
-using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Services;
-using Umbraco.Cms.Tests.Common.Testing;
+using Umbraco.Cms.Search.Core.Services.ContentIndexing;
+using Umbraco.Cms.Tests.Common.Builders;
+using Umbraco.Cms.Tests.Common.Builders.Extensions;
 using Umbraco.Test.Search.Integration.Services;
+using CoreConstants = Umbraco.Cms.Core.Constants;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
-[TestFixture]
-[UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
-public class CustomIndexRegistrationTests : TestBase
+public class CustomIndexRegistrationTests : ContentBaseTestBase
 {
-    private const string IndexAlias = "My_Index";
+    private IContentService ContentService => GetRequiredService<IContentService>();
 
-    private IndexOptions IndexOptions => GetRequiredService<IOptions<IndexOptions>>().Value;
+    private IMediaService MediaService => GetRequiredService<IMediaService>();
+
+    private IMemberService MemberService => GetRequiredService<IMemberService>();
+
+    private Guid ContentKey { get; } = Guid.NewGuid();
+
+    private Guid MediaKey { get; } = Guid.NewGuid();
+
+    private Guid MemberKey { get; } = Guid.NewGuid();
 
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
@@ -26,61 +31,117 @@ public class CustomIndexRegistrationTests : TestBase
 
         builder.Services.Configure<IndexOptions>(options =>
         {
-            options.RegisterIndex<IIndexer, ISearcher>(IndexAlias);
+            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>("My_Index", UmbracoObjectTypes.Document, UmbracoObjectTypes.Media, UmbracoObjectTypes.Member);
         });
     }
 
-    [Test]
-    public void Can_Get_Index_Registration()
+    [SetUp]
+    public async Task SetupTest()
     {
-        IndexRegistration? indexRegistration = IndexOptions.GetIndexRegistration(IndexAlias);
-        Assert.That(indexRegistration, Is.Not.Null);
+        IContentType contentType = new ContentTypeBuilder()
+            .WithAlias("theContentType")
+            .AddPropertyType()
+            .WithAlias("title")
+            .WithDataTypeId(CoreConstants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(CoreConstants.PropertyEditors.Aliases.TextBox)
+            .Done()
+            .Build();
+        await GetRequiredService<IContentTypeService>().CreateAsync(contentType, CoreConstants.Security.SuperUserKey);
+
+        ContentService.Save(
+            new ContentBuilder()
+                .WithKey(ContentKey)
+                .WithContentType(contentType)
+                .WithName("The Content")
+                .WithPropertyValues(
+                    new
+                    {
+                        title = "The content title"
+                    })
+                .Build());
+
+        IMediaType mediaType = new MediaTypeBuilder()
+            .WithAlias("theMediaType")
+            .AddPropertyGroup()
+            .AddPropertyType()
+            .WithAlias("altText")
+            .WithDataTypeId(CoreConstants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(CoreConstants.PropertyEditors.Aliases.TextBox)
+            .Done()
+            .Done()
+            .Build();
+        await GetRequiredService<IMediaTypeService>().CreateAsync(mediaType, CoreConstants.Security.SuperUserKey);
+
+        MediaService.Save(
+            new MediaBuilder()
+                .WithKey(MediaKey)
+                .WithMediaType(mediaType)
+                .WithName("The Media")
+                .WithPropertyValues(
+                    new
+                    {
+                        altText = "The media alt text"
+                    })
+                .Build());
+
+        IMemberType memberType = new MemberTypeBuilder()
+            .WithAlias("theMemberType")
+            .AddPropertyGroup()
+            .AddPropertyType()
+            .WithAlias("organization")
+            .WithDataTypeId(CoreConstants.DataTypes.Textbox)
+            .WithPropertyEditorAlias(CoreConstants.PropertyEditors.Aliases.TextBox)
+            .Done()
+            .Done()
+            .Build();
+        await GetRequiredService<IMemberTypeService>().CreateAsync(memberType, CoreConstants.Security.SuperUserKey);
+
+        MemberService.Save(
+            new MemberBuilder()
+                .WithKey(MemberKey)
+                .WithMemberType(memberType)
+                .WithName("The Member")
+                .WithEmail("member@local")
+                .WithLogin("member@local", "Test123456")
+                .AddPropertyData()
+                .WithKeyValue("organization", "The Organization")
+                .Done()
+                .Build());
+
+        Indexer.Reset();
+    }
+
+    [Test]
+    public void CustomIndexRegistration_CanContainAllTypesOfContent()
+    {
+        ContentService.Save(Content());
+        MediaService.Save(Media());
+        MemberService.Save(Member());
+
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump("My_Index");
+        Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
         {
-            Assert.That(indexRegistration.IndexAlias, Is.EqualTo(IndexAlias));
-            Assert.That(indexRegistration.Indexer, Is.EqualTo(typeof(IIndexer)));
-            Assert.That(indexRegistration.Searcher, Is.EqualTo(typeof(ISearcher)));
+            Assert.That(documents[0].Id, Is.EqualTo(ContentKey));
+            Assert.That(documents[0].ObjectType, Is.EqualTo(UmbracoObjectTypes.Document));
+            Assert.That(documents[1].Id, Is.EqualTo(MediaKey));
+            Assert.That(documents[1].ObjectType, Is.EqualTo(UmbracoObjectTypes.Media));
+            Assert.That(documents[2].Id, Is.EqualTo(MemberKey));
+            Assert.That(documents[2].ObjectType, Is.EqualTo(UmbracoObjectTypes.Member));
         });
-    }
-
-    [Test]
-    public void Can_Resolve_Required_Searcher()
-    {
-        ISearcherResolver searcherResolver = GetRequiredService<ISearcherResolver>();
-        Assert.That(searcherResolver.GetRequiredSearcher(IndexAlias), Is.TypeOf<TestIndexerAndSearcher>());
-    }
-
-    [Test]
-    public async Task Can_Populate_Custom_Index()
-    {
-        IIndexer indexer = GetRequiredService<IIndexer>();
-        var id = Guid.NewGuid();
-        await indexer.AddOrUpdateAsync(
-            IndexAlias,
-            id,
-            UmbracoObjectTypes.Unknown,
-            variations: [new Variation(null, null)],
-            fields:
-            [
-                new IndexField("FieldOne", new() { Texts = ["This is field one"] }, null, null),
-                new IndexField("FieldTwo", new() { Integers = [222] }, null, null),
-            ],
-            protection: null);
-
-        ISearcher searcher = GetRequiredService<ISearcher>();
-        SearchResult searchResult = await searcher.SearchAsync(IndexAlias, take: 10);
 
         Assert.Multiple(() =>
         {
-            Assert.That(searchResult.Total, Is.EqualTo(1));
-            Assert.That(searchResult.Documents.Count(), Is.EqualTo(1));
+            VerifyDocumentSystemValues(documents[0], Content(), []);
+            VerifyDocumentSystemValues(documents[1], Media(), []);
+            VerifyDocumentSystemValues(documents[2], Member(), []);
         });
-
-        Assert.That(searchResult.Documents.First().Id, Is.EqualTo(id));
     }
 
-    [Test]
-    public void Cannot_Get_Index_Registration_As_Content_Index_Registration()
-        => Assert.That(IndexOptions.GetContentIndexRegistration("My_Index"), Is.Null);
+    private IContent Content() => ContentService.GetById(ContentKey) ?? throw new InvalidOperationException("Content was not found");
+
+    private IMedia Media() => MediaService.GetById(MediaKey) ?? throw new InvalidOperationException("Media was not found");
+
+    private IMember Member() => MemberService.GetById(MemberKey) ?? throw new InvalidOperationException("Member was not found");
 }

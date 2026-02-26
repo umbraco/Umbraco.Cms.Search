@@ -26,7 +26,7 @@ public abstract class TestBase : UmbracoIntegrationTest
         public const string Member = "TestMemberIndex";
     }
 
-    protected TestIndexerAndSearcher IndexerAndSearcher { get; } = new();
+    protected TestIndexer Indexer { get; } = new();
 
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
@@ -39,15 +39,15 @@ public abstract class TestBase : UmbracoIntegrationTest
         builder.Services.AddUnique<IServerEventRouter, NoOpServerEventRouter>();
         builder.Services.AddUnique<IIndexDocumentRepository, NoopIndexDocumentRepository>();
 
-        builder.Services.AddTransient<IIndexer>(_ => IndexerAndSearcher);
-        builder.Services.AddTransient<ISearcher>(_ => IndexerAndSearcher);
+        builder.Services.AddTransient<IIndexer>(_ => Indexer);
+        builder.Services.AddTransient<ISearcher>(_ => Indexer);
 
         builder.Services.Configure<IndexOptions>(options =>
         {
-            options.RegisterContentIndex<IIndexer, ISearcher, IPublishedContentChangeStrategy>(IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
-            options.RegisterContentIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(IndexAliases.DraftContent, UmbracoObjectTypes.Document);
-            options.RegisterContentIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(IndexAliases.Media, UmbracoObjectTypes.Media);
-            options.RegisterContentIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(IndexAliases.Member, UmbracoObjectTypes.Member);
+            options.RegisterIndex<IIndexer, ISearcher, IPublishedContentChangeStrategy>(IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(IndexAliases.DraftContent, UmbracoObjectTypes.Document);
+            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(IndexAliases.Media, UmbracoObjectTypes.Media);
+            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(IndexAliases.Member, UmbracoObjectTypes.Member);
         });
 
         builder.AddNotificationHandler<ContentTreeChangeNotification, ContentTreeChangeDistributedCacheNotificationHandler>();

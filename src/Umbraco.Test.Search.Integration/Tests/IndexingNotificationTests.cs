@@ -7,12 +7,12 @@ using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
-public class ContentIndexingNotificationTests : InvariantContentTestBase
+public class IndexingNotificationTests : InvariantContentTestBase
 {
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
         base.CustomTestSetup(builder);
-        builder.AddNotificationHandler<ContentIndexingNotification, AddOrUpdateIndexingNotificationHandler>();
+        builder.AddNotificationHandler<IndexingNotification, AddOrUpdateIndexingNotificationHandler>();
     }
 
     public override Task SetupTest()
@@ -28,7 +28,7 @@ public class ContentIndexingNotificationTests : InvariantContentTestBase
         AddOrUpdateIndexingNotificationHandler.ManipulateFields = true;
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -54,7 +54,7 @@ public class ContentIndexingNotificationTests : InvariantContentTestBase
         AddOrUpdateIndexingNotificationHandler.CancelIndexingFor = [ChildKey];
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -78,7 +78,7 @@ public class ContentIndexingNotificationTests : InvariantContentTestBase
         AddOrUpdateIndexingNotificationHandler.ManipulateFields = true;
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -104,7 +104,7 @@ public class ContentIndexingNotificationTests : InvariantContentTestBase
         AddOrUpdateIndexingNotificationHandler.CancelIndexingFor = [ChildKey];
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -145,13 +145,13 @@ public class ContentIndexingNotificationTests : InvariantContentTestBase
         }
     }
 
-    private class AddOrUpdateIndexingNotificationHandler : INotificationHandler<ContentIndexingNotification>
+    private class AddOrUpdateIndexingNotificationHandler : INotificationHandler<IndexingNotification>
     {
         public static bool ManipulateFields { get; set; }
 
         public static Guid[] CancelIndexingFor { get; set; } = [];
 
-        public void Handle(ContentIndexingNotification notification)
+        public void Handle(IndexingNotification notification)
         {
             if (ManipulateFields)
             {

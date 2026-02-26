@@ -50,7 +50,7 @@ public class MarkdownPropertyValueHandlerTests : ContentTestBase
 
         ContentService.Save(content);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         TestIndexDocument document = documents.Single();
@@ -87,7 +87,7 @@ public class MarkdownPropertyValueHandlerTests : ContentTestBase
 
         ContentService.Save(content);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         TestIndexDocument document = documents.Single();
@@ -112,7 +112,7 @@ public class MarkdownPropertyValueHandlerTests : ContentTestBase
 
         ContentService.Save(content);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         TestIndexDocument document = documents.Single();
@@ -136,7 +136,7 @@ public class MarkdownPropertyValueHandlerTests : ContentTestBase
 
         ContentService.Save(content);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
 
@@ -170,6 +170,6 @@ public class MarkdownPropertyValueHandlerTests : ContentTestBase
 
         await ContentTypeService.CreateAsync(_contentType, Constants.Security.SuperUserKey);
 
-        IndexerAndSearcher.Reset();
+        Indexer.Reset();
     }
 }

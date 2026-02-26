@@ -1,3 +1,5 @@
-﻿namespace Umbraco.Cms.Search.Core.Models.Configuration;
+﻿using Umbraco.Cms.Core.Models;
 
-public record IndexRegistration(string IndexAlias, Type Indexer, Type Searcher);
+namespace Umbraco.Cms.Search.Core.Models.Configuration;
+
+public record IndexRegistration(string IndexAlias, IEnumerable<UmbracoObjectTypes> ContainedObjectTypes, Type Indexer, Type Searcher, Type ContentChangeStrategy);

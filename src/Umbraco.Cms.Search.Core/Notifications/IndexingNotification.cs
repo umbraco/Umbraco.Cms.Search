@@ -4,23 +4,23 @@ using Umbraco.Cms.Search.Core.Models.Indexing;
 
 namespace Umbraco.Cms.Search.Core.Notifications;
 
-public sealed class ContentIndexingNotification : ICancelableNotification
+public sealed class IndexingNotification : ICancelableNotification
 {
-    public ContentIndexingNotification(
-        string indexAlias,
+    public IndexingNotification(
+        IndexInfo indexInfo,
         Guid id,
         UmbracoObjectTypes objectType,
         IEnumerable<Variation> variations,
         IEnumerable<IndexField> fields)
     {
-        IndexAlias = indexAlias;
+        IndexInfo = indexInfo;
         Id = id;
         ObjectType = objectType;
         Variations = variations;
         Fields = fields;
     }
 
-    public string IndexAlias { get; }
+    public IndexInfo IndexInfo { get; }
 
     public Guid Id { get; }
 

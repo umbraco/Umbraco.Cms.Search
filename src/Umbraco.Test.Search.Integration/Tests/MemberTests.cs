@@ -17,7 +17,7 @@ public class MemberTests : ContentBaseTestBase
     {
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Member);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -35,7 +35,7 @@ public class MemberTests : ContentBaseTestBase
     {
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Member);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -51,7 +51,7 @@ public class MemberTests : ContentBaseTestBase
     {
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Member);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -67,7 +67,7 @@ public class MemberTests : ContentBaseTestBase
     {
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Member);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -90,7 +90,7 @@ public class MemberTests : ContentBaseTestBase
 
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Member);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -112,7 +112,7 @@ public class MemberTests : ContentBaseTestBase
 
         ContentIndexingService.Rebuild(IndexAliases.Member);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Member);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -137,12 +137,12 @@ public class MemberTests : ContentBaseTestBase
     {
         MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Member);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         await MemberTypeService.DeleteAsync(MemberOne().ContentType.Key, Constants.Security.SuperUserKey);
 
-        documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(0));
     }
 
@@ -222,7 +222,7 @@ public class MemberTests : ContentBaseTestBase
                 .Done()
                 .Build());
 
-        IndexerAndSearcher.Reset();
+        Indexer.Reset();
     }
 
     private void VerifyDocumentPropertyValues(TestIndexDocument document, string? organization)

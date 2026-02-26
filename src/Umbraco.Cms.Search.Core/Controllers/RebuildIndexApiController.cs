@@ -32,7 +32,7 @@ public class RebuildIndexApiController : ApiControllerBase
         }
 
         // Check if the index exists before calling the service
-        ContentIndexRegistration? indexRegistration = _options.GetContentIndexRegistration(indexAlias);
+        IndexRegistration? indexRegistration = _options.GetIndexRegistration(indexAlias);
         if (indexRegistration is null)
         {
             return NotFound("The specified index alias was not found.");

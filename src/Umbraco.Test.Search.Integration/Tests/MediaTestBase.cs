@@ -121,6 +121,6 @@ public abstract class MediaTestBase : ContentBaseTestBase
             .Build();
         MediaService.Save(grandchildMedia);
 
-        IndexerAndSearcher.Reset();
+        Indexer.Reset();
     }
 }

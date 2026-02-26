@@ -39,9 +39,9 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         _eventAggregator = eventAggregator;
     }
 
-    public async Task HandleAsync(IEnumerable<ContentIndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
+    public async Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
     {
-        ContentIndexInfo[] indexInfosAsArray = indexInfos as ContentIndexInfo[] ?? indexInfos.ToArray();
+        IndexInfo[] indexInfosAsArray = indexInfos as IndexInfo[] ?? indexInfos.ToArray();
 
         // get the relevant changes for this change strategy
         ContentChange[] changesAsArray = changes.Where(change =>
@@ -79,7 +79,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         await RemoveFromIndexAsync(indexInfosAsArray, pendingRemovals);
     }
 
-    public async Task RebuildAsync(ContentIndexInfo indexInfo, CancellationToken cancellationToken)
+    public async Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
     {
         await indexInfo.Indexer.ResetAsync(indexInfo.IndexAlias);
 
@@ -142,9 +142,9 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         }
     }
 
-    private async Task<bool> UpdateIndexAsync(ContentIndexInfo[] indexInfos, ContentChange change, IContentBase content, CancellationToken cancellationToken)
+    private async Task<bool> UpdateIndexAsync(IndexInfo[] indexInfos, ContentChange change, IContentBase content, CancellationToken cancellationToken)
     {
-        ContentIndexInfo[] applicableIndexInfos = indexInfos.Where(info => info.ContainedObjectTypes.Contains(change.ObjectType)).ToArray();
+        IndexInfo[] applicableIndexInfos = indexInfos.Where(info => info.ContainedObjectTypes.Contains(change.ObjectType)).ToArray();
         if(applicableIndexInfos.Length is 0)
         {
             return true;
@@ -182,7 +182,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         return result;
     }
 
-    private async Task UpdateIndexDescendantsAsync<T>(ContentIndexInfo[] indexInfos, T[] descendants, UmbracoObjectTypes objectType, CancellationToken cancellationToken)
+    private async Task UpdateIndexDescendantsAsync<T>(IndexInfo[] indexInfos, T[] descendants, UmbracoObjectTypes objectType, CancellationToken cancellationToken)
         where T : IContentBase
     {
         foreach (T descendant in descendants)
@@ -191,7 +191,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         }
     }
 
-    private async Task<bool> UpdateIndexAsync(ContentIndexInfo[] indexInfos, IContentBase content, UmbracoObjectTypes objectType, CancellationToken cancellationToken)
+    private async Task<bool> UpdateIndexAsync(IndexInfo[] indexInfos, IContentBase content, UmbracoObjectTypes objectType, CancellationToken cancellationToken)
     {
         IndexField[]? fields = (await _contentIndexingDataCollectionService.CollectAsync(content, false, cancellationToken))?.ToArray();
         if (fields is null)
@@ -213,9 +213,9 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                 .Select(culture => new Variation(culture, null))
                 .ToArray();
 
-        foreach (ContentIndexInfo indexInfo in indexInfos)
+        foreach (IndexInfo indexInfo in indexInfos)
         {
-            var notification = new ContentIndexingNotification(indexInfo.IndexAlias, content.Key, UmbracoObjectTypes.Document, variations, fields);
+            var notification = new IndexingNotification(indexInfo, content.Key, UmbracoObjectTypes.Document, variations, fields);
             if (await _eventAggregator.PublishCancelableAsync(notification))
             {
                 // the indexing operation was cancelled for this index; continue with the rest of the indexes
@@ -228,14 +228,14 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         return true;
     }
 
-    private async Task RemoveFromIndexAsync(ContentIndexInfo[] indexInfos, IReadOnlyCollection<ContentChange> contentChanges)
+    private async Task RemoveFromIndexAsync(IndexInfo[] indexInfos, IReadOnlyCollection<ContentChange> contentChanges)
     {
         if (contentChanges.Count is 0)
         {
             return;
         }
 
-        foreach (ContentIndexInfo indexInfo in indexInfos)
+        foreach (IndexInfo indexInfo in indexInfos)
         {
             Guid[] keys = contentChanges
                 .Where(change => indexInfo.ContainedObjectTypes.Contains(change.ObjectType))
@@ -255,7 +255,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
         };
 
     private async Task RebuildAsync(
-        ContentIndexInfo indexInfo,
+        IndexInfo indexInfo,
         UmbracoObjectTypes objectType,
         Func<IEnumerable<IContentBase>> getContentAtRoot,
         Func<int, int, IEnumerable<IContentBase>> getPagedContentAtRecycleBinRoot,
@@ -272,7 +272,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
             return;
         }
 
-        ContentIndexInfo[] indexInfos = [indexInfo];
+        IndexInfo[] indexInfos = [indexInfo];
 
         foreach (IContentBase rootContent in getContentAtRoot())
         {

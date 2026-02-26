@@ -11,7 +11,7 @@ public partial class InvariantContentStructureTests
     {
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -30,7 +30,7 @@ public partial class InvariantContentStructureTests
     {
         ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(0));
     }
 
@@ -39,7 +39,7 @@ public partial class InvariantContentStructureTests
     {
         ContentService.Save(Root());
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
         Assert.That(documents[0].Id, Is.EqualTo(RootKey));
     }
@@ -57,7 +57,7 @@ public partial class InvariantContentStructureTests
             Assert.That(GreatGrandchild().Trashed, Is.True);
         });
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -81,7 +81,7 @@ public partial class InvariantContentStructureTests
             Assert.That(ContentService.GetById(GreatGrandchildKey), Is.Null);
         });
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(2));
 
         Assert.Multiple(() =>

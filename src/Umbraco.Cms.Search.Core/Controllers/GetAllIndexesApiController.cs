@@ -34,7 +34,7 @@ public class GetAllIndexesApiController : ApiControllerBase
     public async Task<IActionResult> Indexes()
     {
         List<IndexViewModel> indexes = [];
-        foreach (ContentIndexRegistration indexRegistration in _options.GetContentIndexRegistrations())
+        foreach (IndexRegistration indexRegistration in _options.GetIndexRegistrations())
         {
             if (TryGetIndexer(_serviceProvider, indexRegistration.Indexer, _logger, out IIndexer? indexer) is false)
             {

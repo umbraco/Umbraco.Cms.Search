@@ -17,7 +17,7 @@ public class MediaContentTests : MediaTestBase
     {
         MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -35,7 +35,7 @@ public class MediaContentTests : MediaTestBase
     {
         MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -53,7 +53,7 @@ public class MediaContentTests : MediaTestBase
     {
         MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -84,7 +84,7 @@ public class MediaContentTests : MediaTestBase
         moveResult = MediaService.Move(ChildMedia(), secondRootFolder.Id);
         Assert.That(moveResult.Result?.Result, Is.EqualTo(OperationResultType.Success));
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(6));
 
         Assert.Multiple(() =>
@@ -119,7 +119,7 @@ public class MediaContentTests : MediaTestBase
         moveResult = MediaService.Move(RootMedia(), secondRootFolder.Id);
         Assert.That(moveResult.Result?.Result, Is.EqualTo(OperationResultType.Success));
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(6));
 
         Assert.Multiple(() =>
@@ -142,7 +142,7 @@ public class MediaContentTests : MediaTestBase
         MediaService.MoveToRecycleBin(RootFolder());
         MediaService.MoveToRecycleBin(RootMedia());
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -162,7 +162,7 @@ public class MediaContentTests : MediaTestBase
         MediaService.MoveToRecycleBin(RootFolder());
         MediaService.MoveToRecycleBin(RootMedia());
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -183,7 +183,7 @@ public class MediaContentTests : MediaTestBase
         MediaService.MoveToRecycleBin(ChildFolder());
         MediaService.MoveToRecycleBin(ChildMedia());
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -212,7 +212,7 @@ public class MediaContentTests : MediaTestBase
 
         MediaService.Delete(RootFolder());
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         Assert.Multiple(() =>
@@ -235,7 +235,7 @@ public class MediaContentTests : MediaTestBase
 
         MediaService.Delete(ChildFolder());
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(3));
 
         Assert.Multiple(() =>
@@ -258,7 +258,7 @@ public class MediaContentTests : MediaTestBase
 
         ContentIndexingService.Rebuild(IndexAliases.Media);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -294,7 +294,7 @@ public class MediaContentTests : MediaTestBase
 
         ContentIndexingService.Rebuild(IndexAliases.Media);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>

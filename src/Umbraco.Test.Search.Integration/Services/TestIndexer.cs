@@ -13,7 +13,7 @@ using Constants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Umbraco.Test.Search.Integration.Services;
 
-public class TestIndexerAndSearcher : IIndexer, ISearcher
+public class TestIndexer : IIndexer, ISearcher
 {
     private readonly Dictionary<string, Dictionary<Guid, TestIndexDocument>> _indexes = new();
 
@@ -80,7 +80,7 @@ public class TestIndexerAndSearcher : IIndexer, ISearcher
         {
             Constants.IndexAliases.DraftContent => TestBase.IndexAliases.DraftContent,
             Constants.IndexAliases.DraftMedia => TestBase.IndexAliases.Media,
-            _ => indexAlias
+            _ => throw new ArgumentOutOfRangeException(nameof(indexAlias))
         };
 
         bool IsVarianceMatch(IndexField field)

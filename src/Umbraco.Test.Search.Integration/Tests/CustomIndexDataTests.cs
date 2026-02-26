@@ -36,7 +36,7 @@ public class CustomIndexDataTests : TestBase
             ],
             protection: null);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump("My_Data");
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump("My_Data");
 
         Assert.That(documents.Count, Is.EqualTo(1));
         Assert.Multiple(() =>

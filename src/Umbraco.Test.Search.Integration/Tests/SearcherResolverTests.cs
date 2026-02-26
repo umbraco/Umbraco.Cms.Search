@@ -9,6 +9,7 @@ using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
+using Umbraco.Cms.Search.Core.Models.ViewModels;
 using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -34,9 +35,9 @@ public class SearcherResolverTests : UmbracoIntegrationTest
 
         builder.Services.Configure<IndexOptions>(options =>
         {
-            options.RegisterContentIndex<TestIndexer, FirstSearcher, TestContentChangeStrategy>("FirstIndex", UmbracoObjectTypes.Document);
-            options.RegisterContentIndex<TestIndexer, SecondSearcher, TestContentChangeStrategy>("SecondIndex", UmbracoObjectTypes.Document);
-            options.RegisterContentIndex<TestIndexer, UnregisteredSearcher, TestContentChangeStrategy>("IndexWithUnregisteredSearcher", UmbracoObjectTypes.Document);
+            options.RegisterIndex<TestIndexer, FirstSearcher, TestContentChangeStrategy>("FirstIndex", UmbracoObjectTypes.Document);
+            options.RegisterIndex<TestIndexer, SecondSearcher, TestContentChangeStrategy>("SecondIndex", UmbracoObjectTypes.Document);
+            options.RegisterIndex<TestIndexer, UnregisteredSearcher, TestContentChangeStrategy>("IndexWithUnregisteredSearcher", UmbracoObjectTypes.Document);
         });
 
         _loggerMock = new Mock<ILogger<SearcherResolver>>();
@@ -98,10 +99,10 @@ public class SearcherResolverTests : UmbracoIntegrationTest
 
     private class TestContentChangeStrategy : IContentChangeStrategy
     {
-        public Task HandleAsync(IEnumerable<ContentIndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
+        public Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
             => throw new NotImplementedException();
 
-        public Task RebuildAsync(ContentIndexInfo indexInfo, CancellationToken cancellationToken)
+        public Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
             => throw new NotImplementedException();
     }
 

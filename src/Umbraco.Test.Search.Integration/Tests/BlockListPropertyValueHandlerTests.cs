@@ -30,7 +30,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         await GetRequiredService<ILanguageService>()
             .CreateAsync(new Language("de-DE", "German (Germany)"), Constants.Security.SuperUserKey);
 
-        IndexerAndSearcher.Reset();
+        Indexer.Reset();
     }
 
     protected override void ConfigureTestServices(IServiceCollection services)
@@ -164,7 +164,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         AssertDocumentFields(IndexAliases.DraftContent);
         AssertDocumentFields(IndexAliases.PublishedContent);
 
-        TestIndexDocument document = IndexerAndSearcher.Dump(IndexAliases.PublishedContent).Single();
+        TestIndexDocument document = Indexer.Dump(IndexAliases.PublishedContent).Single();
         IndexValue? tagsValue = document.Fields.FirstOrDefault(f => f.FieldName == Cms.Search.Core.Constants.FieldNames.Tags)?.Value;
         Assert.That(tagsValue, Is.Not.Null);
         CollectionAssert.AreEquivalent(new [] { "One", "Two", "Three", "Four", "Five", "Six" }, tagsValue.Keywords);
@@ -173,7 +173,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
 
         void AssertDocumentFields(string indexAlias)
         {
-            IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(indexAlias);
+            IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(indexAlias);
             Assert.That(documents, Has.Count.EqualTo(1));
 
             TestIndexDocument document = documents.Single();
@@ -321,7 +321,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         TestIndexDocument document = documents.Single();
@@ -353,7 +353,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
 
         void AssertDocumentFields(string indexAlias)
         {
-            IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(indexAlias);
+            IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(indexAlias);
             Assert.That(documents, Has.Count.EqualTo(1));
 
             TestIndexDocument document = documents.Single();
@@ -403,7 +403,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
 
         void AssertDocumentFields(string indexAlias, bool expectEnValues)
         {
-            IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(indexAlias);
+            IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(indexAlias);
             Assert.That(documents, Has.Count.EqualTo(1));
 
             TestIndexDocument document = documents.Single();
@@ -519,7 +519,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
 
         void AssertDocumentFields(string indexAlias, IEnumerable<string> expectedTextBoxValuesEn, IEnumerable<string> expectedTextBoxValuesDa)
         {
-            IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(indexAlias);
+            IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(indexAlias);
             Assert.That(documents, Has.Count.EqualTo(1));
 
             TestIndexDocument document = documents.Single();
@@ -600,7 +600,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
             .Build();
         ContentService.Save(content);
 
-        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         IndexValue? blocksValue = documents[0].Fields.FirstOrDefault(f => f.FieldName is "blocks")?.Value;

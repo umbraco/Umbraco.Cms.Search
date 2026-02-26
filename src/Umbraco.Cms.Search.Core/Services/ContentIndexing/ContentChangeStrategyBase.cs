@@ -63,6 +63,6 @@ internal abstract class ContentChangeStrategyBase
         while (descendants.Length == ContentEnumerationPageSize);
     }
 
-    protected void LogIndexRebuildCancellation(ContentIndexInfo indexInfo)
+    protected void LogIndexRebuildCancellation(IndexInfo indexInfo)
         => _logger.LogInformation("Cancellation requested for rebuild of index: {indexAlias}", indexInfo.IndexAlias);
 }
