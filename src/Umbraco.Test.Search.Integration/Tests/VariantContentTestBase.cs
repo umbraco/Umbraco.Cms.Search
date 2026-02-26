@@ -88,7 +88,7 @@ public abstract class VariantContentTestBase : ContentTestBase
         greatGrandchild.SetValue("count", 78);
         ContentService.Save(greatGrandchild);
 
-        Indexer.Reset();
+        IndexerAndSearcher.Reset();
     }
 
     private void SetTitle(IContent content, string title)

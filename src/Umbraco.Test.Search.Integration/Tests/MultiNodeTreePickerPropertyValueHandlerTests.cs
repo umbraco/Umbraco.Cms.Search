@@ -30,7 +30,7 @@ public class MultiNodeTreePickerPropertyValueHandlerTests : ContentTestBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         TestIndexDocument document = documents.Single();
@@ -54,7 +54,7 @@ public class MultiNodeTreePickerPropertyValueHandlerTests : ContentTestBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         TestIndexDocument document = documents.Single();
@@ -79,7 +79,7 @@ public class MultiNodeTreePickerPropertyValueHandlerTests : ContentTestBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         TestIndexDocument document = documents.Single();
@@ -105,7 +105,7 @@ public class MultiNodeTreePickerPropertyValueHandlerTests : ContentTestBase
         ContentService.Save(content);
         ContentService.Publish(content, ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         TestIndexDocument document = documents.Single();
@@ -215,6 +215,6 @@ public class MultiNodeTreePickerPropertyValueHandlerTests : ContentTestBase
 
         await ContentTypeService.CreateAsync(_contentType, Constants.Security.SuperUserKey);
 
-        Indexer.Reset();
+        IndexerAndSearcher.Reset();
     }
 }
