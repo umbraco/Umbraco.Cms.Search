@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using Umbraco.Cms.Search.Provider.Examine.Models.ViewModels;
+using Umbraco.Cms.Search.Provider.Examine.Services;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Controllers;
 
@@ -13,17 +14,23 @@ namespace Umbraco.Cms.Search.Provider.Examine.Controllers;
 public class ExamineApiController : ExamineApiControllerBase
 {
     private readonly IExamineManager _examineManager;
+    private readonly IActiveIndexManager _activeIndexManager;
 
-    public ExamineApiController(IExamineManager examineManager) => _examineManager = examineManager;
+    public ExamineApiController(IExamineManager examineManager, IActiveIndexManager activeIndexManager)
+    {
+        _examineManager = examineManager;
+        _activeIndexManager = activeIndexManager;
+    }
 
     [HttpGet("{indexAlias}/document/{documentKey:guid}")]
     [ProducesResponseType<DocumentViewModel>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult GetDocument(string indexAlias, Guid documentKey)
     {
-        if (_examineManager.TryGetIndex(indexAlias, out IIndex? index) is false)
+        var activeIndex = _activeIndexManager.ResolveActiveIndexName(indexAlias);
+        if (_examineManager.TryGetIndex(activeIndex, out IIndex? index) is false)
         {
-            return NotFound($"Could not find index with alias '{indexAlias}'");
+            return NotFound($"Could not find index with alias '{activeIndex}'");
         }
 
         ISearchResults results = index.Searcher
@@ -36,7 +43,7 @@ public class ExamineApiController : ExamineApiControllerBase
         if (results.Any() is false)
         {
             return NotFound(
-                $"Could not find document with key '{documentKey}' in index '{indexAlias}'");
+                $"Could not find document with key '{documentKey}' in index '{activeIndex}'");
         }
 
         var indexDocumentViewModels = results.Select(result => new IndexDocumentViewModel()
