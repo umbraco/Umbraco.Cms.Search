@@ -91,6 +91,6 @@ public abstract class InvariantContentTestBase : ContentTestBase
             .Build();
         ContentService.Save(greatGrandchild);
 
-        Indexer.Reset();
+        IndexerAndSearcher.Reset();
     }
 }

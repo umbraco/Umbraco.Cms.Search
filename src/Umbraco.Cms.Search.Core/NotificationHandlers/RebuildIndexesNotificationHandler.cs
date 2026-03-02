@@ -39,7 +39,7 @@ internal sealed class RebuildIndexesNotificationHandler :
         _logger.LogInformation("Rebuilding search indexes after language deletion...");
         await _indexDocumentService.DeleteAllAsync();
 
-        foreach (IndexRegistration indexRegistration in _options.GetIndexRegistrations())
+        foreach (ContentIndexRegistration indexRegistration in _options.GetContentIndexRegistrations())
         {
             if (indexRegistration.ContainedObjectTypes.Contains(UmbracoObjectTypes.Document))
             {
@@ -67,7 +67,7 @@ internal sealed class RebuildIndexesNotificationHandler :
                 continue;
             }
 
-            foreach (IndexRegistration indexRegistration in _options.GetIndexRegistrations())
+            foreach (ContentIndexRegistration indexRegistration in _options.GetContentIndexRegistrations())
             {
                 if (indexRegistration.ContainedObjectTypes.Contains(objectType))
                 {

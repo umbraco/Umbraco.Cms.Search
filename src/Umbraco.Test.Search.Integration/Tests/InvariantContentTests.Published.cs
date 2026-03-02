@@ -14,7 +14,7 @@ public partial class InvariantContentTests
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -46,7 +46,7 @@ public partial class InvariantContentTests
         ContentService.Save(child);
         ContentService.Publish(child, ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -66,7 +66,7 @@ public partial class InvariantContentTests
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -92,7 +92,7 @@ public partial class InvariantContentTests
         ContentService.Save(Root());
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -124,7 +124,7 @@ public partial class InvariantContentTests
         ContentService.Save(child);
         ContentService.Publish(child, ["*"]);
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.That(documents[1].Id, Is.EqualTo(ChildKey));
@@ -138,7 +138,7 @@ public partial class InvariantContentTests
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ContentService.MoveToRecycleBin(Root());
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(0));
     }
 
@@ -149,7 +149,7 @@ public partial class InvariantContentTests
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ContentService.MoveToRecycleBin(Child());
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
         Assert.That(documents[0].Id, Is.EqualTo(RootKey));
     }
@@ -171,7 +171,7 @@ public partial class InvariantContentTests
         OperationResult moveResult = ContentService.Move(Root(), secondRoot.Id);
         Assert.That(moveResult.Result, Is.EqualTo(OperationResultType.Success));
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -212,7 +212,7 @@ public partial class InvariantContentTests
         OperationResult moveResult = ContentService.Move(Child(), secondRoot.Id);
         Assert.That(moveResult.Result, Is.EqualTo(OperationResultType.Success));
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(5));
 
         Assert.Multiple(() =>
@@ -253,7 +253,7 @@ public partial class InvariantContentTests
         OperationResult moveResult = ContentService.Move(Child(), secondRoot.Id);
         Assert.That(moveResult.Result, Is.EqualTo(OperationResultType.Success));
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
         Assert.That(documents[0].Id, Is.EqualTo(RootKey));
 
@@ -266,7 +266,7 @@ public partial class InvariantContentTests
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
         ContentIndexingService.Rebuild(IndexAliases.PublishedContent);
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
 
         Assert.Multiple(() =>
@@ -300,7 +300,7 @@ public partial class InvariantContentTests
 
         ContentIndexingService.Rebuild(IndexAliases.PublishedContent);
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.PublishedContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));
         Assert.That(documents[0].Id, Is.EqualTo(RootKey));
         VerifyDocumentStructureValues(documents[0], RootKey, Guid.Empty, [RootKey]);

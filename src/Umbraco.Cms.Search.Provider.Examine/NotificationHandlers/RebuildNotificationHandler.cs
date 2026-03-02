@@ -35,7 +35,7 @@ public class RebuildNotificationHandler : INotificationHandler<UmbracoApplicatio
     public void Handle(UmbracoApplicationStartedNotification notification)
     {
         _logger.LogInformation("Boot detected, determining indexes to rebuild");
-        foreach (IndexRegistration indexRegistration in _options.GetIndexRegistrations())
+        foreach (ContentIndexRegistration indexRegistration in _options.GetContentIndexRegistrations())
         {
             var activePhysicalName = _activeIndexManager.ResolveActiveIndexName(indexRegistration.IndexAlias);
 

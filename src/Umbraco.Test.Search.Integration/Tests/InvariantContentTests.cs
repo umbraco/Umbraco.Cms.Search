@@ -18,7 +18,7 @@ public partial class InvariantContentTests : InvariantContentTestBase
             ContentService.Save(content);
         }
 
-        Indexer.Reset();
+        IndexerAndSearcher.Reset();
     }
 
     private void VerifyDocumentPropertyValues(TestIndexDocument document, string title, int count)

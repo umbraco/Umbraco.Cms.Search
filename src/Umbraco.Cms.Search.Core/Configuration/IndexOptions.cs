@@ -9,7 +9,16 @@ public sealed class IndexOptions
 {
     private readonly Dictionary<string, IndexRegistration> _register = [];
 
-    public void RegisterIndex<TIndexer, TSearcher, TContentChangeStrategy>(string indexAlias, params UmbracoObjectTypes[] containedObjectTypes)
+    public void RegisterIndex<TIndexer, TSearcher>(string indexAlias)
+        where TIndexer : class, IIndexer
+        where TSearcher : class, ISearcher
+    {
+        ArgumentException.ThrowIfNullOrEmpty("Index alias cannot be empty", nameof(indexAlias));
+
+        _register[indexAlias] = new IndexRegistration(indexAlias, typeof(TIndexer), typeof(TSearcher));
+    }
+
+    public void RegisterContentIndex<TIndexer, TSearcher, TContentChangeStrategy>(string indexAlias, params UmbracoObjectTypes[] containedObjectTypes)
         where TIndexer : class, IIndexer
         where TSearcher : class, ISearcher
         where TContentChangeStrategy : class, IContentChangeStrategy
@@ -20,12 +29,15 @@ public sealed class IndexOptions
             throw new ArgumentException($"Index \"{indexAlias}\" must define at least one contained object type",  nameof(containedObjectTypes));
         }
 
-        _register[indexAlias] = new IndexRegistration(indexAlias, containedObjectTypes.Distinct(), typeof(TIndexer), typeof(TSearcher), typeof(TContentChangeStrategy));
+        _register[indexAlias] = new ContentIndexRegistration(indexAlias, typeof(TIndexer), typeof(TSearcher), typeof(TContentChangeStrategy), containedObjectTypes.Distinct());
     }
 
-    public IndexRegistration[] GetIndexRegistrations()
-        => _register.Values.ToArray();
+    public ContentIndexRegistration[] GetContentIndexRegistrations()
+        => _register.Values.OfType<ContentIndexRegistration>().ToArray();
 
     public IndexRegistration? GetIndexRegistration(string indexAlias)
         => _register.TryGetValue(indexAlias, out IndexRegistration? indexRegistration) ? indexRegistration : null;
+
+    public ContentIndexRegistration? GetContentIndexRegistration(string indexAlias)
+        => GetIndexRegistration(indexAlias) as ContentIndexRegistration;
 }

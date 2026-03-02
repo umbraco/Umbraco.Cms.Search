@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using Examine;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Umbraco.Cms.Search.Core.Models.Configuration;
 using IndexOptions = Umbraco.Cms.Search.Core.Configuration.IndexOptions;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
@@ -18,7 +19,7 @@ internal sealed class ActiveIndexManager : IActiveIndexManager
     {
         _logger = logger;
 
-        foreach (var registration in indexOptions.Value.GetIndexRegistrations())
+        foreach (ContentIndexRegistration registration in indexOptions.Value.GetContentIndexRegistrations())
         {
             _indexes[registration.IndexAlias] = DetermineInitialSlot(registration.IndexAlias, examineManager);
         }
