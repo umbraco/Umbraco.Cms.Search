@@ -15,15 +15,15 @@ namespace Umbraco.Cms.Search.BackOffice.Services;
 
 internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIndexedEntitySearchService
 {
-    private readonly ISearcher _searcher;
+    private readonly ISearcherResolver _searcherResolver;
     private readonly IEntityService _entityService;
     private readonly IBackOfficeSecurityAccessor _backOfficeSecurityAccessor;
     private readonly AppCaches _appCaches;
     private readonly IIdKeyMap _idKeyMap;
 
-    public IndexedEntitySearchService(ISearcher searcher, IEntityService entityService, IBackOfficeSecurityAccessor backOfficeSecurityAccessor, AppCaches appCaches, IIdKeyMap idKeyMap)
+    public IndexedEntitySearchService(ISearcherResolver searcherResolver, IEntityService entityService, IBackOfficeSecurityAccessor backOfficeSecurityAccessor, AppCaches appCaches, IIdKeyMap idKeyMap)
     {
-        _searcher = searcher;
+        _searcherResolver = searcherResolver;
         _entityService = entityService;
         _backOfficeSecurityAccessor = backOfficeSecurityAccessor;
         _appCaches = appCaches;
@@ -99,7 +99,8 @@ internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIn
             }
         }
 
-        SearchResult result = await _searcher.SearchAsync(
+        ISearcher searcher = _searcherResolver.GetRequiredSearcher(indexAlias);
+        SearchResult result = await searcher.SearchAsync(
             indexAlias,
             query: effectiveQuery,
             filters: filters,
