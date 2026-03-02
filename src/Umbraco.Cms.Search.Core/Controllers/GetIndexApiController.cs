@@ -1,10 +1,6 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Umbraco.Cms.Search.Core.Configuration;
-using Umbraco.Cms.Search.Core.Models.Configuration;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Models.ViewModels;
 using Umbraco.Cms.Search.Core.Services;
@@ -14,19 +10,10 @@ namespace Umbraco.Cms.Search.Core.Controllers;
 [ApiVersion("1.0")]
 public class GetIndexApiController : ApiControllerBase
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<GetAllIndexesApiController> _logger;
-    private readonly IndexOptions _options;
+    private readonly IIndexerResolver _indexerResolver;
 
-    public GetIndexApiController(
-        IOptions<IndexOptions> options,
-        IServiceProvider serviceProvider,
-        ILogger<GetAllIndexesApiController> logger)
-    {
-        _serviceProvider = serviceProvider;
-        _logger = logger;
-        _options = options.Value;
-    }
+    public GetIndexApiController(IIndexerResolver indexerResolver)
+        => _indexerResolver = indexerResolver;
 
     [HttpGet("indexes/{indexAlias}")]
     [ProducesResponseType<IndexViewModel>(StatusCodes.Status200OK)]
@@ -39,22 +26,17 @@ public class GetIndexApiController : ApiControllerBase
             return BadRequest("The indexAlias parameter must be provided and cannot be empty.");
         }
 
-        ContentIndexRegistration? indexRegistration = _options.GetContentIndexRegistration(indexAlias);
-        if (indexRegistration is null)
-        {
-            return NotFound("The specified index alias was not found.");
-        }
-
-        if (TryGetIndexer(_serviceProvider, indexRegistration.Indexer, _logger, out IIndexer? indexer) is false)
+        IIndexer? indexer = _indexerResolver.GetIndexer(indexAlias);
+        if (indexer is null)
         {
             return NotFound("Could not resolve the indexer for the specified index.");
         }
 
-        IndexMetadata indexMetadata = await indexer.GetMetadataAsync(indexRegistration.IndexAlias);
+        IndexMetadata indexMetadata = await indexer.GetMetadataAsync(indexAlias);
 
         return Ok(new IndexViewModel
         {
-            IndexAlias = indexRegistration.IndexAlias,
+            IndexAlias = indexAlias,
             DocumentCount = indexMetadata.DocumentCount,
             HealthStatus = indexMetadata.HealthStatus,
         });

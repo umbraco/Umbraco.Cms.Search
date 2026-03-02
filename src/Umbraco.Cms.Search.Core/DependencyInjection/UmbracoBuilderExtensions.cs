@@ -31,6 +31,7 @@ public static class UmbracoBuilderExtensions
     {
         builder.Services.AddSingleton<IContentIndexingService, ContentIndexingService>();
         builder.Services.AddSingleton<ISearcherResolver, SearcherResolver>();
+        builder.Services.AddSingleton<IIndexerResolver, IndexerResolver>();
         builder.Services.AddTransient<IHtmlIndexValueParser, HtmlIndexValueParser>();
 
         builder.Services.AddTransient<IContentIndexingDataCollectionService, ContentIndexingDataCollectionService>();

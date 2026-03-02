@@ -52,6 +52,13 @@ public class CustomIndexRegistrationTests : TestBase
     }
 
     [Test]
+    public void Can_Resolve_Required_Indexer()
+    {
+        IIndexerResolver indexerResolver = GetRequiredService<IIndexerResolver>();
+        Assert.That(indexerResolver.GetRequiredIndexer(IndexAlias), Is.TypeOf<TestIndexerAndSearcher>());
+    }
+
+    [Test]
     public async Task Can_Populate_Custom_Index()
     {
         IIndexer indexer = GetRequiredService<IIndexer>();
