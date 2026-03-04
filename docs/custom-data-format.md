@@ -1,6 +1,6 @@
-# Indexing and searching custom data
+# Indexing and searching custom data formats
 
-Umbraco Search provides extensibility points for indexing and searching custom data that goes beyond standard Umbraco content properties. This is useful when you need to:
+Umbraco Search provides extensibility points for indexing and searching custom data formats that go beyond standard Umbraco Search data format. This is useful when you need to:
 
 - Index data types not covered by the built-in `IndexValue` (e.g., GUIDs, custom objects).
 - Add custom filtering capabilities to the searcher.
