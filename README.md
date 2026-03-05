@@ -13,9 +13,9 @@ Umbraco Search will eventually replace the current search implementation in Umbr
 
 ## Intended audience
 
-At this time, Umbraco Search is intended strictly for developers wanting to experiment with it and help shape its future.
+Umbraco Search is in beta, meaning it's ready to adopt for a wider audience. While changes will continue to happen during the beta period, we do not anticipate any major, breaking changes before the final release.
 
-As we progress with the project, it will eventually be released as an official and production ready add-on for Umbraco v16+.
+As we progress with the project, it will eventually be released as an official and production ready add-on for Umbraco V17 and V18.
 
 ## Installation
 
