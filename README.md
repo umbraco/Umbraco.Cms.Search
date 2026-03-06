@@ -93,6 +93,7 @@ builder.AddDeliveryApiSearch();
 
 - [Searching with Umbraco Search](docs/searching.md) - The `ISearcher` API: filtering, faceting, sorting, pagination, content variations, and protected content.
 - [The Examine search provider](docs/examine-provider.md) - Configuring the Examine/Lucene provider: directory factory, field options, searcher options.
-- [Indexing and searching custom data](docs/custom-extensibility.md) - Custom `IndexValue`, `Indexer`, `Filter`, `Searcher`, and `IContentIndexer` implementations.
+- [Indexing and searching custom data formats](docs/custom-data-format.md) - Custom `IndexValue`, `Indexer`, `Filter`, `Searcher`, and `IContentIndexer` implementations.
 - [The backoffice](docs/backoffice.md) - User guide for interacting with search indexes in the Umbraco backoffice.
 - [Extending the search backoffice](docs/backoffice-extensions.md) - Developer guide for adding detail boxes, entity actions, workspace views, and routable modals.
+- [Handling data from others sources](docs/handling-other-sources.md) - Indexing and searching data that does not originate from Umbraco.
