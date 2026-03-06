@@ -159,7 +159,7 @@ public class Searcher : IExamineSearcher
         AddSorters(searchQuery, sortersAsArray, culture, segment);
 
         // We only need the IndexType and NodeId
-        var selectedFields = new HashSet<string> {Constants.SystemFields.IndexType, "__NodeId" };
+        var selectedFields = new HashSet<string> { ExamineFieldNames.CategoryFieldName, ExamineFieldNames.ItemIdFieldName };
         searchQuery.SelectFields(selectedFields);
 
         ISearchResults results;
@@ -518,7 +518,7 @@ public class Searcher : IExamineSearcher
 
     private static Document? MapToDocument(ISearchResult item)
     {
-        var objectTypeString = item.Values.GetValueOrDefault(Constants.SystemFields.IndexType);
+        var objectTypeString = item.Values.GetValueOrDefault(ExamineFieldNames.CategoryFieldName);
 
         Enum.TryParse(objectTypeString, out UmbracoObjectTypes umbracoObjectType);
 
