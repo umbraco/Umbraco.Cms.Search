@@ -48,7 +48,9 @@ public class ExamineApiController : ExamineApiControllerBase
 
         var indexDocumentViewModels = results.Select(result => new IndexDocumentViewModel()
             {
-                Fields = result.AllValues.Select(kvp => ParseField(kvp.Key, kvp.Value))
+                Fields = result.AllValues
+                    .Where(kvp => ShouldDisplayField(kvp.Key))
+                    .Select(kvp => ParseField(kvp.Key, kvp.Value))
                     .ToList()
                     .AsReadOnly(),
             })
@@ -62,6 +64,10 @@ public class ExamineApiController : ExamineApiControllerBase
 
 
         return Ok(documentViewModel);
+
+        // determines if a field should be displayed to the users:
+        // - system fields (including our own) should be omitted. they all start with "__".
+        bool ShouldDisplayField(string fieldName) => fieldName.StartsWith("__") is false;
     }
 
     private static FieldViewModel ParseField(string fieldName, IEnumerable<string> values)
