@@ -22,6 +22,12 @@ public sealed class IndexOptions
         where TIndexer : class, IIndexer
         where TSearcher : class, ISearcher
         where TContentChangeStrategy : class, IContentChangeStrategy
+        => RegisterContentIndex<TIndexer, TSearcher, TContentChangeStrategy>(indexAlias, false, containedObjectTypes);
+
+    public void RegisterContentIndex<TIndexer, TSearcher, TContentChangeStrategy>(string indexAlias, bool sameOriginOnly, params UmbracoObjectTypes[] containedObjectTypes)
+        where TIndexer : class, IIndexer
+        where TSearcher : class, ISearcher
+        where TContentChangeStrategy : class, IContentChangeStrategy
     {
         ArgumentException.ThrowIfNullOrEmpty("Index alias cannot be empty", nameof(indexAlias));
         if (containedObjectTypes.Length is 0)
@@ -29,7 +35,7 @@ public sealed class IndexOptions
             throw new ArgumentException($"Index \"{indexAlias}\" must define at least one contained object type",  nameof(containedObjectTypes));
         }
 
-        _register[indexAlias] = new ContentIndexRegistration(indexAlias, typeof(TIndexer), typeof(TSearcher), typeof(TContentChangeStrategy), containedObjectTypes.Distinct());
+        _register[indexAlias] = new ContentIndexRegistration(indexAlias, typeof(TIndexer), typeof(TSearcher), typeof(TContentChangeStrategy), containedObjectTypes.Distinct(), sameOriginOnly);
     }
 
     public ContentIndexRegistration[] GetContentIndexRegistrations()

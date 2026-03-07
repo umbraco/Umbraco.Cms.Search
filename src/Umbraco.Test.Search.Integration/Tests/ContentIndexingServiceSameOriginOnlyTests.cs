@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core;
 using Umbraco.Cms.Search.Core.Configuration;
@@ -8,7 +9,7 @@ using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
-public class ContentIndexingServiceExplicitIndexRegistrationsTests : ContentIndexingServiceTestsBase
+public class ContentIndexingServiceSameOriginOnlyTests : ContentIndexingServiceTestsBase
 {
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
@@ -17,18 +18,35 @@ public class ContentIndexingServiceExplicitIndexRegistrationsTests : ContentInde
         builder.Services.AddTransient<TestIndexerAndSearcher>();
         builder.Services.AddTransient<TestContentChangeStrategy>(_ => Strategy);
 
+        var originProviderMock = new Mock<IOriginProvider>();
+        originProviderMock.Setup(m => m.GetCurrent()).Returns("current-origin");
+        builder.Services.AddUnique(originProviderMock.Object);
+
         builder.Services.Configure<IndexOptions>(options =>
         {
-            options.RegisterContentIndex<TestIndexerAndSearcher, TestIndexerAndSearcher, TestContentChangeStrategy>(Constants.IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
-            options.RegisterContentIndex<TestIndexerAndSearcher, TestIndexerAndSearcher, TestContentChangeStrategy>(Constants.IndexAliases.DraftContent, UmbracoObjectTypes.Document);
+            options.RegisterContentIndex<TestIndexerAndSearcher, TestIndexerAndSearcher, TestContentChangeStrategy>(Constants.IndexAliases.PublishedContent, true, UmbracoObjectTypes.Document);
+            options.RegisterContentIndex<TestIndexerAndSearcher, TestIndexerAndSearcher, TestContentChangeStrategy>(Constants.IndexAliases.DraftContent, true, UmbracoObjectTypes.Document);
         });
     }
 
+    [SetUp]
+    public void SetupTest() => Strategy.HandledIndexInfos.Clear();
+
     [Test]
-    public void IndexesAreRegistered()
+    public void IndexesAreIgnoredForOtherOrigin()
     {
         IContentIndexingService sut = GetRequiredService<IContentIndexingService>();
-        sut.Handle([ContentChange.Document(Guid.NewGuid(), ChangeImpact.Refresh, ContentState.Published)], "origin");
+        sut.Handle([ContentChange.Document(Guid.NewGuid(), ChangeImpact.Refresh, ContentState.Published)], "other-origin");
+
+        // no changes handled because the origin differs
+        Assert.That(Strategy.HandledIndexInfos, Has.Count.EqualTo(0));
+    }
+
+    [Test]
+    public void IndexesAreHandledForCurrentOrigin()
+    {
+        IContentIndexingService sut = GetRequiredService<IContentIndexingService>();
+        sut.Handle([ContentChange.Document(Guid.NewGuid(), ChangeImpact.Refresh, ContentState.Published)], "current-origin");
 
         // one change strategy registered (same for both indexes)
         Assert.That(Strategy.HandledIndexInfos, Has.Count.EqualTo(1));

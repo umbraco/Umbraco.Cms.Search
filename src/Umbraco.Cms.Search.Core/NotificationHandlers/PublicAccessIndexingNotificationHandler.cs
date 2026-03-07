@@ -16,12 +16,12 @@ internal sealed class PublicAccessIndexingNotificationHandler : IndexingNotifica
 
     public Task HandleAsync(PublicAccessDetailedCacheRefresherNotification notification, CancellationToken cancellationToken)
     {
-        PublicAccessDetailedCacheRefresher.JsonPayload[] payloads = GetNotificationPayloads<PublicAccessDetailedCacheRefresher.JsonPayload>(notification);
+        PublicAccessDetailedCacheRefresher.JsonPayload[] payloads = GetNotificationPayloads<PublicAccessDetailedCacheRefresher.JsonPayload>(notification, out var origin);
         ContentChange[] changes = payloads
             .Select(payload => ContentChange.Document(payload.ProtectedContentKey, ChangeImpact.RefreshWithDescendants, ContentState.Published))
             .ToArray();
 
-        ExecuteDeferred(() => _contentIndexingService.Handle(changes));
+        ExecuteDeferred(() => _contentIndexingService.Handle(changes, origin));
 
         return Task.CompletedTask;
     }

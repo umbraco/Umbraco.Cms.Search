@@ -15,7 +15,6 @@ internal sealed class RebuildIndexesNotificationHandler :
     INotificationAsyncHandler<ContentTypeChangedNotification>,
     INotificationAsyncHandler<MemberTypeChangedNotification>,
     INotificationAsyncHandler<MediaTypeChangedNotification>
-
 {
     private readonly IContentIndexingService _contentIndexingService;
     private readonly IIndexDocumentService _indexDocumentService;

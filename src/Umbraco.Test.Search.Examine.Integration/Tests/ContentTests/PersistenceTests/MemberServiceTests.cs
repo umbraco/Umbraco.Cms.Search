@@ -119,7 +119,6 @@ public class MemberServiceTests : UmbracoIntegrationTest
     }
 
     [Test]
-    [Ignore("This does not work in 16, as the MemberCacheRefresher passes id, and the IdKeyMap is already cleared, this should work in 17 as it uses key.")]
     public async Task RemovesEntryFromDatabaseAfterDeletion()
     {
         await TestSetup();

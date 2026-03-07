@@ -3,19 +3,22 @@ using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services.Changes;
+using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 namespace Umbraco.Cms.Search.Core.Cache.Media;
 
-internal sealed class DraftMediaNotificationHandler : ContentNotificationHandlerBase,
+internal sealed class DraftMediaNotificationHandler : ContentNotificationHandlerBase<DraftMediaCacheRefresher.JsonPayload>,
     IDistributedCacheNotificationHandler<MediaSavedNotification>,
     IDistributedCacheNotificationHandler<MediaMovedNotification>,
     IDistributedCacheNotificationHandler<MediaMovedToRecycleBinNotification>,
     IDistributedCacheNotificationHandler<MediaDeletedNotification>
 {
-    private readonly DistributedCache _distributedCache;
+    protected override Guid CacheRefresherUniqueId => DraftMediaCacheRefresher.UniqueId;
 
-    public DraftMediaNotificationHandler(DistributedCache distributedCache)
-        => _distributedCache = distributedCache;
+    public DraftMediaNotificationHandler(DistributedCache distributedCache, IOriginProvider originProvider)
+        : base(distributedCache, originProvider)
+    {
+    }
 
     public void Handle(MediaSavedNotification notification)
     {
@@ -24,7 +27,7 @@ internal sealed class DraftMediaNotificationHandler : ContentNotificationHandler
             .Select(entity => new DraftMediaCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.RefreshNode))
             .ToArray();
 
-        _distributedCache.RefreshByPayload(DraftMediaCacheRefresher.UniqueId, payloads);
+        HandlePayloads(payloads);
     }
 
     public void Handle(MediaMovedNotification notification)
@@ -40,7 +43,7 @@ internal sealed class DraftMediaNotificationHandler : ContentNotificationHandler
             .Select(entity => new DraftMediaCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.Remove))
             .ToArray();
 
-        _distributedCache.RefreshByPayload(DraftMediaCacheRefresher.UniqueId, payloads);
+        HandlePayloads(payloads);
     }
 
     private void HandleMove(IEnumerable<MoveEventInfoBase<IMedia>> moveEventInfo)
@@ -50,6 +53,6 @@ internal sealed class DraftMediaNotificationHandler : ContentNotificationHandler
             .Select(entity => new DraftMediaCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.RefreshBranch))
             .ToArray();
 
-        _distributedCache.RefreshByPayload(DraftMediaCacheRefresher.UniqueId, payloads);
+        HandlePayloads(payloads);
     }
 }

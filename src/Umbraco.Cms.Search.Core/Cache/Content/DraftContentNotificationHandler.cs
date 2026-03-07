@@ -3,19 +3,22 @@ using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services.Changes;
+using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 namespace Umbraco.Cms.Search.Core.Cache.Content;
 
-internal sealed class DraftContentNotificationHandler : ContentNotificationHandlerBase,
+internal sealed class DraftContentNotificationHandler : ContentNotificationHandlerBase<DraftContentCacheRefresher.JsonPayload>,
     IDistributedCacheNotificationHandler<ContentSavedNotification>,
     IDistributedCacheNotificationHandler<ContentMovedNotification>,
     IDistributedCacheNotificationHandler<ContentMovedToRecycleBinNotification>,
     IDistributedCacheNotificationHandler<ContentDeletedNotification>
 {
-    private readonly DistributedCache _distributedCache;
+    protected override Guid CacheRefresherUniqueId => DraftContentCacheRefresher.UniqueId;
 
-    public DraftContentNotificationHandler(DistributedCache distributedCache)
-        => _distributedCache = distributedCache;
+    public DraftContentNotificationHandler(DistributedCache distributedCache, IOriginProvider originProvider)
+        : base(distributedCache, originProvider)
+    {
+    }
 
     public void Handle(ContentSavedNotification notification)
     {
@@ -24,7 +27,7 @@ internal sealed class DraftContentNotificationHandler : ContentNotificationHandl
             .Select(entity => new DraftContentCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.RefreshNode))
             .ToArray();
 
-        _distributedCache.RefreshByPayload(DraftContentCacheRefresher.UniqueId, payloads);
+        HandlePayloads(payloads);
     }
 
     public void Handle(ContentMovedNotification notification)
@@ -40,7 +43,7 @@ internal sealed class DraftContentNotificationHandler : ContentNotificationHandl
             .Select(entity => new DraftContentCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.Remove))
             .ToArray();
 
-        _distributedCache.RefreshByPayload(DraftContentCacheRefresher.UniqueId, payloads);
+        HandlePayloads(payloads);
     }
 
     private void HandleMove(IEnumerable<MoveEventInfoBase<IContent>> moveEventInfo)
@@ -50,6 +53,6 @@ internal sealed class DraftContentNotificationHandler : ContentNotificationHandl
             .Select(entity => new DraftContentCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.RefreshBranch))
             .ToArray();
 
-        _distributedCache.RefreshByPayload(DraftContentCacheRefresher.UniqueId, payloads);
+        HandlePayloads(payloads);
     }
 }
