@@ -1,24 +1,34 @@
-﻿using Umbraco.Cms.Core;
+﻿using Microsoft.Extensions.Options;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Cache;
+using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Core.Sync;
+using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Cache.PublicAccess;
 
-internal sealed class PublicAccessNotificationHandler :
+internal sealed class PublicAccessNotificationHandler : ContentNotificationHandlerBase<PublicAccessDetailedCacheRefresherNotification, PublicAccessDetailedCacheRefresher.JsonPayload>,
     IDistributedCacheNotificationHandler<PublicAccessEntrySavedNotification>,
     IDistributedCacheNotificationHandler<PublicAccessEntryDeletedNotification>
 {
-    private readonly DistributedCache _distributedCache;
     private readonly IIdKeyMap _idKeyMap;
 
-    public PublicAccessNotificationHandler(DistributedCache distributedCache, IIdKeyMap idKeyMap)
-    {
-        _distributedCache = distributedCache;
-        _idKeyMap = idKeyMap;
-    }
+    protected override Guid CacheRefresherUniqueId => PublicAccessDetailedCacheRefresher.UniqueId;
+
+    protected override PublicAccessDetailedCacheRefresherNotification CreateCacheRefresherNotification(PublicAccessDetailedCacheRefresher.JsonPayload[] payloads)
+        => new (payloads, MessageType.RefreshByPayload);
+
+    public PublicAccessNotificationHandler(
+        DistributedCache distributedCache,
+        IEventAggregator eventAggregator,
+        IOptions<ContentCacheNotificationOptions> contentCacheNotificationOptions,
+        IIdKeyMap idKeyMap)
+        : base(distributedCache, eventAggregator, contentCacheNotificationOptions)
+        => _idKeyMap = idKeyMap;
 
     public void Handle(PublicAccessEntrySavedNotification notification)
         => Handle(notification.SavedEntities);
@@ -38,6 +48,6 @@ internal sealed class PublicAccessNotificationHandler :
             .WhereNotNull()
             .ToArray();
 
-        _distributedCache.RefreshByPayload(PublicAccessDetailedCacheRefresher.UniqueId, payloads);
+        HandlePayloads(payloads);
     }
 }

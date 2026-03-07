@@ -3,6 +3,7 @@ using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Search.Core.Cache.Content;
 using Umbraco.Cms.Search.Core.Cache.Media;
+using Umbraco.Cms.Search.Core.Cache.Member;
 using Umbraco.Cms.Search.Core.Cache.PublicAccess;
 
 namespace Umbraco.Cms.Search.Core.Cache;
@@ -56,6 +57,9 @@ public static class UmbracoBuilderExtensions
         builder.AddNotificationHandler<MediaMovedNotification, DraftMediaNotificationHandler>();
         builder.AddNotificationHandler<MediaMovedToRecycleBinNotification, DraftMediaNotificationHandler>();
         builder.AddNotificationHandler<MediaDeletedNotification, DraftMediaNotificationHandler>();
+
+        builder.AddNotificationHandler<MemberSavedNotification, DraftMemberNotificationHandler>();
+        builder.AddNotificationHandler<MemberDeletedNotification, DraftMemberNotificationHandler>();
 
         return builder;
     }

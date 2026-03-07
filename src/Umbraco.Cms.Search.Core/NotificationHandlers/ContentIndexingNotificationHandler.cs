@@ -1,44 +1,31 @@
-﻿using Microsoft.Extensions.Logging;
-using Umbraco.Cms.Core;
-using Umbraco.Cms.Core.Cache;
-using Umbraco.Cms.Core.Events;
-using Umbraco.Cms.Core.Models;
-using Umbraco.Cms.Core.Notifications;
+﻿using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Scoping;
-using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.Changes;
 using Umbraco.Cms.Search.Core.Cache.Content;
 using Umbraco.Cms.Search.Core.Cache.Media;
+using Umbraco.Cms.Search.Core.Cache.Member;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.NotificationHandlers;
 
-// TODO: add notification handler for content type changes
-// TODO: add notification handler for language changes (need to handle deletion)
 internal sealed class ContentIndexingNotificationHandler : IndexingNotificationHandlerBase,
     INotificationHandler<PublishedContentCacheRefresherNotification>,
     INotificationHandler<DraftContentCacheRefresherNotification>,
     INotificationHandler<DraftMediaCacheRefresherNotification>,
-    INotificationHandler<MemberCacheRefresherNotification>
+    INotificationHandler<DraftMemberCacheRefresherNotification>
 {
     private readonly IContentIndexingService _contentIndexingService;
-    private readonly IIdKeyMap _idKeyMap;
     private readonly IIndexDocumentService _indexDocumentService;
-    private readonly ILogger<ContentIndexingNotificationHandler> _logger;
 
     public ContentIndexingNotificationHandler(
         ICoreScopeProvider coreScopeProvider,
         IContentIndexingService contentIndexingService,
-        IIdKeyMap idKeyMap,
-        IIndexDocumentService indexDocumentService,
-        ILogger<ContentIndexingNotificationHandler> logger)
+        IIndexDocumentService indexDocumentService)
         : base(coreScopeProvider)
     {
         _contentIndexingService = contentIndexingService;
-        _logger = logger;
-        _idKeyMap = idKeyMap;
         _indexDocumentService = indexDocumentService;
     }
 
@@ -84,24 +71,13 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
         });
     }
 
-    public void Handle(MemberCacheRefresherNotification notification)
-    {
-        MemberCacheRefresher.JsonPayload[] payloads = GetNotificationPayloads<MemberCacheRefresher.JsonPayload>(notification);
-        ContentChange[] changes = payloads
-            .Select(payload =>
-            {
-                Attempt<Guid> attempt = _idKeyMap.GetKeyForId(payload.Id, UmbracoObjectTypes.Member);
-                return attempt.Success
-                    ? ContentChange.Member(attempt.Result, payload.Removed ? ChangeImpact.Remove : ChangeImpact.Refresh, ContentState.Draft)
-                    : null;
-            })
-            .WhereNotNull()
-            .ToArray();
 
-        if (changes.Length != payloads.Length)
-        {
-            _logger.LogError("One or more member cache refresh notifications did not resolve to a content key. Search indexes might be out of sync.");
-        }
+    public void Handle(DraftMemberCacheRefresherNotification notification)
+    {
+        DraftMemberCacheRefresher.JsonPayload[] payloads = GetNotificationPayloads<DraftMemberCacheRefresher.JsonPayload>(notification);
+
+        ContentChange[] changes = MemberChanges(
+            payloads.Select(payload => (payload.MemberKey, payload.ChangeTypes)));
 
         ExecuteDeferred(() =>
         {
@@ -124,6 +100,11 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
         => GetContentChanges(
             payloads,
             (contentKey, changeImpact) => ContentChange.Media(contentKey, changeImpact, ContentState.Draft));
+
+    private ContentChange[] MemberChanges(IEnumerable<(Guid ContentId, TreeChangeTypes ChangeTypes)> payloads)
+        => GetContentChanges(
+            payloads,
+            (contentKey, changeImpact) => ContentChange.Member(contentKey, changeImpact, ContentState.Draft));
 
     private ContentChange[] GetContentChanges(IEnumerable<(Guid ContentId, TreeChangeTypes ChangeTypes)> payloads, Func<Guid, ChangeImpact, ContentChange> contentChangeFactory)
         => payloads

@@ -13,6 +13,7 @@ using Umbraco.Cms.Search.Core.Cache;
 using Umbraco.Cms.Search.Core.Notifications;
 using Umbraco.Cms.Search.Core.Cache.Content;
 using Umbraco.Cms.Search.Core.Cache.Media;
+using Umbraco.Cms.Search.Core.Cache.Member;
 using Umbraco.Cms.Search.Core.Cache.PublicAccess;
 using Umbraco.Cms.Search.Core.Helpers;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
@@ -63,7 +64,7 @@ public static class UmbracoBuilderExtensions
         builder
             .AddNotificationHandler<DraftContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
             .AddNotificationHandler<DraftMediaCacheRefresherNotification, ContentIndexingNotificationHandler>()
-            .AddNotificationHandler<MemberCacheRefresherNotification, ContentIndexingNotificationHandler>()
+            .AddNotificationHandler<DraftMemberCacheRefresherNotification, ContentIndexingNotificationHandler>()
             .AddNotificationHandler<PublishedContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
             .AddNotificationAsyncHandler<PublicAccessDetailedCacheRefresherNotification, PublicAccessIndexingNotificationHandler>();
 
