@@ -33,7 +33,7 @@ public class ContentIndexingServiceSameOriginOnlyTests : ContentIndexingServiceT
     public void SetupTest() => Strategy.HandledIndexInfos.Clear();
 
     [Test]
-    public void IndexesAreIgnoredForOtherOrigin()
+    public void ContentChangesAreIgnoredForOtherOrigin()
     {
         IContentIndexingService sut = GetRequiredService<IContentIndexingService>();
         sut.Handle([ContentChange.Document(Guid.NewGuid(), ChangeImpact.Refresh, ContentState.Published)], "other-origin");
@@ -43,7 +43,7 @@ public class ContentIndexingServiceSameOriginOnlyTests : ContentIndexingServiceT
     }
 
     [Test]
-    public void IndexesAreHandledForCurrentOrigin()
+    public void ContentChangesAreHandledForCurrentOrigin()
     {
         IContentIndexingService sut = GetRequiredService<IContentIndexingService>();
         sut.Handle([ContentChange.Document(Guid.NewGuid(), ChangeImpact.Refresh, ContentState.Published)], "current-origin");
@@ -60,6 +60,34 @@ public class ContentIndexingServiceSameOriginOnlyTests : ContentIndexingServiceT
 
             Assert.That(Strategy.HandledIndexInfos[0][1].IndexAlias, Is.EqualTo(Constants.IndexAliases.DraftContent));
             Assert.That(Strategy.HandledIndexInfos[0][1].Indexer, Is.TypeOf<TestIndexerAndSearcher>());
+        });
+    }
+
+    [Test]
+    public void IndexRebuildsAreIgnoredForOtherOrigin()
+    {
+        IContentIndexingService sut = GetRequiredService<IContentIndexingService>();
+        sut.Rebuild(Constants.IndexAliases.PublishedContent, "other-origin");
+
+        // no changes handled because the origin differs
+        Assert.That(Strategy.HandledIndexInfos, Has.Count.EqualTo(0));
+    }
+
+    [Test]
+    public void IndexRebuildsAreHandledForCurrentOrigin()
+    {
+        IContentIndexingService sut = GetRequiredService<IContentIndexingService>();
+        sut.Rebuild(Constants.IndexAliases.PublishedContent, "current-origin");
+
+        // one change strategy registered (same for both indexes)
+        Assert.That(Strategy.HandledIndexInfos, Has.Count.EqualTo(1));
+        // ...invoked once (a single rebuild)
+        Assert.That(Strategy.HandledIndexInfos[0], Has.Count.EqualTo(1));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Strategy.HandledIndexInfos[0][0].IndexAlias, Is.EqualTo(Constants.IndexAliases.PublishedContent));
+            Assert.That(Strategy.HandledIndexInfos[0][0].Indexer, Is.TypeOf<TestIndexerAndSearcher>());
         });
     }
 }

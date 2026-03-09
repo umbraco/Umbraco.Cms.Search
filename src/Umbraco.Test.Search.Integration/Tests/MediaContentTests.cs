@@ -256,7 +256,7 @@ public class MediaContentTests : MediaTestBase
             MediaService.Save([RootFolder(), ChildFolder(), RootMedia(), ChildMedia(), GrandchildMedia()]);
         }
 
-        ContentIndexingService.Rebuild(IndexAliases.Media);
+        ContentIndexingService.Rebuild(IndexAliases.Media, "N/A");
 
         IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));
@@ -292,7 +292,7 @@ public class MediaContentTests : MediaTestBase
         // - RootMedia and ChildFolder in the recycle bin root
         // - GrandchildMedia in the recycle bin below ChildFolder
 
-        ContentIndexingService.Rebuild(IndexAliases.Media);
+        ContentIndexingService.Rebuild(IndexAliases.Media, "N/A");
 
         IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(5));

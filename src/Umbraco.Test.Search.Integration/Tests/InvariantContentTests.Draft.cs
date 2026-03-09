@@ -336,7 +336,7 @@ public partial class InvariantContentTests
             ContentService.Save([Root(), Child(), Grandchild(), GreatGrandchild()]);
         }
 
-        ContentIndexingService.Rebuild(IndexAliases.DraftContent);
+        ContentIndexingService.Rebuild(IndexAliases.DraftContent, "N/A");
 
         IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -370,7 +370,7 @@ public partial class InvariantContentTests
         // - Child and Grandchild in the recycle bin root
         // - GreatGrandchild in the recycle bin below Grandchild
 
-        ContentIndexingService.Rebuild(IndexAliases.DraftContent);
+        ContentIndexingService.Rebuild(IndexAliases.DraftContent, "N/A");
 
         IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(4));

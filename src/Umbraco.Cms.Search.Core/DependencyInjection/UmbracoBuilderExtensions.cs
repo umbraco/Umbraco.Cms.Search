@@ -8,12 +8,15 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 using Umbraco.Cms.Api.Common.OpenApi;
 using Umbraco.Cms.Api.Management.OpenApi;
 using Umbraco.Cms.Core.DependencyInjection;
-using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Search.Core.Cache;
 using Umbraco.Cms.Search.Core.Notifications;
 using Umbraco.Cms.Search.Core.Cache.Content;
+using Umbraco.Cms.Search.Core.Cache.ContentType;
+using Umbraco.Cms.Search.Core.Cache.Language;
 using Umbraco.Cms.Search.Core.Cache.Media;
+using Umbraco.Cms.Search.Core.Cache.MediaType;
 using Umbraco.Cms.Search.Core.Cache.Member;
+using Umbraco.Cms.Search.Core.Cache.MemberType;
 using Umbraco.Cms.Search.Core.Cache.PublicAccess;
 using Umbraco.Cms.Search.Core.Helpers;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
@@ -55,10 +58,10 @@ public static class UmbracoBuilderExtensions
         builder.Services.AddSingleton<IIndexDocumentService, IndexDocumentService>();
 
         builder
-            .AddNotificationAsyncHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>()
-            .AddNotificationAsyncHandler<ContentTypeChangedNotification, RebuildIndexesNotificationHandler>()
-            .AddNotificationAsyncHandler<MemberTypeChangedNotification, RebuildIndexesNotificationHandler>()
-            .AddNotificationAsyncHandler<MediaTypeChangedNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationAsyncHandler<LanguageCacheRefresherNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationAsyncHandler<ContentTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationAsyncHandler<MemberTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationAsyncHandler<MediaTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
             .AddNotificationAsyncHandler<IndexRebuildStartingNotification, IndexRebuildServerEventNotificationHandler>()
             .AddNotificationAsyncHandler<IndexRebuildCompletedNotification, IndexRebuildServerEventNotificationHandler>();
 

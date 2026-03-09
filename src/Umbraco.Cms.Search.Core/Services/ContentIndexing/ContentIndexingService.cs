@@ -71,7 +71,7 @@ internal sealed class ContentIndexingService : IContentIndexingService
         }
     }
 
-    public void Rebuild(string indexAlias)
+    public void Rebuild(string indexAlias, string origin)
     {
         ContentIndexRegistration? indexRegistration = _indexOptions.GetContentIndexRegistration(indexAlias);
         if (indexRegistration is null)
@@ -80,11 +80,10 @@ internal sealed class ContentIndexingService : IContentIndexingService
             return;
         }
 
-        // TODO: add origin handling here
-        // if (indexRegistration.SameOriginOnly && origin != _originProvider.GetCurrent())
-        // {
-        //     return;
-        // }
+        if (indexRegistration.SameOriginOnly && origin != _originProvider.GetCurrent())
+        {
+            return;
+        }
 
         _backgroundTaskQueue.QueueBackgroundWorkItem(async cancellationToken => await RebuildAsync(indexRegistration, cancellationToken));
     }

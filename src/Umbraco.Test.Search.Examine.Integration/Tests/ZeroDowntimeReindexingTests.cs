@@ -277,7 +277,7 @@ public class ZeroDowntimeReindexingTests : TestBase
         Assert.That(ActiveIndexManager.IsRebuilding(indexAlias), Is.False);
 
         // Trigger full rebuild (synchronous with ImmediateBackgroundTaskQueue)
-        ContentIndexingService.Rebuild(indexAlias);
+        ContentIndexingService.Rebuild(indexAlias, "N/A");
 
         // After the synchronous rebuild, IsRebuilding should be false
         Assert.That(ActiveIndexManager.IsRebuilding(indexAlias), Is.False, "Rebuild should not still be in progress after synchronous completion");
@@ -295,7 +295,7 @@ public class ZeroDowntimeReindexingTests : TestBase
 
         // Trigger full rebuild (synchronous with ImmediateBackgroundTaskQueue).
         // The ZeroDowntimeRebuildNotificationHandler should detect the healthy shadow and swap.
-        ContentIndexingService.Rebuild(indexAlias);
+        ContentIndexingService.Rebuild(indexAlias, "N/A");
 
         var activeAfterRebuild = ActiveIndexManager.ResolveActiveIndexName(indexAlias);
 
@@ -316,7 +316,7 @@ public class ZeroDowntimeReindexingTests : TestBase
         var activeBeforeRebuild = ActiveIndexManager.ResolveActiveIndexName(indexAlias);
 
         // Trigger full rebuild (synchronous with ImmediateBackgroundTaskQueue).
-        ContentIndexingService.Rebuild(indexAlias);
+        ContentIndexingService.Rebuild(indexAlias, "N/A");
 
         // Verify the swap happened
         var activeAfterRebuild = ActiveIndexManager.ResolveActiveIndexName(indexAlias);
