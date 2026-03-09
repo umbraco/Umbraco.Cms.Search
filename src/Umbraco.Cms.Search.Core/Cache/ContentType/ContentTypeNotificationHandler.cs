@@ -8,8 +8,11 @@ internal sealed class ContentTypeNotificationHandler
     : ContentNotificationHandlerBase<ContentTypeCacheRefresher.JsonPayload>,
         IDistributedCacheNotificationHandler<ContentTypeChangedNotification>
 {
-    public ContentTypeNotificationHandler(DistributedCache distributedCache, IOriginProvider originProvider)
-        : base(distributedCache, originProvider)
+    public ContentTypeNotificationHandler(
+        DistributedCache distributedCache,
+        IOriginProvider originProvider,
+        IIndexDocumentService indexDocumentService)
+        : base(distributedCache, originProvider, indexDocumentService)
     {
     }
 
@@ -21,6 +24,8 @@ internal sealed class ContentTypeNotificationHandler
             .Changes
             .Select(change => new ContentTypeCacheRefresher.JsonPayload(change.Item.Key, change.ChangeTypes))
             .ToArray();
+
+        ClearDocumentIndexCacheForStructuralChanges(payloads.Select(payload => payload.ChangeTypes));
 
         HandlePayloads(payloads);
     }

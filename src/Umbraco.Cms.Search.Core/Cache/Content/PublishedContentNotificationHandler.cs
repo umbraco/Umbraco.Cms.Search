@@ -16,8 +16,11 @@ internal sealed class PublishedContentNotificationHandler : ContentNotificationH
 {
     protected override Guid CacheRefresherUniqueId => PublishedContentCacheRefresher.UniqueId;
 
-    public PublishedContentNotificationHandler(DistributedCache distributedCache, IOriginProvider originProvider)
-        : base(distributedCache, originProvider)
+    public PublishedContentNotificationHandler(
+        DistributedCache distributedCache,
+        IOriginProvider originProvider,
+        IIndexDocumentService indexDocumentService)
+        : base(distributedCache, originProvider, indexDocumentService)
     {
     }
 
@@ -25,10 +28,12 @@ internal sealed class PublishedContentNotificationHandler : ContentNotificationH
     {
         // we sometimes get unpublished entities here... filter those out, we don't need them
         IContent[] publishedEntities = notification.PublishedEntities.Where(entity => entity.Published).ToArray();
-        if (publishedEntities.Any() is false)
+        if (publishedEntities.Length is 0)
         {
             return;
         }
+
+        FlushDocumentIndexCache(publishedEntities);
 
         IContent[] topmostEntities = FindTopmostEntities(publishedEntities);
         PublishedContentCacheRefresher.JsonPayload[] payloads = topmostEntities
@@ -53,8 +58,15 @@ internal sealed class PublishedContentNotificationHandler : ContentNotificationH
 
     public void Handle(ContentUnpublishedNotification notification)
     {
-        PublishedContentCacheRefresher.JsonPayload[] payloads = notification
-            .UnpublishedEntities
+        IContent[] unpublishedEntities = notification.UnpublishedEntities.ToArray();
+        if (unpublishedEntities.Length is 0)
+        {
+            return;
+        }
+
+        FlushDocumentIndexCache(unpublishedEntities);
+
+        PublishedContentCacheRefresher.JsonPayload[] payloads = unpublishedEntities
             .Select(entity => new PublishedContentCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.Remove, []))
             .ToArray();
 
@@ -69,11 +81,22 @@ internal sealed class PublishedContentNotificationHandler : ContentNotificationH
 
     private void HandleMove(IEnumerable<MoveEventInfoBase<IContent>> moveEventInfo, TreeChangeTypes changeType)
     {
-        IContent[] topmostEntities = FindTopmostEntities(moveEventInfo.Select(i => i.Entity));
+        IContent[] movedEntities = moveEventInfo.Select(i => i.Entity).ToArray();
+        if (movedEntities.Length is 0)
+        {
+            return;
+        }
+
+        FlushDocumentIndexCache(movedEntities);
+
+        IContent[] topmostEntities = FindTopmostEntities(movedEntities);
         PublishedContentCacheRefresher.JsonPayload[] payloads = topmostEntities
             .Select(entity => new PublishedContentCacheRefresher.JsonPayload(entity.Key, changeType, []))
             .ToArray();
 
         HandlePayloads(payloads);
     }
+
+    private void FlushDocumentIndexCache(IEnumerable<IContent> entities)
+        => FlushDocumentIndexCache(entities.Select(x => x.Key).ToArray(), true);
 }

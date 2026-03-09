@@ -58,10 +58,10 @@ public static class UmbracoBuilderExtensions
         builder.Services.AddSingleton<IIndexDocumentService, IndexDocumentService>();
 
         builder
-            .AddNotificationAsyncHandler<LanguageCacheRefresherNotification, RebuildIndexesNotificationHandler>()
-            .AddNotificationAsyncHandler<ContentTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
-            .AddNotificationAsyncHandler<MemberTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
-            .AddNotificationAsyncHandler<MediaTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationHandler<LanguageCacheRefresherNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationHandler<ContentTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationHandler<MemberTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationHandler<MediaTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
             .AddNotificationAsyncHandler<IndexRebuildStartingNotification, IndexRebuildServerEventNotificationHandler>()
             .AddNotificationAsyncHandler<IndexRebuildCompletedNotification, IndexRebuildServerEventNotificationHandler>();
 

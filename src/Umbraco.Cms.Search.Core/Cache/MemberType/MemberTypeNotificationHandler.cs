@@ -7,8 +7,11 @@ namespace Umbraco.Cms.Search.Core.Cache.MemberType;
 internal sealed class MemberTypeNotificationHandler : ContentNotificationHandlerBase<MemberTypeCacheRefresher.JsonPayload>,
         IDistributedCacheNotificationHandler<MemberTypeChangedNotification>
 {
-    public MemberTypeNotificationHandler(DistributedCache distributedCache, IOriginProvider originProvider)
-        : base(distributedCache, originProvider)
+    public MemberTypeNotificationHandler(
+        DistributedCache distributedCache,
+        IOriginProvider originProvider,
+        IIndexDocumentService indexDocumentService)
+        : base(distributedCache, originProvider, indexDocumentService)
     {
     }
 
@@ -20,6 +23,8 @@ internal sealed class MemberTypeNotificationHandler : ContentNotificationHandler
             .Changes
             .Select(change => new MemberTypeCacheRefresher.JsonPayload(change.Item.Key, change.ChangeTypes))
             .ToArray();
+
+        ClearDocumentIndexCacheForStructuralChanges(payloads.Select(payload => payload.ChangeTypes));
 
         HandlePayloads(payloads);
     }

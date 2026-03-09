@@ -66,7 +66,7 @@ public abstract class TestBase : UmbracoIntegrationTest
         builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
         builder.Services.AddUnique<IServerEventRouter, NoOpServerEventRouter>();
-        builder.AddNotificationAsyncHandler<LanguageCacheRefresherNotification, RebuildIndexesNotificationHandler>();
+        builder.AddNotificationHandler<LanguageCacheRefresherNotification, RebuildIndexesNotificationHandler>();
 
         // the core ConfigureBuilderAttribute won't execute from other assemblies at the moment, so this is a workaround
         var testType = Type.GetType(TestContext.CurrentContext.Test.ClassName!);

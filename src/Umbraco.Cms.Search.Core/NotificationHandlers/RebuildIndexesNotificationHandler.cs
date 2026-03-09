@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+﻿
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
@@ -9,45 +9,38 @@ using Umbraco.Cms.Search.Core.Cache.Language;
 using Umbraco.Cms.Search.Core.Cache.MediaType;
 using Umbraco.Cms.Search.Core.Cache.MemberType;
 using Umbraco.Cms.Search.Core.Configuration;
+using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Configuration;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 namespace Umbraco.Cms.Search.Core.NotificationHandlers;
 
-internal sealed class RebuildIndexesNotificationHandler  : IndexingNotificationHandlerBase,
-    INotificationAsyncHandler<LanguageCacheRefresherNotification>,
-    INotificationAsyncHandler<ContentTypeCacheRefresherNotification>,
-    INotificationAsyncHandler<MemberTypeCacheRefresherNotification>,
-    INotificationAsyncHandler<MediaTypeCacheRefresherNotification>
+internal sealed class RebuildIndexesNotificationHandler : IndexingNotificationHandlerBase,
+    INotificationHandler<LanguageCacheRefresherNotification>,
+    INotificationHandler<ContentTypeCacheRefresherNotification>,
+    INotificationHandler<MemberTypeCacheRefresherNotification>,
+    INotificationHandler<MediaTypeCacheRefresherNotification>
 {
     private readonly IContentIndexingService _contentIndexingService;
-    private readonly IIndexDocumentService _indexDocumentService;
-    private readonly ILogger<RebuildIndexesNotificationHandler> _logger;
     private readonly IndexOptions _options;
 
     public RebuildIndexesNotificationHandler(
         IContentIndexingService contentIndexingService,
-        IIndexDocumentService indexDocumentService,
-        ILogger<RebuildIndexesNotificationHandler> logger,
         IOptions<IndexOptions> options,
         ICoreScopeProvider coreScopeProvider)
         : base(coreScopeProvider)
     {
         _contentIndexingService = contentIndexingService;
-        _indexDocumentService = indexDocumentService;
-        _logger = logger;
         _options = options.Value;
     }
 
-    public async Task HandleAsync(LanguageCacheRefresherNotification notification, CancellationToken cancellationToken)
+    public void Handle(LanguageCacheRefresherNotification notification)
     {
         LanguageCacheRefresher.JsonPayload[] payloads = GetNotificationPayloads<LanguageCacheRefresher.JsonPayload>(notification, out var origin);
         if (payloads.Any(payload => payload.ChangeTypes is LanguageChangeTypes.Delete) is false)
         {
             return;
         }
-
-        await _indexDocumentService.DeleteAllAsync();
 
         foreach (ContentIndexRegistration indexRegistration in _options.GetContentIndexRegistrations())
         {
@@ -58,45 +51,41 @@ internal sealed class RebuildIndexesNotificationHandler  : IndexingNotificationH
         }
     }
 
-    public async Task HandleAsync(ContentTypeCacheRefresherNotification notification, CancellationToken cancellationToken)
+    public void Handle(ContentTypeCacheRefresherNotification notification)
     {
         ContentTypeCacheRefresher.JsonPayload[] payloads = GetNotificationPayloads<ContentTypeCacheRefresher.JsonPayload>(notification, out var origin);
 
-        await HandleContentTypeChangesAsync(payloads.Select(payload => (payload.ContentTypeKey, payload.ChangeTypes)), UmbracoObjectTypes.Document, origin);
+        HandleContentTypeChanges(payloads.Select(payload => (payload.ContentTypeKey, payload.ChangeTypes)), UmbracoObjectTypes.Document, origin);
     }
 
-    public async Task HandleAsync(MemberTypeCacheRefresherNotification notification, CancellationToken cancellationToken)
+    public void Handle(MemberTypeCacheRefresherNotification notification)
     {
         MemberTypeCacheRefresher.JsonPayload[] payloads = GetNotificationPayloads<MemberTypeCacheRefresher.JsonPayload>(notification, out var origin);
 
-        await HandleContentTypeChangesAsync(payloads.Select(payload => (payload.MemberTypeKey, payload.ChangeTypes)), UmbracoObjectTypes.Member, origin);
+        HandleContentTypeChanges(payloads.Select(payload => (payload.MemberTypeKey, payload.ChangeTypes)), UmbracoObjectTypes.Member, origin);
     }
 
-    public async Task HandleAsync(MediaTypeCacheRefresherNotification notification, CancellationToken cancellationToken)
+    public void Handle(MediaTypeCacheRefresherNotification notification)
     {
         MediaTypeCacheRefresher.JsonPayload[] payloads = GetNotificationPayloads<MediaTypeCacheRefresher.JsonPayload>(notification, out var origin);
 
-        await HandleContentTypeChangesAsync(payloads.Select(payload => (payload.MediaTypeKey, payload.ChangeTypes)), UmbracoObjectTypes.Media, origin);
+        HandleContentTypeChanges(payloads.Select(payload => (payload.MediaTypeKey, payload.ChangeTypes)), UmbracoObjectTypes.Media, origin);
     }
 
-    private async Task HandleContentTypeChangesAsync(IEnumerable<(Guid ContentTypeKey, ContentTypeChangeTypes ChangeTypes)> changes, UmbracoObjectTypes objectType, string origin)
+    private void HandleContentTypeChanges(IEnumerable<(Guid ContentTypeKey, ContentTypeChangeTypes ChangeTypes)> changes, UmbracoObjectTypes objectType, string origin)
     {
-        // TODO: rewrite this logic, it will potentially rebuild multiple times
-        foreach ((Guid ContentTypeKey, ContentTypeChangeTypes ChangeTypes) change in changes)
+        if (changes.Any(change => change.ChangeTypes.RequiresIndexRebuild()) is false)
         {
-            if (change.ChangeTypes is not (ContentTypeChangeTypes.RefreshMain or ContentTypeChangeTypes.Remove))
-            {
-                continue;
-            }
+            return;
+        }
 
-            foreach (ContentIndexRegistration indexRegistration in _options.GetContentIndexRegistrations())
-            {
-                if (indexRegistration.ContainedObjectTypes.Contains(objectType))
-                {
-                    await _indexDocumentService.DeleteAllAsync();
-                    _contentIndexingService.Rebuild(indexRegistration.IndexAlias, origin);
-                }
-            }
+        IEnumerable<ContentIndexRegistration> affectedContentIndexRegistrations = _options
+            .GetContentIndexRegistrations()
+            .Where(indexRegistration => indexRegistration.ContainedObjectTypes.Contains(objectType));
+
+        foreach (ContentIndexRegistration indexRegistration in affectedContentIndexRegistrations)
+        {
+            _contentIndexingService.Rebuild(indexRegistration.IndexAlias, origin);
         }
     }
 }

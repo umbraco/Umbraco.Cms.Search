@@ -15,15 +15,25 @@ internal sealed class DraftMediaNotificationHandler : ContentNotificationHandler
 {
     protected override Guid CacheRefresherUniqueId => DraftMediaCacheRefresher.UniqueId;
 
-    public DraftMediaNotificationHandler(DistributedCache distributedCache, IOriginProvider originProvider)
-        : base(distributedCache, originProvider)
+    public DraftMediaNotificationHandler(
+        DistributedCache distributedCache,
+        IOriginProvider originProvider,
+        IIndexDocumentService indexDocumentService)
+        : base(distributedCache, originProvider, indexDocumentService)
     {
     }
 
     public void Handle(MediaSavedNotification notification)
     {
-        DraftMediaCacheRefresher.JsonPayload[] payloads = notification
-            .SavedEntities
+        IMedia[] savedEntities = notification.SavedEntities.ToArray();
+        if (savedEntities.Length is 0)
+        {
+            return;
+        }
+
+        FlushDocumentIndexCache(savedEntities);
+
+        DraftMediaCacheRefresher.JsonPayload[] payloads = savedEntities
             .Select(entity => new DraftMediaCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.RefreshNode))
             .ToArray();
 
@@ -38,8 +48,15 @@ internal sealed class DraftMediaNotificationHandler : ContentNotificationHandler
 
     public void Handle(MediaDeletedNotification notification)
     {
-        DraftMediaCacheRefresher.JsonPayload[] payloads = notification
-            .DeletedEntities
+        IMedia[] deletedEntities = notification.DeletedEntities.ToArray();
+        if (deletedEntities.Length is 0)
+        {
+            return;
+        }
+
+        FlushDocumentIndexCache(deletedEntities);
+
+        DraftMediaCacheRefresher.JsonPayload[] payloads = deletedEntities
             .Select(entity => new DraftMediaCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.Remove))
             .ToArray();
 
@@ -48,11 +65,22 @@ internal sealed class DraftMediaNotificationHandler : ContentNotificationHandler
 
     private void HandleMove(IEnumerable<MoveEventInfoBase<IMedia>> moveEventInfo)
     {
-        IMedia[] topmostEntities = FindTopmostEntities(moveEventInfo.Select(i => i.Entity));
+        IMedia[] movedEntities = moveEventInfo.Select(i => i.Entity).ToArray();
+        if (movedEntities.Length is 0)
+        {
+            return;
+        }
+
+        FlushDocumentIndexCache(movedEntities);
+
+        IMedia[] topmostEntities = FindTopmostEntities(movedEntities);
         DraftMediaCacheRefresher.JsonPayload[] payloads = topmostEntities
             .Select(entity => new DraftMediaCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.RefreshBranch))
             .ToArray();
 
         HandlePayloads(payloads);
     }
+
+    private void FlushDocumentIndexCache(IEnumerable<IMedia> entities)
+        => FlushDocumentIndexCache(entities.Select(x => x.Key).ToArray(), false);
 }

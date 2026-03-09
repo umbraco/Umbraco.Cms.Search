@@ -17,17 +17,12 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
     INotificationHandler<DraftMemberCacheRefresherNotification>
 {
     private readonly IContentIndexingService _contentIndexingService;
-    private readonly IIndexDocumentService _indexDocumentService;
 
     public ContentIndexingNotificationHandler(
         ICoreScopeProvider coreScopeProvider,
-        IContentIndexingService contentIndexingService,
-        IIndexDocumentService indexDocumentService)
+        IContentIndexingService contentIndexingService)
         : base(coreScopeProvider)
-    {
-        _contentIndexingService = contentIndexingService;
-        _indexDocumentService = indexDocumentService;
-    }
+        => _contentIndexingService = contentIndexingService;
 
     public void Handle(PublishedContentCacheRefresherNotification notification)
     {
@@ -36,12 +31,7 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
         ContentChange[] changes = PublishedDocumentChanges(
             payloads.Select(payload => (payload.ContentKey, TreeChangeTypes: payload.ChangeTypes)));
 
-        ExecuteDeferred(() =>
-        {
-            // TODO: this needs to be done by the origin (at publish time)
-            _indexDocumentService.DeleteAsync(changes.Select(x => x.Id).ToArray(), true);
-            _contentIndexingService.Handle(changes, origin);
-        });
+        ExecuteDeferred(() => _contentIndexingService.Handle(changes, origin));
     }
 
     public void Handle(DraftContentCacheRefresherNotification notification)
@@ -51,12 +41,7 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
         ContentChange[] changes = DraftDocumentChanges(
             payloads.Select(payload => (payload.ContentKey, payload.ChangeTypes)));
 
-        ExecuteDeferred(() =>
-        {
-            // TODO: this needs to be done by the origin (at save time)
-            _indexDocumentService.DeleteAsync(changes.Select(x => x.Id).ToArray(), false);
-            _contentIndexingService.Handle(changes, origin);
-        });
+        ExecuteDeferred(() => _contentIndexingService.Handle(changes, origin));
     }
 
     public void Handle(DraftMediaCacheRefresherNotification notification)
@@ -66,12 +51,7 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
         ContentChange[] changes = MediaChanges(
             payloads.Select(payload => (payload.MediaKey, payload.ChangeTypes)));
 
-        ExecuteDeferred(() =>
-        {
-            // TODO: this needs to be done by the origin (at save time)
-            _indexDocumentService.DeleteAsync(changes.Select(x => x.Id).ToArray(), false);
-            _contentIndexingService.Handle(changes, origin);
-        });
+        ExecuteDeferred(() => _contentIndexingService.Handle(changes, origin));
     }
 
 
@@ -82,12 +62,7 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
         ContentChange[] changes = MemberChanges(
             payloads.Select(payload => (payload.MemberKey, payload.ChangeTypes)));
 
-        ExecuteDeferred(() =>
-        {
-            // TODO: this needs to be done by the origin (at save time)
-            _indexDocumentService.DeleteAsync(changes.Select(x => x.Id).ToArray(), false);
-            _contentIndexingService.Handle(changes, origin);
-        });
+        ExecuteDeferred(() => _contentIndexingService.Handle(changes, origin));
     }
 
     private ContentChange[] PublishedDocumentChanges(IEnumerable<(Guid ContentId, TreeChangeTypes ChangeTypes)> payloads)

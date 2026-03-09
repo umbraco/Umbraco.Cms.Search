@@ -29,7 +29,7 @@ public class DocumentTypeTests : SearcherTestBase
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
         base.CustomTestSetup(builder);
-        builder.AddNotificationAsyncHandler<ContentTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>();
+        builder.AddNotificationHandler<ContentTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>();
     }
 
     [Test]

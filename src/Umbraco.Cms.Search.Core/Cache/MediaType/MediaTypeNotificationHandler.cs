@@ -8,8 +8,11 @@ internal sealed class MediaTypeNotificationHandler
     : ContentNotificationHandlerBase<MediaTypeCacheRefresher.JsonPayload>,
         IDistributedCacheNotificationHandler<MediaTypeChangedNotification>
 {
-    public MediaTypeNotificationHandler(DistributedCache distributedCache, IOriginProvider originProvider)
-        : base(distributedCache, originProvider)
+    public MediaTypeNotificationHandler(
+        DistributedCache distributedCache,
+        IOriginProvider originProvider,
+        IIndexDocumentService indexDocumentService)
+        : base(distributedCache, originProvider, indexDocumentService)
     {
     }
 
@@ -21,6 +24,8 @@ internal sealed class MediaTypeNotificationHandler
             .Changes
             .Select(change => new MediaTypeCacheRefresher.JsonPayload(change.Item.Key, change.ChangeTypes))
             .ToArray();
+
+        ClearDocumentIndexCacheForStructuralChanges(payloads.Select(payload => payload.ChangeTypes));
 
         HandlePayloads(payloads);
     }

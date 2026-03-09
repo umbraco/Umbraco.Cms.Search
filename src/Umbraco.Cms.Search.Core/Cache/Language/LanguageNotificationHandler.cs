@@ -1,4 +1,5 @@
 ﻿using Umbraco.Cms.Core.Cache;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
@@ -8,8 +9,11 @@ internal sealed class LanguageNotificationHandler
     : ContentNotificationHandlerBase<LanguageCacheRefresher.JsonPayload>,
         IDistributedCacheNotificationHandler<LanguageDeletedNotification>
 {
-    public LanguageNotificationHandler(DistributedCache distributedCache, IOriginProvider originProvider)
-        : base(distributedCache, originProvider)
+    public LanguageNotificationHandler(
+        DistributedCache distributedCache,
+        IOriginProvider originProvider,
+        IIndexDocumentService indexDocumentService)
+        : base(distributedCache, originProvider, indexDocumentService)
     {
     }
 
@@ -17,8 +21,15 @@ internal sealed class LanguageNotificationHandler
 
     public void Handle(LanguageDeletedNotification notification)
     {
-        LanguageCacheRefresher.JsonPayload[] payloads = notification
-            .DeletedEntities
+        ILanguage[] deletedEntities = notification.DeletedEntities.ToArray();
+        if (deletedEntities.Length is 0)
+        {
+            return;
+        }
+
+        ClearDocumentIndexCache();
+
+        LanguageCacheRefresher.JsonPayload[] payloads = deletedEntities
             .Select(language => new LanguageCacheRefresher.JsonPayload(language.Key, language.IsoCode, LanguageChangeTypes.Delete))
             .ToArray();
 

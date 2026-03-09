@@ -19,8 +19,9 @@ internal sealed class PublicAccessNotificationHandler : ContentNotificationHandl
     public PublicAccessNotificationHandler(
         DistributedCache distributedCache,
         IOriginProvider originProvider,
+        IIndexDocumentService indexDocumentService,
         IIdKeyMap idKeyMap)
-        : base(distributedCache, originProvider)
+        : base(distributedCache, originProvider, indexDocumentService)
         => _idKeyMap = idKeyMap;
 
     public void Handle(PublicAccessEntrySavedNotification notification)
