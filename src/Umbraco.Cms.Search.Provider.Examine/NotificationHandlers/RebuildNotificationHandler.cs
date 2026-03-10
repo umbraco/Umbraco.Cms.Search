@@ -16,6 +16,7 @@ public class RebuildNotificationHandler : INotificationHandler<UmbracoApplicatio
     private readonly IActiveIndexManager _activeIndexManager;
     private readonly IContentIndexingService _contentIndexingService;
     private readonly ILogger<RebuildNotificationHandler> _logger;
+    private readonly IOriginProvider _originProvider;
     private readonly IndexOptions _options;
 
     public RebuildNotificationHandler(
@@ -23,12 +24,14 @@ public class RebuildNotificationHandler : INotificationHandler<UmbracoApplicatio
         IActiveIndexManager activeIndexManager,
         IContentIndexingService contentIndexingService,
         IOptions<IndexOptions> options,
-        ILogger<RebuildNotificationHandler> logger)
+        ILogger<RebuildNotificationHandler> logger,
+        IOriginProvider originProvider)
     {
         _examineManager = examineManager;
         _activeIndexManager = activeIndexManager;
         _contentIndexingService = contentIndexingService;
         _logger = logger;
+        _originProvider = originProvider;
         _options = options.Value;
     }
 
@@ -54,7 +57,7 @@ public class RebuildNotificationHandler : INotificationHandler<UmbracoApplicatio
             }
 
             _logger.LogInformation("Rebuilding index {IndexRegistrationIndexAlias}", indexRegistration.IndexAlias);
-            _contentIndexingService.Rebuild(indexRegistration.IndexAlias);
+            _contentIndexingService.Rebuild(indexRegistration.IndexAlias, _originProvider.GetCurrent());
         }
     }
 }

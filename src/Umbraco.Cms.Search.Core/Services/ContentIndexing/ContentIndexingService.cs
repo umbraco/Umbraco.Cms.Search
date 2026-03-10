@@ -18,42 +18,32 @@ internal sealed class ContentIndexingService : IContentIndexingService
     private readonly ILogger<ContentIndexingService> _logger;
     private readonly IndexOptions _indexOptions;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IOriginProvider _originProvider;
 
     public ContentIndexingService(
         IBackgroundTaskQueue backgroundTaskQueue,
         IEventAggregator eventAggregator,
         ILogger<ContentIndexingService> logger,
         IOptions<IndexOptions> indexOptions,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        IOriginProvider originProvider)
     {
         _backgroundTaskQueue = backgroundTaskQueue;
         _eventAggregator = eventAggregator;
         _logger = logger;
         _indexOptions = indexOptions.Value;
         _serviceProvider = serviceProvider;
+        _originProvider = originProvider;
     }
 
-    public void Handle(IEnumerable<ContentChange> changes)
-        => _backgroundTaskQueue.QueueBackgroundWorkItem(async cancellationToken => await HandleAsync(changes, cancellationToken));
-
-    public void Rebuild(string indexAlias)
-    {
-        ContentIndexRegistration? indexRegistration = _indexOptions.GetContentIndexRegistration(indexAlias);
-        if (indexRegistration is null)
-        {
-            _logger.LogError("Cannot rebuild index - no index registration found for alias: {indexAlias}", indexAlias);
-            return;
-        }
-
-        _backgroundTaskQueue.QueueBackgroundWorkItem(async cancellationToken => await RebuildAsync(indexRegistration, cancellationToken));
-    }
-
-    private async Task HandleAsync(IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
+    public void Handle(IEnumerable<ContentChange> changes, string origin)
     {
         ContentChange[] changesAsArray = changes as ContentChange[] ?? changes.ToArray();
 
+        var currentOrigin = _originProvider.GetCurrent();
         IEnumerable<IGrouping<Type, ContentIndexRegistration>> indexRegistrationsByStrategyType = _indexOptions
             .GetContentIndexRegistrations()
+            .Where(registration => registration.SameOriginOnly is false || origin == currentOrigin)
             .GroupBy(r => r.ContentChangeStrategy);
 
         foreach (IGrouping<Type, ContentIndexRegistration> group in indexRegistrationsByStrategyType)
@@ -77,8 +67,25 @@ internal sealed class ContentIndexingService : IContentIndexingService
                 continue;
             }
 
-            await contentChangeStrategy.HandleAsync(indexInfos, changesAsArray, cancellationToken);
+            _backgroundTaskQueue.QueueBackgroundWorkItem(async cancellationToken => await contentChangeStrategy.HandleAsync(indexInfos, changesAsArray, cancellationToken));
         }
+    }
+
+    public void Rebuild(string indexAlias, string origin)
+    {
+        ContentIndexRegistration? indexRegistration = _indexOptions.GetContentIndexRegistration(indexAlias);
+        if (indexRegistration is null)
+        {
+            _logger.LogError("Cannot rebuild index - no index registration found for alias: {indexAlias}", indexAlias);
+            return;
+        }
+
+        if (indexRegistration.SameOriginOnly && origin != _originProvider.GetCurrent())
+        {
+            return;
+        }
+
+        _backgroundTaskQueue.QueueBackgroundWorkItem(async cancellationToken => await RebuildAsync(indexRegistration, cancellationToken));
     }
 
     private async Task RebuildAsync(ContentIndexRegistration indexRegistration, CancellationToken cancellationToken)

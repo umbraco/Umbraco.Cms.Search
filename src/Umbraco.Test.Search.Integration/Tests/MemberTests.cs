@@ -110,7 +110,7 @@ public class MemberTests : ContentBaseTestBase
             MemberService.Save([MemberOne(), MemberTwo(), MemberThree()]);
         }
 
-        ContentIndexingService.Rebuild(IndexAliases.Member);
+        ContentIndexingService.Rebuild(IndexAliases.Member, DefaultOrigin);
 
         IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Member);
         Assert.That(documents, Has.Count.EqualTo(3));

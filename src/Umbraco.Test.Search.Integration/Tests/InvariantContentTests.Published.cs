@@ -264,7 +264,7 @@ public partial class InvariantContentTests
     public void PublishedStructure_RebuildIndexYieldsAllDocuments()
     {
         ContentService.PublishBranch(Root(), PublishBranchFilter.IncludeUnpublished, ["*"]);
-        ContentIndexingService.Rebuild(IndexAliases.PublishedContent);
+        ContentIndexingService.Rebuild(IndexAliases.PublishedContent, DefaultOrigin);
 
         IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(4));
@@ -298,7 +298,7 @@ public partial class InvariantContentTests
         // - Child and Grandchild in the recycle bin root
         // - GreatGrandchild in the recycle bin below Grandchild
 
-        ContentIndexingService.Rebuild(IndexAliases.PublishedContent);
+        ContentIndexingService.Rebuild(IndexAliases.PublishedContent, DefaultOrigin);
 
         IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
         Assert.That(documents, Has.Count.EqualTo(1));

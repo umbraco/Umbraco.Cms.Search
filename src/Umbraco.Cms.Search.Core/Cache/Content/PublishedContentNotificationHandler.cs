@@ -3,29 +3,37 @@ using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services.Changes;
+using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Cache.Content;
 
-internal sealed class PublishedContentNotificationHandler : ContentNotificationHandlerBase,
+internal sealed class PublishedContentNotificationHandler : ContentNotificationHandlerBase<PublishedContentCacheRefresher.JsonPayload>,
     IDistributedCacheNotificationHandler<ContentPublishedNotification>,
     IDistributedCacheNotificationHandler<ContentUnpublishedNotification>,
     IDistributedCacheNotificationHandler<ContentMovedNotification>,
     INotificationHandler<ContentMovedToRecycleBinNotification>
 {
-    private readonly DistributedCache _distributedCache;
+    protected override Guid CacheRefresherUniqueId => PublishedContentCacheRefresher.UniqueId;
 
-    public PublishedContentNotificationHandler(DistributedCache distributedCache)
-        => _distributedCache = distributedCache;
+    public PublishedContentNotificationHandler(
+        DistributedCache distributedCache,
+        IOriginProvider originProvider,
+        IIndexDocumentService indexDocumentService)
+        : base(distributedCache, originProvider, indexDocumentService)
+    {
+    }
 
     public void Handle(ContentPublishedNotification notification)
     {
         // we sometimes get unpublished entities here... filter those out, we don't need them
         IContent[] publishedEntities = notification.PublishedEntities.Where(entity => entity.Published).ToArray();
-        if (publishedEntities.Any() is false)
+        if (publishedEntities.Length is 0)
         {
             return;
         }
+
+        FlushDocumentIndexCache(publishedEntities);
 
         IContent[] topmostEntities = FindTopmostEntities(publishedEntities);
         PublishedContentCacheRefresher.JsonPayload[] payloads = topmostEntities
@@ -45,17 +53,24 @@ internal sealed class PublishedContentNotificationHandler : ContentNotificationH
             .WhereNotNull()
             .ToArray();
 
-        _distributedCache.RefreshByPayload(PublishedContentCacheRefresher.UniqueId, payloads);
+        HandlePayloads(payloads);
     }
 
     public void Handle(ContentUnpublishedNotification notification)
     {
-        PublishedContentCacheRefresher.JsonPayload[] payloads = notification
-            .UnpublishedEntities
+        IContent[] unpublishedEntities = notification.UnpublishedEntities.ToArray();
+        if (unpublishedEntities.Length is 0)
+        {
+            return;
+        }
+
+        FlushDocumentIndexCache(unpublishedEntities);
+
+        PublishedContentCacheRefresher.JsonPayload[] payloads = unpublishedEntities
             .Select(entity => new PublishedContentCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.Remove, []))
             .ToArray();
 
-        _distributedCache.RefreshByPayload(PublishedContentCacheRefresher.UniqueId, payloads);
+        HandlePayloads(payloads);
     }
 
     public void Handle(ContentMovedNotification notification)
@@ -66,11 +81,22 @@ internal sealed class PublishedContentNotificationHandler : ContentNotificationH
 
     private void HandleMove(IEnumerable<MoveEventInfoBase<IContent>> moveEventInfo, TreeChangeTypes changeType)
     {
-        IContent[] topmostEntities = FindTopmostEntities(moveEventInfo.Select(i => i.Entity));
+        IContent[] movedEntities = moveEventInfo.Select(i => i.Entity).ToArray();
+        if (movedEntities.Length is 0)
+        {
+            return;
+        }
+
+        FlushDocumentIndexCache(movedEntities);
+
+        IContent[] topmostEntities = FindTopmostEntities(movedEntities);
         PublishedContentCacheRefresher.JsonPayload[] payloads = topmostEntities
             .Select(entity => new PublishedContentCacheRefresher.JsonPayload(entity.Key, changeType, []))
             .ToArray();
 
-        _distributedCache.RefreshByPayload(PublishedContentCacheRefresher.UniqueId, payloads);
+        HandlePayloads(payloads);
     }
+
+    private void FlushDocumentIndexCache(IEnumerable<IContent> entities)
+        => FlushDocumentIndexCache(entities.Select(x => x.Key).ToArray(), true);
 }

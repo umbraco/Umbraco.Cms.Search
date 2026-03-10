@@ -13,10 +13,12 @@ public class RebuildIndexApiController : ApiControllerBase
 {
     private readonly IContentIndexingService _contentIndexingService;
     private readonly IndexOptions _options;
+    private readonly IOriginProvider _originProvider;
 
-    public RebuildIndexApiController(IContentIndexingService contentIndexingService, IOptions<IndexOptions> options)
+    public RebuildIndexApiController(IContentIndexingService contentIndexingService, IOptions<IndexOptions> options, IOriginProvider originProvider)
     {
         _contentIndexingService = contentIndexingService;
+        _originProvider = originProvider;
         _options = options.Value;
     }
 
@@ -38,7 +40,7 @@ public class RebuildIndexApiController : ApiControllerBase
             return NotFound("The specified index alias was not found.");
         }
 
-        _contentIndexingService.Rebuild(indexAlias);
+        _contentIndexingService.Rebuild(indexAlias, _originProvider.GetCurrent());
         return Ok();
     }
 }

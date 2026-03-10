@@ -31,7 +31,7 @@ public class ContentIndexingServiceImplicitIndexRegistrationsTests : ContentInde
     public void IndexesAreRegistered()
     {
         IContentIndexingService sut = GetRequiredService<IContentIndexingService>();
-        sut.Handle([ContentChange.Document(Guid.NewGuid(), ChangeImpact.Refresh, ContentState.Published)]);
+        sut.Handle([ContentChange.Document(Guid.NewGuid(), ChangeImpact.Refresh, ContentState.Published)], "origin");
 
         // two different change strategies registered (although it's the implementation)
         Assert.That(Strategy.HandledIndexInfos, Has.Count.EqualTo(2));

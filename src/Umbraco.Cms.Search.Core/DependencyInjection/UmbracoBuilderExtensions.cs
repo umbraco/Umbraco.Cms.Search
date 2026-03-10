@@ -8,11 +8,15 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 using Umbraco.Cms.Api.Common.OpenApi;
 using Umbraco.Cms.Api.Management.OpenApi;
 using Umbraco.Cms.Core.DependencyInjection;
-using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Search.Core.Cache;
 using Umbraco.Cms.Search.Core.Notifications;
 using Umbraco.Cms.Search.Core.Cache.Content;
+using Umbraco.Cms.Search.Core.Cache.ContentType;
+using Umbraco.Cms.Search.Core.Cache.Language;
 using Umbraco.Cms.Search.Core.Cache.Media;
+using Umbraco.Cms.Search.Core.Cache.MediaType;
+using Umbraco.Cms.Search.Core.Cache.Member;
+using Umbraco.Cms.Search.Core.Cache.MemberType;
 using Umbraco.Cms.Search.Core.Cache.PublicAccess;
 using Umbraco.Cms.Search.Core.Helpers;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
@@ -30,6 +34,7 @@ public static class UmbracoBuilderExtensions
     public static IUmbracoBuilder AddSearchCore(this IUmbracoBuilder builder)
     {
         builder.Services.AddSingleton<IContentIndexingService, ContentIndexingService>();
+        builder.Services.AddSingleton<IOriginProvider, OriginProvider>();
         builder.Services.AddSingleton<ISearcherResolver, SearcherResolver>();
         builder.Services.AddSingleton<IIndexerResolver, IndexerResolver>();
         builder.Services.AddTransient<IHtmlIndexValueParser, HtmlIndexValueParser>();
@@ -53,17 +58,17 @@ public static class UmbracoBuilderExtensions
         builder.Services.AddSingleton<IIndexDocumentService, IndexDocumentService>();
 
         builder
-            .AddNotificationAsyncHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>()
-            .AddNotificationAsyncHandler<ContentTypeChangedNotification, RebuildIndexesNotificationHandler>()
-            .AddNotificationAsyncHandler<MemberTypeChangedNotification, RebuildIndexesNotificationHandler>()
-            .AddNotificationAsyncHandler<MediaTypeChangedNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationHandler<LanguageCacheRefresherNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationHandler<ContentTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationHandler<MemberTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationHandler<MediaTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
             .AddNotificationAsyncHandler<IndexRebuildStartingNotification, IndexRebuildServerEventNotificationHandler>()
             .AddNotificationAsyncHandler<IndexRebuildCompletedNotification, IndexRebuildServerEventNotificationHandler>();
 
         builder
             .AddNotificationHandler<DraftContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
             .AddNotificationHandler<DraftMediaCacheRefresherNotification, ContentIndexingNotificationHandler>()
-            .AddNotificationHandler<MemberCacheRefresherNotification, ContentIndexingNotificationHandler>()
+            .AddNotificationHandler<DraftMemberCacheRefresherNotification, ContentIndexingNotificationHandler>()
             .AddNotificationHandler<PublishedContentCacheRefresherNotification, ContentIndexingNotificationHandler>()
             .AddNotificationAsyncHandler<PublicAccessDetailedCacheRefresherNotification, PublicAccessIndexingNotificationHandler>();
 
