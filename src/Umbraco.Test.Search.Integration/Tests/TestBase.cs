@@ -18,6 +18,11 @@ namespace Umbraco.Test.Search.Integration.Tests;
 
 public abstract class TestBase : UmbracoIntegrationTest
 {
+    // these tests all run against the test indexer, which does not care about the origin
+    // of content changes, so the origin value does not matter unless explicitly stated
+    // by the test case itself.
+    internal const string DefaultOrigin = "does-not-matter";
+
     internal static class IndexAliases
     {
         public const string PublishedContent = Cms.Search.Core.Constants.IndexAliases.PublishedContent;

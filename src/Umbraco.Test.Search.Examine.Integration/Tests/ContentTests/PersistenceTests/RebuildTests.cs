@@ -105,7 +105,7 @@ public class RebuildTests : UmbracoIntegrationTest
         }
 
         // Trigger rebuild
-        ContentIndexingService.Rebuild(indexAlias, "N/A");
+        ContentIndexingService.Rebuild(indexAlias, TestBase.DefaultOrigin);
 
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
@@ -134,7 +134,7 @@ public class RebuildTests : UmbracoIntegrationTest
         }
 
         // Trigger rebuild
-        ContentIndexingService.Rebuild(indexAlias, "N/A");
+        ContentIndexingService.Rebuild(indexAlias, TestBase.DefaultOrigin);
 
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
@@ -186,7 +186,7 @@ public class RebuildTests : UmbracoIntegrationTest
         }
 
         // Trigger rebuild with useDatabase=false (should recalculate, not use stale DB data)
-        ContentIndexingService.Rebuild(indexAlias, "N/A");
+        ContentIndexingService.Rebuild(indexAlias, TestBase.DefaultOrigin);
 
         using (ScopeProvider.CreateScope(autoComplete: true))
         {

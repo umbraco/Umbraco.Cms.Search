@@ -15,10 +15,14 @@ internal abstract class IndexingNotificationHandlerBase
     protected T[] GetNotificationPayloads<T>(CacheRefresherNotification notification, out string origin)
     {
         if (notification.MessageType != MessageType.RefreshByPayload
-            || notification.MessageObject is not ContentCacheRefresherNotificationPayload<T>[] payloads
-            || payloads.Length != 1)
+            || notification.MessageObject is not ContentCacheRefresherNotificationPayload<T>[] payloads)
         {
-            throw new NotSupportedException();
+            throw new NotSupportedException($"Expected a cache refresher notification payload type.");
+        }
+
+        if (payloads.Length is not 1)
+        {
+            throw new InvalidOperationException("Expected exactly one cache refresher notification payload.");
         }
 
         origin = payloads[0].Origin;
