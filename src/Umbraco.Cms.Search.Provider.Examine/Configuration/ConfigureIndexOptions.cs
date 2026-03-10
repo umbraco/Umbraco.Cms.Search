@@ -133,7 +133,6 @@ internal sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirec
         [
             new() { PropertyName = Constants.SystemFields.Protection, FieldValues = FieldValues.Keywords },
             new() { PropertyName = Constants.SystemFields.Culture, FieldValues = FieldValues.Keywords },
-            new() { PropertyName = Constants.SystemFields.Segment, FieldValues = FieldValues.Keywords },
             new() { PropertyName = Constants.SystemFields.AggregatedTexts, FieldValues = FieldValues.Texts },
             new() { PropertyName = Constants.SystemFields.AggregatedTextsR1, FieldValues = FieldValues.Texts },
             new() { PropertyName = Constants.SystemFields.AggregatedTextsR2, FieldValues = FieldValues.Texts },
