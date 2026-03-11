@@ -23,22 +23,25 @@ internal sealed class DraftContentNotificationHandler : ContentNotificationHandl
     {
     }
 
-    public void Handle(ContentSavedNotification notification)
+    public void Refresh(IEnumerable<IContent> entities)
     {
-        IContent[] savedEntities = notification.SavedEntities.ToArray();
-        if (savedEntities.Length is 0)
+        IContent[] entitiesAsArray = entities as IContent[] ?? entities.ToArray();
+        if (entitiesAsArray.Length is 0)
         {
             return;
         }
 
-        FlushDocumentIndexCache(savedEntities);
+        FlushDocumentIndexCache(entitiesAsArray);
 
-        DraftContentCacheRefresher.JsonPayload[] payloads = savedEntities
+        DraftContentCacheRefresher.JsonPayload[] payloads = entitiesAsArray
             .Select(entity => new DraftContentCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.RefreshNode))
             .ToArray();
 
         HandlePayloads(payloads);
     }
+
+    public void Handle(ContentSavedNotification notification)
+        => Refresh(notification.SavedEntities);
 
     public void Handle(ContentMovedNotification notification)
         => HandleMove(notification.MoveInfoCollection);

@@ -57,6 +57,13 @@ public static class UmbracoBuilderExtensions
         builder.Services.AddSingleton<IIndexDocumentRepository, IndexDocumentRepository>();
         builder.Services.AddSingleton<IIndexDocumentService, IndexDocumentService>();
 
+        // we need these notification handlers explicitly registered for the distributed content index refresher
+        builder.Services.AddTransient<DraftContentNotificationHandler>();
+        builder.Services.AddTransient<PublishedContentNotificationHandler>();
+        builder.Services.AddTransient<DraftMediaNotificationHandler>();
+        builder.Services.AddTransient<DraftMemberNotificationHandler>();
+        builder.Services.AddTransient<IDistributedContentIndexRefresher, DistributedContentIndexRefresher>();
+
         builder
             .AddNotificationHandler<LanguageCacheRefresherNotification, RebuildIndexesNotificationHandler>()
             .AddNotificationHandler<ContentTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
