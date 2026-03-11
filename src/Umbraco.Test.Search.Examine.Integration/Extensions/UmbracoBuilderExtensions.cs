@@ -20,7 +20,7 @@ internal static class UmbracoBuilderExtensions
         builder.AddNotificationHandler<MemberSavedNotification, MemberSavedDistributedCacheNotificationHandler>();
         builder.AddNotificationHandler<MemberDeletedNotification, MemberDeletedDistributedCacheNotificationHandler>();
         builder.AddNotificationHandler<IndexRebuildStartingNotification, ZeroDowntimeRebuildNotificationHandler>();
-        builder.AddNotificationHandler<IndexRebuildCompletedNotification, ZeroDowntimeRebuildNotificationHandler>();
+        builder.AddNotificationAsyncHandler<IndexRebuildCompletedNotification, ZeroDowntimeRebuildNotificationHandler>();
 
         return builder;
     }
