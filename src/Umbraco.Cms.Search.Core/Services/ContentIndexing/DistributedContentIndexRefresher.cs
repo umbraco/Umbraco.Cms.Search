@@ -6,7 +6,7 @@ using Umbraco.Cms.Search.Core.Models.Indexing;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
-internal class DistributedContentIndexRefresher : IDistributedContentIndexRefresher
+internal sealed class DistributedContentIndexRefresher : IDistributedContentIndexRefresher
 {
     private readonly DraftContentNotificationHandler _draftContentNotificationHandler;
     private readonly PublishedContentNotificationHandler _publishedContentNotificationHandler;
