@@ -24,6 +24,28 @@ internal sealed class PublishedContentNotificationHandler : ContentNotificationH
     {
     }
 
+
+    public void Refresh(IEnumerable<IContent> entities)
+    {
+        IContent[] entitiesAsArray = entities as IContent[] ?? entities.ToArray();
+        if (entitiesAsArray.Length is 0)
+        {
+            return;
+        }
+
+        FlushDocumentIndexCache(entitiesAsArray);
+
+        PublishedContentCacheRefresher.JsonPayload[] payloads = entitiesAsArray
+            .Select(entity =>
+                new PublishedContentCacheRefresher.JsonPayload(
+                    entity.Key,
+                    TreeChangeTypes.RefreshNode,
+                    entity.PublishedCultures.ToArray()))
+            .ToArray();
+
+        HandlePayloads(payloads);
+    }
+
     public void Handle(ContentPublishedNotification notification)
     {
         // we sometimes get unpublished entities here... filter those out, we don't need them

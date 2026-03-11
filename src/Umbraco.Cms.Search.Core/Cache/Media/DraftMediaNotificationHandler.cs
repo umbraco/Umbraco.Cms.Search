@@ -23,22 +23,25 @@ internal sealed class DraftMediaNotificationHandler : ContentNotificationHandler
     {
     }
 
-    public void Handle(MediaSavedNotification notification)
+    public void Refresh(IEnumerable<IMedia> entities)
     {
-        IMedia[] savedEntities = notification.SavedEntities.ToArray();
-        if (savedEntities.Length is 0)
+        IMedia[] entitiesAsArray = entities as IMedia[] ?? entities.ToArray();
+        if (entitiesAsArray.Length is 0)
         {
             return;
         }
 
-        FlushDocumentIndexCache(savedEntities);
+        FlushDocumentIndexCache(entitiesAsArray);
 
-        DraftMediaCacheRefresher.JsonPayload[] payloads = savedEntities
+        DraftMediaCacheRefresher.JsonPayload[] payloads = entitiesAsArray
             .Select(entity => new DraftMediaCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.RefreshNode))
             .ToArray();
 
         HandlePayloads(payloads);
     }
+
+    public void Handle(MediaSavedNotification notification)
+        => Refresh(notification.SavedEntities);
 
     public void Handle(MediaMovedNotification notification)
         => HandleMove(notification.MoveInfoCollection);
