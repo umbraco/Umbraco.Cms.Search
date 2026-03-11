@@ -120,8 +120,5 @@ internal sealed class PublishedContentNotificationHandler : ContentNotificationH
     }
 
     private void FlushDocumentIndexCache(IEnumerable<IContent> entities)
-        => FlushDocumentIndexCache(entities.Select(x => x.Key).ToArray());
-
-    private void FlushDocumentIndexCache(Guid[] ids)
-        => FlushDocumentIndexCache(ids, true);
+        => FlushDocumentIndexCache(entities.Select(x => x.Key).ToArray(), true);
 }
