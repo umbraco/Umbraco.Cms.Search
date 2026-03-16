@@ -97,3 +97,4 @@ builder.AddDeliveryApiSearch();
 - [The backoffice](docs/backoffice.md) - User guide for interacting with search indexes in the Umbraco backoffice.
 - [Extending the search backoffice](docs/backoffice-extensions.md) - Developer guide for adding detail boxes, entity actions, workspace views, and routable modals.
 - [Handling data from others sources](docs/handling-other-sources.md) - Indexing and searching data that does not originate from Umbraco.
+- [Reindexing content programmatically](docs/reindexing-content-programmatically.md) - How to trigger reindexing of content programmatically.
