@@ -20,7 +20,7 @@ As we progress with the project, it will eventually be released as an official a
 ## Installation
 
 > [!IMPORTANT]
-> Umbraco Search is compatible with Umbraco v16 and beyond.
+> Umbraco Search is only compatible with Umbraco v17 at this time.
 
 To get started, install Umbraco Search and the Examine search provider from NuGet:
 
