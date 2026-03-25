@@ -12,6 +12,7 @@ using Umbraco.Cms.Search.Core.Cache;
 using Umbraco.Cms.Search.Core.Notifications;
 using Umbraco.Cms.Search.Core.Cache.Content;
 using Umbraco.Cms.Search.Core.Cache.ContentType;
+using Umbraco.Cms.Search.Core.Cache.Index;
 using Umbraco.Cms.Search.Core.Cache.Language;
 using Umbraco.Cms.Search.Core.Cache.Media;
 using Umbraco.Cms.Search.Core.Cache.MediaType;
@@ -62,13 +63,17 @@ public static class UmbracoBuilderExtensions
         builder.Services.AddTransient<PublishedContentNotificationHandler>();
         builder.Services.AddTransient<DraftMediaNotificationHandler>();
         builder.Services.AddTransient<DraftMemberNotificationHandler>();
+
+        builder.Services.AddTransient<RebuildIndexNotificationHandler>();
         builder.Services.AddTransient<IDistributedContentIndexRefresher, DistributedContentIndexRefresher>();
+        builder.Services.AddTransient<IDistributedContentIndexRebuilder, DistributedContentIndexRebuilder>();
 
         builder
             .AddNotificationHandler<LanguageCacheRefresherNotification, RebuildIndexesNotificationHandler>()
             .AddNotificationHandler<ContentTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
             .AddNotificationHandler<MemberTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
             .AddNotificationHandler<MediaTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationHandler<RebuildIndexCacheRefresherNotification, RebuildIndexesNotificationHandler>()
             .AddNotificationAsyncHandler<IndexRebuildStartingNotification, IndexRebuildServerEventNotificationHandler>()
             .AddNotificationAsyncHandler<IndexRebuildCompletedNotification, IndexRebuildServerEventNotificationHandler>();
 
