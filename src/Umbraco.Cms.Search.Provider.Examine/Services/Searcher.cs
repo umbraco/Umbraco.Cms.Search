@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Collections.Concurrent;
+using System.Reflection;
 using Examine;
 using Examine.Lucene;
 using Examine.Search;
@@ -24,6 +25,7 @@ namespace Umbraco.Cms.Search.Provider.Examine.Services;
 public class Searcher : IExamineSearcher
 {
     private readonly IActiveIndexManager _activeIndexManager;
+    private static readonly ConcurrentDictionary<string, bool> InitializedIndexes = new();
 
     public Searcher(IExamineManager examineManager, IOptions<SearcherOptions> searcherOptions, IActiveIndexManager activeIndexManager)
     {
@@ -67,6 +69,7 @@ public class Searcher : IExamineSearcher
             return new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>());
         }
 
+        EnsureFieldAnalyzersLoaded(index);
         SearchResult? searchResult;
 
         if (SearcherOptions.ExpandFacetValues)
@@ -84,7 +87,6 @@ public class Searcher : IExamineSearcher
                 Filter[] effectiveFilters = filtersAsArray!.Where(filter => filter.FieldName != facet.FieldName).ToArray();
                 facetFilterResults.AddRange(Search(facetSearchQuery, effectiveFilters, [facet], null, culture, segment, 0, 0).Facets);
             }
-
             SearchResult documentsSearchResult = Search(CreateBaseQuery(), filtersAsArray, facetsAsArray?.Except(filterFacets), sorters, culture, segment, skip, take);
             searchResult = documentsSearchResult with
             {
@@ -744,6 +746,21 @@ public class Searcher : IExamineSearcher
         }
 
         return result;
+    }
+
+    private static void EnsureFieldAnalyzersLoaded(IIndex index)
+    {
+        if (InitializedIndexes.TryGetValue(index.Name, out _))
+        {
+            return;
+        }
+
+        // Doing a search forces Examine to load per-field analyzers (e.g. KeywordAnalyzer for
+        // RawStringType fields). Without this, the first GroupedOr/Field calls after startup
+        // use the default StandardAnalyzer, which tokenizes values on hyphens and other
+        // punctuation — causing 0 results on keyword fields that store raw values.
+        index.Searcher.Search(string.Empty, QueryOptions.SkipTake(0, 0));
+        InitializedIndexes.TryAdd(index.Name, true);
     }
 
     /// <summary>
