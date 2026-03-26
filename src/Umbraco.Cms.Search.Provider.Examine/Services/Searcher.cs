@@ -87,6 +87,7 @@ public class Searcher : IExamineSearcher
                 facetFilterResults.AddRange(Search(facetSearchQuery, effectiveFilters, [facet], null, culture, segment, 0, 0).Facets);
             }
 
+            EnsureFieldAnalyzersLoaded(index);
             SearchResult documentsSearchResult = Search(CreateBaseQuery(), filtersAsArray, facetsAsArray?.Except(filterFacets), sorters, culture, segment, skip, take);
             searchResult = documentsSearchResult with
             {
@@ -755,11 +756,11 @@ public class Searcher : IExamineSearcher
             return;
         }
 
-        // ManagedQuery forces Examine to load per-field analyzers (e.g. KeywordAnalyzer for
+        // Doing a search forces Examine to load per-field analyzers (e.g. KeywordAnalyzer for
         // RawStringType fields). Without this, the first GroupedOr/Field calls after startup
         // use the default StandardAnalyzer, which tokenizes values on hyphens and other
         // punctuation — causing 0 results on keyword fields that store raw values.
-        index.Searcher.CreateQuery().ManagedQuery("__init__").Execute(QueryOptions.SkipTake(0, 0));
+        index.Searcher.Search(string.Empty, QueryOptions.SkipTake(0, 0));
         InitializedIndexes.TryAdd(index.Name, true);
     }
 
