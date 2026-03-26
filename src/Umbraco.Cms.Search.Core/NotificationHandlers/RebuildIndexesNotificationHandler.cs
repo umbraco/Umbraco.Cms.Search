@@ -5,6 +5,7 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Scoping;
 using Umbraco.Cms.Core.Services.Changes;
 using Umbraco.Cms.Search.Core.Cache.ContentType;
+using Umbraco.Cms.Search.Core.Cache.Index;
 using Umbraco.Cms.Search.Core.Cache.Language;
 using Umbraco.Cms.Search.Core.Cache.MediaType;
 using Umbraco.Cms.Search.Core.Cache.MemberType;
@@ -19,7 +20,8 @@ internal sealed class RebuildIndexesNotificationHandler : IndexingNotificationHa
     INotificationHandler<LanguageCacheRefresherNotification>,
     INotificationHandler<ContentTypeCacheRefresherNotification>,
     INotificationHandler<MemberTypeCacheRefresherNotification>,
-    INotificationHandler<MediaTypeCacheRefresherNotification>
+    INotificationHandler<MediaTypeCacheRefresherNotification>,
+    INotificationHandler<RebuildIndexCacheRefresherNotification>
 {
     private readonly IContentIndexingService _contentIndexingService;
     private readonly IndexOptions _options;
@@ -70,6 +72,16 @@ internal sealed class RebuildIndexesNotificationHandler : IndexingNotificationHa
         MediaTypeCacheRefresher.JsonPayload[] payloads = GetNotificationPayloads<MediaTypeCacheRefresher.JsonPayload>(notification, out var origin);
 
         HandleContentTypeChanges(payloads.Select(payload => (payload.MediaTypeKey, payload.ChangeTypes)), UmbracoObjectTypes.Media, origin);
+    }
+
+    public void Handle(RebuildIndexCacheRefresherNotification notification)
+    {
+        RebuildIndexCacheRefresher.JsonPayload[] payloads = GetNotificationPayloads<RebuildIndexCacheRefresher.JsonPayload>(notification, out var origin);
+
+        foreach (RebuildIndexCacheRefresher.JsonPayload payload in payloads)
+        {
+            _contentIndexingService.Rebuild(payload.IndexAlias, origin);
+        }
     }
 
     private void HandleContentTypeChanges(IEnumerable<(Guid ContentTypeKey, ContentTypeChangeTypes ChangeTypes)> changes, UmbracoObjectTypes objectType, string origin)

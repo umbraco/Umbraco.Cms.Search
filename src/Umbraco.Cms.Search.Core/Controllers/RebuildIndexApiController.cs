@@ -1,9 +1,6 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using Umbraco.Cms.Search.Core.Configuration;
-using Umbraco.Cms.Search.Core.Models.Configuration;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 namespace Umbraco.Cms.Search.Core.Controllers;
@@ -11,16 +8,10 @@ namespace Umbraco.Cms.Search.Core.Controllers;
 [ApiVersion("1.0")]
 public class RebuildIndexApiController : ApiControllerBase
 {
-    private readonly IContentIndexingService _contentIndexingService;
-    private readonly IndexOptions _options;
-    private readonly IOriginProvider _originProvider;
+    private readonly IDistributedContentIndexRebuilder _distributedContentIndexRebuilder;
 
-    public RebuildIndexApiController(IContentIndexingService contentIndexingService, IOptions<IndexOptions> options, IOriginProvider originProvider)
-    {
-        _contentIndexingService = contentIndexingService;
-        _originProvider = originProvider;
-        _options = options.Value;
-    }
+    public RebuildIndexApiController(IDistributedContentIndexRebuilder distributedContentIndexRebuilder)
+        => _distributedContentIndexRebuilder = distributedContentIndexRebuilder;
 
     [HttpPut("rebuild")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -33,14 +24,8 @@ public class RebuildIndexApiController : ApiControllerBase
             return BadRequest("The indexAlias parameter must be provided and cannot be empty.");
         }
 
-        // Check if the index exists before calling the service
-        ContentIndexRegistration? indexRegistration = _options.GetContentIndexRegistration(indexAlias);
-        if (indexRegistration is null)
-        {
-            return NotFound("The specified index alias was not found.");
-        }
-
-        _contentIndexingService.Rebuild(indexAlias, _originProvider.GetCurrent());
-        return Ok();
+        return _distributedContentIndexRebuilder.Rebuild(indexAlias)
+            ? Ok()
+            : BadRequest("Could not rebuild the index with the specified index alias. See the log for details.");
     }
 }
