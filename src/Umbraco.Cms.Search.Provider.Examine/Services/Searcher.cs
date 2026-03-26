@@ -69,6 +69,7 @@ public class Searcher : IExamineSearcher
             return new SearchResult(0, Array.Empty<Document>(), Array.Empty<FacetResult>());
         }
 
+        EnsureFieldAnalyzersLoaded(index);
         SearchResult? searchResult;
 
         if (SearcherOptions.ExpandFacetValues)
@@ -86,8 +87,6 @@ public class Searcher : IExamineSearcher
                 Filter[] effectiveFilters = filtersAsArray!.Where(filter => filter.FieldName != facet.FieldName).ToArray();
                 facetFilterResults.AddRange(Search(facetSearchQuery, effectiveFilters, [facet], null, culture, segment, 0, 0).Facets);
             }
-
-            EnsureFieldAnalyzersLoaded(index);
             SearchResult documentsSearchResult = Search(CreateBaseQuery(), filtersAsArray, facetsAsArray?.Except(filterFacets), sorters, culture, segment, skip, take);
             searchResult = documentsSearchResult with
             {
