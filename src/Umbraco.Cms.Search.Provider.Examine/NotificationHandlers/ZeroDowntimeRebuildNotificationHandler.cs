@@ -1,5 +1,4 @@
 using Examine;
-using Examine.Lucene.Providers;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Search.Core.Notifications;
@@ -10,35 +9,48 @@ namespace Umbraco.Cms.Search.Provider.Examine.NotificationHandlers;
 // NOTE: This notification handler is only active when zero downtime reindexing is in effect
 internal sealed class ZeroDowntimeRebuildNotificationHandler :
     INotificationHandler<IndexRebuildStartingNotification>,
-    INotificationHandler<IndexRebuildCompletedNotification>
+    INotificationAsyncHandler<IndexRebuildCompletedNotification>
 {
     private static readonly TimeSpan CommitTimeout = TimeSpan.FromSeconds(30);
 
     private readonly IActiveIndexManager _activeIndexManager;
     private readonly IExamineManager _examineManager;
+    private readonly IIndexCommitMonitor _indexCommitMonitor;
     private readonly ILogger<ZeroDowntimeRebuildNotificationHandler> _logger;
 
     public ZeroDowntimeRebuildNotificationHandler(
         IActiveIndexManager activeIndexManager,
         IExamineManager examineManager,
+        IIndexCommitMonitor indexCommitMonitor,
         ILogger<ZeroDowntimeRebuildNotificationHandler> logger)
     {
         _activeIndexManager = activeIndexManager;
         _examineManager = examineManager;
+        _indexCommitMonitor = indexCommitMonitor;
         _logger = logger;
     }
 
     public void Handle(IndexRebuildStartingNotification notification)
         => _activeIndexManager.StartRebuilding(notification.IndexAlias);
 
-    public void Handle(IndexRebuildCompletedNotification notification)
+    public async Task HandleAsync(IndexRebuildCompletedNotification notification, CancellationToken cancellationToken)
     {
         var shadowIndexName = _activeIndexManager.ResolveShadowIndexName(notification.IndexAlias);
 
         // Examine's LuceneIndex.IndexItems() commits asynchronously. We must wait for the
         // commit to complete before checking document count, otherwise we'll see 0 documents
         // and incorrectly cancel the swap.
-        WaitForShadowCommit(shadowIndexName);
+        var committed = await _indexCommitMonitor.WaitForCommitAsync(shadowIndexName, cancellationToken);
+        if (cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Cancellation requested before completion of shadow index swap for {ShadowIndex}.", shadowIndexName);
+            return;
+        }
+
+        if (committed is false)
+        {
+            _logger.LogWarning("Timed out waiting for shadow index {ShadowIndex} to commit after rebuild", shadowIndexName);
+        }
 
         if (IsShadowIndexHealthy(shadowIndexName))
         {
@@ -52,48 +64,6 @@ internal sealed class ZeroDowntimeRebuildNotificationHandler :
                 shadowIndexName,
                 notification.IndexAlias);
             _activeIndexManager.CancelRebuilding(notification.IndexAlias);
-        }
-    }
-
-    private void WaitForShadowCommit(string physicalIndexName)
-    {
-        if (_examineManager.TryGetIndex(physicalIndexName, out IIndex? index) is false || index is not LuceneIndex luceneIndex)
-        {
-            return;
-        }
-
-        if (index is IIndexStats stats && stats.GetDocumentCount() > 0)
-        {
-            return;
-        }
-
-        var committed = false;
-        void OnCommitted(object? sender, EventArgs e) => committed = true;
-        luceneIndex.IndexCommitted += OnCommitted;
-
-        try
-        {
-            // Re-check after subscribing to avoid a race where the commit happened
-            // between the initial check and subscribing to the event.
-            if (index is IIndexStats statsAfterSubscribe && statsAfterSubscribe.GetDocumentCount() > 0)
-            {
-                return;
-            }
-
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            while (!committed && stopwatch.Elapsed < CommitTimeout)
-            {
-                Thread.Sleep(100);
-            }
-
-            if (!committed)
-            {
-                _logger.LogWarning("Timed out waiting for shadow index {ShadowIndex} to commit after rebuild", physicalIndexName);
-            }
-        }
-        finally
-        {
-            luceneIndex.IndexCommitted -= OnCommitted;
         }
     }
 
