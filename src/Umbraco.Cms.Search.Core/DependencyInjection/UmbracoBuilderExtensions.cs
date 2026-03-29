@@ -32,8 +32,24 @@ namespace Umbraco.Cms.Search.Core.DependencyInjection;
 
 public static class UmbracoBuilderExtensions
 {
+    /// <summary>
+    /// Adds all core services required to run Umbraco Search.
+    /// </summary>
+    /// <remarks>
+    /// This method is idempotent - calling it multiple times has no effect after the first call.
+    /// </remarks>
+    /// <param name="builder">The Umbraco builder.</param>
+    /// <returns>The Umbraco builder.</returns>
     public static IUmbracoBuilder AddSearchCore(this IUmbracoBuilder builder)
     {
+        // Idempotency check - safe to call multiple times.
+        if (builder.Services.Any(s => s.ServiceType == typeof(AddSearchCoreMarker)))
+        {
+            return builder;
+        }
+
+        builder.Services.AddSingleton<AddSearchCoreMarker>();
+
         builder.Services.AddSingleton<IContentIndexingService, ContentIndexingService>();
         builder.Services.AddSingleton<IOriginProvider, OriginProvider>();
         builder.Services.AddSingleton<ISearcherResolver, SearcherResolver>();
@@ -126,5 +142,12 @@ public static class UmbracoBuilderExtensions
             => controllerActionDescriptor.ControllerTypeInfo.Namespace?.StartsWith("Umbraco.Cms.Search.Core.Controllers", comparisonType: StringComparison.InvariantCultureIgnoreCase) is true;
 
         public override string Handle(ApiDescription apiDescription) => $"{apiDescription.ActionDescriptor.RouteValues["action"]}";
+    }
+
+    /// <summary>
+    /// Marker class to ensure AddSearchCore is only executed once.
+    /// </summary>
+    private sealed class AddSearchCoreMarker
+    {
     }
 }
