@@ -1,5 +1,6 @@
 ﻿using Examine;
 using Examine.Lucene.Providers;
+using Microsoft.Extensions.Logging;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
@@ -8,20 +9,25 @@ internal sealed class IndexCommitMonitor : IIndexCommitMonitor
     private static readonly TimeSpan CommitTimeout = TimeSpan.FromSeconds(30);
 
     private readonly IExamineManager _examineManager;
+    private readonly ILogger<IndexCommitMonitor> _logger;
 
-    public IndexCommitMonitor(IExamineManager examineManager)
-        => _examineManager = examineManager;
+    public IndexCommitMonitor(IExamineManager examineManager, ILogger<IndexCommitMonitor> logger)
+    {
+        _examineManager = examineManager;
+        _logger = logger;
+    }
 
     public async Task<bool> WaitForCommitAsync(string indexAlias, CancellationToken cancellationToken)
     {
         if (_examineManager.TryGetIndex(indexAlias, out IIndex? index) is false || index is not LuceneIndex luceneIndex)
         {
-            return false;
+            _logger.LogWarning("Could not access Lucene index for index alias: {indexAlias} - assuming successful commit by default.", indexAlias);
+            return true;
         }
 
         if (index is IIndexStats stats && stats.GetDocumentCount() > 0)
         {
-            return false;
+            return true;
         }
 
         var committed = false;

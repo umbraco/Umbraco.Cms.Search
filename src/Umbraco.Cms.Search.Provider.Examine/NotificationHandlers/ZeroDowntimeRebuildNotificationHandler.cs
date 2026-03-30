@@ -50,7 +50,7 @@ internal sealed class ZeroDowntimeRebuildNotificationHandler :
             _logger.LogWarning("Timed out waiting for shadow index {ShadowIndex} to commit after rebuild", shadowIndexName);
         }
 
-        if (IsShadowIndexHealthy(shadowIndexName))
+        if (committed && IsShadowIndexHealthy(shadowIndexName))
         {
             _activeIndexManager.CompleteRebuilding(notification.IndexAlias);
             ClearShadowIndex(notification.IndexAlias);
