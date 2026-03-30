@@ -12,6 +12,7 @@ using Umbraco.Cms.Search.Core.Cache;
 using Umbraco.Cms.Search.Core.Notifications;
 using Umbraco.Cms.Search.Core.Cache.Content;
 using Umbraco.Cms.Search.Core.Cache.ContentType;
+using Umbraco.Cms.Search.Core.Cache.Index;
 using Umbraco.Cms.Search.Core.Cache.Language;
 using Umbraco.Cms.Search.Core.Cache.Media;
 using Umbraco.Cms.Search.Core.Cache.MediaType;
@@ -31,8 +32,24 @@ namespace Umbraco.Cms.Search.Core.DependencyInjection;
 
 public static class UmbracoBuilderExtensions
 {
+    /// <summary>
+    /// Adds all core services required to run Umbraco Search.
+    /// </summary>
+    /// <remarks>
+    /// This method is idempotent - calling it multiple times has no effect after the first call.
+    /// </remarks>
+    /// <param name="builder">The Umbraco builder.</param>
+    /// <returns>The Umbraco builder.</returns>
     public static IUmbracoBuilder AddSearchCore(this IUmbracoBuilder builder)
     {
+        // Idempotency check - safe to call multiple times.
+        if (builder.Services.Any(s => s.ServiceType == typeof(AddSearchCoreMarker)))
+        {
+            return builder;
+        }
+
+        builder.Services.AddSingleton<AddSearchCoreMarker>();
+
         builder.Services.AddSingleton<IContentIndexingService, ContentIndexingService>();
         builder.Services.AddSingleton<IOriginProvider, OriginProvider>();
         builder.Services.AddSingleton<ISearcherResolver, SearcherResolver>();
@@ -57,11 +74,22 @@ public static class UmbracoBuilderExtensions
         builder.Services.AddSingleton<IIndexDocumentRepository, IndexDocumentRepository>();
         builder.Services.AddSingleton<IIndexDocumentService, IndexDocumentService>();
 
+        // we need these notification handlers explicitly registered for the distributed content index refresher
+        builder.Services.AddTransient<DraftContentNotificationHandler>();
+        builder.Services.AddTransient<PublishedContentNotificationHandler>();
+        builder.Services.AddTransient<DraftMediaNotificationHandler>();
+        builder.Services.AddTransient<DraftMemberNotificationHandler>();
+
+        builder.Services.AddTransient<RebuildIndexNotificationHandler>();
+        builder.Services.AddTransient<IDistributedContentIndexRefresher, DistributedContentIndexRefresher>();
+        builder.Services.AddTransient<IDistributedContentIndexRebuilder, DistributedContentIndexRebuilder>();
+
         builder
             .AddNotificationHandler<LanguageCacheRefresherNotification, RebuildIndexesNotificationHandler>()
             .AddNotificationHandler<ContentTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
             .AddNotificationHandler<MemberTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
             .AddNotificationHandler<MediaTypeCacheRefresherNotification, RebuildIndexesNotificationHandler>()
+            .AddNotificationHandler<RebuildIndexCacheRefresherNotification, RebuildIndexesNotificationHandler>()
             .AddNotificationAsyncHandler<IndexRebuildStartingNotification, IndexRebuildServerEventNotificationHandler>()
             .AddNotificationAsyncHandler<IndexRebuildCompletedNotification, IndexRebuildServerEventNotificationHandler>();
 
@@ -114,5 +142,12 @@ public static class UmbracoBuilderExtensions
             => controllerActionDescriptor.ControllerTypeInfo.Namespace?.StartsWith("Umbraco.Cms.Search.Core.Controllers", comparisonType: StringComparison.InvariantCultureIgnoreCase) is true;
 
         public override string Handle(ApiDescription apiDescription) => $"{apiDescription.ActionDescriptor.RouteValues["action"]}";
+    }
+
+    /// <summary>
+    /// Marker class to ensure AddSearchCore is only executed once.
+    /// </summary>
+    private sealed class AddSearchCoreMarker
+    {
     }
 }

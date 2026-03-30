@@ -20,7 +20,7 @@ As we progress with the project, it will eventually be released as an official a
 ## Installation
 
 > [!IMPORTANT]
-> Umbraco Search is compatible with Umbraco v16 and beyond.
+> Umbraco Search is only compatible with Umbraco v17 at this time.
 
 To get started, install Umbraco Search and the Examine search provider from NuGet:
 
@@ -97,3 +97,4 @@ builder.AddDeliveryApiSearch();
 - [The backoffice](docs/backoffice.md) - User guide for interacting with search indexes in the Umbraco backoffice.
 - [Extending the search backoffice](docs/backoffice-extensions.md) - Developer guide for adding detail boxes, entity actions, workspace views, and routable modals.
 - [Handling data from others sources](docs/handling-other-sources.md) - Indexing and searching data that does not originate from Umbraco.
+- [Reindexing content programmatically](docs/reindexing-content-programmatically.md) - How to trigger reindexing of content programmatically.

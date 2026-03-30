@@ -20,22 +20,25 @@ internal sealed class DraftMemberNotificationHandler : ContentNotificationHandle
     {
     }
 
-    public void Handle(MemberSavedNotification notification)
+    public void Refresh(IEnumerable<IMember> entities)
     {
-        IMember[] savedEntities = notification.SavedEntities.ToArray();
-        if (savedEntities.Length is 0)
+        IMember[] entitiesAsArray = entities as IMember[] ?? entities.ToArray();
+        if (entitiesAsArray.Length is 0)
         {
             return;
         }
 
-        FlushDocumentIndexCache(savedEntities);
+        FlushDocumentIndexCache(entitiesAsArray);
 
-        DraftMemberCacheRefresher.JsonPayload[] payloads = savedEntities
+        DraftMemberCacheRefresher.JsonPayload[] payloads = entitiesAsArray
             .Select(entity => new DraftMemberCacheRefresher.JsonPayload(entity.Key, TreeChangeTypes.RefreshNode))
             .ToArray();
 
         HandlePayloads(payloads);
     }
+
+    public void Handle(MemberSavedNotification notification)
+        => Refresh(notification.SavedEntities);
 
     public void Handle(MemberDeletedNotification notification)
     {
