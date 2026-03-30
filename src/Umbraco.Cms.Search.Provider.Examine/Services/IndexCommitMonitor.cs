@@ -6,7 +6,7 @@ namespace Umbraco.Cms.Search.Provider.Examine.Services;
 
 internal sealed class IndexCommitMonitor : IIndexCommitMonitor
 {
-    private static readonly TimeSpan CommitTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan _commitTimeout = TimeSpan.FromSeconds(30);
 
     private readonly IExamineManager _examineManager;
     private readonly ILogger<IndexCommitMonitor> _logger;
@@ -45,9 +45,9 @@ internal sealed class IndexCommitMonitor : IIndexCommitMonitor
             }
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            while (!committed && stopwatch.Elapsed < CommitTimeout)
+            while (!committed && stopwatch.Elapsed < _commitTimeout)
             {
-                await Task.Delay(CommitTimeout, cancellationToken);
+                await Task.Delay(_commitTimeout, cancellationToken);
             }
 
             stopwatch.Stop();
