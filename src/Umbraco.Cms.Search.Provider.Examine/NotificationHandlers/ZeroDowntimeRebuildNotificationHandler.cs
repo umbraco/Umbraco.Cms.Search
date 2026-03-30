@@ -11,8 +11,6 @@ internal sealed class ZeroDowntimeRebuildNotificationHandler :
     INotificationHandler<IndexRebuildStartingNotification>,
     INotificationAsyncHandler<IndexRebuildCompletedNotification>
 {
-    private static readonly TimeSpan CommitTimeout = TimeSpan.FromSeconds(30);
-
     private readonly IActiveIndexManager _activeIndexManager;
     private readonly IExamineManager _examineManager;
     private readonly IIndexCommitMonitor _indexCommitMonitor;
