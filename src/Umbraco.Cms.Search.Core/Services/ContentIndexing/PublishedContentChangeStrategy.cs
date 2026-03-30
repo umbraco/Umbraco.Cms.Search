@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
@@ -16,6 +17,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
     private readonly IContentProtectionProvider _contentProtectionProvider;
     private readonly IContentService _contentService;
     private readonly IMediaService _mediaService;
+    private readonly IMemberService _memberService;
     private readonly IEventAggregator _eventAggregator;
     private readonly ILogger<PublishedContentChangeStrategy> _logger;
 
@@ -26,6 +28,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
         IContentProtectionProvider contentProtectionProvider,
         IContentService contentService,
         IMediaService mediaService,
+        IMemberService memberService,
         IEventAggregator eventAggregator,
         IUmbracoDatabaseFactory umbracoDatabaseFactory,
         IIdKeyMap idKeyMap,
@@ -36,27 +39,25 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
         _contentProtectionProvider = contentProtectionProvider;
         _contentService = contentService;
         _mediaService = mediaService;
+        _memberService = memberService;
         _logger = logger;
         _eventAggregator = eventAggregator;
     }
 
     public async Task HandleAsync(IEnumerable<ContentIndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
     {
-        // make sure all indexes can handle documents or media
+        // make sure all indexes can handle documents, media or members
         ContentIndexInfo[] indexInfosAsArray = indexInfos as ContentIndexInfo[] ?? indexInfos.ToArray();
-        if (indexInfosAsArray.Any(indexInfo => indexInfo.ContainedObjectTypes.Contains(UmbracoObjectTypes.Document) is false
-                && indexInfo.ContainedObjectTypes.Contains(UmbracoObjectTypes.Media) is false))
+        if (indexInfosAsArray.Any(indexInfo => ContainsSupportedObjectType(indexInfo) is false))
         {
-            _logger.LogWarning("One or more indexes for unsupported object types were detected and skipped. This strategy only supports Documents and Media.");
-            indexInfosAsArray = indexInfosAsArray.Where(indexInfo =>
-                indexInfo.ContainedObjectTypes.Contains(UmbracoObjectTypes.Document)
-                || indexInfo.ContainedObjectTypes.Contains(UmbracoObjectTypes.Media)).ToArray();
+            _logger.LogWarning("One or more indexes for unsupported object types were detected and skipped. This strategy only supports Documents, Media and Members.");
+            indexInfosAsArray = indexInfosAsArray.Where(ContainsSupportedObjectType).ToArray();
         }
 
         // get the relevant changes for this change strategy
         ContentChange[] changesAsArray = changes.Where(change =>
                 change.ContentState is ContentState.Published
-                && change.ObjectType is UmbracoObjectTypes.Document or UmbracoObjectTypes.Media)
+                && change.ObjectType is UmbracoObjectTypes.Document or UmbracoObjectTypes.Media or UmbracoObjectTypes.Member)
             .ToArray();
 
         var pendingRemovals = new List<ContentChange>();
@@ -120,6 +121,35 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
 
                 await ReindexAsync(indexInfos, media, UmbracoObjectTypes.Media, true, cancellationToken);
             }
+        }
+
+        if (indexInfo.ContainedObjectTypes.Contains(UmbracoObjectTypes.Member))
+        {
+            var pageIndex = 0;
+            long totalRecords;
+            do
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    LogIndexRebuildCancellation(indexInfo);
+                    return;
+                }
+
+                IMember[] members = _memberService.GetAll(pageIndex * ContentEnumerationPageSize, ContentEnumerationPageSize, out totalRecords, "sortOrder", Direction.Ascending).ToArray();
+                foreach (IMember member in members)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        LogIndexRebuildCancellation(indexInfo);
+                        return;
+                    }
+
+                    await ReindexAsync(indexInfos, member, UmbracoObjectTypes.Member, false, cancellationToken);
+                }
+
+                pageIndex++;
+            }
+            while (pageIndex * ContentEnumerationPageSize < totalRecords);
         }
     }
 
@@ -193,7 +223,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
     {
         Variation[] variations = objectType is UmbracoObjectTypes.Document
             ? RoutablePublishedVariations(content)
-            : MediaVariations(content);
+            : NonDocumentVariations(content);
         if (variations.Length is 0)
         {
             return [];
@@ -269,8 +299,14 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
         {
             UmbracoObjectTypes.Document => _contentService.GetById(change.Id),
             UmbracoObjectTypes.Media => _mediaService.GetById(change.Id),
+            UmbracoObjectTypes.Member => _memberService.GetById(change.Id),
             _ => throw new ArgumentOutOfRangeException(nameof(change.ObjectType))
         };
+
+    private static bool ContainsSupportedObjectType(ContentIndexInfo indexInfo)
+        => indexInfo.ContainedObjectTypes.Contains(UmbracoObjectTypes.Document)
+           || indexInfo.ContainedObjectTypes.Contains(UmbracoObjectTypes.Media)
+           || indexInfo.ContainedObjectTypes.Contains(UmbracoObjectTypes.Member);
 
     // NOTE: for the time being, segments are not individually publishable, but it will likely happen at some point,
     //       so this method deals with variations - not cultures.
@@ -325,7 +361,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
             .ToArray();
     }
 
-    private Variation[] MediaVariations(IContentBase content)
+    private Variation[] NonDocumentVariations(IContentBase content)
     {
         string?[] cultures = content.AvailableCultures();
 

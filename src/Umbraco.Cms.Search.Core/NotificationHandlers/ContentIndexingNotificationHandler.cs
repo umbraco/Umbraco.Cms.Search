@@ -90,9 +90,18 @@ internal sealed class ContentIndexingNotificationHandler : IndexingNotificationH
     }
 
     private ContentChange[] MemberChanges(IEnumerable<(Guid ContentId, TreeChangeTypes ChangeTypes)> payloads)
-        => GetContentChanges(
-            payloads,
+    {
+        // members have no draft/published distinction, so emit changes for both content states
+        // to ensure both draft and published change strategies can handle member changes
+        (Guid ContentId, TreeChangeTypes ChangeTypes)[] payloadsArray = payloads as (Guid, TreeChangeTypes)[] ?? payloads.ToArray();
+        ContentChange[] draftChanges = GetContentChanges(
+            payloadsArray,
             (contentKey, changeImpact) => ContentChange.Member(contentKey, changeImpact, ContentState.Draft));
+        ContentChange[] publishedChanges = GetContentChanges(
+            payloadsArray,
+            (contentKey, changeImpact) => ContentChange.Member(contentKey, changeImpact, ContentState.Published));
+        return [..draftChanges, ..publishedChanges];
+    }
 
     private ContentChange[] GetContentChanges(IEnumerable<(Guid ContentId, TreeChangeTypes ChangeTypes)> payloads, Func<Guid, ChangeImpact, ContentChange> contentChangeFactory)
         => payloads
