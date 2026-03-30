@@ -54,10 +54,12 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
             indexInfosAsArray = indexInfosAsArray.Where(ContainsSupportedObjectType).ToArray();
         }
 
-        // get the relevant changes for this change strategy
+        // get the relevant changes for this change strategy:
+        // - published content
+        // - media and members in any state (implicitly always draft)
         ContentChange[] changesAsArray = changes.Where(change =>
-                change.ContentState is ContentState.Published
-                && change.ObjectType is UmbracoObjectTypes.Document or UmbracoObjectTypes.Media or UmbracoObjectTypes.Member)
+                change is { ObjectType: UmbracoObjectTypes.Document, ContentState: ContentState.Published }
+                || change.ObjectType is UmbracoObjectTypes.Media or UmbracoObjectTypes.Member)
             .ToArray();
 
         var pendingRemovals = new List<ContentChange>();
