@@ -72,5 +72,7 @@ public abstract class TestBase : UmbracoIntegrationTest
         public Task DeleteAsync(Guid[] ids, bool published) => Task.CompletedTask;
 
         public Task DeleteAllAsync() => Task.CompletedTask;
+
+        public Task RemoveFieldsByCultureAsync(IReadOnlyCollection<string> isoCodes) => Task.CompletedTask;
     }
 }

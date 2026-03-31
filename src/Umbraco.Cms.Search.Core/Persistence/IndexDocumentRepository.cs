@@ -82,6 +82,37 @@ public class IndexDocumentRepository : IIndexDocumentRepository
         await _scopeAccessor.AmbientScope.Database.ExecuteAsync(sql);
     }
 
+    public async Task RemoveFieldsByCultureAsync(IReadOnlyCollection<string> isoCodes)
+    {
+        ArgumentNullException.ThrowIfNull(_scopeAccessor.AmbientScope);
+
+        var isoCodeSet = new HashSet<string>(isoCodes, StringComparer.OrdinalIgnoreCase);
+        IUmbracoDatabase database = _scopeAccessor.AmbientScope.Database;
+
+        Sql<ISqlContext> sql = database.SqlContext.Sql()
+            .Select<IndexDocumentDto>()
+            .From<IndexDocumentDto>();
+
+        List<IndexDocumentDto> allDtos = await database.FetchAsync<IndexDocumentDto>(sql);
+
+        var idsToDelete = allDtos
+            .Where(dto =>
+            {
+                IndexField[] fields = MessagePackSerializer.Deserialize<IndexField[]>(dto.Fields, _options) ?? [];
+                return fields.Any(f => f.Culture is not null && isoCodeSet.Contains(f.Culture));
+            })
+            .Select(dto => dto.Id)
+            .ToList();
+
+        if (idsToDelete.Count > 0)
+        {
+            Sql<ISqlContext> deleteSql = database.SqlContext.Sql()
+                .Delete<IndexDocumentDto>()
+                .Where<IndexDocumentDto>(x => idsToDelete.Contains(x.Id));
+
+            await database.ExecuteAsync(deleteSql);
+        }
+    }
 
     private IndexDocumentDto ToDto(IndexDocument indexDocument) =>
         new()
