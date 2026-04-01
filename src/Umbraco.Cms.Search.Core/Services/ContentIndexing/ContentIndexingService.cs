@@ -1,8 +1,11 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.HostedServices;
+using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Cms.Search.Core.Models.Configuration;
 using Umbraco.Cms.Search.Core.Models.Indexing;
@@ -86,6 +89,164 @@ internal sealed class ContentIndexingService : IContentIndexingService
         }
 
         _backgroundTaskQueue.QueueBackgroundWorkItem(async cancellationToken => await RebuildAsync(indexRegistration, cancellationToken));
+    }
+
+    public void ReindexByContentTypes(Guid[] contentTypeKeys, UmbracoObjectTypes objectType, string origin)
+    {
+        Guid[] contentKeys = GetContentKeysByContentTypes(contentTypeKeys, objectType);
+        if (contentKeys.Length == 0)
+        {
+            return;
+        }
+
+        ContentChange[] changes = CreateContentChanges(contentKeys, objectType);
+        Handle(changes, origin);
+    }
+
+    private Guid[] GetContentKeysByContentTypes(Guid[] contentTypeKeys, UmbracoObjectTypes objectType)
+    {
+        return objectType switch
+        {
+            UmbracoObjectTypes.Document => GetDocumentKeysByContentTypes(contentTypeKeys),
+            UmbracoObjectTypes.Media => GetMediaKeysByMediaTypes(contentTypeKeys),
+            UmbracoObjectTypes.Member => GetMemberKeysByMemberTypes(contentTypeKeys),
+            _ => [],
+        };
+    }
+
+    private Guid[] GetDocumentKeysByContentTypes(Guid[] contentTypeKeys)
+    {
+        IContentTypeService contentTypeService = _serviceProvider.GetRequiredService<IContentTypeService>();
+        IContentService contentService = _serviceProvider.GetRequiredService<IContentService>();
+
+        int[] directContentTypeIds = contentTypeKeys
+            .Select(key => contentTypeService.Get(key))
+            .Where(ct => ct is not null)
+            .Select(ct => ct!.Id)
+            .ToArray();
+
+        if (directContentTypeIds.Length == 0)
+        {
+            return [];
+        }
+
+        int[] allContentTypeIds = ExpandWithDependentContentTypes(contentTypeService, directContentTypeIds);
+
+        var keys = new List<Guid>();
+        var pageIndex = 0L;
+
+        while (true)
+        {
+            IContent[] page = contentService.GetPagedOfTypes(
+                allContentTypeIds, pageIndex, 1000, out long totalRecords, null, null).ToArray();
+            keys.AddRange(page.Select(c => c.Key));
+            pageIndex++;
+
+            if (keys.Count >= totalRecords)
+            {
+                break;
+            }
+        }
+
+        return keys.ToArray();
+    }
+
+    private Guid[] GetMediaKeysByMediaTypes(Guid[] mediaTypeKeys)
+    {
+        IMediaTypeService mediaTypeService = _serviceProvider.GetRequiredService<IMediaTypeService>();
+        IMediaService mediaService = _serviceProvider.GetRequiredService<IMediaService>();
+
+        int[] directMediaTypeIds = mediaTypeKeys
+            .Select(key => mediaTypeService.Get(key))
+            .Where(mt => mt is not null)
+            .Select(mt => mt!.Id)
+            .ToArray();
+
+        if (directMediaTypeIds.Length == 0)
+        {
+            return [];
+        }
+
+        int[] allMediaTypeIds = ExpandWithDependentContentTypes(mediaTypeService, directMediaTypeIds);
+
+        var keys = new List<Guid>();
+        var pageIndex = 0L;
+
+        while (true)
+        {
+            IMedia[] page = mediaService.GetPagedOfTypes(
+                allMediaTypeIds, pageIndex, 1000, out long totalRecords, null, null).ToArray();
+            keys.AddRange(page.Select(m => m.Key));
+            pageIndex++;
+
+            if (keys.Count >= totalRecords)
+            {
+                break;
+            }
+        }
+
+        return keys.ToArray();
+    }
+
+    private Guid[] GetMemberKeysByMemberTypes(Guid[] memberTypeKeys)
+    {
+        IMemberTypeService memberTypeService = _serviceProvider.GetRequiredService<IMemberTypeService>();
+        IMemberService memberService = _serviceProvider.GetRequiredService<IMemberService>();
+
+        int[] directMemberTypeIds = memberTypeKeys
+            .Select(key => memberTypeService.Get(key))
+            .Where(mt => mt is not null)
+            .Select(mt => mt!.Id)
+            .ToArray();
+
+        if (directMemberTypeIds.Length == 0)
+        {
+            return [];
+        }
+
+        int[] allMemberTypeIds = ExpandWithDependentContentTypes(memberTypeService, directMemberTypeIds);
+
+        var keys = new List<Guid>();
+        foreach (int memberTypeId in allMemberTypeIds)
+        {
+            IEnumerable<IMember> members = memberService.GetMembersByMemberType(memberTypeId);
+            keys.AddRange(members.Select(m => m.Key));
+        }
+
+        return keys.ToArray();
+    }
+
+    private static int[] ExpandWithDependentContentTypes<T>(IContentTypeBaseService<T> contentTypeService, int[] contentTypeIds)
+        where T : IContentTypeComposition
+    {
+        var contentTypeIdSet = new HashSet<int>(contentTypeIds);
+        int[] dependentTypeIds = contentTypeService.GetAll()
+            .Where(ct => ct.CompositionIds().Any(id => contentTypeIdSet.Contains(id)))
+            .Select(ct => ct.Id)
+            .ToArray();
+
+        return contentTypeIds.Union(dependentTypeIds).ToArray();
+    }
+
+    private static ContentChange[] CreateContentChanges(Guid[] contentKeys, UmbracoObjectTypes objectType)
+    {
+        return objectType switch
+        {
+            UmbracoObjectTypes.Document => contentKeys
+                .SelectMany(key => new[]
+                {
+                    ContentChange.Document(key, ChangeImpact.Refresh, ContentState.Draft),
+                    ContentChange.Document(key, ChangeImpact.Refresh, ContentState.Published),
+                })
+                .ToArray(),
+            UmbracoObjectTypes.Media => contentKeys
+                .Select(key => ContentChange.Media(key, ChangeImpact.Refresh, ContentState.Draft))
+                .ToArray(),
+            UmbracoObjectTypes.Member => contentKeys
+                .Select(key => ContentChange.Member(key, ChangeImpact.Refresh, ContentState.Draft))
+                .ToArray(),
+            _ => [],
+        };
     }
 
     private async Task RebuildAsync(ContentIndexRegistration indexRegistration, CancellationToken cancellationToken)
