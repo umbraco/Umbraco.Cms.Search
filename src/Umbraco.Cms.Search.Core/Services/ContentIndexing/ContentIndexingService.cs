@@ -22,6 +22,7 @@ internal sealed class ContentIndexingService : IContentIndexingService
     private readonly IndexOptions _indexOptions;
     private readonly IServiceProvider _serviceProvider;
     private readonly IOriginProvider _originProvider;
+    private readonly IIndexDocumentService _indexDocumentService;
 
     public ContentIndexingService(
         IBackgroundTaskQueue backgroundTaskQueue,
@@ -29,7 +30,8 @@ internal sealed class ContentIndexingService : IContentIndexingService
         ILogger<ContentIndexingService> logger,
         IOptions<IndexOptions> indexOptions,
         IServiceProvider serviceProvider,
-        IOriginProvider originProvider)
+        IOriginProvider originProvider,
+        IIndexDocumentService indexDocumentService)
     {
         _backgroundTaskQueue = backgroundTaskQueue;
         _eventAggregator = eventAggregator;
@@ -37,6 +39,7 @@ internal sealed class ContentIndexingService : IContentIndexingService
         _indexOptions = indexOptions.Value;
         _serviceProvider = serviceProvider;
         _originProvider = originProvider;
+        _indexDocumentService = indexDocumentService;
     }
 
     public void Handle(IEnumerable<ContentChange> changes, string origin)
@@ -98,6 +101,8 @@ internal sealed class ContentIndexingService : IContentIndexingService
         {
             return;
         }
+
+        FlushDocumentIndexCache(contentKeys);
 
         ContentChange[] changes = CreateContentChanges(contentKeys, objectType);
         Handle(changes, origin);
@@ -226,6 +231,12 @@ internal sealed class ContentIndexingService : IContentIndexingService
             .ToArray();
 
         return contentTypeIds.Union(dependentTypeIds).ToArray();
+    }
+
+    private void FlushDocumentIndexCache(Guid[] contentKeys)
+    {
+        _indexDocumentService.DeleteAsync(contentKeys, true).GetAwaiter().GetResult();
+        _indexDocumentService.DeleteAsync(contentKeys, false).GetAwaiter().GetResult();
     }
 
     private static ContentChange[] CreateContentChanges(Guid[] contentKeys, UmbracoObjectTypes objectType)
