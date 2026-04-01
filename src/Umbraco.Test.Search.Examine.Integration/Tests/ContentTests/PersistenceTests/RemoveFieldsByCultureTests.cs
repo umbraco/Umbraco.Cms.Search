@@ -1,6 +1,9 @@
+using NPoco;
 using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Infrastructure.Persistence;
+using Umbraco.Cms.Infrastructure.Scoping;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Models.Persistence;
 using Umbraco.Cms.Search.Core.Persistence;
@@ -27,7 +30,7 @@ public class RemoveFieldsByCultureTests : TestBase
             Assert.That(doc!.Fields.Any(f => f.Culture == "da-DK"), Is.True);
         }
 
-        await LanguageService.DeleteAsync("da-DK", Cms.Core.Constants.Security.SuperUserKey);
+        await LanguageService.DeleteAsync("da-DK", Constants.Security.SuperUserKey);
         await Task.Delay(4000);
 
         using (ScopeProvider.CreateScope(autoComplete: true))
@@ -54,7 +57,7 @@ public class RemoveFieldsByCultureTests : TestBase
             invariantFieldsBefore = invariantDoc!.Fields;
         }
 
-        await LanguageService.DeleteAsync("da-DK", Cms.Core.Constants.Security.SuperUserKey);
+        await LanguageService.DeleteAsync("da-DK", Constants.Security.SuperUserKey);
         await Task.Delay(4000);
 
         using (ScopeProvider.CreateScope(autoComplete: true))
@@ -82,7 +85,7 @@ public class RemoveFieldsByCultureTests : TestBase
         }
 
         // Delete ja-JP only; en-US and fr-FR should remain
-        await LanguageService.DeleteAsync("ja-JP", Cms.Core.Constants.Security.SuperUserKey);
+        await LanguageService.DeleteAsync("ja-JP", Constants.Security.SuperUserKey);
         await Task.Delay(4000);
 
         using (ScopeProvider.CreateScope(autoComplete: true))
@@ -91,6 +94,60 @@ public class RemoveFieldsByCultureTests : TestBase
             Assert.That(docAfter, Is.Not.Null, "Document should be re-created by rebuild");
             Assert.That(docAfter!.Fields.Any(f => f.Culture == "ja-JP"), Is.False, "Deleted culture fields should not be present after rebuild");
             Assert.That(docAfter.Fields.Any(f => f.Culture == "fr-FR"), Is.True, "Non-deleted culture fields should still be present");
+        }
+    }
+
+    [Test]
+    public async Task RemoveFieldsByCulture_CleansUpOrphanParentRows()
+    {
+        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
+
+        var documentKey = Guid.NewGuid();
+
+        // Insert a document that only has culture-specific fields (no invariant)
+        using (ScopeProvider.CreateScope(autoComplete: true))
+        {
+            var document = new IndexDocument
+            {
+                Key = documentKey,
+                Published = false,
+                Fields =
+                [
+                    new IndexField("title", new IndexValue { Texts = ["Danish Title"] }, "da-DK", null),
+                ],
+            };
+            await IndexDocumentRepository.AddAsync(document);
+        }
+
+        // Verify the parent row exists
+        using (IScope scope = ScopeProvider.CreateScope(autoComplete: true))
+        {
+            IndexDocument? doc = await IndexDocumentRepository.GetAsync(documentKey, false);
+            Assert.That(doc, Is.Not.Null, "Document should exist after adding");
+
+            Sql<ISqlContext> sql = scope.Database.SqlContext.Sql()
+                .Select<IndexDocumentDto>()
+                .From<IndexDocumentDto>()
+                .Where<IndexDocumentDto>(x => x.Key == documentKey);
+            List<IndexDocumentDto> parentRows = await scope.Database.FetchAsync<IndexDocumentDto>(sql);
+            Assert.That(parentRows, Has.Count.EqualTo(1), "Parent row should exist");
+        }
+
+        // Remove the only culture, which should also clean up the orphan parent
+        using (ScopeProvider.CreateScope(autoComplete: true))
+        {
+            await IndexDocumentRepository.RemoveFieldsByCultureAsync(["da-DK"]);
+        }
+
+        // Verify the parent row is gone (not just that GetAsync returns null)
+        using (IScope scope = ScopeProvider.CreateScope(autoComplete: true))
+        {
+            Sql<ISqlContext> sql = scope.Database.SqlContext.Sql()
+                .Select<IndexDocumentDto>()
+                .From<IndexDocumentDto>()
+                .Where<IndexDocumentDto>(x => x.Key == documentKey);
+            List<IndexDocumentDto> parentRows = await scope.Database.FetchAsync<IndexDocumentDto>(sql);
+            Assert.That(parentRows, Has.Count.EqualTo(0), "Orphan parent row should be cleaned up");
         }
     }
 
@@ -106,8 +163,8 @@ public class RemoveFieldsByCultureTests : TestBase
             .WithCultureInfo("ja-JP")
             .Build();
 
-        await LanguageService.CreateAsync(langDk, Cms.Core.Constants.Security.SuperUserKey);
-        await LanguageService.CreateAsync(langJp, Cms.Core.Constants.Security.SuperUserKey);
+        await LanguageService.CreateAsync(langDk, Constants.Security.SuperUserKey);
+        await LanguageService.CreateAsync(langJp, Constants.Security.SuperUserKey);
 
         IContentType contentType = new ContentTypeBuilder()
             .WithAlias("variantType")
@@ -115,8 +172,8 @@ public class RemoveFieldsByCultureTests : TestBase
             .AddPropertyType()
                 .WithAlias("title")
                 .WithVariations(ContentVariation.Culture)
-                .WithDataTypeId(Cms.Core.Constants.DataTypes.Textbox)
-                .WithPropertyEditorAlias(Cms.Core.Constants.PropertyEditors.Aliases.TextBox)
+                .WithDataTypeId(Constants.DataTypes.Textbox)
+                .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
                 .Done()
             .Build();
         ContentTypeService.Save(contentType);
@@ -161,9 +218,9 @@ public class RemoveFieldsByCultureTests : TestBase
             .WithCultureInfo("fr-FR")
             .Build();
 
-        await LanguageService.CreateAsync(langDk, Cms.Core.Constants.Security.SuperUserKey);
-        await LanguageService.CreateAsync(langJp, Cms.Core.Constants.Security.SuperUserKey);
-        await LanguageService.CreateAsync(langFr, Cms.Core.Constants.Security.SuperUserKey);
+        await LanguageService.CreateAsync(langDk, Constants.Security.SuperUserKey);
+        await LanguageService.CreateAsync(langJp, Constants.Security.SuperUserKey);
+        await LanguageService.CreateAsync(langFr, Constants.Security.SuperUserKey);
 
         IContentType contentType = new ContentTypeBuilder()
             .WithAlias("variantType")
@@ -171,8 +228,8 @@ public class RemoveFieldsByCultureTests : TestBase
             .AddPropertyType()
                 .WithAlias("title")
                 .WithVariations(ContentVariation.Culture)
-                .WithDataTypeId(Cms.Core.Constants.DataTypes.Textbox)
-                .WithPropertyEditorAlias(Cms.Core.Constants.PropertyEditors.Aliases.TextBox)
+                .WithDataTypeId(Constants.DataTypes.Textbox)
+                .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
                 .Done()
             .Build();
         ContentTypeService.Save(contentType);
@@ -213,7 +270,7 @@ public class RemoveFieldsByCultureTests : TestBase
             .WithCultureInfo("da-DK")
             .Build();
 
-        await LanguageService.CreateAsync(langDk, Cms.Core.Constants.Security.SuperUserKey);
+        await LanguageService.CreateAsync(langDk, Constants.Security.SuperUserKey);
 
         // Variant content type
         IContentType variantType = new ContentTypeBuilder()
@@ -222,8 +279,8 @@ public class RemoveFieldsByCultureTests : TestBase
             .AddPropertyType()
                 .WithAlias("title")
                 .WithVariations(ContentVariation.Culture)
-                .WithDataTypeId(Cms.Core.Constants.DataTypes.Textbox)
-                .WithPropertyEditorAlias(Cms.Core.Constants.PropertyEditors.Aliases.TextBox)
+                .WithDataTypeId(Constants.DataTypes.Textbox)
+                .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
                 .Done()
             .Build();
         ContentTypeService.Save(variantType);
@@ -235,8 +292,8 @@ public class RemoveFieldsByCultureTests : TestBase
             .AddPropertyType()
                 .WithAlias("title")
                 .WithVariations(ContentVariation.Nothing)
-                .WithDataTypeId(Cms.Core.Constants.DataTypes.Textbox)
-                .WithPropertyEditorAlias(Cms.Core.Constants.PropertyEditors.Aliases.TextBox)
+                .WithDataTypeId(Constants.DataTypes.Textbox)
+                .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
                 .Done()
             .Build();
         ContentTypeService.Save(invariantType);
