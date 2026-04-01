@@ -213,6 +213,90 @@ public class ContentTypeTests : ContentBaseTestBase
     }
 
     [Test]
+    public async Task UpdateDeeplyNestedComposition_ReindexesAllDependentContent()
+    {
+        // Create a 3-level composition chain: grandchild composes child, child composes root
+        IContentType rootType = new ContentTypeBuilder()
+            .WithAlias("root_comp")
+            .AddPropertyType()
+                .WithAlias("rootProp")
+                .WithDataTypeId(Constants.DataTypes.Textbox)
+                .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+                .Done()
+            .Build();
+        await ContentTypeService.CreateAsync(rootType, Constants.Security.SuperUserKey);
+        rootType.AllowedAsRoot = true;
+        await ContentTypeService.UpdateAsync(rootType, Constants.Security.SuperUserKey);
+
+        IContentType childType = new ContentTypeBuilder()
+            .WithAlias("child_comp")
+            .Build();
+        childType.AddContentType(rootType);
+        await ContentTypeService.CreateAsync(childType, Constants.Security.SuperUserKey);
+        childType.AllowedAsRoot = true;
+        await ContentTypeService.UpdateAsync(childType, Constants.Security.SuperUserKey);
+
+        IContentType grandchildType = new ContentTypeBuilder()
+            .WithAlias("grandchild_comp")
+            .Build();
+        grandchildType.AddContentType(childType);
+        await ContentTypeService.CreateAsync(grandchildType, Constants.Security.SuperUserKey);
+        grandchildType.AllowedAsRoot = true;
+        await ContentTypeService.UpdateAsync(grandchildType, Constants.Security.SuperUserKey);
+
+        // Create content of each type
+        var rootContentKey = Guid.NewGuid();
+        Content rootContent = new ContentBuilder()
+            .WithKey(rootContentKey)
+            .WithContentType(rootType)
+            .Build();
+        ContentService.Save(rootContent);
+
+        var childContentKey = Guid.NewGuid();
+        Content childContent = new ContentBuilder()
+            .WithKey(childContentKey)
+            .WithContentType(childType)
+            .Build();
+        ContentService.Save(childContent);
+
+        var grandchildContentKey = Guid.NewGuid();
+        Content grandchildContent = new ContentBuilder()
+            .WithKey(grandchildContentKey)
+            .WithContentType(grandchildType)
+            .Build();
+        ContentService.Save(grandchildContent);
+
+        // Verify initial state (6 from SetUp + 3 new = 9)
+        IReadOnlyList<TestIndexDocument> draftDocuments = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        Assert.That(draftDocuments, Has.Count.EqualTo(9));
+
+        // Clear the index to track what gets re-indexed
+        IndexerAndSearcher.Reset();
+
+        // Act: modify the root composition type
+        rootType.AddPropertyType(
+            new PropertyType(ShortStringHelper, "deepProp", ValueStorageType.Ntext)
+            {
+                Alias = "deepProp",
+                DataTypeId = Constants.DataTypes.Textbox,
+                PropertyEditorAlias = Constants.PropertyEditors.Aliases.TextBox,
+                Name = "deepProp",
+            });
+        await ContentTypeService.UpdateAsync(rootType, Constants.Security.SuperUserKey);
+
+        // Assert: ALL 3 content items should be re-indexed
+        draftDocuments = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        Assert.That(draftDocuments, Has.Count.EqualTo(3));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(draftDocuments.Select(d => d.Id), Contains.Item(rootContentKey));
+            Assert.That(draftDocuments.Select(d => d.Id), Contains.Item(childContentKey));
+            Assert.That(draftDocuments.Select(d => d.Id), Contains.Item(grandchildContentKey));
+        });
+    }
+
+    [Test]
     public async Task DeleteComposedContentType_RemovesBothTypesContent()
     {
         // Create a content type that will be used as a composition

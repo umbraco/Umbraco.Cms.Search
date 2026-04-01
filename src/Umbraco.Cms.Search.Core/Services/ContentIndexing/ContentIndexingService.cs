@@ -224,13 +224,24 @@ internal sealed class ContentIndexingService : IContentIndexingService
     private static int[] ExpandWithDependentContentTypes<T>(IContentTypeBaseService<T> contentTypeService, int[] contentTypeIds)
         where T : IContentTypeComposition
     {
-        var contentTypeIdSet = new HashSet<int>(contentTypeIds);
-        int[] dependentTypeIds = contentTypeService.GetAll()
-            .Where(ct => ct.CompositionIds().Any(id => contentTypeIdSet.Contains(id)))
-            .Select(ct => ct.Id)
-            .ToArray();
+        T[] allTypes = contentTypeService.GetAll().ToArray();
+        var result = new HashSet<int>(contentTypeIds);
 
-        return contentTypeIds.Union(dependentTypeIds).ToArray();
+        int previousCount;
+        do
+        {
+            previousCount = result.Count;
+            foreach (T ct in allTypes)
+            {
+                if (result.Contains(ct.Id) is false && ct.CompositionIds().Any(result.Contains))
+                {
+                    result.Add(ct.Id);
+                }
+            }
+        }
+        while (result.Count > previousCount);
+
+        return result.ToArray();
     }
 
     private void FlushDocumentIndexCache(Guid[] contentKeys)
