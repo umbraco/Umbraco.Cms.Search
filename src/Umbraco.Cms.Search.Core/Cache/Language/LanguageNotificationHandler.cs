@@ -27,7 +27,8 @@ internal sealed class LanguageNotificationHandler
             return;
         }
 
-        ClearDocumentIndexCache();
+        string[] isoCodes = deletedEntities.Select(language => language.IsoCode).ToArray();
+        RemoveLanguageFromDocumentIndexCache(isoCodes);
 
         LanguageCacheRefresher.JsonPayload[] payloads = deletedEntities
             .Select(language => new LanguageCacheRefresher.JsonPayload(language.Key, language.IsoCode, LanguageChangeTypes.Delete))

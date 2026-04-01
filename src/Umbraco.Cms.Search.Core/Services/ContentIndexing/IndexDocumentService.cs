@@ -44,4 +44,11 @@ public class IndexDocumentService : IIndexDocumentService
         await _indexDocumentRepository.DeleteAllAsync();
         scope.Complete();
     }
+
+    public async Task RemoveFieldsByCultureAsync(IReadOnlyCollection<string> isoCodes)
+    {
+        using ICoreScope scope = _scopeProvider.CreateCoreScope();
+        await _indexDocumentRepository.RemoveFieldsByCultureAsync(isoCodes);
+        scope.Complete();
+    }
 }
