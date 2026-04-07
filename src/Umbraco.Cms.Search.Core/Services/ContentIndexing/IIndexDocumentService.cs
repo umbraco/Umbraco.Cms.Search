@@ -12,5 +12,5 @@ public interface IIndexDocumentService
 
     Task DeleteAllAsync();
 
-    Task RemoveFieldsByCultureAsync(IReadOnlyCollection<string> isoCodes);
+    Task DeleteCulturesAsync(IReadOnlyCollection<string> isoCodes);
 }

@@ -142,7 +142,7 @@ public class IndexDocumentRepository : IIndexDocumentRepository
         await database.ExecuteAsync(sql);
     }
 
-    public async Task RemoveFieldsByCultureAsync(IReadOnlyCollection<string> isoCodes)
+    public async Task DeleteCulturesAsync(IReadOnlyCollection<string> isoCodes)
     {
         ArgumentNullException.ThrowIfNull(_scopeAccessor.AmbientScope);
 

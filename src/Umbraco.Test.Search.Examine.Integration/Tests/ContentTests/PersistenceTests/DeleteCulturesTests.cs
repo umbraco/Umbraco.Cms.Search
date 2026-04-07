@@ -13,7 +13,7 @@ using Umbraco.Cms.Tests.Common.Builders.Extensions;
 namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.PersistenceTests;
 
 [TestFixture]
-public class RemoveFieldsByCultureTests : TestBase
+public class DeleteCulturesTests : TestBase
 {
     private IIndexDocumentRepository IndexDocumentRepository => GetRequiredService<IIndexDocumentRepository>();
 
@@ -31,7 +31,7 @@ public class RemoveFieldsByCultureTests : TestBase
         }
 
         await LanguageService.DeleteAsync("da-DK", Constants.Security.SuperUserKey);
-        await Task.Delay(4000);
+        await WaitForUpdatesAsync();
 
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
@@ -58,7 +58,7 @@ public class RemoveFieldsByCultureTests : TestBase
         }
 
         await LanguageService.DeleteAsync("da-DK", Constants.Security.SuperUserKey);
-        await Task.Delay(4000);
+        await WaitForUpdatesAsync();
 
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
@@ -86,7 +86,7 @@ public class RemoveFieldsByCultureTests : TestBase
 
         // Delete ja-JP only; en-US and fr-FR should remain
         await LanguageService.DeleteAsync("ja-JP", Constants.Security.SuperUserKey);
-        await Task.Delay(4000);
+        await WaitForUpdatesAsync();
 
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
@@ -98,7 +98,7 @@ public class RemoveFieldsByCultureTests : TestBase
     }
 
     [Test]
-    public async Task RemoveFieldsByCulture_CleansUpOrphanParentRows()
+    public async Task DeleteCultures_CleansUpOrphanParentRows()
     {
         await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
 
@@ -136,7 +136,7 @@ public class RemoveFieldsByCultureTests : TestBase
         // Remove the only culture, which should also clean up the orphan parent
         using (ScopeProvider.CreateScope(autoComplete: true))
         {
-            await IndexDocumentRepository.RemoveFieldsByCultureAsync(["da-DK"]);
+            await IndexDocumentRepository.DeleteCulturesAsync(["da-DK"]);
         }
 
         // Verify the parent row is gone (not just that GetAsync returns null)
@@ -342,4 +342,6 @@ public class RemoveFieldsByCultureTests : TestBase
             return Task.CompletedTask;
         });
     }
+
+    private static async Task WaitForUpdatesAsync() => await Task.Delay(4000);
 }

@@ -45,10 +45,10 @@ public class IndexDocumentService : IIndexDocumentService
         scope.Complete();
     }
 
-    public async Task RemoveFieldsByCultureAsync(IReadOnlyCollection<string> isoCodes)
+    public async Task DeleteCulturesAsync(IReadOnlyCollection<string> isoCodes)
     {
         using ICoreScope scope = _scopeProvider.CreateCoreScope();
-        await _indexDocumentRepository.RemoveFieldsByCultureAsync(isoCodes);
+        await _indexDocumentRepository.DeleteCulturesAsync(isoCodes);
         scope.Complete();
     }
 }

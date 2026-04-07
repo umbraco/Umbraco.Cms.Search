@@ -42,7 +42,7 @@ internal abstract class ContentNotificationHandlerBase<TPayload>
         => _indexDocumentService.DeleteAllAsync().GetAwaiter().GetResult();
 
     protected void RemoveLanguageFromDocumentIndexCache(IReadOnlyCollection<string> isoCodes)
-        => _indexDocumentService.RemoveFieldsByCultureAsync(isoCodes).GetAwaiter().GetResult();
+        => _indexDocumentService.DeleteCulturesAsync(isoCodes).GetAwaiter().GetResult();
 
     protected void ClearDocumentIndexCacheForStructuralChanges(IEnumerable<ContentTypeChangeTypes> changes)
     {
