@@ -41,6 +41,9 @@ internal abstract class ContentNotificationHandlerBase<TPayload>
     protected void ClearDocumentIndexCache()
         => _indexDocumentService.DeleteAllAsync().GetAwaiter().GetResult();
 
+    protected void RemoveLanguageFromDocumentIndexCache(IReadOnlyCollection<string> isoCodes)
+        => _indexDocumentService.DeleteCulturesAsync(isoCodes).GetAwaiter().GetResult();
+
     protected void ClearDocumentIndexCacheForStructuralChanges(IEnumerable<ContentTypeChangeTypes> changes)
     {
         if (changes.Any(change => change.RequiresIndexRebuild()))
