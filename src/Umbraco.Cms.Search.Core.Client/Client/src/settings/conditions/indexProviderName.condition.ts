@@ -21,14 +21,16 @@ export class UmbSearchIndexProviderNameCondition
   ) {
     super(host, args);
 
-    const matchArray = args.config.oneOf ?? (args.config.match ? [args.config.match] : undefined) ?? [];
+    const matchArray =
+      args.config.oneOf ?? (args.config.match ? [args.config.match] : undefined) ?? [];
 
     this.consumeContext(UMB_SEARCH_WORKSPACE_CONTEXT, (context) => {
-      if (!context) return;
       this.observe(
-        context.providerName,
+        context?.providerName,
         (providerName) => {
-          this.permitted = providerName ? stringOrStringArrayContains(matchArray, providerName) : false;
+          this.permitted = providerName
+            ? stringOrStringArrayContains(matchArray, providerName)
+            : false;
         },
         '_observeProviderName',
       );
