@@ -1,11 +1,14 @@
 import { UmbCollectionDataSource } from '@umbraco-cms/backoffice/collection';
 
+export type * from './conditions/types.js';
+
 export type UmbSearchCollectionDataSource = UmbCollectionDataSource<UmbSearchIndex, never>;
 
 export type UmbSearchIndexState = 'idle' | 'loading' | 'error';
 export type UmbHealthStatusModel = 'Healthy' | 'Rebuilding' | 'Corrupted' | 'Empty' | 'Unknown';
 
 export type UmbSearchIndex = {
+  providerName: string;
   unique: string;
   name: string;
   documentCount: number;

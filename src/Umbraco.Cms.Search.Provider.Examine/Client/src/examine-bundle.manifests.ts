@@ -22,6 +22,12 @@ export const manifests: Array<UmbExtensionManifest> = [
       label: '#searchExamine_showFields',
       additionalOptions: false,
     },
+    conditions: [
+      {
+        alias: 'Umb.Search.Condition.IndexProviderName',
+        match: 'Examine',
+      },
+    ],
   },
   {
     type: 'modal',

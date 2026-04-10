@@ -12,6 +12,9 @@ export class UmbSearchIndexStatsBoxElement extends UmbLitElement {
   private _indexAlias?: string;
 
   @state()
+  private _providerName?: string;
+
+  @state()
   private _documentCount?: number;
 
   @state()
@@ -33,6 +36,14 @@ export class UmbSearchIndexStatsBoxElement extends UmbLitElement {
         this._indexAlias = name;
       },
       '_observeName',
+    );
+
+    this.observe(
+      this.#workspaceContext?.providerName,
+      (name) => {
+        this._providerName = name;
+      },
+      '_observeProviderName',
     );
 
     this.observe(
@@ -73,6 +84,11 @@ export class UmbSearchIndexStatsBoxElement extends UmbLitElement {
           <div class="stat-item">
             <strong><umb-localize key="search_indexAlias">Index Alias</umb-localize></strong>
             <span>${this._indexAlias ?? '—'}</span>
+          </div>
+
+          <div class="stat-item">
+            <strong><umb-localize key="search_providerName">Provider Name</umb-localize></strong>
+            <span>${this._providerName ?? '—'}</span>
           </div>
 
           <div class="stat-item">

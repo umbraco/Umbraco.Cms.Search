@@ -40,6 +40,7 @@ export type HealthStatusModel = 'Healthy' | 'Rebuilding' | 'Corrupted' | 'Empty'
 
 export type IndexModel = {
     indexAlias: string;
+    providerName: string;
     documentCount: number;
     healthStatus: HealthStatusModel;
 };
