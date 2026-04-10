@@ -7,6 +7,11 @@ internal static class Constants
         public const string Name = "Examine";
     }
 
+    public static class Provider
+    {
+        public const string Name = Api.Name;
+    }
+
     public static class Variance
     {
         public const string Invariant = "none";

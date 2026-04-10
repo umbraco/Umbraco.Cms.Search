@@ -173,13 +173,13 @@ public class Indexer : IExamineIndexer
                 activeDocCount = activeStats.GetDocumentCount();
             }
 
-            return Task.FromResult(new IndexMetadata(activeDocCount, HealthStatus.Rebuilding, Constants.Api.Name));
+            return Task.FromResult(new IndexMetadata(activeDocCount, HealthStatus.Rebuilding, Constants.Provider.Name));
         }
 
         var physicalName = _activeIndexManager.ResolveActiveIndexName(indexAlias);
         if (_examineManager.TryGetIndex(physicalName, out IIndex? index) is false)
         {
-            return Task.FromResult(new IndexMetadata(0, HealthStatus.Unknown, Constants.Api.Name));
+            return Task.FromResult(new IndexMetadata(0, HealthStatus.Unknown, Constants.Provider.Name));
         }
 
         var documentCount = 0L;
@@ -189,7 +189,7 @@ public class Indexer : IExamineIndexer
             documentCount = stats.GetDocumentCount();
             if (documentCount == 0L)
             {
-                return Task.FromResult(new IndexMetadata(0, HealthStatus.Empty, Constants.Api.Name));
+                return Task.FromResult(new IndexMetadata(0, HealthStatus.Empty, Constants.Provider.Name));
             }
         }
 
@@ -197,11 +197,11 @@ public class Indexer : IExamineIndexer
         try
         {
             index.Searcher.CreateQuery().ManagedQuery("__healthcheck__").Execute(new QueryOptions(0, 1));
-            return Task.FromResult(new IndexMetadata(documentCount, HealthStatus.Healthy, Constants.Api.Name));
+            return Task.FromResult(new IndexMetadata(documentCount, HealthStatus.Healthy, Constants.Provider.Name));
         }
         catch
         {
-            return Task.FromResult(new IndexMetadata(documentCount, HealthStatus.Corrupted, Constants.Api.Name));
+            return Task.FromResult(new IndexMetadata(documentCount, HealthStatus.Corrupted, Constants.Provider.Name));
         }
     }
 
