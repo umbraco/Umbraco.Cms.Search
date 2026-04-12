@@ -4,7 +4,7 @@ internal static class Constants
 {
     public static class Api
     {
-        public const string Name = "Examine";
+        public const string Name = "examine";
     }
 
     public static class Provider
