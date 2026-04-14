@@ -10,7 +10,7 @@ namespace Umbraco.Cms.Search.Core.Controllers;
 [BackOfficeRoute("search/api/v{version:apiVersion}")]
 [Authorize(Policy = AuthorizationPolicies.SectionAccessSettings)]
 [MapToApi(Constants.Api.Name)]
-[ApiExplorerSettings(GroupName = "Search")]
+[ApiExplorerSettings(GroupName = "Umbraco Search")]
 public abstract class ApiControllerBase : ControllerBase
 {
 }
