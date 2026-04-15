@@ -25,7 +25,7 @@ export const manifests: Array<UmbExtensionManifest> = [
     conditions: [
       {
         alias: 'Umb.Search.Condition.IndexProviderName',
-        match: 'Examine',
+        match: 'search-examine-provider',
       },
     ],
   },
