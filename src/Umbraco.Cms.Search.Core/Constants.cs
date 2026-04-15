@@ -50,5 +50,7 @@ public static class Constants
     public static class Persistence
     {
         public const string IndexDocumentTableName = Umbraco.Cms.Core.Constants.DatabaseSchema.TableNamePrefix + "IndexDocument";
+
+        public const string IndexDocumentFieldsTableName = Umbraco.Cms.Core.Constants.DatabaseSchema.TableNamePrefix + "IndexDocumentFields";
     }
 }

@@ -17,7 +17,4 @@ public class IndexDocumentDto
 
     [Column("published")]
     public required bool Published { get; set; }
-
-    [Column("fields")]
-    public required byte[] Fields { get; set; }
 }

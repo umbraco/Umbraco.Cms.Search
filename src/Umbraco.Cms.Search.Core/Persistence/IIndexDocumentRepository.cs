@@ -11,4 +11,6 @@ public interface IIndexDocumentRepository
     public Task DeleteAsync(Guid[] ids, bool published);
 
     public Task DeleteAllAsync();
+
+    public Task DeleteCulturesAsync(IReadOnlyCollection<string> isoCodes);
 }
