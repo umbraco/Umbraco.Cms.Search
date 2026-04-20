@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Events;
@@ -23,6 +22,12 @@ internal sealed class ContentIndexingService : IContentIndexingService
     private readonly IServiceProvider _serviceProvider;
     private readonly IOriginProvider _originProvider;
     private readonly IIndexDocumentService _indexDocumentService;
+    private readonly IContentTypeService _contentTypeService;
+    private readonly IContentService _contentService;
+    private readonly IMediaTypeService _mediaTypeService;
+    private readonly IMediaService _mediaService;
+    private readonly IMemberTypeService _memberTypeService;
+    private readonly IMemberService _memberService;
 
     public ContentIndexingService(
         IBackgroundTaskQueue backgroundTaskQueue,
@@ -31,7 +36,13 @@ internal sealed class ContentIndexingService : IContentIndexingService
         IOptions<IndexOptions> indexOptions,
         IServiceProvider serviceProvider,
         IOriginProvider originProvider,
-        IIndexDocumentService indexDocumentService)
+        IIndexDocumentService indexDocumentService,
+        IContentTypeService contentTypeService,
+        IContentService contentService,
+        IMediaTypeService mediaTypeService,
+        IMediaService mediaService,
+        IMemberTypeService memberTypeService,
+        IMemberService memberService)
     {
         _backgroundTaskQueue = backgroundTaskQueue;
         _eventAggregator = eventAggregator;
@@ -40,6 +51,12 @@ internal sealed class ContentIndexingService : IContentIndexingService
         _serviceProvider = serviceProvider;
         _originProvider = originProvider;
         _indexDocumentService = indexDocumentService;
+        _contentTypeService = contentTypeService;
+        _contentService = contentService;
+        _mediaTypeService = mediaTypeService;
+        _mediaService = mediaService;
+        _memberTypeService = memberTypeService;
+        _memberService = memberService;
     }
 
     public void Handle(IEnumerable<ContentChange> changes, string origin)
@@ -95,37 +112,33 @@ internal sealed class ContentIndexingService : IContentIndexingService
     }
 
     public void ReindexByContentTypes(Guid[] contentTypeKeys, UmbracoObjectTypes objectType, string origin)
-    {
-        Guid[] contentKeys = GetContentKeysByContentTypes(contentTypeKeys, objectType);
-        if (contentKeys.Length == 0)
+        => _backgroundTaskQueue.QueueBackgroundWorkItem(async _ =>
         {
-            return;
-        }
+            Guid[] contentKeys = GetContentKeysByContentTypes(contentTypeKeys, objectType);
+            if (contentKeys.Length == 0)
+            {
+                return;
+            }
 
-        FlushDocumentIndexCache(contentKeys);
+            await FlushDocumentIndexCacheAsync(contentKeys);
 
-        ContentChange[] changes = CreateContentChanges(contentKeys, objectType);
-        Handle(changes, origin);
-    }
+            ContentChange[] changes = CreateContentChanges(contentKeys, objectType);
+            Handle(changes, origin);
+        });
 
     private Guid[] GetContentKeysByContentTypes(Guid[] contentTypeKeys, UmbracoObjectTypes objectType)
-    {
-        return objectType switch
+        => objectType switch
         {
             UmbracoObjectTypes.Document => GetDocumentKeysByContentTypes(contentTypeKeys),
             UmbracoObjectTypes.Media => GetMediaKeysByMediaTypes(contentTypeKeys),
             UmbracoObjectTypes.Member => GetMemberKeysByMemberTypes(contentTypeKeys),
             _ => [],
         };
-    }
 
     private Guid[] GetDocumentKeysByContentTypes(Guid[] contentTypeKeys)
     {
-        IContentTypeService contentTypeService = _serviceProvider.GetRequiredService<IContentTypeService>();
-        IContentService contentService = _serviceProvider.GetRequiredService<IContentService>();
-
         int[] directContentTypeIds = contentTypeKeys
-            .Select(key => contentTypeService.Get(key))
+            .Select(key => _contentTypeService.Get(key))
             .Where(ct => ct is not null)
             .Select(ct => ct!.Id)
             .ToArray();
@@ -135,14 +148,14 @@ internal sealed class ContentIndexingService : IContentIndexingService
             return [];
         }
 
-        int[] allContentTypeIds = ExpandWithDependentContentTypes(contentTypeService, directContentTypeIds);
+        int[] allContentTypeIds = ExpandWithDependentContentTypes(_contentTypeService, directContentTypeIds);
 
         var keys = new List<Guid>();
         var pageIndex = 0L;
 
         while (true)
         {
-            IContent[] page = contentService.GetPagedOfTypes(
+            IContent[] page = _contentService.GetPagedOfTypes(
                 allContentTypeIds, pageIndex, 1000, out long totalRecords, null, null).ToArray();
             keys.AddRange(page.Select(c => c.Key));
             pageIndex++;
@@ -158,11 +171,8 @@ internal sealed class ContentIndexingService : IContentIndexingService
 
     private Guid[] GetMediaKeysByMediaTypes(Guid[] mediaTypeKeys)
     {
-        IMediaTypeService mediaTypeService = _serviceProvider.GetRequiredService<IMediaTypeService>();
-        IMediaService mediaService = _serviceProvider.GetRequiredService<IMediaService>();
-
         int[] directMediaTypeIds = mediaTypeKeys
-            .Select(key => mediaTypeService.Get(key))
+            .Select(key => _mediaTypeService.Get(key))
             .Where(mt => mt is not null)
             .Select(mt => mt!.Id)
             .ToArray();
@@ -172,14 +182,14 @@ internal sealed class ContentIndexingService : IContentIndexingService
             return [];
         }
 
-        int[] allMediaTypeIds = ExpandWithDependentContentTypes(mediaTypeService, directMediaTypeIds);
+        int[] allMediaTypeIds = ExpandWithDependentContentTypes(_mediaTypeService, directMediaTypeIds);
 
         var keys = new List<Guid>();
         var pageIndex = 0L;
 
         while (true)
         {
-            IMedia[] page = mediaService.GetPagedOfTypes(
+            IMedia[] page = _mediaService.GetPagedOfTypes(
                 allMediaTypeIds, pageIndex, 1000, out long totalRecords, null, null).ToArray();
             keys.AddRange(page.Select(m => m.Key));
             pageIndex++;
@@ -195,11 +205,8 @@ internal sealed class ContentIndexingService : IContentIndexingService
 
     private Guid[] GetMemberKeysByMemberTypes(Guid[] memberTypeKeys)
     {
-        IMemberTypeService memberTypeService = _serviceProvider.GetRequiredService<IMemberTypeService>();
-        IMemberService memberService = _serviceProvider.GetRequiredService<IMemberService>();
-
         int[] directMemberTypeIds = memberTypeKeys
-            .Select(key => memberTypeService.Get(key))
+            .Select(key => _memberTypeService.Get(key))
             .Where(mt => mt is not null)
             .Select(mt => mt!.Id)
             .ToArray();
@@ -209,12 +216,12 @@ internal sealed class ContentIndexingService : IContentIndexingService
             return [];
         }
 
-        int[] allMemberTypeIds = ExpandWithDependentContentTypes(memberTypeService, directMemberTypeIds);
+        int[] allMemberTypeIds = ExpandWithDependentContentTypes(_memberTypeService, directMemberTypeIds);
 
         var keys = new List<Guid>();
         foreach (int memberTypeId in allMemberTypeIds)
         {
-            IEnumerable<IMember> members = memberService.GetMembersByMemberType(memberTypeId);
+            IEnumerable<IMember> members = _memberService.GetMembersByMemberType(memberTypeId);
             keys.AddRange(members.Select(m => m.Key));
         }
 
@@ -244,10 +251,10 @@ internal sealed class ContentIndexingService : IContentIndexingService
         return result.ToArray();
     }
 
-    private void FlushDocumentIndexCache(Guid[] contentKeys)
+    private async Task FlushDocumentIndexCacheAsync(Guid[] contentKeys)
     {
-        _indexDocumentService.DeleteAsync(contentKeys, true).GetAwaiter().GetResult();
-        _indexDocumentService.DeleteAsync(contentKeys, false).GetAwaiter().GetResult();
+        await _indexDocumentService.DeleteAsync(contentKeys, true);
+        await _indexDocumentService.DeleteAsync(contentKeys, false);
     }
 
     private static ContentChange[] CreateContentChanges(Guid[] contentKeys, UmbracoObjectTypes objectType)
