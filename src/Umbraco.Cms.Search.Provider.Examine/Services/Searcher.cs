@@ -194,7 +194,7 @@ public class Searcher : IExamineSearcher
 
     private void AddProtection(IBooleanOperation searchQuery, AccessContext? accessContext)
     {
-        if (accessContext?.Ignore is true)
+        if (accessContext?.Bypass is true)
         {
             return;
         }

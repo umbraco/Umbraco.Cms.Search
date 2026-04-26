@@ -185,8 +185,7 @@ public class InvariantContentProtectionTests : SearcherTestBase
                 });
         });
 
-
-        SearchResult results = await Searcher.SearchAsync(Cms.Search.Core.Constants.IndexAliases.PublishedContent, "root title", null, null, null, null, null, AccessContext.Ignored(), 0, 100);
+        SearchResult results = await Searcher.SearchAsync(Cms.Search.Core.Constants.IndexAliases.PublishedContent, "root title", null, null, null, null, null, AccessContext.BypassProtection(), 0, 100);
 
         Assert.That(results.Total, Is.EqualTo(1));
     }
