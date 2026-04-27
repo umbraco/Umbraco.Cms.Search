@@ -3,9 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Entities;
-using Umbraco.Cms.Core.Models.Membership;
 using Umbraco.Cms.Core.Models.PublishedContent;
-using Umbraco.Cms.Core.Security;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.ViewModels;
@@ -19,18 +17,15 @@ public class SearchApiController : ApiControllerBase
     private readonly ISearcherResolver _searcherResolver;
     private readonly IEntityService _entityService;
     private readonly IVariationContextAccessor _variationContextAccessor;
-    private readonly IBackOfficeSecurityAccessor _backOfficeSecurityAccessor;
 
     public SearchApiController(
         ISearcherResolver searcherResolver,
         IEntityService entityService,
-        IVariationContextAccessor variationContextAccessor,
-        IBackOfficeSecurityAccessor backOfficeSecurityAccessor)
+        IVariationContextAccessor variationContextAccessor)
     {
         _searcherResolver = searcherResolver;
         _entityService = entityService;
         _variationContextAccessor = variationContextAccessor;
-        _backOfficeSecurityAccessor = backOfficeSecurityAccessor;
     }
 
     [HttpPost("search")]
@@ -50,9 +45,6 @@ public class SearchApiController : ApiControllerBase
             return NotFound($"No searcher was found for the index alias '{request.IndexAlias}'.");
         }
 
-        IUser user = CurrentUser(_backOfficeSecurityAccessor);
-        var accessContext = new AccessContext(user.Key, user.Groups.Select(group => group.Key).ToArray());
-
         SearchResult result = await searcher.SearchAsync(
             request.IndexAlias,
             request.Query,
@@ -61,7 +53,7 @@ public class SearchApiController : ApiControllerBase
             request.Sorters,
             request.Culture,
             request.Segment,
-            accessContext,
+            AccessContext.BypassProtection(),
             skip,
             take);
 
