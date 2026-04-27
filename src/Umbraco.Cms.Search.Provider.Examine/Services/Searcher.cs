@@ -194,7 +194,12 @@ public class Searcher : IExamineSearcher
 
     private void AddProtection(IBooleanOperation searchQuery, AccessContext? accessContext)
     {
-        if (accessContext is null)
+        if (accessContext?.Bypass is true)
+        {
+            return;
+        }
+
+        if (accessContext is null || accessContext.PrincipalId == Guid.Empty)
         {
             searchQuery.And().Field(Constants.SystemFields.Protection, Guid.Empty.AsKeyword());
         }
