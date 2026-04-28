@@ -1,7 +1,5 @@
 using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Models;
-using Umbraco.Cms.Core.Services.Changes;
-using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 namespace Umbraco.Cms.Search.Core.Cache;
@@ -41,11 +39,4 @@ internal abstract class ContentNotificationHandlerBase<TPayload>
     protected void ClearDocumentIndexCache()
         => _indexDocumentService.DeleteAllAsync().GetAwaiter().GetResult();
 
-    protected void ClearDocumentIndexCacheForStructuralChanges(IEnumerable<ContentTypeChangeTypes> changes)
-    {
-        if (changes.Any(change => change.RequiresIndexRebuild()))
-        {
-            ClearDocumentIndexCache();
-        }
-    }
 }

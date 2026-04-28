@@ -3,6 +3,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.HostedServices;
+using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Cms.Search.Core.Models.Configuration;
 using Umbraco.Cms.Search.Core.Models.Indexing;

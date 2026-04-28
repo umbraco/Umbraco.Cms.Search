@@ -51,6 +51,7 @@ public static class UmbracoBuilderExtensions
         builder.Services.AddSingleton<AddSearchCoreMarker>();
 
         builder.Services.AddSingleton<IContentIndexingService, ContentIndexingService>();
+        builder.Services.AddSingleton<IContentTypeIndexingService, ContentTypeIndexingService>();
         builder.Services.AddSingleton<IOriginProvider, OriginProvider>();
         builder.Services.AddSingleton<ISearcherResolver, SearcherResolver>();
         builder.Services.AddSingleton<IIndexerResolver, IndexerResolver>();
