@@ -1,7 +1,6 @@
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
-using Umbraco.Cms.Core.Strings;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 using Umbraco.Test.Search.Integration.Services;
@@ -13,8 +12,6 @@ public class ContentTypeTests : ContentBaseTestBase
     private IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>();
 
     private IContentService ContentService => GetRequiredService<IContentService>();
-
-    private IShortStringHelper ShortStringHelper => GetRequiredService<IShortStringHelper>();
 
     private IContentType _contentType1 = null!;
 

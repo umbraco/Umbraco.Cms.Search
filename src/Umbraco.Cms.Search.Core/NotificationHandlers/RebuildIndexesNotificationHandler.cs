@@ -22,15 +22,18 @@ internal sealed class RebuildIndexesNotificationHandler : IndexingNotificationHa
     INotificationHandler<RebuildIndexCacheRefresherNotification>
 {
     private readonly IContentIndexingService _contentIndexingService;
+    private readonly IContentTypeIndexingService _contentTypeIndexingService;
     private readonly IndexOptions _options;
 
     public RebuildIndexesNotificationHandler(
         IContentIndexingService contentIndexingService,
+        IContentTypeIndexingService contentTypeIndexingService,
         IOptions<IndexOptions> options,
         ICoreScopeProvider coreScopeProvider)
         : base(coreScopeProvider)
     {
         _contentIndexingService = contentIndexingService;
+        _contentTypeIndexingService = contentTypeIndexingService;
         _options = options.Value;
     }
 
@@ -95,6 +98,6 @@ internal sealed class RebuildIndexesNotificationHandler : IndexingNotificationHa
             return;
         }
 
-        _contentIndexingService.ReindexByContentTypes(affectedContentTypeKeys, objectType, origin);
+        _contentTypeIndexingService.ReindexByContentTypes(affectedContentTypeKeys, objectType, origin);
     }
 }
