@@ -189,15 +189,8 @@ public class ContentTypeTests : ContentBaseTestBase
         draftDocuments = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
         Assert.That(draftDocuments, Is.Empty);
 
-        // Act: make a structural change to the composition type (add a property)
-        compositionType.AddPropertyType(
-            new PropertyType(ShortStringHelper, "newProp", ValueStorageType.Ntext)
-            {
-                Alias = "newProp",
-                DataTypeId = Constants.DataTypes.Textbox,
-                PropertyEditorAlias = Constants.PropertyEditors.Aliases.TextBox,
-                Name = "newProp",
-            });
+        // Act: make a structural change to the composition type (change the alias)
+        compositionType.Alias += "_updated";
         await ContentTypeService.UpdateAsync(compositionType, Constants.Security.SuperUserKey);
 
         // Assert: BOTH content items should have been re-indexed,
@@ -273,15 +266,8 @@ public class ContentTypeTests : ContentBaseTestBase
         // Clear the index to track what gets re-indexed
         IndexerAndSearcher.Reset();
 
-        // Act: modify the root composition type
-        rootType.AddPropertyType(
-            new PropertyType(ShortStringHelper, "deepProp", ValueStorageType.Ntext)
-            {
-                Alias = "deepProp",
-                DataTypeId = Constants.DataTypes.Textbox,
-                PropertyEditorAlias = Constants.PropertyEditors.Aliases.TextBox,
-                Name = "deepProp",
-            });
+        // Act: make a structural change to the root composition type (change the alias)
+        rootType.Alias += "_updated";
         await ContentTypeService.UpdateAsync(rootType, Constants.Security.SuperUserKey);
 
         // Assert: ALL 3 content items should be re-indexed
