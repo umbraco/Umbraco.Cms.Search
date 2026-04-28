@@ -43,6 +43,7 @@ public class GetAllIndexesApiController : ApiControllerBase
                 new IndexViewModel
                 {
                     IndexAlias = indexRegistration.IndexAlias,
+                    ProviderName = indexMetadata.ProviderName,
                     DocumentCount = indexMetadata.DocumentCount,
                     HealthStatus = indexMetadata.HealthStatus,
                 });

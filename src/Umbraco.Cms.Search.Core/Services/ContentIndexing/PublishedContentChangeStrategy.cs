@@ -137,7 +137,7 @@ internal sealed class PublishedContentChangeStrategy : ContentChangeStrategyBase
                     return;
                 }
 
-                IMember[] members = _memberService.GetAll(pageIndex * ContentEnumerationPageSize, ContentEnumerationPageSize, out totalRecords, "sortOrder", Direction.Ascending).ToArray();
+                IMember[] members = _memberService.GetAll(pageIndex, ContentEnumerationPageSize, out totalRecords).ToArray();
                 foreach (IMember member in members)
                 {
                     if (cancellationToken.IsCancellationRequested)

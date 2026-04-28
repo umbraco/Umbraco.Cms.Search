@@ -46,7 +46,7 @@ internal abstract class ResolverTestsBase<TResolver> : UmbracoIntegrationTest
             => throw new NotImplementedException();
 
         public Task<IndexMetadata> GetMetadataAsync(string indexAlias)
-            => Task.FromResult(new IndexMetadata(0, HealthStatus.Healthy));
+            => Task.FromResult(new IndexMetadata(0, HealthStatus.Healthy, "Test"));
     }
 
     protected abstract class SearcherBase : ISearcher

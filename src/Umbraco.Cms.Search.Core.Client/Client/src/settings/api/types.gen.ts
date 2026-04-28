@@ -4,11 +4,6 @@ export type ClientOptions = {
     baseUrl: 'https://localhost:44324' | (string & {});
 };
 
-export type AccessContextModel = {
-    principalId: string;
-    groupIds?: Array<string> | null;
-};
-
 export type DirectionModel = 'Ascending' | 'Descending';
 
 export type DocumentModel = {
@@ -40,6 +35,7 @@ export type HealthStatusModel = 'Healthy' | 'Rebuilding' | 'Corrupted' | 'Empty'
 
 export type IndexModel = {
     indexAlias: string;
+    providerName: string;
     documentCount: number;
     healthStatus: HealthStatusModel;
 };
@@ -57,7 +53,6 @@ export type SearchRequestModel = {
     sorters?: Array<SorterModel> | null;
     culture?: string | null;
     segment?: string | null;
-    accessContext?: AccessContextModel | null;
 };
 
 export type SearchResultModel = {
@@ -85,6 +80,10 @@ export type IndexesErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
 };
 
 export type IndexesResponses = {
@@ -114,6 +113,10 @@ export type IndexErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
     /**
      * Not Found
      */
@@ -148,6 +151,10 @@ export type RebuildErrors = {
      */
     401: unknown;
     /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
+    /**
      * Not Found
      */
     404: unknown;
@@ -179,6 +186,10 @@ export type SearchErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * The authenticated user does not have access to this resource
+     */
+    403: unknown;
     /**
      * Not Found
      */

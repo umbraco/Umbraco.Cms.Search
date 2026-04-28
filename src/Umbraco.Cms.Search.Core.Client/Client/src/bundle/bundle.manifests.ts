@@ -1,6 +1,7 @@
 import { manifests as localizationManifests } from './lang/manifests.js';
 import { manifests as collectionActionManifests } from './collectionActions.manifests.js';
 import { manifests as collectionViewManifests } from './collectionViews.manifests.js';
+import { manifests as conditionManifests } from './condition.manifests.js';
 import { manifests as entityActionManifests } from './entityActions.manifests.js';
 import { manifests as globalContextManifests } from './globalContexts.manifests.js';
 import { manifests as repositoryManifests } from './repositories.manifests.js';
@@ -20,6 +21,7 @@ export const manifests: Array<UmbExtensionManifest> = [
   ...repositoryManifests,
   ...collectionActionManifests,
   ...collectionViewManifests,
+  ...conditionManifests,
   ...entityActionManifests,
   ...searchRootWorkspaceManifests,
   ...searchWorkspaceManifests,

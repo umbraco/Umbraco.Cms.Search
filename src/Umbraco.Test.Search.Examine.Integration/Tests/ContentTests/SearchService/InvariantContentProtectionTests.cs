@@ -168,6 +168,28 @@ public class InvariantContentProtectionTests : SearcherTestBase
         Assert.That(results.Total, Is.EqualTo(publish ? 0 : 1));
     }
 
+    [Test]
+    public async Task CanBypassProtection()
+    {
+        await MemberGroupService.CreateAsync(new MemberGroup() {Name = "testGroup"});
+
+        await WaitForIndexing(Cms.Search.Core.Constants.IndexAliases.PublishedContent, async () =>
+        {
+            await PublicAccessService.CreateAsync(
+                new PublicAccessEntrySlim
+                {
+                    ErrorPageId = RootKey,
+                    LoginPageId = RootKey,
+                    ContentId = RootKey,
+                    MemberGroupNames = ["testGroup"],
+                });
+        });
+
+        SearchResult results = await Searcher.SearchAsync(Cms.Search.Core.Constants.IndexAliases.PublishedContent, "root title", null, null, null, null, null, AccessContext.BypassProtection(), 0, 100);
+
+        Assert.That(results.Total, Is.EqualTo(1));
+    }
+
     [SetUp]
     public async Task CreateInvariantDocument()
     {

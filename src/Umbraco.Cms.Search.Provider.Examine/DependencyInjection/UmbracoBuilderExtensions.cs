@@ -82,7 +82,7 @@ public static class UmbracoBuilderExtensions
         {
             opt.SwaggerDoc(Constants.Api.Name, new OpenApiInfo
             {
-                Title = "Examine API",
+                Title = "Umbraco Search Examine API",
                 Version = "1.0",
             });
 

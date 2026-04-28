@@ -45,6 +45,7 @@ export default {
     rebuildIndex: 'Genopbyg indeks',
     indexInfo: 'Indeks information',
     indexAlias: 'Indeks alias',
+    providerName: 'Udbyderens navn',
     searchBox: 'Søg',
     searchPlaceholder: 'Søg i indeks...',
     searchButton: 'Søg',

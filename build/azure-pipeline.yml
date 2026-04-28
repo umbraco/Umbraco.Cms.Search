@@ -288,7 +288,7 @@ stages:
           - script: dotnet tool install --global CycloneDX
             displayName: 'Install CycloneDX .NET Tool'
 
-          - script: dotnet CycloneDX $(solution)
+          - script: dotnet CycloneDX --spec-version 1.5 $(solution)
             displayName: 'Generate NuGet SBOM'
 
           - publish: bom.xml

@@ -40,6 +40,7 @@ export class UmbSearchCollectionServerDataSource implements UmbSearchCollectionD
       return {
         unique: item.indexAlias,
         name: item.indexAlias,
+        providerName: item.providerName,
         documentCount: item.documentCount,
         healthStatus: item.healthStatus,
         entityType: UMB_SEARCH_INDEX_ENTITY_TYPE,

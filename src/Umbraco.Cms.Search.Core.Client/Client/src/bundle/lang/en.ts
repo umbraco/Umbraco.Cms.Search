@@ -32,6 +32,7 @@ export default {
     rebuildIndex: 'Rebuild Index',
     indexInfo: 'Index Information',
     indexAlias: 'Index Alias',
+    providerName: 'Provider Name',
     searchBox: 'Search',
     searchPlaceholder: 'Search index...',
     searchButton: 'Search',

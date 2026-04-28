@@ -37,6 +37,7 @@ public class GetIndexApiController : ApiControllerBase
         return Ok(new IndexViewModel
         {
             IndexAlias = indexAlias,
+            ProviderName = indexMetadata.ProviderName,
             DocumentCount = indexMetadata.DocumentCount,
             HealthStatus = indexMetadata.HealthStatus,
         });
