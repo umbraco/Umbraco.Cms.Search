@@ -36,7 +36,6 @@ internal abstract class ContentNotificationHandlerBase<TPayload>
     protected void FlushDocumentIndexCache(Guid[] ids, bool published)
         => _indexDocumentService.DeleteAsync(ids, published).GetAwaiter().GetResult();
 
-    protected void ClearDocumentIndexCache()
-        => _indexDocumentService.DeleteAllAsync().GetAwaiter().GetResult();
-
+    protected void RemoveLanguageFromDocumentIndexCache(IReadOnlyCollection<string> isoCodes)
+        => _indexDocumentService.DeleteCulturesAsync(isoCodes).GetAwaiter().GetResult();
 }
