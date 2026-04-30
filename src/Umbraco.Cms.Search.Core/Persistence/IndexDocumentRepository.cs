@@ -83,7 +83,7 @@ public class IndexDocumentRepository : IIndexDocumentRepository
         await _scopeAccessor.AmbientScope.Database.ExecuteAsync(sql);
     }
 
-    public async Task<PagedModel<IndexDocument>> GetPagedAsync(IReadOnlyCollection<string> isoCodes, long currentPage, int pageSize)
+    public async Task<PagedModel<IndexDocument>> GetPagedAsync(long currentPage, int pageSize)
     {
         if (_scopeAccessor.AmbientScope is null)
         {

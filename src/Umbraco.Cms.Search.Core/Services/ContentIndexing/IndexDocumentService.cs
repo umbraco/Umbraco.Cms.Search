@@ -59,7 +59,7 @@ public class IndexDocumentService : IIndexDocumentService
         var changes = new List<(Guid Key, bool Published, IndexDocument? Updated)>();
         do
         {
-            PagedModel<IndexDocument> page = await _indexDocumentRepository.GetPagedAsync(isoCodes, currentPage, pageSize);
+            PagedModel<IndexDocument> page = await _indexDocumentRepository.GetPagedAsync(currentPage, pageSize);
             total = page.Total;
 
             foreach (IndexDocument document in page.Items)
