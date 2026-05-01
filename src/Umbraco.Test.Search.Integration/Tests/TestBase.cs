@@ -73,7 +73,7 @@ public abstract class TestBase : UmbracoIntegrationTest
 
         public Task DeleteAllAsync() => Task.CompletedTask;
 
-        public Task<PagedModel<IndexDocument>> GetPagedAsync(IReadOnlyCollection<string> isoCodes, long currentPage, int pageSize)
+        public Task<PagedModel<IndexDocument>> GetPagedAsync(long currentPage, int pageSize)
             => Task.FromResult(new PagedModel<IndexDocument>());
     }
 }
