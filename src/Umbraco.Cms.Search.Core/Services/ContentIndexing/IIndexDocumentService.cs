@@ -11,4 +11,6 @@ public interface IIndexDocumentService
     Task<IndexDocument?> GetAsync(Guid id, bool published);
 
     Task DeleteAllAsync();
+
+    Task DeleteCulturesAsync(IReadOnlyCollection<string> isoCodes);
 }

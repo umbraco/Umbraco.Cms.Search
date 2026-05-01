@@ -1,6 +1,7 @@
 ﻿using MessagePack;
 using MessagePack.Resolvers;
 using NPoco;
+using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Infrastructure.Persistence;
 using Umbraco.Cms.Infrastructure.Scoping;
 using Umbraco.Cms.Search.Core.Models.Indexing;
@@ -82,6 +83,23 @@ public class IndexDocumentRepository : IIndexDocumentRepository
         await _scopeAccessor.AmbientScope.Database.ExecuteAsync(sql);
     }
 
+    public async Task<PagedModel<IndexDocument>> GetPagedAsync(long currentPage, int pageSize)
+    {
+        if (_scopeAccessor.AmbientScope is null)
+        {
+            throw new InvalidOperationException("Cannot fetch paged documents as there is no ambient scope.");
+        }
+
+        Sql<ISqlContext> sql = _scopeAccessor.AmbientScope.Database.SqlContext.Sql().SelectAll().From<IndexDocumentDto>();
+        Page<IndexDocumentDto> page =
+            await _scopeAccessor.AmbientScope.Database.PageAsync<IndexDocumentDto>(currentPage, pageSize, sql);
+
+        return new PagedModel<IndexDocument>
+        {
+            Total = page.TotalItems,
+            Items = page.Items.Select(ToDocument).WhereNotNull().ToArray(),
+        };
+    }
 
     private IndexDocumentDto ToDto(IndexDocument indexDocument) =>
         new()

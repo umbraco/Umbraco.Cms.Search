@@ -72,5 +72,8 @@ public abstract class TestBase : UmbracoIntegrationTest
         public Task DeleteAsync(Guid[] ids, bool published) => Task.CompletedTask;
 
         public Task DeleteAllAsync() => Task.CompletedTask;
+
+        public Task<PagedModel<IndexDocument>> GetPagedAsync(long currentPage, int pageSize)
+            => Task.FromResult(new PagedModel<IndexDocument>());
     }
 }
