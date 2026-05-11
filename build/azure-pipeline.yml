@@ -5,6 +5,10 @@ parameters:
     displayName: Cache NuGet packages
     type: boolean
     default: false
+  - name: npmDeploy
+    displayName: Deploy to Npm
+    type: boolean
+    default: false
 
 variables:
   solution: src/Umbraco.Cms.Search.sln
@@ -65,6 +69,35 @@ stages:
           - script: npm run build
             displayName: Build Client
             workingDirectory: src
+
+          - script: npm run types:generate --workspace=Umbraco.Cms.Search.Core.Client/Client
+            displayName: Generate TypeScript declarations
+            workingDirectory: src
+
+          - bash: |
+              echo "##[command]Install nbgv"
+              dotnet tool install --tool-path . nbgv
+              echo "##[command]Running nbgv get-version"
+              PACKAGE_VERSION=$(./nbgv get-version -v NpmPackageVersion)
+              echo "##[debug]Version: $PACKAGE_VERSION"
+              cd Umbraco.Cms.Search.Core.Client/Client
+              npm version $PACKAGE_VERSION --allow-same-version --no-git-tag-version
+            displayName: Set npm package version
+            workingDirectory: src
+
+          - bash: |
+              mkdir -p $(Build.ArtifactStagingDirectory)/npm
+              cd Umbraco.Cms.Search.Core.Client/Client
+              npm pack --pack-destination $(Build.ArtifactStagingDirectory)/npm
+              touch $(Build.ArtifactStagingDirectory)/npm/.npmrc
+            displayName: Pack npm types package
+            workingDirectory: src
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish npm types artifact
+            inputs:
+              targetPath: $(Build.ArtifactStagingDirectory)/npm
+              artifactName: npm-types
 
           # Cache and restore NuGet packages
           - task: Cache@2
@@ -259,6 +292,34 @@ stages:
           - pwsh: SqlLocalDB stop MSSQLLocalDB
             displayName: Stop SQL Server LocalDB (Windows)
             condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+
+  - stage: Deploy_Npm
+    displayName: Npm release
+    dependsOn: Build
+    condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), startsWith(variables['Build.SourceBranch'], 'refs/tags/release-'), eq('${{ parameters.npmDeploy }}', 'True')))
+    jobs:
+      - job: Publish
+        displayName: Push to NPM
+        pool:
+          vmImage: "ubuntu-latest"
+        steps:
+          - checkout: none
+          - download: current
+            artifact: npm-types
+          - bash: echo "@umbraco-cms:registry=https://registry.npmjs.org" >> .npmrc
+            workingDirectory: $(Pipeline.Workspace)/npm-types
+            displayName: Add scoped registry to .npmrc
+          - task: npmAuthenticate@0
+            displayName: Authenticate with npm
+            inputs:
+              workingFile: $(Pipeline.Workspace)/npm-types/.npmrc
+              customEndpoint: "NPM - Umbraco Backoffice"
+          - bash: |
+              npm init -y
+              files=( ./*.tgz )
+              npm publish "${files[0]}"
+            displayName: Push to npm
+            workingDirectory: $(Pipeline.Workspace)/npm-types
 
   - stage: Dependency_Track
     displayName: Dependency Track
