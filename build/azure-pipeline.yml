@@ -37,6 +37,12 @@ stages:
             inputs:
               useGlobalJson: true
 
+          - bash: |
+              dotnet tool install --tool-path . nbgv
+              ./nbgv cloud
+            displayName: Set build version using nbgv
+            workingDirectory: src
+
           # Client
           - task: NodeTool@0
             displayName: Use Node.js
@@ -71,9 +77,6 @@ stages:
             workingDirectory: src
 
           - bash: |
-              echo "##[command]Install nbgv"
-              dotnet tool install --tool-path . nbgv
-              echo "##[command]Running nbgv get-version"
               PACKAGE_VERSION=$(./nbgv get-version -v NpmPackageVersion)
               echo "##[debug]Version: $PACKAGE_VERSION"
               cd Umbraco.Cms.Search.Core.Client/Client
