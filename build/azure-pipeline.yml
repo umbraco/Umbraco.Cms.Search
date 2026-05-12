@@ -39,7 +39,7 @@ stages:
 
           - bash: |
               dotnet tool install --tool-path . nbgv
-              ./nbgv cloud
+              ./nbgv cloud -a
             displayName: Set build version using nbgv
             workingDirectory: src
 
@@ -73,6 +73,7 @@ stages:
             workingDirectory: src
 
           - bash: |
+              mkdir -p $(Build.ArtifactStagingDirectory)/npm
               npm version $(NBGV_NpmPackageVersion) --allow-same-version --no-git-tag-version
               npm pack --pack-destination $(Build.ArtifactStagingDirectory)/npm
             displayName: Pack npm types package
