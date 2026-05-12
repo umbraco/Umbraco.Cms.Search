@@ -2,6 +2,28 @@
 
 This guide is for **extension developers** and **search provider developers** who want to add custom UI to the Umbraco Search backoffice.
 
+## Installing the TypeScript types
+
+The Umbraco Search client publishes TypeScript types as a types-only npm package, `@umbraco-cms/search`. Install it as a dev dependency so you can author your extension with full IntelliSense for contexts, manifests, and shared models:
+
+```bash
+npm install --save-dev @umbraco-cms/search
+```
+
+The package exposes two entry points that mirror the runtime bundles loaded by the backoffice:
+
+- `@umbraco-cms/search/global` - constants and global contexts loaded upfront (entity types, repository aliases, notification context)
+- `@umbraco-cms/search/settings` - the lazy-loaded implementation surface (workspace context tokens, repositories, models)
+
+No runtime dependency is shipped - the actual JavaScript is served by the Umbraco backoffice itself at runtime via an importmap. You only need the types at build time:
+
+```typescript
+import { UMB_SEARCH_INDEX_ENTITY_TYPE } from '@umbraco-cms/search/global';
+import { UMB_SEARCH_WORKSPACE_CONTEXT, type UmbSearchIndex } from '@umbraco-cms/search/settings';
+```
+
+The package declares `@umbraco-cms/backoffice` as a peer dependency, so make sure that is installed in your project too.
+
 ## Adding a detail box to the search workspace
 
 <figure>
