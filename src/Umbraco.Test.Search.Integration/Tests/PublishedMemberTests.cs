@@ -196,18 +196,18 @@ public class PublishedMemberTests : TestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Id, Is.EqualTo(MemberOneKey));
-            Assert.That(documents[1].Id, Is.EqualTo(MemberTwoKey));
-            Assert.That(documents[2].Id, Is.EqualTo(MemberThreeKey));
+            Assert.That(
+                documents.Select(d => d.Id),
+                Is.EquivalentTo(new[] { MemberOneKey, MemberTwoKey, MemberThreeKey }));
 
             Assert.That(documents.All(d => d.ObjectType is UmbracoObjectTypes.Member), Is.True);
         });
 
         Assert.Multiple(() =>
         {
-            VerifyDocumentPropertyValues(documents[0], "Organization One");
-            VerifyDocumentPropertyValues(documents[1], "Organization Two");
-            VerifyDocumentPropertyValues(documents[2], "Organization Three");
+            VerifyDocumentPropertyValues(documents.Single(d => d.Id == MemberOneKey), "Organization One");
+            VerifyDocumentPropertyValues(documents.Single(d => d.Id == MemberTwoKey), "Organization Two");
+            VerifyDocumentPropertyValues(documents.Single(d => d.Id == MemberThreeKey), "Organization Three");
         });
     }
 

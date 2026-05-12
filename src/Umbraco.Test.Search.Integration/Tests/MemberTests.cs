@@ -117,18 +117,18 @@ public class MemberTests : ContentBaseTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(documents[0].Id, Is.EqualTo(MemberOneKey));
-            Assert.That(documents[1].Id, Is.EqualTo(MemberTwoKey));
-            Assert.That(documents[2].Id, Is.EqualTo(MemberThreeKey));
+            Assert.That(
+                documents.Select(d => d.Id),
+                Is.EquivalentTo(new[] { MemberOneKey, MemberTwoKey, MemberThreeKey }));
 
             Assert.That(documents.All(d => d.ObjectType is UmbracoObjectTypes.Member), Is.True);
         });
 
         Assert.Multiple(() =>
         {
-            VerifyDocumentPropertyValues(documents[0], "Organization One");
-            VerifyDocumentPropertyValues(documents[1], "Organization Two");
-            VerifyDocumentPropertyValues(documents[2], "Organization Three");
+            VerifyDocumentPropertyValues(documents.Single(d => d.Id == MemberOneKey), "Organization One");
+            VerifyDocumentPropertyValues(documents.Single(d => d.Id == MemberTwoKey), "Organization Two");
+            VerifyDocumentPropertyValues(documents.Single(d => d.Id == MemberThreeKey), "Organization Three");
         });
     }
 
@@ -144,6 +144,30 @@ public class MemberTests : ContentBaseTestBase
 
         documents = IndexerAndSearcher.Dump(IndexAliases.Media);
         Assert.That(documents, Has.Count.EqualTo(0));
+    }
+
+    [Test]
+    public void Can_Index_More_Than_Content_Enumeration_Page_Size()
+    {
+        IMemberType memberType = MemberTypeService.GetAll().First();
+        foreach (var count in Enumerable.Range(1, ContentChangeStrategyBase.ContentEnumerationPageSize))
+        {
+            MemberService.Save(
+                new MemberBuilder()
+                    .WithKey(Guid.NewGuid())
+                    .WithMemberType(memberType)
+                    .WithName($"Member {count:0000}")
+                    .WithEmail($"member{count:0000}@local")
+                    .WithLogin($"member{count:0000}@local", "Test123456")
+                    .Build());
+        }
+
+        IndexerAndSearcher.Reset();
+
+        ContentIndexingService.Rebuild(IndexAliases.Member, DefaultOrigin);
+
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.Member);
+        Assert.That(documents, Has.Count.EqualTo(ContentChangeStrategyBase.ContentEnumerationPageSize + 3));
     }
 
     private IMemberService MemberService => GetRequiredService<IMemberService>();

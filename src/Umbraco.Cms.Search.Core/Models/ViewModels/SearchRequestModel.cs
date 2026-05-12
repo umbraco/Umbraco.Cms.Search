@@ -20,6 +20,4 @@ public class SearchRequestModel
     public string? Culture { get; set; }
 
     public string? Segment { get; set; }
-
-    public AccessContext? AccessContext { get; set; }
 }
