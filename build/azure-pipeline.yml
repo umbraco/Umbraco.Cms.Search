@@ -72,24 +72,11 @@ stages:
             displayName: Build Client
             workingDirectory: src
 
-          - script: npm run types:generate --workspace=Umbraco.Cms.Search.Core.Client/Client
-            displayName: Generate TypeScript declarations
-            workingDirectory: src
-
           - bash: |
-              PACKAGE_VERSION=$(./nbgv get-version -v NpmPackageVersion)
-              echo "##[debug]Version: $PACKAGE_VERSION"
-              cd Umbraco.Cms.Search.Core.Client/Client
-              npm version $PACKAGE_VERSION --allow-same-version --no-git-tag-version
-            displayName: Set npm package version
-            workingDirectory: src
-
-          - bash: |
-              mkdir -p $(Build.ArtifactStagingDirectory)/npm
-              cd Umbraco.Cms.Search.Core.Client/Client
+              npm version $(NBGV_NpmPackageVersion) --allow-same-version --no-git-tag-version
               npm pack --pack-destination $(Build.ArtifactStagingDirectory)/npm
             displayName: Pack npm types package
-            workingDirectory: src
+            workingDirectory: src/Umbraco.Cms.Search.Core.Client/Client
 
           - task: PublishPipelineArtifact@1
             displayName: Publish npm types artifact

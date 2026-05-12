@@ -18,6 +18,7 @@
     "watch": "vite build --watch",
     "build": "tsc && vite build",
     "types:generate": "tsc -p tsconfig.types.json",
+    "prepack": "npm run types:generate",
     "generate-client": "node ../../scripts/generate-openapi.js https://localhost:44324/umbraco/swagger/search/swagger.json src/settings/api",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
