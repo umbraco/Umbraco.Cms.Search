@@ -672,10 +672,23 @@ public class Searcher : IExamineSearcher
 
     private INestedBooleanOperation CreateAggregatedTextQuery(INestedQuery nestedQuery, string term, string? searchSegment)
     {
+        // Both an analyzed exact-match clause and a wildcard clause are needed per relevance tier:
+        // wildcard queries bypass the analyzer, so they cannot match indexed terms that were
+        // tokenized at script boundaries (e.g. Japanese katakana + Latin in "ボディSegment1").
+        // The analyzed Boost() clause provides token-aware matching; the wildcard clause provides
+        // prefix matching. Both carry the tier boost.
         INestedBooleanOperation result = nestedQuery
             .Field(
                 Constants.SystemFields.AggregatedTextsR1,
+                term.Boost(SearcherOptions.BoostFactorTextR1))
+            .Or()
+            .Field(
+                Constants.SystemFields.AggregatedTextsR1,
                 term.MultipleCharacterWildcard().WithBoost(SearcherOptions.BoostFactorTextR1))
+            .Or()
+            .Field(
+                Constants.SystemFields.AggregatedTextsR2,
+                term.Boost(SearcherOptions.BoostFactorTextR2))
             .Or()
             .Field(
                 Constants.SystemFields.AggregatedTextsR2,
@@ -683,7 +696,15 @@ public class Searcher : IExamineSearcher
             .Or()
             .Field(
                 Constants.SystemFields.AggregatedTextsR3,
+                term.Boost(SearcherOptions.BoostFactorTextR3))
+            .Or()
+            .Field(
+                Constants.SystemFields.AggregatedTextsR3,
                 term.MultipleCharacterWildcard().WithBoost(SearcherOptions.BoostFactorTextR3))
+            .Or()
+            .Field(
+                Constants.SystemFields.AggregatedTexts,
+                term.Boost(1.0f))
             .Or()
             .Field(
                 Constants.SystemFields.AggregatedTexts,
@@ -695,7 +716,15 @@ public class Searcher : IExamineSearcher
                 .Or()
                 .Field(
                     FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTextsR1, searchSegment),
+                    term.Boost(SearcherOptions.BoostFactorTextR1))
+                .Or()
+                .Field(
+                    FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTextsR1, searchSegment),
                     term.MultipleCharacterWildcard().WithBoost(SearcherOptions.BoostFactorTextR1))
+                .Or()
+                .Field(
+                    FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTextsR2, searchSegment),
+                    term.Boost(SearcherOptions.BoostFactorTextR2))
                 .Or()
                 .Field(
                     FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTextsR2, searchSegment),
@@ -703,7 +732,15 @@ public class Searcher : IExamineSearcher
                 .Or()
                 .Field(
                     FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTextsR3, searchSegment),
+                    term.Boost(SearcherOptions.BoostFactorTextR3))
+                .Or()
+                .Field(
+                    FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTextsR3, searchSegment),
                     term.MultipleCharacterWildcard().WithBoost(SearcherOptions.BoostFactorTextR3))
+                .Or()
+                .Field(
+                    FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTexts, searchSegment),
+                    term.Boost(1.0f))
                 .Or()
                 .Field(
                     FieldNameHelper.SegmentedSystemFieldName(Constants.SystemFields.AggregatedTexts, searchSegment),
