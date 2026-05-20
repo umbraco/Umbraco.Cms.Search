@@ -1,5 +1,24 @@
 name: $(TeamProject)_$(Build.DefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
 
+trigger:
+  batch: true
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - src
+      - build
+      - "*.props"
+      - global.json
+      - version.json
+
+pr:
+  branches:
+    include:
+      - main
+      - release/*
+
 parameters:
   - name: cache_nuget
     displayName: Cache NuGet packages
