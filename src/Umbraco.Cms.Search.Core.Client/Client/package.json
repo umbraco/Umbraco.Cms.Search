@@ -1,11 +1,24 @@
 {
-  "name": "@umbraco-cms/search-core-client",
-  "private": true,
+  "name": "@umbraco-cms/search",
   "version": "0.0.0",
   "type": "module",
+  "exports": {
+    "./global": {
+      "types": "./dist-types/global/index.d.ts"
+    },
+    "./settings": {
+      "types": "./dist-types/settings/index.d.ts"
+    }
+  },
+  "files": ["dist-types"],
+  "peerDependencies": {
+    "@umbraco-cms/backoffice": ">=17.0.0"
+  },
   "scripts": {
     "watch": "vite build --watch",
     "build": "tsc && vite build",
+    "types:generate": "tsc -p tsconfig.types.json",
+    "prepack": "npm run types:generate",
     "generate-client": "node ../../scripts/generate-openapi.js https://localhost:44324/umbraco/swagger/search/swagger.json src/settings/api",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",

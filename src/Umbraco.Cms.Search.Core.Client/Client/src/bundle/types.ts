@@ -4,7 +4,8 @@ import type {
 } from '@umbraco-cms/backoffice/extension-api';
 
 export interface ManifestSearchIndexDetailBox
-  extends ManifestElement, ManifestWithDynamicConditions {
+  extends ManifestElement,
+    ManifestWithDynamicConditions<UmbExtensionConditionConfig> {
   type: 'searchIndexDetailBox';
   meta?: MetaSearchIndexDetailBox;
 }

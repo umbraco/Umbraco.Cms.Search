@@ -1,5 +1,5 @@
 {
-  "name": "@umbraco-cms/search-examine-client",
+  "name": "@umbraco-cms/search-examine",
   "private": true,
   "version": "0.0.0",
   "type": "module",
