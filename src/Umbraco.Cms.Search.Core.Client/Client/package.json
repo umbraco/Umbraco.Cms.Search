@@ -1,6 +1,17 @@
 {
   "name": "@umbraco-cms/search",
   "version": "0.0.0",
+  "description": "TypeScript type definitions for extending the Umbraco Search backoffice.",
+  "license": "MIT",
+  "homepage": "https://docs.umbraco.com/umbraco-search/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/umbraco/Umbraco.Cms.Search.git",
+    "directory": "src/Umbraco.Cms.Search.Core.Client/Client"
+  },
+  "bugs": {
+    "url": "https://github.com/umbraco/Umbraco.Cms.Search/issues"
+  },
   "type": "module",
   "exports": {
     "./global": {
