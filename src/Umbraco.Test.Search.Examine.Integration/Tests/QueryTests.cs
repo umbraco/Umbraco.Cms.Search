@@ -135,8 +135,6 @@ public class QueryTests : SearcherTestBase
     // itself carries the relevance-tier boost (R1 > R2 > R3 > Texts) — without the boost
     // on the wildcard, all four documents would tie at the same constant wildcard score.
     [Test]
-    // TODO: include this with the next version of Examine
-    [Ignore("Does not work with the current version of Examine")]
     public async Task WildcardOnlyMatchesRespectRelevanceTierBoost()
     {
         SearchResult result = await SearchAsync(
