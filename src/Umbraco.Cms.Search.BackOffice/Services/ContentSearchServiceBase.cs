@@ -52,14 +52,14 @@ internal abstract class ContentSearchServiceBase<TContent> : IndexedSearchServic
             filters.Add(new IntegerExactFilter(Core.Constants.FieldNames.Level, [1], false));
         }
 
-        Sorter? sorter = GetSorter(ordering);
+        Sorter sorter = GetSorter(ordering);
 
         SearchResult result = await _searcher.SearchAsync(
             IndexAlias,
             query: effectiveQuery,
             filters: filters,
             facets: null,
-            sorters: sorter != null ? [sorter] : null,
+            sorters: [sorter],
             culture: ordering?.Culture,
             segment: null,
             accessContext: null,
@@ -118,17 +118,17 @@ internal abstract class ContentSearchServiceBase<TContent> : IndexedSearchServic
         };
     }
 
-    private Sorter? GetSorter(Ordering? ordering)
+    private Sorter GetSorter(Ordering? ordering)
     {
         if (ordering?.OrderBy is null)
         {
-            return null;
+            return DefaultSorter();
         }
 
         if (ordering.IsCustomField)
         {
             // TODO: support custom field ordering
-            return null;
+            return DefaultSorter();
         }
 
         switch (ordering.OrderBy)
@@ -142,10 +142,12 @@ internal abstract class ContentSearchServiceBase<TContent> : IndexedSearchServic
                 // NOTE: "creator" / "owner" is configurable for list view but not supported here,
                 //       because this will require a full re-index when any username is changed
                 _logger.LogInformation("The system field \"{field}\" does not support sorting by indexed content search.", ordering.OrderBy);
-                return null;
+                return DefaultSorter();
             default:
                 _logger.LogInformation("The system field \"{field}\" could not be converted into a sorting by indexed content search.", ordering.OrderBy);
-                return null;
+                return DefaultSorter();
         }
+
+        Sorter DefaultSorter() => new ScoreSorter(Direction.Descending);
     }
 }
