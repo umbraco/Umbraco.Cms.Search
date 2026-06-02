@@ -106,7 +106,7 @@ internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIn
             query: effectiveQuery,
             filters: filters,
             facets: null,
-            sorters: [new ScoreSorter(Direction.Descending)],
+            sorters: [Sorting.Default()],
             culture: culture,
             segment: null,
             accessContext: null,

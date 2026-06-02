@@ -122,13 +122,13 @@ internal abstract class ContentSearchServiceBase<TContent> : IndexedSearchServic
     {
         if (ordering?.OrderBy is null)
         {
-            return DefaultSorter();
+            return Sorting.Default();
         }
 
         if (ordering.IsCustomField)
         {
             // TODO: support custom field ordering
-            return DefaultSorter();
+            return Sorting.Default();
         }
 
         switch (ordering.OrderBy)
@@ -142,12 +142,10 @@ internal abstract class ContentSearchServiceBase<TContent> : IndexedSearchServic
                 // NOTE: "creator" / "owner" is configurable for list view but not supported here,
                 //       because this will require a full re-index when any username is changed
                 _logger.LogInformation("The system field \"{field}\" does not support sorting by indexed content search.", ordering.OrderBy);
-                return DefaultSorter();
+                return Sorting.Default();
             default:
                 _logger.LogInformation("The system field \"{field}\" could not be converted into a sorting by indexed content search.", ordering.OrderBy);
-                return DefaultSorter();
+                return Sorting.Default();
         }
-
-        Sorter DefaultSorter() => new ScoreSorter(Direction.Descending);
     }
 }
