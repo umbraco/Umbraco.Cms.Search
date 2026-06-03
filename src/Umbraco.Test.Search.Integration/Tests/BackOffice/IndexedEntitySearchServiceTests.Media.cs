@@ -217,4 +217,34 @@ public partial class IndexedEntitySearchServiceTests
 
         Assert.That(expectedTotal, Is.EqualTo(result.Total));
     }
+
+    [Test]
+    public async Task Media_RespectsTextBoostingTiers_All()
+    {
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
+            UmbracoObjectTypes.Media,
+            query: "shared",
+            parentId: null,
+            contentTypeIds: null,
+            trashed: false);
+
+        Assert.That(result.Total, Is.EqualTo(22));
+        Assert.That(result.Items.Take(2).All(c => c.Name!.Contains("Root")), Is.True);
+        Assert.That(result.Items.Skip(2).All(c => c.Name!.Contains("Child")), Is.True);
+    }
+
+    [Test]
+    public async Task Media_RespectsTextBoostingTiers_Single()
+    {
+        PagedModel<IEntitySlim> result = await IndexedEntitySearchService.SearchAsync(
+            UmbracoObjectTypes.Media,
+            query: "shared1",
+            parentId: null,
+            contentTypeIds: null,
+            trashed: false);
+
+        Assert.That(result.Total, Is.EqualTo(11));
+        Assert.That(result.Items.First().Name, Is.EqualTo("Root 1 shared shared1"));
+        Assert.That(result.Items.Skip(1).All(c => c.Name!.Contains("Child")), Is.True);
+    }
 }
