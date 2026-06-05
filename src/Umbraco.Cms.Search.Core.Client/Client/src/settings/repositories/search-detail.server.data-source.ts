@@ -30,6 +30,7 @@ export class UmbSearchServerDataSource implements UmbDetailDataSource<UmbSearchI
     const data: UmbSearchIndex = {
       entityType: UMB_SEARCH_INDEX_ENTITY_TYPE,
       name: preset.indexAlias!,
+      providerName: preset.providerName!,
       unique: preset.indexAlias!,
       documentCount: 0,
       state,

@@ -1,5 +1,24 @@
 name: $(TeamProject)_$(Build.DefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
 
+trigger:
+  batch: true
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - src
+      - build
+      - "*.props"
+      - global.json
+      - version.json
+
+pr:
+  branches:
+    include:
+      - main
+      - release/*
+
 parameters:
   - name: cache_nuget
     displayName: Cache NuGet packages
@@ -37,6 +56,12 @@ stages:
             inputs:
               useGlobalJson: true
 
+          - bash: |
+              dotnet tool install --tool-path . nbgv
+              ./nbgv cloud -a
+            displayName: Set build version using nbgv
+            workingDirectory: src
+
           # Client
           - task: NodeTool@0
             displayName: Use Node.js
@@ -65,6 +90,19 @@ stages:
           - script: npm run build
             displayName: Build Client
             workingDirectory: src
+
+          - bash: |
+              mkdir -p $(Build.ArtifactStagingDirectory)/npm
+              npm version $(NBGV_NpmPackageVersion) --allow-same-version --no-git-tag-version
+              npm pack --pack-destination $(Build.ArtifactStagingDirectory)/npm
+            displayName: Pack npm types package
+            workingDirectory: src/Umbraco.Cms.Search.Core.Client/Client
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish npm types artifact
+            inputs:
+              targetPath: $(Build.ArtifactStagingDirectory)/npm
+              artifactName: npm-types
 
           # Cache and restore NuGet packages
           - task: Cache@2
@@ -288,7 +326,7 @@ stages:
           - script: dotnet tool install --global CycloneDX
             displayName: 'Install CycloneDX .NET Tool'
 
-          - script: dotnet CycloneDX $(solution)
+          - script: dotnet CycloneDX --spec-version 1.5 $(solution)
             displayName: 'Generate NuGet SBOM'
 
           - publish: bom.xml

@@ -51,6 +51,7 @@ public static class UmbracoBuilderExtensions
         builder.Services.AddSingleton<AddSearchCoreMarker>();
 
         builder.Services.AddSingleton<IContentIndexingService, ContentIndexingService>();
+        builder.Services.AddSingleton<IContentTypeIndexingService, ContentTypeIndexingService>();
         builder.Services.AddSingleton<IOriginProvider, OriginProvider>();
         builder.Services.AddSingleton<ISearcherResolver, SearcherResolver>();
         builder.Services.AddSingleton<IIndexerResolver, IndexerResolver>();
@@ -115,7 +116,7 @@ public static class UmbracoBuilderExtensions
             // Along with having a generated swagger JSON file that we can use to auto generate a TypeScript client
             opt.SwaggerDoc(Constants.Api.Name, new OpenApiInfo
             {
-                Title = "Search API",
+                Title = "Umbraco Search Management API",
                 Version = "1.0",
             });
 

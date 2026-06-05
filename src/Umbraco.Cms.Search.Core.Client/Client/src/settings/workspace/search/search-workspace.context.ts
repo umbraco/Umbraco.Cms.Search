@@ -27,6 +27,7 @@ export class UmbSearchWorkspaceContext
     (x) => x?.documentCount,
   );
   public readonly healthStatus = this._data.createObservablePartOfPersisted((x) => x?.healthStatus);
+  public readonly providerName = this._data.createObservablePartOfPersisted((x) => x?.providerName);
   public readonly state = this._data.createObservablePartOfCurrent((x) => x?.state);
 
   #selectedCulture = new UmbStringState(undefined);

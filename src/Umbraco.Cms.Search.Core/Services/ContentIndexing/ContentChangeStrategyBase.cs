@@ -16,7 +16,7 @@ internal abstract class ContentChangeStrategyBase
 
     protected abstract bool SupportsTrashedContent { get; }
 
-    protected const int ContentEnumerationPageSize = 1000;
+    internal const int ContentEnumerationPageSize = 1000;
 
     protected ContentChangeStrategyBase(
         IUmbracoDatabaseFactory umbracoDatabaseFactory,

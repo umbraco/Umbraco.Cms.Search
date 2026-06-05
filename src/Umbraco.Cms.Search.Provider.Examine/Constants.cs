@@ -4,7 +4,12 @@ internal static class Constants
 {
     public static class Api
     {
-        public const string Name = "Examine";
+        public const string Name = "search-examine-provider";
+    }
+
+    public static class Provider
+    {
+        public const string Name = Api.Name;
     }
 
     public static class Variance

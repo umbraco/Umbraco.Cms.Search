@@ -10,7 +10,7 @@ using Umbraco.Cms.Search.Provider.Examine.Services;
 namespace Umbraco.Cms.Search.Provider.Examine.Controllers;
 
 [ApiVersion("1.0")]
-[ApiExplorerSettings(GroupName = Constants.Api.Name)]
+[ApiExplorerSettings(GroupName = "Umbraco Search (Examine Provider)")]
 public class ExamineApiController : ExamineApiControllerBase
 {
     private readonly IExamineManager _examineManager;

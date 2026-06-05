@@ -1,4 +1,4 @@
-﻿using Umbraco.Cms.Core.Cache;
+using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
@@ -24,8 +24,6 @@ internal sealed class MediaTypeNotificationHandler
             .Changes
             .Select(change => new MediaTypeCacheRefresher.JsonPayload(change.Item.Key, change.ChangeTypes))
             .ToArray();
-
-        ClearDocumentIndexCacheForStructuralChanges(payloads.Select(payload => payload.ChangeTypes));
 
         HandlePayloads(payloads);
     }

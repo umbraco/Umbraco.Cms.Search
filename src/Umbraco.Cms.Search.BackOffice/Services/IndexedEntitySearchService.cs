@@ -8,6 +8,7 @@ using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Searching;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
+using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
 using Umbraco.Cms.Search.Core.Services;
 using Constants = Umbraco.Cms.Search.Core.Constants;
 
@@ -105,7 +106,7 @@ internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIn
             query: effectiveQuery,
             filters: filters,
             facets: null,
-            sorters: null,
+            sorters: [Sorting.Default()],
             culture: culture,
             segment: null,
             accessContext: null,
@@ -114,7 +115,12 @@ internal sealed class IndexedEntitySearchService : IndexedSearchServiceBase, IIn
 
         Guid[] resultKeys = result.Documents.Select(d => d.Id).ToArray();
         IEntitySlim[] resultEntities = resultKeys.Any()
-            ? _entityService.GetAll(objectType, resultKeys).ToArray()
+            ? _entityService
+                .GetAll(objectType, resultKeys)
+                // unfortunately we can't explicitly rely on the underlying services ordering the requested
+                // items correctly, so we need to enforce correct ordering here.
+                .OrderBy(entity => resultKeys.IndexOf(entity.Key))
+                .ToArray()
             : [];
 
         return new PagedModel<IEntitySlim> { Items = resultEntities, Total = result.Total };

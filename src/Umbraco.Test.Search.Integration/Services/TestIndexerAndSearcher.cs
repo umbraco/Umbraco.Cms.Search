@@ -46,7 +46,7 @@ public class TestIndexerAndSearcher : IIndexer, ISearcher
         return Task.CompletedTask;
     }
 
-    public Task<IndexMetadata> GetMetadataAsync(string indexAlias) => Task.FromResult(new IndexMetadata(GetIndex(indexAlias).Count, HealthStatus.Healthy));
+    public Task<IndexMetadata> GetMetadataAsync(string indexAlias) => Task.FromResult(new IndexMetadata(GetIndex(indexAlias).Count, HealthStatus.Healthy, "Test"));
 
     public IReadOnlyList<TestIndexDocument> Dump(string indexAlias) => GetIndex(indexAlias).Values.ToList();
 
@@ -141,6 +141,15 @@ public class TestIndexerAndSearcher : IIndexer, ISearcher
                     document.Fields.FirstOrDefault(field =>
                         IsVarianceMatch(field)
                         && field.FieldName == dateTimeOffsetSorter.FieldName)?.Value.DateTimeOffsets?.FirstOrDefault()).ToArray(),
+                ScoreSorter when query is not null => result.OrderBy(document =>
+                        document.Fields.Any(f => string.Join(" ", f.Value.TextsR1.EmptyNull()).InvariantContains(query))
+                            ? 4
+                            : document.Fields.Any(f => string.Join(" ", f.Value.TextsR2.EmptyNull()).InvariantContains(query))
+                                ? 3
+                                : document.Fields.Any(f => string.Join(" ", f.Value.TextsR3.EmptyNull()).InvariantContains(query))
+                                    ? 2
+                                    : 1)
+                    .ToArray(),
                 _ => result
             };
 

@@ -123,7 +123,7 @@ internal sealed class DraftContentChangeStrategy : ContentChangeStrategyBase, ID
                 break;
             }
 
-            members = _memberService.GetAll(pageIndex, ContentEnumerationPageSize, out _, "sortOrder", Direction.Ascending).ToArray();
+            members = _memberService.GetAll(pageIndex, ContentEnumerationPageSize, out _).ToArray();
             foreach (IMember member in members)
             {
                 if (cancellationToken.IsCancellationRequested)

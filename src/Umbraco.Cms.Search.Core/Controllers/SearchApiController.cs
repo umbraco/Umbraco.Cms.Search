@@ -53,7 +53,7 @@ public class SearchApiController : ApiControllerBase
             request.Sorters,
             request.Culture,
             request.Segment,
-            request.AccessContext,
+            AccessContext.BypassProtection(),
             skip,
             take);
 

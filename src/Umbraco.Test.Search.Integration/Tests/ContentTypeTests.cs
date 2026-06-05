@@ -136,6 +136,217 @@ public class ContentTypeTests : ContentBaseTestBase
     }
 
     [Test]
+    public async Task UpdateComposedContentType_ReindexesComposingTypeContent()
+    {
+        // Create a content type that will be used as a composition
+        IContentType compositionType = new ContentTypeBuilder()
+            .WithAlias("composition")
+            .AddPropertyType()
+                .WithAlias("originalProp")
+                .WithDataTypeId(Constants.DataTypes.Textbox)
+                .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+                .Done()
+            .Build();
+        await ContentTypeService.CreateAsync(compositionType, Constants.Security.SuperUserKey);
+        compositionType.AllowedAsRoot = true;
+        await ContentTypeService.UpdateAsync(compositionType, Constants.Security.SuperUserKey);
+
+        // Create a content type that inherits from (composes) the first
+        IContentType composingType = new ContentTypeBuilder()
+            .WithAlias("composing")
+            .Build();
+        composingType.AddContentType(compositionType);
+        await ContentTypeService.CreateAsync(composingType, Constants.Security.SuperUserKey);
+        composingType.AllowedAsRoot = true;
+        await ContentTypeService.UpdateAsync(composingType, Constants.Security.SuperUserKey);
+
+        // Create content of the composition type
+        var compositionContentKey = Guid.NewGuid();
+        Content compositionContent = new ContentBuilder()
+            .WithKey(compositionContentKey)
+            .WithContentType(compositionType)
+            .Build();
+        ContentService.Save(compositionContent);
+
+        // Create content of the composing type
+        var composingContentKey = Guid.NewGuid();
+        Content composingContent = new ContentBuilder()
+            .WithKey(composingContentKey)
+            .WithContentType(composingType)
+            .Build();
+        ContentService.Save(composingContent);
+
+        // Verify initial state: both new content items indexed in draft
+        // (plus 6 from the base SetUp = 8 total)
+        IReadOnlyList<TestIndexDocument> draftDocuments = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        Assert.That(draftDocuments, Has.Count.EqualTo(8));
+
+        // Clear the index to track what gets re-indexed by the content type change
+        IndexerAndSearcher.Reset();
+        draftDocuments = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        Assert.That(draftDocuments, Is.Empty);
+
+        // Act: make a structural change to the composition type (change the alias)
+        compositionType.Alias += "_updated";
+        await ContentTypeService.UpdateAsync(compositionType, Constants.Security.SuperUserKey);
+
+        // Assert: BOTH content items should have been re-indexed,
+        // not just the composition type's content
+        draftDocuments = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        Assert.That(draftDocuments, Has.Count.EqualTo(2));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(draftDocuments.Select(d => d.Id), Contains.Item(compositionContentKey));
+            Assert.That(draftDocuments.Select(d => d.Id), Contains.Item(composingContentKey));
+        });
+    }
+
+    [Test]
+    public async Task UpdateDeeplyNestedComposition_ReindexesAllDependentContent()
+    {
+        // Create a 3-level composition chain: grandchild composes child, child composes root
+        IContentType rootType = new ContentTypeBuilder()
+            .WithAlias("root_comp")
+            .AddPropertyType()
+                .WithAlias("rootProp")
+                .WithDataTypeId(Constants.DataTypes.Textbox)
+                .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+                .Done()
+            .Build();
+        await ContentTypeService.CreateAsync(rootType, Constants.Security.SuperUserKey);
+        rootType.AllowedAsRoot = true;
+        await ContentTypeService.UpdateAsync(rootType, Constants.Security.SuperUserKey);
+
+        IContentType childType = new ContentTypeBuilder()
+            .WithAlias("child_comp")
+            .Build();
+        childType.AddContentType(rootType);
+        await ContentTypeService.CreateAsync(childType, Constants.Security.SuperUserKey);
+        childType.AllowedAsRoot = true;
+        await ContentTypeService.UpdateAsync(childType, Constants.Security.SuperUserKey);
+
+        IContentType grandchildType = new ContentTypeBuilder()
+            .WithAlias("grandchild_comp")
+            .Build();
+        grandchildType.AddContentType(childType);
+        await ContentTypeService.CreateAsync(grandchildType, Constants.Security.SuperUserKey);
+        grandchildType.AllowedAsRoot = true;
+        await ContentTypeService.UpdateAsync(grandchildType, Constants.Security.SuperUserKey);
+
+        // Create content of each type
+        var rootContentKey = Guid.NewGuid();
+        Content rootContent = new ContentBuilder()
+            .WithKey(rootContentKey)
+            .WithContentType(rootType)
+            .Build();
+        ContentService.Save(rootContent);
+
+        var childContentKey = Guid.NewGuid();
+        Content childContent = new ContentBuilder()
+            .WithKey(childContentKey)
+            .WithContentType(childType)
+            .Build();
+        ContentService.Save(childContent);
+
+        var grandchildContentKey = Guid.NewGuid();
+        Content grandchildContent = new ContentBuilder()
+            .WithKey(grandchildContentKey)
+            .WithContentType(grandchildType)
+            .Build();
+        ContentService.Save(grandchildContent);
+
+        // Verify initial state (6 from SetUp + 3 new = 9)
+        IReadOnlyList<TestIndexDocument> draftDocuments = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        Assert.That(draftDocuments, Has.Count.EqualTo(9));
+
+        // Clear the index to track what gets re-indexed
+        IndexerAndSearcher.Reset();
+
+        // Act: make a structural change to the root composition type (change the alias)
+        rootType.Alias += "_updated";
+        await ContentTypeService.UpdateAsync(rootType, Constants.Security.SuperUserKey);
+
+        // Assert: ALL 3 content items should be re-indexed
+        draftDocuments = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        Assert.That(draftDocuments, Has.Count.EqualTo(3));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(draftDocuments.Select(d => d.Id), Contains.Item(rootContentKey));
+            Assert.That(draftDocuments.Select(d => d.Id), Contains.Item(childContentKey));
+            Assert.That(draftDocuments.Select(d => d.Id), Contains.Item(grandchildContentKey));
+        });
+    }
+
+    [Test]
+    public async Task DeleteComposedContentType_RemovesBothTypesContent()
+    {
+        // Create a content type that will be used as a composition
+        IContentType compositionType = new ContentTypeBuilder()
+            .WithAlias("composition")
+            .AddPropertyType()
+                .WithAlias("originalProp")
+                .WithDataTypeId(Constants.DataTypes.Textbox)
+                .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
+                .Done()
+            .Build();
+        await ContentTypeService.CreateAsync(compositionType, Constants.Security.SuperUserKey);
+        compositionType.AllowedAsRoot = true;
+        await ContentTypeService.UpdateAsync(compositionType, Constants.Security.SuperUserKey);
+
+        // Create a content type that inherits from (composes) the first
+        IContentType composingType = new ContentTypeBuilder()
+            .WithAlias("composing")
+            .Build();
+        composingType.AddContentType(compositionType);
+        await ContentTypeService.CreateAsync(composingType, Constants.Security.SuperUserKey);
+        composingType.AllowedAsRoot = true;
+        await ContentTypeService.UpdateAsync(composingType, Constants.Security.SuperUserKey);
+
+        // Create content of the composition type
+        var compositionContentKey = Guid.NewGuid();
+        Content compositionContent = new ContentBuilder()
+            .WithKey(compositionContentKey)
+            .WithContentType(compositionType)
+            .Build();
+        ContentService.Save(compositionContent);
+        ContentService.PublishBranch(compositionContent, PublishBranchFilter.IncludeUnpublished, ["*"]);
+
+        // Create content of the composing type
+        var composingContentKey = Guid.NewGuid();
+        Content composingContent = new ContentBuilder()
+            .WithKey(composingContentKey)
+            .WithContentType(composingType)
+            .Build();
+        ContentService.Save(composingContent);
+        ContentService.PublishBranch(composingContent, PublishBranchFilter.IncludeUnpublished, ["*"]);
+
+        // Verify initial state (6 from SetUp + 2 new = 8)
+        IReadOnlyList<TestIndexDocument> draftDocuments = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        Assert.That(draftDocuments, Has.Count.EqualTo(8));
+
+        IReadOnlyList<TestIndexDocument> publishedDocuments = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
+        Assert.That(publishedDocuments, Has.Count.EqualTo(8));
+
+        // Act: remove the composition from the composing type, then delete the composition type
+        composingType.RemoveContentType(compositionType.Alias);
+        await ContentTypeService.UpdateAsync(composingType, Constants.Security.SuperUserKey);
+        await ContentTypeService.DeleteAsync(compositionType.Key, Constants.Security.SuperUserKey);
+
+        // Assert: composition type's content is removed, composing type's content is re-indexed
+        draftDocuments = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
+        Assert.That(draftDocuments, Has.Count.EqualTo(7));
+        Assert.That(draftDocuments.Select(d => d.Id), Does.Not.Contain(compositionContentKey));
+        Assert.That(draftDocuments.Select(d => d.Id), Contains.Item(composingContentKey));
+
+        publishedDocuments = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
+        Assert.That(publishedDocuments, Has.Count.EqualTo(7));
+        Assert.That(publishedDocuments.Select(d => d.Id), Does.Not.Contain(compositionContentKey));
+        Assert.That(publishedDocuments.Select(d => d.Id), Contains.Item(composingContentKey));
+    }
+
+    [Test]
     public async Task DeleteAllContentTypes()
     {
         IReadOnlyList<TestIndexDocument> draftDocuments = IndexerAndSearcher.Dump(IndexAliases.DraftContent);

@@ -1,5 +1,4 @@
-﻿
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Scoping;
@@ -10,7 +9,6 @@ using Umbraco.Cms.Search.Core.Cache.Language;
 using Umbraco.Cms.Search.Core.Cache.MediaType;
 using Umbraco.Cms.Search.Core.Cache.MemberType;
 using Umbraco.Cms.Search.Core.Configuration;
-using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Configuration;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
@@ -24,15 +22,18 @@ internal sealed class RebuildIndexesNotificationHandler : IndexingNotificationHa
     INotificationHandler<RebuildIndexCacheRefresherNotification>
 {
     private readonly IContentIndexingService _contentIndexingService;
+    private readonly IContentTypeIndexingService _contentTypeIndexingService;
     private readonly IndexOptions _options;
 
     public RebuildIndexesNotificationHandler(
         IContentIndexingService contentIndexingService,
+        IContentTypeIndexingService contentTypeIndexingService,
         IOptions<IndexOptions> options,
         ICoreScopeProvider coreScopeProvider)
         : base(coreScopeProvider)
     {
         _contentIndexingService = contentIndexingService;
+        _contentTypeIndexingService = contentTypeIndexingService;
         _options = options.Value;
     }
 
@@ -86,18 +87,17 @@ internal sealed class RebuildIndexesNotificationHandler : IndexingNotificationHa
 
     private void HandleContentTypeChanges(IEnumerable<(Guid ContentTypeKey, ContentTypeChangeTypes ChangeTypes)> changes, UmbracoObjectTypes objectType, string origin)
     {
-        if (changes.Any(change => change.ChangeTypes.RequiresIndexRebuild()) is false)
+        Guid[] affectedContentTypeKeys = changes
+            .Where(change => change.ChangeTypes is ContentTypeChangeTypes.RefreshMain or ContentTypeChangeTypes.Remove)
+            .Select(change => change.ContentTypeKey)
+            .Distinct()
+            .ToArray();
+
+        if (affectedContentTypeKeys.Length == 0)
         {
             return;
         }
 
-        IEnumerable<ContentIndexRegistration> affectedContentIndexRegistrations = _options
-            .GetContentIndexRegistrations()
-            .Where(indexRegistration => indexRegistration.ContainedObjectTypes.Contains(objectType));
-
-        foreach (ContentIndexRegistration indexRegistration in affectedContentIndexRegistrations)
-        {
-            _contentIndexingService.Rebuild(indexRegistration.IndexAlias, origin);
-        }
+        _contentTypeIndexingService.ReindexByContentTypes(affectedContentTypeKeys, objectType, origin);
     }
 }
