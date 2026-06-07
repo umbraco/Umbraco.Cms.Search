@@ -47,7 +47,7 @@ public static class UmbracoBuilderExtensions
 
             // NOTE: this notification handler should ONLY be active when zero downtime reindexing is in effect
             builder.AddNotificationHandler<IndexRebuildStartingNotification, ZeroDowntimeRebuildNotificationHandler>();
-            builder.AddNotificationHandler<IndexRebuildCompletedNotification, ZeroDowntimeRebuildNotificationHandler>();
+            builder.AddNotificationAsyncHandler<IndexRebuildCompletedNotification, ZeroDowntimeRebuildNotificationHandler>();
         }
         else
         {
@@ -58,6 +58,8 @@ public static class UmbracoBuilderExtensions
 
             builder.Services.AddSingleton<IActiveIndexManager, NoopActiveIndexManager>();
         }
+
+        builder.Services.AddSingleton<IIndexCommitMonitor, IndexCommitMonitor>();
 
         // This is needed, due to locking of indexes on Azure, to read more on this issue go here: https://github.com/umbraco/Umbraco-CMS/pull/15571
         builder.Services.AddSingleton<UmbracoTempEnvFileSystemDirectoryFactory>();

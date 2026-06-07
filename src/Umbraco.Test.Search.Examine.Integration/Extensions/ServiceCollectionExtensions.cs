@@ -38,6 +38,8 @@ internal static class ServiceCollectionExtensions
         // Override to use ActiveIndexManager for zero-downtime reindexing in integration tests
         services.AddSingleton<IActiveIndexManager, ActiveIndexManager>();
 
+        services.AddSingleton<IIndexCommitMonitor, IndexCommitMonitor>();
+
         return services;
     }
 
