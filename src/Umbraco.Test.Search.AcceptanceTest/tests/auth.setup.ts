@@ -3,7 +3,7 @@ import {STORAGE_STATE} from '../playwright.config';
 
 setup('authenticate', async ({page, baseURL}) => {
   // // Navigate to backoffice
-  // await page.goto(`${baseURL}/umbraco`);
+  // await page.goTo(`${baseURL}/umbraco`);
 
   // // Wait for login form and enter credentials
   // await page.getByLabel('Email').fill(process.env.UMBRACO_USER_LOGIN || '');

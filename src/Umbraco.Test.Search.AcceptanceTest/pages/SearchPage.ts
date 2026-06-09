@@ -2,7 +2,6 @@ import {Page, Locator, expect} from '@playwright/test';
 import {BasePage} from './BasePage';
 
 export class SearchPage extends BasePage {
-  // Locators
   readonly searchInput: Locator;
   readonly searchResults: Locator;
   readonly searchFilters: Locator;
@@ -14,8 +13,6 @@ export class SearchPage extends BasePage {
 
   constructor(page: Page, baseURL: string) {
     super(page, baseURL);
-
-    // Initialize locators
     this.searchInput = page.locator('#query');
     this.searchResults = page.locator('#searchResults');
     this.searchFilters = page.locator('#searchFilters');
@@ -26,7 +23,7 @@ export class SearchPage extends BasePage {
     this.sortDirectionDropdown = page.locator('#sortDirection');
   }
 
-  async goto() {
+  async goTo() {
     await this.navigate('/');
     await this.waitForSearchResults();
   }
@@ -69,30 +66,30 @@ export class SearchPage extends BasePage {
     return titles;
   }
 
-  async expectResultCount(count: number) {
+  async doesResultHaveCount(count: number) {
     const actualCount = await this.getResultCount();
     expect(actualCount).toBe(count);
   }
 
-  async expectResultCountGreaterThan(count: number) {
+  async doesResultCountGreaterThan(count: number) {
     const actualCount = await this.getResultCount();
     expect(actualCount).toBeGreaterThan(count);
   }
 
-  async expectResultCountToBe(count: number) {
+  async doesResultHeadingContainCount(count: number) {
     await this.containsText(this.resultsHeading, `Found ${count} book`);
   }
 
-  async expectNoResults() {
+  async doesResultHeadingContainNoResult() {
     await this.containsText(this.resultsHeading, 'No books found');
   }
 
-  async expectResultsContainBook(bookTitle: string) {
+  async doesResultContainBook(bookTitle: string) {
     const titles = await this.getBookTitles();
     expect(titles.some(title => title.includes(bookTitle))).toBeTruthy();
   }
 
-  async expectResultsForQuery(query: string) {
+  async doesResultContainForQuery(query: string) {
     await this.containsText(this.resultsHeading, `for "${query}"`);
   }
 

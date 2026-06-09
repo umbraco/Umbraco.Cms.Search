@@ -6,31 +6,37 @@ test.describe('Search Facets', () => {
 
   test.beforeEach(async ({page, baseURL}) => {
     searchPage = new SearchPage(page, baseURL!);
-    await searchPage.goto();
+    await searchPage.goTo();
   });
 
   test('can filter by book length', async () => {
+    // Arrange
     const initialCount = await searchPage.getResultCount();
 
+    // Act
     await searchPage.selectLengthFacet('Long');
 
+    // Assert
     const filteredCount = await searchPage.getResultCount();
     expect(filteredCount).toBeLessThanOrEqual(initialCount);
     expect(filteredCount).toBeGreaterThan(0);
   });
 
   test('can filter by century', async () => {
+    // Act
     await searchPage.selectCenturyFacet(1900, 2000);
 
-    await searchPage.expectResultCountGreaterThan(0);
+    // Assert
+    await searchPage.doesResultCountGreaterThan(0);
   });
 
   test('can combine search with facet filter', async () => {
+    // Act
     await searchPage.search('novel');
     await searchPage.selectLengthFacet('Long');
 
-    await searchPage.expectResultsForQuery('novel');
-    await searchPage.expectResultCountGreaterThan(0);
+    // Assert
+    await searchPage.doesResultContainForQuery('novel');
+    await searchPage.doesResultCountGreaterThan(0);
   });
-
 });

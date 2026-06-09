@@ -19,7 +19,7 @@ test.describe('${testName}', () => {
     const homePage = new HomePage(page, baseURL!);
 
     // Act
-    await homePage.goto();
+    await homePage.goTo();
 
     // Assert
   });

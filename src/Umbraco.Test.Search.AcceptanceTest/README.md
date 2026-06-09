@@ -124,7 +124,7 @@ export class SearchResultsPage extends BasePage {
     this.resultCount = page.locator('.result-count');
   }
 
-  async expectResultCount(count: number) {
+  async doesResultHaveCount(count: number) {
     await expect(this.resultCount).toHaveText(`${count} results`);
   }
 }
@@ -145,10 +145,10 @@ test.describe('MyFeature', () => {
     const homePage = new HomePage(page, baseURL!);
 
     // Act
-    await homePage.goto();
+    await homePage.goTo();
 
     // Assert
-    await homePage.expectTitle('Book search');
+    await homePage.doesTitleHaveText('Book search');
   });
 
 });
