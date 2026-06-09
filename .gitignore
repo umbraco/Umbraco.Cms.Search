@@ -458,3 +458,8 @@ $RECYCLE.BIN/
 ## GitHub
 ##
 .github/
+
+##
+## Superpowers planning artifacts (local only)
+##
+docs/superpowers/
