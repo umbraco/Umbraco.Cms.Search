@@ -1,5 +1,5 @@
 import {Page, Locator, expect} from '@playwright/test';
-import {ConstantHelper} from '../helpers/ConstantHelper'; 
+import {ConstantHelper} from '../helpers/ConstantHelper';
 
 export class BasePage {
   readonly page: Page;
@@ -10,9 +10,11 @@ export class BasePage {
     this.baseURL = baseURL;
   }
 
+  // ─── Navigation ───────────────────────────────────────────────
+
   /**
    * Navigates to a specified path relative to the base URL.
-   * @param path 
+   * @param path
    */
   async navigate(path: string = '') {
     await this.page.goto(`${this.baseURL}${path}`);
@@ -25,6 +27,8 @@ export class BasePage {
   async getTitle(): Promise<string> {
     return await this.page.title();
   }
+
+  // ─── Interactions ─────────────────────────────────────────────
 
   /**
    * Clicks an element after verifying it is visible.
@@ -230,6 +234,30 @@ export class BasePage {
     await expect(clickLocator).toBeVisible({timeout: options?.timeout ?? ConstantHelper.timeout.medium});
     await clickLocator.click({force: options?.force});
   }
+
+  /**
+   * Scrolls an element into view.
+   * @param locator - The element to scroll to
+   */
+  async scrollIntoView(locator: Locator, options?: {timeout?: number}): Promise<void> {
+    await expect(locator).toBeVisible({timeout: options?.timeout ?? ConstantHelper.timeout.medium});
+    await locator.scrollIntoViewIfNeeded();
+  }
+
+  /**
+   * Drags an element and drops it on another element.
+   * @param source - The element to drag
+   * @param target - The element to drop on
+   */
+  async dragTo(
+    source: Locator,
+    target: Locator,
+    options?: {sourcePosition?: {x: number; y: number}; targetPosition?: {x: number; y: number}}
+  ): Promise<void> {
+    await source.dragTo(target, options);
+  }
+
+  // ─── Waiting ──────────────────────────────────────────────────
 
   /**
    * Waits for an element to be visible.
@@ -455,6 +483,8 @@ export class BasePage {
     await expect(locator).toHaveCSS(property, value, {timeout: timeout ?? ConstantHelper.timeout.medium});
   }
 
+  // ─── Assertions ───────────────────────────────────────────────
+
   /**
    * Asserts that an element is visible.
    * @param locator - The element to check
@@ -526,6 +556,8 @@ export class BasePage {
     await expect(locator).toHaveCount(count, {timeout: timeout ?? ConstantHelper.timeout.medium});
   }
 
+  // ─── Getters ──────────────────────────────────────────────────
+
   /**
    * Gets the text content of an element.
    * @param locator - The element to get text from
@@ -575,14 +607,7 @@ export class BasePage {
     return await locator.isChecked();
   }
 
-  /**
-   * Scrolls an element into view.
-   * @param locator - The element to scroll to
-   */
-  async scrollIntoView(locator: Locator, options?: {timeout?: number}): Promise<void> {
-    await expect(locator).toBeVisible({timeout: options?.timeout ?? ConstantHelper.timeout.medium});
-    await locator.scrollIntoViewIfNeeded();
-  }
+  // ─── Files ────────────────────────────────────────────────────
 
   /**
    * Sets files on a file input element.
@@ -599,18 +624,5 @@ export class BasePage {
    */
   async clearInputFiles(locator: Locator): Promise<void> {
     await locator.setInputFiles([]);
-  }
-
-  /**
-   * Drags an element and drops it on another element.
-   * @param source - The element to drag
-   * @param target - The element to drop on
-   */
-  async dragTo(
-    source: Locator,
-    target: Locator,
-    options?: {sourcePosition?: {x: number; y: number}; targetPosition?: {x: number; y: number}}
-  ): Promise<void> {
-    await source.dragTo(target, options);
   }
 }
