@@ -406,12 +406,37 @@ stages:
               CONNECTIONSTRINGS__UMBRACODBDSN: $(CONNECTIONSTRINGS__UMBRACODBDSN)
               CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME: $(CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME)
 
+          # DIAGNOSTIC: confirm the build output exists and the app survived startup; surface the log if it died
+          - bash: |
+              echo "=== Build output for test site ==="
+              ls -la bin/Release/net10.0/Umbraco.Web.TestSite.V17.dll || echo "DLL NOT FOUND in bin/Release/net10.0"
+              echo "=== Waiting 15s, then checking process $(AcceptanceTestProcessId) ==="
+              sleep 15
+              if kill -0 $(AcceptanceTestProcessId) 2>/dev/null; then
+                echo "Test site process is alive."
+              else
+                echo "##[error]Test site process $(AcceptanceTestProcessId) is NOT running — it exited during startup."
+                echo "=== testsite.log ==="
+                cat $(Build.ArtifactStagingDirectory)/testsite.log || echo "(no testsite.log found)"
+                exit 1
+              fi
+            displayName: Diagnose test site startup
+            workingDirectory: src/Umbraco.Web.TestSite.V17
+
           # Wait for the application to respond (HTTP 200), bypassing the self-signed dev cert
           - script: npm install wait-on
             displayName: Install wait-on package
             workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
 
-          - script: npx wait-on -v --interval 1000 --timeout 120000 https-get://localhost:44324
+          - bash: |
+              set +e
+              npx wait-on -v --interval 1000 --timeout 120000 https-get://localhost:44324
+              code=$?
+              if [ $code -ne 0 ]; then
+                echo "##[error]Application did not respond within timeout. testsite.log:"
+                cat $(Build.ArtifactStagingDirectory)/testsite.log || echo "(no testsite.log found)"
+              fi
+              exit $code
             displayName: Wait for application
             workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
             env:
