@@ -453,13 +453,3 @@ $RECYCLE.BIN/
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-
-##
-## GitHub
-##
-.github/
-
-##
-## Superpowers planning artifacts (local only)
-##
-docs/superpowers/
