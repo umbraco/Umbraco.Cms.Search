@@ -383,9 +383,13 @@ stages:
             displayName: Generate HTTPS dev certificate
             continueOnError: true
 
-          # Run the test site from source (build output comes from the Build stage artifact)
+          # Run the built test site DLL via the shared dotnet host.
+          # NB: launch the DLL (not `dotnet run`) because Pipeline artifacts do not preserve
+          # the Unix executable bit, so the native apphost can't be exec'd ("Permission denied").
+          # The dotnet host doesn't need +x on the apphost. workingDirectory sets the ContentRoot
+          # so the Development uSync path "../_uSync/Shared/" resolves to src/_uSync/Shared/.
           - bash: |
-              nohup dotnet run --project Umbraco.Web.TestSite.V17.csproj --configuration $(buildConfiguration) --no-build --no-restore --no-launch-profile > $(Build.ArtifactStagingDirectory)/testsite.log 2>&1 &
+              nohup dotnet bin/$(buildConfiguration)/net10.0/Umbraco.Web.TestSite.V17.dll > $(Build.ArtifactStagingDirectory)/testsite.log 2>&1 &
               echo "##vso[task.setvariable variable=AcceptanceTestProcessId]$!"
             displayName: Run application
             workingDirectory: src/Umbraco.Web.TestSite.V17
