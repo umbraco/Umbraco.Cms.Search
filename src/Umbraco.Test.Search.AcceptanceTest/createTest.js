@@ -9,17 +9,18 @@ if (!testName) {
   process.exit(1);
 }
 
-const template = `import {test} from '@playwright/test';
-import {HomePage} from '../pages';
+const template = `import {test} from '../lib';
 
 test.describe('${testName}', () => {
 
-  test('can do something', {tag: '@smoke'}, async ({page, baseURL}) => {
+  test.beforeEach(async ({searchUi}) => {
+    await searchUi.search.goTo();
+  });
+
+  test('can do something', async ({searchUi}) => {
     // Arrange
-    const homePage = new HomePage(page, baseURL!);
 
     // Act
-    await homePage.goTo();
 
     // Assert
   });

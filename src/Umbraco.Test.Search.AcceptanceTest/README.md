@@ -85,14 +85,16 @@ Umbraco.Test.Search.AcceptanceTest/
 ├── .env.example            # Example environment file
 ├── console-errors.json     # Console error tracking
 ├── fixtures/               # Test data fixtures
-├── pages/                  # Page Object Model classes
-│   ├── index.ts            # Barrel export
-│   ├── BasePage.ts         # Base page class
-│   └── HomePage.ts         # Home page object
-├── playwright/
-│   └── .auth/user.json     # Saved authentication state
+├── lib/                    # Test helpers, fixtures, and page objects
+│   ├── index.ts            # Public API (test fixture, page objects, ConstantHelper)
+│   ├── fixtures.ts         # Extended Playwright test with the searchUi fixture
+│   ├── helpers/
+│   │   ├── ConstantHelper.ts  # Timeout/wait constants
+│   │   └── UiHelpers.ts       # searchUi aggregator (page objects)
+│   └── pageobjects/
+│       ├── BasePage.ts     # Base page class
+│       └── SearchPage.ts   # Search page object
 ├── tests/
-│   ├── auth.setup.ts       # Authentication setup
 │   └── *.spec.ts           # Test files
 └── results/                # Test results and reports
 ```
@@ -106,9 +108,9 @@ This project uses the Page Object Model (POM) pattern to organize test code:
 
 ### Creating a New Page Object
 
-1. Create a new file in `pages/` (e.g., `SearchResultsPage.ts`)
+1. Create a new file in `lib/pageobjects/` (e.g., `SearchResultsPage.ts`)
 2. Extend `BasePage` and define locators and actions
-3. Export from `pages/index.ts`
+3. Export it from `lib/index.ts` and expose it on `UiHelpers` (`lib/helpers/UiHelpers.ts`)
 
 ```typescript
 import {Page, Locator, expect} from '@playwright/test';
@@ -135,20 +137,21 @@ export class SearchResultsPage extends BasePage {
 ### Basic Test Structure
 
 ```typescript
-import {test} from '@playwright/test';
-import {HomePage} from '../pages';
+import {test} from '../lib';
+import {expect} from '@playwright/test';
 
 test.describe('MyFeature', () => {
 
-  test('can do something', {tag: '@smoke'}, async ({page, baseURL}) => {
-    // Arrange
-    const homePage = new HomePage(page, baseURL!);
+  test.beforeEach(async ({searchUi}) => {
+    await searchUi.search.goTo();
+  });
 
+  test('can search for a book', async ({searchUi}) => {
     // Act
-    await homePage.goTo();
+    await searchUi.search.search('Ulysses');
 
     // Assert
-    await homePage.doesTitleHaveText('Book search');
+    await searchUi.search.doesResultContainBook('Ulysses');
   });
 
 });
@@ -156,6 +159,7 @@ test.describe('MyFeature', () => {
 
 ### Available Fixtures
 
+- `searchUi` - Search UI helper exposing page objects (e.g. `searchUi.search`)
 - `page` - Playwright page object for browser interactions
 - `baseURL` - Base URL from configuration (https://localhost:44324)
 
