@@ -5,7 +5,7 @@ using Umbraco.Cms.Core.Services.Changes;
 
 namespace Umbraco.Cms.Search.Core.Cache.Media;
 
-internal sealed class DraftMediaCacheRefresher : PayloadCacheRefresherBase<DraftMediaCacheRefresherNotification, DraftMediaCacheRefresher.JsonPayload>
+internal sealed class DraftMediaCacheRefresher : PayloadCacheRefresherBase<DraftMediaCacheRefresherNotification, ContentCacheRefresherNotificationPayload<DraftMediaCacheRefresher.JsonPayload>>
 {
     public static readonly Guid UniqueId = Guid.Parse("7BDF73A8-37D4-4DD4-A530-0FFEA1C6DBA2");
 

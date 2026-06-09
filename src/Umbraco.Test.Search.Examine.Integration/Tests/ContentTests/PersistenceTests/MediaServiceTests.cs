@@ -7,17 +7,18 @@ using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.HostedServices;
 using Umbraco.Cms.Core.Models;
-using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.ServerEvents;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Infrastructure.Install;
 using Umbraco.Cms.Infrastructure.Scoping;
+using Umbraco.Cms.Search.Core.Cache.Language;
 using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Models.Persistence;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
 using Umbraco.Cms.Search.Core.Persistence;
+using Umbraco.Cms.Search.Provider.Examine.Services;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 using Umbraco.Cms.Tests.Common.Testing;
@@ -57,7 +58,7 @@ public class MediaServiceTests : UmbracoIntegrationTest
         builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
         builder.Services.AddUnique<IServerEventRouter, NoOpServerEventRouter>();
-        builder.AddNotificationAsyncHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>();
+        builder.AddNotificationHandler<LanguageCacheRefresherNotification, RebuildIndexesNotificationHandler>();
 
         // the core ConfigureBuilderAttribute won't execute from other assemblies at the moment, so this is a workaround
         var testType = Type.GetType(TestContext.CurrentContext.Test.ClassName!);
@@ -174,7 +175,11 @@ public class MediaServiceTests : UmbracoIntegrationTest
 
     private async Task WaitForIndexing(string indexAlias, Func<Task> indexUpdatingAction)
     {
-        var index = (LuceneIndex)GetRequiredService<IExamineManager>().GetIndex(indexAlias);
+        var activeIndexManager = GetRequiredService<IActiveIndexManager>();
+        var physicalName = activeIndexManager.IsRebuilding(indexAlias)
+            ? activeIndexManager.ResolveShadowIndexName(indexAlias)
+            : activeIndexManager.ResolveActiveIndexName(indexAlias);
+        var index = (LuceneIndex)GetRequiredService<IExamineManager>().GetIndex(physicalName);
         index.IndexCommitted += IndexCommited;
 
         var hasDoneAction = false;

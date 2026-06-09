@@ -8,13 +8,13 @@
       "name": "Umbraco Search Bundle",
       "alias": "Umbraco.Cms.Search.Core.Client.Bundle",
       "type": "bundle",
-      "js": "/App_Plugins/UmbracoSearch/search-bundle.js"
+      "js": "/App_Plugins/UmbracoSearch/search-bundle.js?v=%CACHE_BUSTER%"
     }
   ],
   "importmap": {
     "imports": {
-      "@umbraco-cms/search/global": "/App_Plugins/UmbracoSearch/search-global.js",
-      "@umbraco-cms/search/settings": "/App_Plugins/UmbracoSearch/search-settings.js"
+      "@umbraco-cms/search/global": "/App_Plugins/UmbracoSearch/search-global.js?v=%CACHE_BUSTER%",
+      "@umbraco-cms/search/settings": "/App_Plugins/UmbracoSearch/search-settings.js?v=%CACHE_BUSTER%"
     }
   }
 }

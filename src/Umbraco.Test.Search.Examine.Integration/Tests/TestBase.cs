@@ -5,13 +5,14 @@ using Examine.Lucene.Providers;
 using NUnit.Framework;
 using Umbraco.Cms.Core.HostedServices;
 using Umbraco.Cms.Core.Models;
-using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.ServerEvents;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
 using Umbraco.Cms.Infrastructure.Install;
+using Umbraco.Cms.Search.Core.Cache.Language;
 using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
+using Umbraco.Cms.Search.Provider.Examine.Services;
 using Umbraco.Cms.Tests.Common.Testing;
 using Umbraco.Cms.Tests.Integration.Testing;
 using Umbraco.Test.Search.Examine.Integration.Attributes;
@@ -24,6 +25,10 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests;
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
 public abstract class TestBase : UmbracoIntegrationTest
 {
+    // these tests all run against the Examine search provider, which does not care about the origin
+    // of content changes, so the origin value does not matter.
+    internal const string DefaultOrigin = "does-not-matter";
+
     protected static readonly Guid RootKey = Guid.Parse("D9EBF985-C65C-4341-955F-FFADA160F6D9");
     protected static readonly Guid ChildKey = Guid.Parse("C84E91B2-3351-4BA9-9906-09C2260D77EC");
     protected static readonly Guid GrandchildKey = Guid.Parse("201858C2-5AC2-4505-AC2E-E4BF38F39AC4");
@@ -65,7 +70,7 @@ public abstract class TestBase : UmbracoIntegrationTest
         builder.Services.AddUnique<IBackgroundTaskQueue, ImmediateBackgroundTaskQueue>();
         builder.Services.AddUnique<IServerMessenger, LocalServerMessenger>();
         builder.Services.AddUnique<IServerEventRouter, NoOpServerEventRouter>();
-        builder.AddNotificationAsyncHandler<LanguageDeletedNotification, RebuildIndexesNotificationHandler>();
+        builder.AddNotificationHandler<LanguageCacheRefresherNotification, RebuildIndexesNotificationHandler>();
 
         // the core ConfigureBuilderAttribute won't execute from other assemblies at the moment, so this is a workaround
         var testType = Type.GetType(TestContext.CurrentContext.Test.ClassName!);
@@ -84,7 +89,11 @@ public abstract class TestBase : UmbracoIntegrationTest
 
     protected async Task WaitForIndexing(string indexAlias, Func<Task> indexUpdatingAction)
     {
-        var index = (LuceneIndex)GetRequiredService<IExamineManager>().GetIndex(indexAlias);
+        var activeIndexManager = GetRequiredService<IActiveIndexManager>();
+        var physicalName = activeIndexManager.IsRebuilding(indexAlias)
+            ? activeIndexManager.ResolveShadowIndexName(indexAlias)
+            : activeIndexManager.ResolveActiveIndexName(indexAlias);
+        var index = (LuceneIndex)GetRequiredService<IExamineManager>().GetIndex(physicalName);
         index.IndexCommitted += IndexCommited;
 
         var hasDoneAction = false;

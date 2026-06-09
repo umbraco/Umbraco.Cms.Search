@@ -44,7 +44,7 @@ public static class Constants
 
     public static class Api
     {
-        public const string Name = "Search";
+        public const string Name = "search";
     }
 
     public static class Persistence

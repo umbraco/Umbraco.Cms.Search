@@ -1,8 +1,12 @@
 ﻿using Umbraco.Cms.Core.DependencyInjection;
-using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Search.Core.Cache.Content;
+using Umbraco.Cms.Search.Core.Cache.ContentType;
+using Umbraco.Cms.Search.Core.Cache.Language;
 using Umbraco.Cms.Search.Core.Cache.Media;
+using Umbraco.Cms.Search.Core.Cache.MediaType;
+using Umbraco.Cms.Search.Core.Cache.Member;
+using Umbraco.Cms.Search.Core.Cache.MemberType;
 using Umbraco.Cms.Search.Core.Cache.PublicAccess;
 
 namespace Umbraco.Cms.Search.Core.Cache;
@@ -56,6 +60,14 @@ public static class UmbracoBuilderExtensions
         builder.AddNotificationHandler<MediaMovedNotification, DraftMediaNotificationHandler>();
         builder.AddNotificationHandler<MediaMovedToRecycleBinNotification, DraftMediaNotificationHandler>();
         builder.AddNotificationHandler<MediaDeletedNotification, DraftMediaNotificationHandler>();
+
+        builder.AddNotificationHandler<MemberSavedNotification, DraftMemberNotificationHandler>();
+        builder.AddNotificationHandler<MemberDeletedNotification, DraftMemberNotificationHandler>();
+
+        builder.AddNotificationHandler<ContentTypeChangedNotification, ContentTypeNotificationHandler>();
+        builder.AddNotificationHandler<MediaTypeChangedNotification, MediaTypeNotificationHandler>();
+        builder.AddNotificationHandler<MemberTypeChangedNotification, MemberTypeNotificationHandler>();
+        builder.AddNotificationHandler<LanguageDeletedNotification, LanguageNotificationHandler>();
 
         return builder;
     }

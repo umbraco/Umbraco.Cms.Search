@@ -39,7 +39,7 @@ public class RichTextPropertyValueHandlerTests : ContentTestBase
 
         ContentService.Save(content);
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         TestIndexDocument document = documents.Single();
@@ -74,7 +74,7 @@ public class RichTextPropertyValueHandlerTests : ContentTestBase
 
         ContentService.Save(content);
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         TestIndexDocument document = documents.Single();
@@ -99,7 +99,7 @@ public class RichTextPropertyValueHandlerTests : ContentTestBase
 
         ContentService.Save(content);
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         TestIndexDocument document = documents.Single();
@@ -123,7 +123,7 @@ public class RichTextPropertyValueHandlerTests : ContentTestBase
 
         ContentService.Save(content);
 
-        IReadOnlyList<TestIndexDocument> documents = Indexer.Dump(IndexAliases.DraftContent);
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.DraftContent);
         Assert.That(documents, Has.Count.EqualTo(1));
 
         TestIndexDocument document = documents.Single();
@@ -156,6 +156,6 @@ public class RichTextPropertyValueHandlerTests : ContentTestBase
 
         await ContentTypeService.CreateAsync(_contentType, Constants.Security.SuperUserKey);
 
-        Indexer.Reset();
+        IndexerAndSearcher.Reset();
     }
 }

@@ -26,6 +26,11 @@
     searchParams.set('skip', '0');
     searchParams.set('take', String(CONFIG.defaultPageSize));
 
+    // Set culture from the server-rendered page
+    if (window.__CULTURE__) {
+        searchParams.set('culture', window.__CULTURE__);
+    }
+
     // DOM element references
     const elements = {
         searchResults: null,

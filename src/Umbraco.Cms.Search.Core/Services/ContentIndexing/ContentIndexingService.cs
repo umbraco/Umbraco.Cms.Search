@@ -1,12 +1,14 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.HostedServices;
-using Umbraco.Cms.Core.Models.ServerEvents;
-using Umbraco.Cms.Core.ServerEvents;
+using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Cms.Search.Core.Models.Configuration;
 using Umbraco.Cms.Search.Core.Models.Indexing;
+using Umbraco.Cms.Search.Core.Notifications;
 using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
@@ -14,59 +16,49 @@ namespace Umbraco.Cms.Search.Core.Services.ContentIndexing;
 internal sealed class ContentIndexingService : IContentIndexingService
 {
     private readonly IBackgroundTaskQueue _backgroundTaskQueue;
+    private readonly IEventAggregator _eventAggregator;
     private readonly ILogger<ContentIndexingService> _logger;
     private readonly IndexOptions _indexOptions;
     private readonly IServiceProvider _serviceProvider;
-    private readonly IServerEventRouter _serverEventRouter;
+    private readonly IOriginProvider _originProvider;
 
     public ContentIndexingService(
         IBackgroundTaskQueue backgroundTaskQueue,
+        IEventAggregator eventAggregator,
         ILogger<ContentIndexingService> logger,
         IOptions<IndexOptions> indexOptions,
         IServiceProvider serviceProvider,
-        IServerEventRouter serverEventRouter)
+        IOriginProvider originProvider)
     {
         _backgroundTaskQueue = backgroundTaskQueue;
+        _eventAggregator = eventAggregator;
         _logger = logger;
         _indexOptions = indexOptions.Value;
         _serviceProvider = serviceProvider;
-        _serverEventRouter = serverEventRouter;
+        _originProvider = originProvider;
     }
 
-    public void Handle(IEnumerable<ContentChange> changes)
-        => _backgroundTaskQueue.QueueBackgroundWorkItem(async cancellationToken => await HandleAsync(changes, cancellationToken));
-
-    public void Rebuild(string indexAlias)
-    {
-        IndexRegistration? indexRegistration = _indexOptions.GetIndexRegistration(indexAlias);
-        if (indexRegistration is null)
-        {
-            _logger.LogError("Cannot rebuild index - no index registration found for alias: {indexAlias}", indexAlias);
-            return;
-        }
-
-        _backgroundTaskQueue.QueueBackgroundWorkItem(async cancellationToken => await RebuildAsync(indexRegistration, cancellationToken));
-    }
-
-    private async Task HandleAsync(IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
+    public void Handle(IEnumerable<ContentChange> changes, string origin)
     {
         ContentChange[] changesAsArray = changes as ContentChange[] ?? changes.ToArray();
 
-        IEnumerable<IGrouping<Type, IndexRegistration>> indexRegistrationsByStrategyType = _indexOptions
-            .GetIndexRegistrations()
+        var currentOrigin = _originProvider.GetCurrent();
+        IEnumerable<IGrouping<Type, ContentIndexRegistration>> indexRegistrationsByStrategyType = _indexOptions
+            .GetContentIndexRegistrations()
+            .Where(registration => registration.SameOriginOnly is false || origin == currentOrigin)
             .GroupBy(r => r.ContentChangeStrategy);
 
-        foreach (IGrouping<Type, IndexRegistration> group in indexRegistrationsByStrategyType)
+        foreach (IGrouping<Type, ContentIndexRegistration> group in indexRegistrationsByStrategyType)
         {
             if (TryGetContentChangeStrategy(group.Key, out IContentChangeStrategy? contentChangeStrategy) is false)
             {
                 continue;
             }
 
-            IndexInfo[] indexInfos = group
+            ContentIndexInfo[] indexInfos = group
                 .Select(g =>
                     TryGetIndexer(g.Indexer, out IIndexer? indexer)
-                        ? new IndexInfo(g.IndexAlias, g.ContainedObjectTypes, indexer)
+                        ? new ContentIndexInfo(g.IndexAlias, g.ContainedObjectTypes, indexer)
                         : null)
                 .WhereNotNull()
                 .ToArray();
@@ -77,11 +69,28 @@ internal sealed class ContentIndexingService : IContentIndexingService
                 continue;
             }
 
-            await contentChangeStrategy.HandleAsync(indexInfos, changesAsArray, cancellationToken);
+            _backgroundTaskQueue.QueueBackgroundWorkItem(async cancellationToken => await contentChangeStrategy.HandleAsync(indexInfos, changesAsArray, cancellationToken));
         }
     }
 
-    private async Task RebuildAsync(IndexRegistration indexRegistration, CancellationToken cancellationToken)
+    public void Rebuild(string indexAlias, string origin)
+    {
+        ContentIndexRegistration? indexRegistration = _indexOptions.GetContentIndexRegistration(indexAlias);
+        if (indexRegistration is null)
+        {
+            _logger.LogError("Cannot rebuild index - no index registration found for alias: {indexAlias}", indexAlias);
+            return;
+        }
+
+        if (indexRegistration.SameOriginOnly && origin != _originProvider.GetCurrent())
+        {
+            return;
+        }
+
+        _backgroundTaskQueue.QueueBackgroundWorkItem(async cancellationToken => await RebuildAsync(indexRegistration, cancellationToken));
+    }
+
+    private async Task RebuildAsync(ContentIndexRegistration indexRegistration, CancellationToken cancellationToken)
     {
         if (TryGetContentChangeStrategy(indexRegistration.ContentChangeStrategy, out IContentChangeStrategy? contentChangeStrategy) is false
             || TryGetIndexer(indexRegistration.Indexer, out IIndexer? indexer) is false)
@@ -89,13 +98,11 @@ internal sealed class ContentIndexingService : IContentIndexingService
             return;
         }
 
-        await contentChangeStrategy.RebuildAsync(new IndexInfo(indexRegistration.IndexAlias, indexRegistration.ContainedObjectTypes, indexer), cancellationToken);
+        await _eventAggregator.PublishAsync(new IndexRebuildStartingNotification(indexRegistration.IndexAlias), cancellationToken);
 
-        await _serverEventRouter.BroadcastEventAsync(new ServerEvent
-        {
-            EventType = "IndexRebuildCompleted",
-            EventSource = indexRegistration.IndexAlias,
-        });
+        await contentChangeStrategy.RebuildAsync(new ContentIndexInfo(indexRegistration.IndexAlias, indexRegistration.ContainedObjectTypes, indexer), cancellationToken);
+
+        await _eventAggregator.PublishAsync(new IndexRebuildCompletedNotification(indexRegistration.IndexAlias), cancellationToken);
     }
 
     private bool TryGetContentChangeStrategy(Type type, [NotNullWhen(true)] out IContentChangeStrategy? contentChangeStrategy)

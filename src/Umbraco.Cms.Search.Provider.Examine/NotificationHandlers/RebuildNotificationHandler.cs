@@ -5,6 +5,7 @@ using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Search.Core.Models.Configuration;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
+using Umbraco.Cms.Search.Provider.Examine.Services;
 using IndexOptions = Umbraco.Cms.Search.Core.Configuration.IndexOptions;
 
 namespace Umbraco.Cms.Search.Provider.Examine.NotificationHandlers;
@@ -12,32 +13,38 @@ namespace Umbraco.Cms.Search.Provider.Examine.NotificationHandlers;
 public class RebuildNotificationHandler : INotificationHandler<UmbracoApplicationStartedNotification>
 {
     private readonly IExamineManager _examineManager;
+    private readonly IActiveIndexManager _activeIndexManager;
     private readonly IContentIndexingService _contentIndexingService;
     private readonly ILogger<RebuildNotificationHandler> _logger;
+    private readonly IOriginProvider _originProvider;
     private readonly IndexOptions _options;
-
 
     public RebuildNotificationHandler(
         IExamineManager examineManager,
+        IActiveIndexManager activeIndexManager,
         IContentIndexingService contentIndexingService,
         IOptions<IndexOptions> options,
-        ILogger<RebuildNotificationHandler> logger)
+        ILogger<RebuildNotificationHandler> logger,
+        IOriginProvider originProvider)
     {
         _examineManager = examineManager;
+        _activeIndexManager = activeIndexManager;
         _contentIndexingService = contentIndexingService;
         _logger = logger;
+        _originProvider = originProvider;
         _options = options.Value;
     }
 
     public void Handle(UmbracoApplicationStartedNotification notification)
     {
         _logger.LogInformation("Boot detected, determining indexes to rebuild");
-        foreach (IndexRegistration indexRegistration in _options.GetIndexRegistrations())
+        foreach (ContentIndexRegistration indexRegistration in _options.GetContentIndexRegistrations())
         {
+            var activePhysicalName = _activeIndexManager.ResolveActiveIndexName(indexRegistration.IndexAlias);
 
-            if (_examineManager.TryGetIndex(indexRegistration.IndexAlias, out IIndex? index))
+            if (_examineManager.TryGetIndex(activePhysicalName, out IIndex? index))
             {
-                // Check if index exists, if it does, we can skip rebuilding
+                // Check if active physical index exists, if it does, we can skip rebuilding
                 if (index.IndexExists())
                 {
                     continue;
@@ -50,7 +57,7 @@ public class RebuildNotificationHandler : INotificationHandler<UmbracoApplicatio
             }
 
             _logger.LogInformation("Rebuilding index {IndexRegistrationIndexAlias}", indexRegistration.IndexAlias);
-            _contentIndexingService.Rebuild(indexRegistration.IndexAlias);
+            _contentIndexingService.Rebuild(indexRegistration.IndexAlias, _originProvider.GetCurrent());
         }
     }
 }

@@ -29,15 +29,18 @@ public abstract class ContentIndexingServiceTestsBase : UmbracoIntegrationTest
 
     protected class TestContentChangeStrategy : IPublishedContentChangeStrategy, IDraftContentChangeStrategy
     {
-        public Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
+        public Task HandleAsync(IEnumerable<ContentIndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
         {
             HandledIndexInfos.Add(indexInfos.ToList());
             return Task.CompletedTask;
         }
 
-        public Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
-            => throw new NotImplementedException();
+        public Task RebuildAsync(ContentIndexInfo indexInfo, CancellationToken cancellationToken)
+        {
+            HandledIndexInfos.Add([indexInfo]);
+            return Task.CompletedTask;
+        }
 
-        public List<List<IndexInfo>> HandledIndexInfos { get; } = new();
+        public List<List<ContentIndexInfo>> HandledIndexInfos { get; } = new();
     }
 }

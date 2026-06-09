@@ -14,7 +14,7 @@ public class MemberIndexServiceTests : IndexTestBase
     public async Task CanIndexAnyMember()
     {
         await CreateMemberAsync();
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftMembers);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftMembers);
 
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results.TotalItemCount, Is.EqualTo(1));

@@ -3,4 +3,4 @@ using Umbraco.Cms.Search.Core.Services;
 
 namespace Umbraco.Cms.Search.Core.Models.Indexing;
 
-public record IndexInfo(string IndexAlias, IEnumerable<UmbracoObjectTypes> ContainedObjectTypes, IIndexer Indexer);
+public record ContentIndexInfo(string IndexAlias, IEnumerable<UmbracoObjectTypes> ContainedObjectTypes, IIndexer Indexer);

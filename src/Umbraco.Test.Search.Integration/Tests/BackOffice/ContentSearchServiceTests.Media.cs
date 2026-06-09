@@ -82,9 +82,9 @@ public partial class ContentSearchServiceTests
         {
             Assert.That(result.Total, Is.EqualTo(3));
             IMedia[] items = result.Items.OrderBy(item => item.SortOrder).ToArray();
-            Assert.That(items[0].Name, Is.EqualTo("Root 0"));
-            Assert.That(items[1].Name, Is.EqualTo("Root 1"));
-            Assert.That(items[2].Name, Is.EqualTo("Root 2"));
+            Assert.That(items[0].Name, Is.EqualTo("Root 0 shared shared0"));
+            Assert.That(items[1].Name, Is.EqualTo("Root 1 shared shared1"));
+            Assert.That(items[2].Name, Is.EqualTo("Root 2 shared shared2"));
         });
     }
 
@@ -96,7 +96,7 @@ public partial class ContentSearchServiceTests
         Assert.Multiple(() =>
         {
             Assert.That(result.Total, Is.EqualTo(1));
-            Assert.That(result.Items.First().Name, Is.EqualTo("Root 1"));
+            Assert.That(result.Items.First().Name, Is.EqualTo("Root 1 shared shared1"));
         });
     }
 

@@ -129,4 +129,30 @@ public class QueryTests : SearcherTestBase
             result.Documents.Select(d => d.Id),
             Is.EqualTo(expectedDocumentIdsByOrderOfRelevance).AsCollection);
     }
+
+    // "specia" is a prefix of "special" but not a complete token, so the analyzed exact-match
+    // clause cannot hit. Only the wildcard clause matches. This proves the wildcard query
+    // itself carries the relevance-tier boost (R1 > R2 > R3 > Texts) — without the boost
+    // on the wildcard, all four documents would tie at the same constant wildcard score.
+    [Test]
+    public async Task WildcardOnlyMatchesRespectRelevanceTierBoost()
+    {
+        SearchResult result = await SearchAsync(
+            query: "specia",
+            sorters: [new ScoreSorter(Direction.Descending)]);
+
+        Assert.That(result.Total, Is.EqualTo(4));
+
+        Guid[] expectedDocumentIdsByOrderOfRelevance =
+        [
+            DocumentIds[30], // TextsR1
+            DocumentIds[20], // TextsR2
+            DocumentIds[40], // TextsR3
+            DocumentIds[10]  // Texts
+        ];
+
+        Assert.That(
+            result.Documents.Select(d => d.Id),
+            Is.EqualTo(expectedDocumentIdsByOrderOfRelevance).AsCollection);
+    }
 }

@@ -18,15 +18,20 @@ namespace Umbraco.Test.Search.Integration.Tests;
 
 public abstract class TestBase : UmbracoIntegrationTest
 {
+    // these tests all run against the test indexer, which does not care about the origin
+    // of content changes, so the origin value does not matter unless explicitly stated
+    // by the test case itself.
+    internal const string DefaultOrigin = "does-not-matter";
+
     internal static class IndexAliases
     {
-        public const string PublishedContent = "TestPublishedContentIndex";
-        public const string DraftContent = "TestDraftContentIndex";
-        public const string Media = "TestMediaIndex";
-        public const string Member = "TestMemberIndex";
+        public const string PublishedContent = Cms.Search.Core.Constants.IndexAliases.PublishedContent;
+        public const string DraftContent = Cms.Search.Core.Constants.IndexAliases.DraftContent;
+        public const string Media = Cms.Search.Core.Constants.IndexAliases.DraftMedia;
+        public const string Member = Cms.Search.Core.Constants.IndexAliases.DraftMembers;
     }
 
-    protected TestIndexer Indexer { get; } = new();
+    protected TestIndexerAndSearcher IndexerAndSearcher { get; } = new();
 
     protected override void CustomTestSetup(IUmbracoBuilder builder)
     {
@@ -39,15 +44,15 @@ public abstract class TestBase : UmbracoIntegrationTest
         builder.Services.AddUnique<IServerEventRouter, NoOpServerEventRouter>();
         builder.Services.AddUnique<IIndexDocumentRepository, NoopIndexDocumentRepository>();
 
-        builder.Services.AddTransient<IIndexer>(_ => Indexer);
-        builder.Services.AddTransient<ISearcher>(_ => Indexer);
+        builder.Services.AddTransient<IIndexer>(_ => IndexerAndSearcher);
+        builder.Services.AddTransient<ISearcher>(_ => IndexerAndSearcher);
 
         builder.Services.Configure<IndexOptions>(options =>
         {
-            options.RegisterIndex<IIndexer, ISearcher, IPublishedContentChangeStrategy>(IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(IndexAliases.DraftContent, UmbracoObjectTypes.Document);
-            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(IndexAliases.Media, UmbracoObjectTypes.Media);
-            options.RegisterIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(IndexAliases.Member, UmbracoObjectTypes.Member);
+            options.RegisterContentIndex<IIndexer, ISearcher, IPublishedContentChangeStrategy>(IndexAliases.PublishedContent, UmbracoObjectTypes.Document);
+            options.RegisterContentIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(IndexAliases.DraftContent, UmbracoObjectTypes.Document);
+            options.RegisterContentIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(IndexAliases.Media, UmbracoObjectTypes.Media);
+            options.RegisterContentIndex<IIndexer, ISearcher, IDraftContentChangeStrategy>(IndexAliases.Member, UmbracoObjectTypes.Member);
         });
 
         builder.AddNotificationHandler<ContentTreeChangeNotification, ContentTreeChangeDistributedCacheNotificationHandler>();
@@ -67,5 +72,8 @@ public abstract class TestBase : UmbracoIntegrationTest
         public Task DeleteAsync(Guid[] ids, bool published) => Task.CompletedTask;
 
         public Task DeleteAllAsync() => Task.CompletedTask;
+
+        public Task<PagedModel<IndexDocument>> GetPagedAsync(long currentPage, int pageSize)
+            => Task.FromResult(new PagedModel<IndexDocument>());
     }
 }

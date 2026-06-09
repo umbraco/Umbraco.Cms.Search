@@ -4,7 +4,12 @@ internal static class Constants
 {
     public static class Api
     {
-        public const string Name = "Examine";
+        public const string Name = "search-examine-provider";
+    }
+
+    public static class Provider
+    {
+        public const string Name = Api.Name;
     }
 
     public static class Variance
@@ -30,13 +35,10 @@ internal static class Constants
 
         public const string Protection = $"{Prefix}Protection";
         public const string Culture = $"{Prefix}Culture";
-        public const string Segment = $"{Prefix}Segment";
 
         public const string AggregatedTexts = $"{Prefix}aggregated_texts";
         public const string AggregatedTextsR1 = $"{Prefix}aggregated_textsr1";
         public const string AggregatedTextsR2 = $"{Prefix}aggregated_textsr2";
         public const string AggregatedTextsR3 = $"{Prefix}aggregated_textsr3";
-
-        public const string IndexType = "__IndexType";
     }
 }

@@ -1,27 +1,22 @@
+import { fieldsRouteBuilder } from './fields-route-provider.element.js';
 import { UmbEntityActionBase } from '@umbraco-cms/backoffice/entity-action';
-import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
+import { UMB_SEARCH_WORKSPACE_CONTEXT } from '@umbraco-cms/search/settings';
 
 export class UmbSearchExamineShowFieldsEntityAction extends UmbEntityActionBase<never> {
-  override async execute() {
-    const args = this.args as typeof this.args & {
-      searchDocument?: { unique: string };
-      indexAlias?: string;
-    };
+  override async getHref() {
+    const unique = this.args.unique ?? null;
+    if (!unique) return '#';
 
-    if (!args.searchDocument) {
-      throw new Error('Search document is not provided');
-    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    const workspaceContext = await this.getContext(UMB_SEARCH_WORKSPACE_CONTEXT);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const culture = workspaceContext?.getSelectedCulture() ?? 'none';
 
-    await umbOpenModal(this, 'Umbraco.Cms.Search.Provider.Examine.Modal.Fields', {
-      modal: {
-        type: 'sidebar',
-        size: 'large',
-      },
-      data: {
-        searchDocument: args.searchDocument,
-        indexAlias: args.indexAlias,
-      },
-    }).catch(() => undefined);
+    return fieldsRouteBuilder?.({ documentUnique: unique, culture }) ?? '#';
+  }
+
+  override execute(): Promise<void> {
+    return Promise.resolve(undefined);
   }
 }
 

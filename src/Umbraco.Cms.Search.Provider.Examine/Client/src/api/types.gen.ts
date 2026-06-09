@@ -6,8 +6,7 @@ export type ClientOptions = {
 
 export type DocumentModel = {
     key: string;
-    culture?: string | null;
-    fields: Array<FieldModel>;
+    documents: Array<IndexDocumentModel>;
 };
 
 export type FieldModel = {
@@ -16,15 +15,17 @@ export type FieldModel = {
     values: Array<string>;
 };
 
+export type IndexDocumentModel = {
+    fields: Array<FieldModel>;
+};
+
 export type GetDocumentData = {
     body?: never;
     path: {
         indexAlias: string;
         documentKey: string;
     };
-    query?: {
-        culture?: string;
-    };
+    query?: never;
     url: '/umbraco/examine/api/v1/{indexAlias}/document/{documentKey}';
 };
 

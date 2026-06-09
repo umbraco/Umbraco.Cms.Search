@@ -15,7 +15,7 @@ public class MediaIndexServiceTests : IndexTestBase
     {
         await CreateMediaAsync();
 
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftMedia);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.DraftMedia);
 
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         Assert.That(results.TotalItemCount, Is.EqualTo(1));

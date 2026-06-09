@@ -16,7 +16,7 @@ internal abstract class ContentChangeStrategyBase
 
     protected abstract bool SupportsTrashedContent { get; }
 
-    protected const int ContentEnumerationPageSize = 1000;
+    internal const int ContentEnumerationPageSize = 1000;
 
     protected ContentChangeStrategyBase(
         IUmbracoDatabaseFactory umbracoDatabaseFactory,
@@ -63,6 +63,6 @@ internal abstract class ContentChangeStrategyBase
         while (descendants.Length == ContentEnumerationPageSize);
     }
 
-    protected void LogIndexRebuildCancellation(IndexInfo indexInfo)
+    protected void LogIndexRebuildCancellation(ContentIndexInfo indexInfo)
         => _logger.LogInformation("Cancellation requested for rebuild of index: {indexAlias}", indexInfo.IndexAlias);
 }

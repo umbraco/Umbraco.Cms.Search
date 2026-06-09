@@ -1,7 +1,6 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Api.Common.ViewModels.Pagination;
 using Umbraco.Cms.Search.Core.Configuration;
@@ -15,17 +14,12 @@ namespace Umbraco.Cms.Search.Core.Controllers;
 [ApiVersion("1.0")]
 public class GetAllIndexesApiController : ApiControllerBase
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<GetAllIndexesApiController> _logger;
+    private readonly IIndexerResolver _indexerResolver;
     private readonly IndexOptions _options;
 
-    public GetAllIndexesApiController(
-        IOptions<IndexOptions> options,
-        IServiceProvider serviceProvider,
-        ILogger<GetAllIndexesApiController> logger)
+    public GetAllIndexesApiController(IIndexerResolver indexerResolver, IOptions<IndexOptions> options)
     {
-        _serviceProvider = serviceProvider;
-        _logger = logger;
+        _indexerResolver = indexerResolver;
         _options = options.Value;
     }
 
@@ -34,11 +28,12 @@ public class GetAllIndexesApiController : ApiControllerBase
     public async Task<IActionResult> Indexes()
     {
         List<IndexViewModel> indexes = [];
-        foreach (IndexRegistration indexRegistration in _options.GetIndexRegistrations())
+        foreach (ContentIndexRegistration indexRegistration in _options.GetContentIndexRegistrations())
         {
-            if (TryGetIndexer(_serviceProvider, indexRegistration.Indexer, _logger, out IIndexer? indexer) is false)
+            IIndexer? indexer = _indexerResolver.GetIndexer(indexRegistration.IndexAlias);
+            if (indexer is null)
             {
-                _logger.LogError($"Could not resolve type {{type}} as {nameof(IIndexer)}. Make sure the type is registered in the DI.", indexRegistration.Indexer.FullName);
+                // NOTE: logging is handled by the resolver
                 continue;
             }
 
@@ -48,6 +43,7 @@ public class GetAllIndexesApiController : ApiControllerBase
                 new IndexViewModel
                 {
                     IndexAlias = indexRegistration.IndexAlias,
+                    ProviderName = indexMetadata.ProviderName,
                     DocumentCount = indexMetadata.DocumentCount,
                     HealthStatus = indexMetadata.HealthStatus,
                 });

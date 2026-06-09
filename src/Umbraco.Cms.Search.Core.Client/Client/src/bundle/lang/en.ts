@@ -32,6 +32,7 @@ export default {
     rebuildIndex: 'Rebuild Index',
     indexInfo: 'Index Information',
     indexAlias: 'Index Alias',
+    providerName: 'Provider Name',
     searchBox: 'Search',
     searchPlaceholder: 'Search index...',
     searchButton: 'Search',
@@ -56,6 +57,8 @@ export default {
     resultsRegion: 'Search results',
     resultsTable: 'Search results table',
     paginationLabel: 'Search results pages',
+    cultureSelectLabel: 'Culture',
     searchDisabled: 'Search is disabled because the index is not healthy. Current status:',
+    searchError: 'An error occurred while searching. Please try again.',
   },
 } satisfies UmbLocalizationDictionary;

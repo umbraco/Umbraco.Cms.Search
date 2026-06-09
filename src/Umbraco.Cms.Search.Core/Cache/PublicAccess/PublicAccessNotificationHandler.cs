@@ -3,22 +3,26 @@ using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Core.Services;
+using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Extensions;
 
 namespace Umbraco.Cms.Search.Core.Cache.PublicAccess;
 
-internal sealed class PublicAccessNotificationHandler :
+internal sealed class PublicAccessNotificationHandler : ContentNotificationHandlerBase<PublicAccessDetailedCacheRefresher.JsonPayload>,
     IDistributedCacheNotificationHandler<PublicAccessEntrySavedNotification>,
     IDistributedCacheNotificationHandler<PublicAccessEntryDeletedNotification>
 {
-    private readonly DistributedCache _distributedCache;
     private readonly IIdKeyMap _idKeyMap;
 
-    public PublicAccessNotificationHandler(DistributedCache distributedCache, IIdKeyMap idKeyMap)
-    {
-        _distributedCache = distributedCache;
-        _idKeyMap = idKeyMap;
-    }
+    protected override Guid CacheRefresherUniqueId => PublicAccessDetailedCacheRefresher.UniqueId;
+
+    public PublicAccessNotificationHandler(
+        DistributedCache distributedCache,
+        IOriginProvider originProvider,
+        IIndexDocumentService indexDocumentService,
+        IIdKeyMap idKeyMap)
+        : base(distributedCache, originProvider, indexDocumentService)
+        => _idKeyMap = idKeyMap;
 
     public void Handle(PublicAccessEntrySavedNotification notification)
         => Handle(notification.SavedEntities);
@@ -38,6 +42,6 @@ internal sealed class PublicAccessNotificationHandler :
             .WhereNotNull()
             .ToArray();
 
-        _distributedCache.RefreshByPayload(PublicAccessDetailedCacheRefresher.UniqueId, payloads);
+        HandlePayloads(payloads);
     }
 }

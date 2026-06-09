@@ -8,7 +8,7 @@
       "type": "bundle",
       "alias": "Umbraco.Cms.Search.Provider.Examine.Bundle",
       "name": "Umbraco Search Examine Bundle",
-      "js": "/App_Plugins/UmbracoSearchExamine/examine-bundle.js"
+      "js": "/App_Plugins/UmbracoSearchExamine/examine-bundle.js?v=%CACHE_BUSTER%"
     }
   ]
 }

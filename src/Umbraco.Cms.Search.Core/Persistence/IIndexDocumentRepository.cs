@@ -1,4 +1,5 @@
-﻿using Umbraco.Cms.Search.Core.Models.Persistence;
+﻿using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core.Models.Persistence;
 
 namespace Umbraco.Cms.Search.Core.Persistence;
 
@@ -11,4 +12,6 @@ public interface IIndexDocumentRepository
     public Task DeleteAsync(Guid[] ids, bool published);
 
     public Task DeleteAllAsync();
+
+    public Task<PagedModel<IndexDocument>> GetPagedAsync(long currentPage, int pageSize);
 }

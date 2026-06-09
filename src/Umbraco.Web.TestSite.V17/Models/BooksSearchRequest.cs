@@ -4,6 +4,8 @@ public class BooksSearchRequest
 {
     public string? Query { get; init; }
 
+    public string? Culture { get; init; }
+
     public string[]? Length { get; init; }
 
     public string[]? AuthorNationality { get; init; }

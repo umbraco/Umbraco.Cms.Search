@@ -45,6 +45,7 @@ export default {
     rebuildIndex: 'Genopbyg indeks',
     indexInfo: 'Indeks information',
     indexAlias: 'Indeks alias',
+    providerName: 'Udbyderens navn',
     searchBox: 'Søg',
     searchPlaceholder: 'Søg i indeks...',
     searchButton: 'Søg',
@@ -70,6 +71,8 @@ export default {
     resultsRegion: 'Søgeresultater',
     resultsTable: 'Tabel med søgeresultater',
     paginationLabel: 'Sider med søgeresultater',
+    cultureSelectLabel: 'Kultur',
     searchDisabled: 'Søgning er deaktiveret, fordi indekset ikke er sundt. Nuværende status:',
+    searchError: 'Der opstod en fejl under søgningen. Prøv venligst igen.',
   },
 } satisfies UmbLocalizationDictionary;

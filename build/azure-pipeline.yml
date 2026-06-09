@@ -1,5 +1,24 @@
 name: $(TeamProject)_$(Build.DefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
 
+trigger:
+  batch: true
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - src
+      - build
+      - "*.props"
+      - global.json
+      - version.json
+
+pr:
+  branches:
+    include:
+      - main
+      - release/*
+
 parameters:
   - name: cache_nuget
     displayName: Cache NuGet packages
@@ -37,6 +56,12 @@ stages:
             inputs:
               useGlobalJson: true
 
+          - bash: |
+              dotnet tool install --tool-path . nbgv
+              ./nbgv cloud -a
+            displayName: Set build version using nbgv
+            workingDirectory: src
+
           # Client
           - task: NodeTool@0
             displayName: Use Node.js
@@ -65,6 +90,19 @@ stages:
           - script: npm run build
             displayName: Build Client
             workingDirectory: src
+
+          - bash: |
+              mkdir -p $(Build.ArtifactStagingDirectory)/npm
+              npm version $(NBGV_NpmPackageVersion) --allow-same-version --no-git-tag-version
+              npm pack --pack-destination $(Build.ArtifactStagingDirectory)/npm
+            displayName: Pack npm types package
+            workingDirectory: src/Umbraco.Cms.Search.Core.Client/Client
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish npm types artifact
+            inputs:
+              targetPath: $(Build.ArtifactStagingDirectory)/npm
+              artifactName: npm-types
 
           # Cache and restore NuGet packages
           - task: Cache@2
@@ -459,7 +497,7 @@ stages:
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - job: sbom
-        displayName: Upload SBOM to DependencyTrack
+        displayName: Upload SBOMs to DependencyTrack
         steps:
           - checkout: self
             fetchDepth: 0
@@ -474,22 +512,47 @@ stages:
                 Write-Host "Version from version.json: $version"
                 Write-Host "##vso[task.setvariable variable=VersionNumber]$version"
 
+          # NuGet SBOM
           - script: dotnet tool install --global CycloneDX
             displayName: 'Install CycloneDX .NET Tool'
 
-          - script: dotnet CycloneDX $(solution)
+          - script: dotnet CycloneDX --spec-version 1.5 $(solution)
             displayName: 'Generate NuGet SBOM'
 
-          # This is step optional. Allows download of artifact from pipeline run view in ADO.
           - publish: bom.xml
             artifact: sbom
             displayName: 'Publish NuGet SBOM Artifact'
 
           - task: upload-bom-dtrack@1
-            displayName: 'Upload SBOM to Dependency-Track'
+            displayName: 'Upload NuGet SBOM to Dependency-Track'
             inputs:
               bomFilePath: bom.xml
               dtrackProjName: $(Build.Repository.Name)
+              dtrackProjVersion: $(VersionNumber)
+              dtrackAPIKey: $(DT_API_KEY)
+              dtrackURI: $(DT_API_URL)
+              dtrackProjAutoCreate: true
+
+          # NPM SBOM
+          - task: NodeTool@0
+            displayName: Use Node.js
+            inputs:
+              versionSource: 'fromFile'
+              versionFilePath: src/.nvmrc
+
+          - script: npx --yes @cyclonedx/cyclonedx-npm --package-lock-only --output-file $(Build.SourcesDirectory)/bom-npm.xml
+            displayName: 'Generate NPM SBOM'
+            workingDirectory: src
+
+          - publish: bom-npm.xml
+            artifact: sbom-npm
+            displayName: 'Publish NPM SBOM Artifact'
+
+          - task: upload-bom-dtrack@1
+            displayName: 'Upload NPM SBOM to Dependency-Track'
+            inputs:
+              bomFilePath: bom-npm.xml
+              dtrackProjName: $(Build.Repository.Name)-client
               dtrackProjVersion: $(VersionNumber)
               dtrackAPIKey: $(DT_API_KEY)
               dtrackURI: $(DT_API_URL)

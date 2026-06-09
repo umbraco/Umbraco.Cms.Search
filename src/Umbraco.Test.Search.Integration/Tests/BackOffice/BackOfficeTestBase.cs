@@ -74,7 +74,7 @@ public abstract class BackOfficeTestBase : TestBase
         {
             Content root = new ContentBuilder()
                 .WithContentType(rootContentType)
-                .WithName($"Root {i}")
+                .WithName($"Root {i} shared shared{i}")
                 .WithPropertyValues(
                     new
                     {
@@ -94,7 +94,7 @@ public abstract class BackOfficeTestBase : TestBase
                     .WithPropertyValues(
                         new
                         {
-                            title = $"child title single{j}child triple{j/3}child oddeven{j%2}child"
+                            title = $"child title single{j}child triple{j/3}child oddeven{j%2}child shared shared{i}"
                         })
                     .Build();
                 ContentService.Save(child);
@@ -135,7 +135,7 @@ public abstract class BackOfficeTestBase : TestBase
         {
             Media folder = new MediaBuilder()
                 .WithMediaType(rootMediaType)
-                .WithName($"Root {i}")
+                .WithName($"Root {i} shared shared{i}")
                 .WithPropertyValues(
                     new
                     {
@@ -154,7 +154,7 @@ public abstract class BackOfficeTestBase : TestBase
                     .WithPropertyValues(
                         new
                         {
-                            title = $"child title single{j}child triple{j/3}child oddeven{j%2}child"
+                            title = $"child title single{j}child triple{j/3}child oddeven{j%2}child shared shared{i}"
                         })
                     .WithParentId(folder.Id)
                     .Build();

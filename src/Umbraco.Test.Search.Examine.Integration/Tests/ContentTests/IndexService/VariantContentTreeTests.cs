@@ -24,7 +24,7 @@ public class VariantContentTreeTests : IndexTestBase
     public async Task VariantStructure_YieldsAllDocuments()
     {
         await PublishEntireStructure();
-        IIndex index = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex index = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
         ISearchResults results = index.Searcher.CreateQuery().All().Execute();
         // 3 documents (root, child, grandchild) x 3 cultures = 9 documents
@@ -42,7 +42,7 @@ public class VariantContentTreeTests : IndexTestBase
             return Task.CompletedTask;
         });
 
-        IIndex publishedIndex = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex publishedIndex = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         ISearchResults publishedResultsRootEnglish = publishedIndex.Searcher.Search(EnglishRootTitle);
         ISearchResults publishedResultsRootDanish = publishedIndex.Searcher.Search(DanishRootTitle);
         ISearchResults publishedResultsRootJapanese = publishedIndex.Searcher.Search(JapaneseRootTitle);
@@ -77,7 +77,7 @@ public class VariantContentTreeTests : IndexTestBase
             return Task.CompletedTask;
         });
 
-        IIndex publishedIndex = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex publishedIndex = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         ISearchResults publishedResultsRootEnglish = publishedIndex.Searcher.Search(EnglishRootTitle);
         ISearchResults publishedResultsRootDanish = publishedIndex.Searcher.Search(DanishRootTitle);
         ISearchResults publishedResultsRootJapanese = publishedIndex.Searcher.Search(JapaneseRootTitle);
@@ -112,7 +112,7 @@ public class VariantContentTreeTests : IndexTestBase
             return Task.CompletedTask;
         });
 
-        IIndex publishedIndex = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex publishedIndex = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
         ISearchResults publishedResultsRootEnglish = publishedIndex.Searcher.Search(EnglishRootTitle);
         ISearchResults publishedResultsRootDanish = publishedIndex.Searcher.Search(DanishRootTitle);
         ISearchResults publishedResultsRootJapanese = publishedIndex.Searcher.Search(JapaneseRootTitle);
@@ -190,7 +190,7 @@ public class VariantContentTreeTests : IndexTestBase
         var allCultures = new[] { "en-US", "da-DK", "ja-JP" };
         var expectedSet = new HashSet<string>(expectedExistingCultures);
 
-        IIndex publishedIndex = ExamineManager.GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
+        IIndex publishedIndex = GetIndex(Cms.Search.Core.Constants.IndexAliases.PublishedContent);
 
         Assert.Multiple(() =>
         {
