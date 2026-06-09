@@ -16,6 +16,9 @@ dist/
 .idea/
 .vscode/
 
+# GitHub / Copilot agent config (local only)
+.github/
+
 # OS
 .DS_Store
 Thumbs.db
