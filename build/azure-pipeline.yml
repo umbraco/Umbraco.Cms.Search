@@ -329,9 +329,6 @@ stages:
           vmImage: 'ubuntu-latest'
         timeoutInMinutes: 30
         variables:
-          # Match the Build stage's package cache path so the static web assets manifest
-          # (baked at build time with this absolute path) resolves package assets at runtime.
-          NUGET_PACKAGES: $(Pipeline.Workspace)/.nuget/packages
           CONNECTIONSTRINGS__UMBRACODBDSN: "Data Source=|DataDirectory|/Umbraco.sqlite.db;Cache=Shared;Foreign Keys=True;Pooling=True"
           CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME: Microsoft.Data.Sqlite
         steps:
@@ -386,22 +383,23 @@ stages:
             displayName: Generate HTTPS dev certificate
             continueOnError: true
 
-          # Restore NuGet packages into NUGET_PACKAGES so the build-time static web assets
-          # manifest can resolve package assets (e.g. Umbraco.Cms.StaticAssets) it references
-          # by absolute path. Without the package cache, the app crashes at startup in Development.
-          - script: dotnet restore src/Umbraco.Web.TestSite.V17/Umbraco.Web.TestSite.V17.csproj
-            displayName: Restore test site NuGet packages
+          # Publish the test site as a self-contained folder. Publishing bundles all static web
+          # assets into the app's own wwwroot, so the runtime does NOT use the build-time static
+          # web assets manifest (which references the NuGet cache and each project's source wwwroot
+          # by absolute path — paths not reproduced in this job from the build_output artifact).
+          - script: dotnet publish src/Umbraco.Web.TestSite.V17/Umbraco.Web.TestSite.V17.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/testsite
+            displayName: Publish test site
 
-          # Run the built test site DLL via the shared dotnet host.
-          # NB: launch the DLL (not `dotnet run`) because Pipeline artifacts do not preserve
-          # the Unix executable bit, so the native apphost can't be exec'd ("Permission denied").
-          # The dotnet host doesn't need +x on the apphost. workingDirectory sets the ContentRoot
-          # so the Development uSync path "../_uSync/Shared/" resolves to src/_uSync/Shared/.
+          # uSync data must sit next to the app so the Development path "../_uSync/Shared/" resolves.
+          - script: cp -r $(Build.SourcesDirectory)/src/_uSync $(Build.ArtifactStagingDirectory)/
+            displayName: Copy uSync data
+
+          # Run the published app via the shared dotnet host (no apphost +x needed). PID -> variable.
           - bash: |
-              nohup dotnet bin/$(buildConfiguration)/net10.0/Umbraco.Web.TestSite.V17.dll > $(Build.ArtifactStagingDirectory)/testsite.log 2>&1 &
+              nohup dotnet Umbraco.Web.TestSite.V17.dll > $(Build.ArtifactStagingDirectory)/testsite.log 2>&1 &
               echo "##vso[task.setvariable variable=AcceptanceTestProcessId]$!"
             displayName: Run application
-            workingDirectory: src/Umbraco.Web.TestSite.V17
+            workingDirectory: $(Build.ArtifactStagingDirectory)/testsite
             env:
               ASPNETCORE_ENVIRONMENT: Development
               ASPNETCORE_URLS: $(ASPNETCORE_URLS)
@@ -419,10 +417,10 @@ stages:
               CONNECTIONSTRINGS__UMBRACODBDSN: $(CONNECTIONSTRINGS__UMBRACODBDSN)
               CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME: $(CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME)
 
-          # DIAGNOSTIC: confirm the build output exists and the app survived startup; surface the log if it died
+          # DIAGNOSTIC: confirm the published app survived startup; surface the log if it died
           - bash: |
-              echo "=== Build output for test site ==="
-              ls -la bin/Release/net10.0/Umbraco.Web.TestSite.V17.dll || echo "DLL NOT FOUND in bin/Release/net10.0"
+              echo "=== Published test site ==="
+              ls -la Umbraco.Web.TestSite.V17.dll || echo "DLL NOT FOUND in publish output"
               echo "=== Waiting 15s, then checking process $(AcceptanceTestProcessId) ==="
               sleep 15
               if kill -0 $(AcceptanceTestProcessId) 2>/dev/null; then
@@ -434,7 +432,7 @@ stages:
                 exit 1
               fi
             displayName: Diagnose test site startup
-            workingDirectory: src/Umbraco.Web.TestSite.V17
+            workingDirectory: $(Build.ArtifactStagingDirectory)/testsite
 
           # Wait for the application to respond (HTTP 200), bypassing the self-signed dev cert
           - script: npm install wait-on
