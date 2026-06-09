@@ -329,6 +329,9 @@ stages:
           vmImage: 'ubuntu-latest'
         timeoutInMinutes: 30
         variables:
+          # Match the Build stage's package cache path so the static web assets manifest
+          # (baked at build time with this absolute path) resolves package assets at runtime.
+          NUGET_PACKAGES: $(Pipeline.Workspace)/.nuget/packages
           CONNECTIONSTRINGS__UMBRACODBDSN: "Data Source=|DataDirectory|/Umbraco.sqlite.db;Cache=Shared;Foreign Keys=True;Pooling=True"
           CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME: Microsoft.Data.Sqlite
         steps:
@@ -382,6 +385,12 @@ stages:
           - script: dotnet dev-certs https --trust
             displayName: Generate HTTPS dev certificate
             continueOnError: true
+
+          # Restore NuGet packages into NUGET_PACKAGES so the build-time static web assets
+          # manifest can resolve package assets (e.g. Umbraco.Cms.StaticAssets) it references
+          # by absolute path. Without the package cache, the app crashes at startup in Development.
+          - script: dotnet restore src/Umbraco.Web.TestSite.V17/Umbraco.Web.TestSite.V17.csproj
+            displayName: Restore test site NuGet packages
 
           # Run the built test site DLL via the shared dotnet host.
           # NB: launch the DLL (not `dotnet run`) because Pipeline artifacts do not preserve
