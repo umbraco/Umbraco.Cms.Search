@@ -1,24 +1,22 @@
-import {test, expect} from '@playwright/test';
-import {SearchPage} from '../pages';
+import {test} from '../lib';
+import {expect} from '@playwright/test';
 
 test.describe('Search Pagination', () => {
-  let searchPage: SearchPage;
   let resultCount: number;
 
-  test.beforeEach(async ({page, baseURL}) => {
-    searchPage = new SearchPage(page, baseURL!);
-    await searchPage.goTo();
-    resultCount = await searchPage.getResultCount();
+  test.beforeEach(async ({searchUi}) => {
+    await searchUi.search.goTo();
+    resultCount = await searchUi.search.getResultCount();
   });
 
-  test('displays pagination when results exceed page size', async () => {
+  test('displays pagination when results exceed page size', async ({searchUi}) => {
     // Assert
     if (resultCount > 5) {
-      await searchPage.expectPaginationVisible();
+      await searchUi.search.expectPaginationVisible();
     }
   });
 
-  test('can navigate to next page', async () => {
+  test('can navigate to next page', async ({searchUi}) => {
     // Arrange
     if (resultCount <= 5) {
       test.skip();
@@ -26,11 +24,11 @@ test.describe('Search Pagination', () => {
     }
 
     // Act
-    const firstPageTitles = await searchPage.getBookTitles();
-    await searchPage.goToPage(2);
+    const firstPageTitles = await searchUi.search.getBookTitles();
+    await searchUi.search.goToPage(2);
 
     // Assert
-    const secondPageTitles = await searchPage.getBookTitles();
+    const secondPageTitles = await searchUi.search.getBookTitles();
     expect(secondPageTitles).not.toEqual(firstPageTitles);
   });
 });

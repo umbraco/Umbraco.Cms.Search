@@ -1,52 +1,49 @@
-import {test, expect} from '@playwright/test';
-import {SearchPage} from '../pages';
+import {test} from '../lib';
+import {expect} from '@playwright/test';
 
 test.describe('Search Sorting', () => {
-  let searchPage: SearchPage;
-
-  test.beforeEach(async ({page, baseURL}) => {
-    searchPage = new SearchPage(page, baseURL!);
-    await searchPage.goTo();
+  test.beforeEach(async ({searchUi}) => {
+    await searchUi.search.goTo();
   });
 
-  test('can sort by title ascending', async () => {
+  test('can sort by title ascending', async ({searchUi}) => {
     // Act
-    await searchPage.sortBy('title');
-    await searchPage.setSortDirection('asc');
+    await searchUi.search.sortBy('title');
+    await searchUi.search.setSortDirection('asc');
 
     // Assert
-    const titles = await searchPage.getBookTitles();
+    const titles = await searchUi.search.getBookTitles();
     expect(titles.length).toBeGreaterThan(0);
     const sortedTitles = [...titles].sort((a, b) => a.localeCompare(b));
     expect(titles).toEqual(sortedTitles);
   });
 
-  test('can sort by title descending', async () => {
+  test('can sort by title descending', async ({searchUi}) => {
     // Act
-    await searchPage.sortBy('title');
-    await searchPage.setSortDirection('desc');
+    await searchUi.search.sortBy('title');
+    await searchUi.search.setSortDirection('desc');
 
     // Assert
-    const titles = await searchPage.getBookTitles();
+    const titles = await searchUi.search.getBookTitles();
     expect(titles.length).toBeGreaterThan(0);
     const sortedTitles = [...titles].sort((a, b) => b.localeCompare(a));
     expect(titles).toEqual(sortedTitles);
   });
 
-  test('can sort by publish year', async () => {
+  test('can sort by publish year', async ({searchUi}) => {
     // Act
-    await searchPage.sortBy('publishYear');
+    await searchUi.search.sortBy('publishYear');
 
     // Assert
-    await searchPage.doesResultCountGreaterThan(0);
+    await searchUi.search.doesResultCountGreaterThan(0);
   });
 
-  test('can sort by relevance after search', async () => {
+  test('can sort by relevance after search', async ({searchUi}) => {
     // Act
-    await searchPage.search('novel');
-    await searchPage.sortBy('relevance');
+    await searchUi.search.search('novel');
+    await searchUi.search.sortBy('relevance');
 
     // Assert
-    await searchPage.doesResultCountGreaterThan(0);
+    await searchUi.search.doesResultCountGreaterThan(0);
   });
 });
