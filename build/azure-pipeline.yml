@@ -298,7 +298,7 @@ stages:
             displayName: Stop SQL Server LocalDB (Windows)
             condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
-  - stage: E2E 
+  - stage: E2E
     displayName: E2E Tests
     dependsOn: Build
     variables:
@@ -378,41 +378,17 @@ stages:
             displayName: Restore NPM packages
             workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
 
-          - script: npx playwright install --with-deps chromium
-            displayName: Install Playwright browsers
-            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
-
           # Generate HTTPS dev certificate
           - script: dotnet dev-certs https --trust
             displayName: Generate HTTPS dev certificate
             continueOnError: true
 
-          # Publish and run the test site
-          - script: dotnet publish src/Umbraco.Web.TestSite.V17/Umbraco.Web.TestSite.V17.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/testsite
-            displayName: Publish test site
-
-          # Copy _uSync as sibling of testsite to match Development config path "../_uSync/Shared/"
-          - script: |
-              echo "=== Copying uSync data ==="
-              cp -r $(Build.SourcesDirectory)/src/_uSync $(Build.ArtifactStagingDirectory)/
-              echo "=== Verifying folder structure ==="
-              ls -la $(Build.ArtifactStagingDirectory)/
-              echo "=== uSync folder contents ==="
-              find $(Build.ArtifactStagingDirectory)/_uSync -type f | head -20
-            displayName: Copy uSync data
-
-          - script: |
-              cd $(Build.ArtifactStagingDirectory)/testsite
-              echo "=== Environment ==="
-              echo "ASPNETCORE_ENVIRONMENT=$ASPNETCORE_ENVIRONMENT"
-              echo "Working directory: $(pwd)"
-              echo "=== Verifying uSync path ==="
-              ls -la ../_uSync/Shared/ || echo "uSync folder not found at ../_uSync/Shared/"
-              echo "=== Starting test site ==="
-              nohup dotnet Umbraco.Web.TestSite.V17.dll --urls="$(ASPNETCORE_URLS)" > testsite.log 2>&1 &
-              echo $! > testsite.pid
-              echo "Test site started with PID $(cat testsite.pid)"
-            displayName: Start test site
+          # Run the test site from source (build output comes from the Build stage artifact)
+          - bash: |
+              nohup dotnet run --project Umbraco.Web.TestSite.V17.csproj --configuration $(buildConfiguration) --no-build --no-restore --no-launch-profile > $(Build.ArtifactStagingDirectory)/testsite.log 2>&1 &
+              echo "##vso[task.setvariable variable=AcceptanceTestProcessId]$!"
+            displayName: Run application
+            workingDirectory: src/Umbraco.Web.TestSite.V17
             env:
               ASPNETCORE_ENVIRONMENT: Development
               ASPNETCORE_URLS: $(ASPNETCORE_URLS)
@@ -430,29 +406,20 @@ stages:
               CONNECTIONSTRINGS__UMBRACODBDSN: $(CONNECTIONSTRINGS__UMBRACODBDSN)
               CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME: $(CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME)
 
-          - script: |
-              echo "Waiting for test site to be ready..."
-              for i in {1..60}; do
-                if curl -k -s -o /dev/null -w "%{http_code}" $(ASPNETCORE_URLS) | grep -q "200\|301\|302"; then
-                  echo "Test site is ready!"
-                  echo "=== Last 50 lines of testsite.log ==="
-                  tail -50 $(Build.ArtifactStagingDirectory)/testsite/testsite.log || true
-                  echo "=== Checking for uSync messages ==="
-                  grep -i "usync" $(Build.ArtifactStagingDirectory)/testsite/testsite.log || echo "No uSync messages found"
-                  exit 0
-                fi
-                echo "Attempt $i: Test site not ready yet, waiting..."
-                sleep 5
-              done
-              echo "Test site failed to start"
-              echo "=== Full testsite.log ==="
-              cat $(Build.ArtifactStagingDirectory)/testsite/testsite.log
-              exit 1
-            displayName: Wait for test site to be ready
+          # Wait for the application to respond (HTTP 200), bypassing the self-signed dev cert
+          - script: npm install wait-on
+            displayName: Install wait-on package
+            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
 
-          # Install Playwright and dependencies
-          - pwsh: npx playwright install chromium
-            displayName: Install Playwright only with Chromium browser
+          - script: npx wait-on -v --interval 1000 --timeout 120000 https-get://localhost:44324
+            displayName: Wait for application
+            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
+            env:
+              NODE_TLS_REJECT_UNAUTHORIZED: 0
+
+          # Install Playwright (Chromium) with OS dependencies
+          - script: npx playwright install --with-deps chromium
+            displayName: Install Playwright (Chromium)
             workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
 
           # Run acceptance tests
@@ -462,14 +429,19 @@ stages:
             env:
               CI: true
 
+          # Stop the application
+          - bash: kill -15 $(AcceptanceTestProcessId)
+            displayName: Stop application
+            condition: and(succeededOrFailed(), ne(variables.AcceptanceTestProcessId, ''))
+
           # Publish test artifacts
           - task: PublishPipelineArtifact@1
             displayName: Publish test artifacts
             condition: succeededOrFailed()
             inputs:
               targetPath: src/Umbraco.Test.Search.AcceptanceTest/results
-              artifactName: acceptance-test-results
-              
+              artifactName: "Acceptance Test Results - $(Agent.JobName) - Attempt #$(System.JobAttempt)"
+
           # Publish test results
           - task: PublishTestResults@2
             displayName: Publish test results
@@ -479,14 +451,6 @@ stages:
               testResultsFiles: 'src/Umbraco.Test.Search.AcceptanceTest/results/results.xml'
               testRunTitle: 'Acceptance Test Results'
               failTaskOnFailedTests: true
-
-          # Stop test site
-          - script: |
-              if [ -f $(Build.ArtifactStagingDirectory)/testsite/testsite.pid ]; then
-                kill $(cat $(Build.ArtifactStagingDirectory)/testsite/testsite.pid) || true
-              fi
-            displayName: Stop test site
-            condition: always()
 
   - stage: Dependency_Track
     displayName: Dependency Track
