@@ -2,11 +2,8 @@ import {defineConfig, devices} from '@playwright/test';
 
 require('dotenv').config();
 
-export const STORAGE_STATE = 'playwright/.auth/user.json';
-
 export default defineConfig({
   testDir: './tests/',
-  testIgnore: /auth\.setup\.ts/,
   timeout: 30 * 1000,
   expect: {
     timeout: 5000
