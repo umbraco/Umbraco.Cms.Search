@@ -327,7 +327,6 @@ stages:
         displayName: E2E Tests (SQLite)
         pool:
           vmImage: 'ubuntu-latest'
-        timeoutInMinutes: 30
         variables:
           CONNECTIONSTRINGS__UMBRACODBDSN: "Data Source=|DataDirectory|/Umbraco.sqlite.db;Cache=Shared;Foreign Keys=True;Pooling=True"
           CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME: Microsoft.Data.Sqlite
@@ -378,9 +377,7 @@ stages:
             displayName: Restore NPM packages
             workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
 
-          # Generate HTTPS dev certificate (needed for Kestrel to serve HTTPS in Development).
-          # No --trust: OS trust fails on Linux CI and isn't needed — Playwright uses
-          # ignoreHTTPSErrors and wait-on uses NODE_TLS_REJECT_UNAUTHORIZED=0.
+          # Generate HTTPS dev certificate
           - script: dotnet dev-certs https
             displayName: Generate HTTPS dev certificate
 
@@ -454,7 +451,7 @@ stages:
             env:
               NODE_TLS_REJECT_UNAUTHORIZED: 0
 
-          # Install Playwright (Chromium) with OS dependencies
+          # Install Playwright (Chromium)
           - script: npx playwright install --with-deps chromium
             displayName: Install Playwright (Chromium)
             workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
