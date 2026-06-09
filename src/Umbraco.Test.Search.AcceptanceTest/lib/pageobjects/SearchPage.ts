@@ -47,7 +47,6 @@ export class SearchPage extends BasePage {
 
   async getResultCount(): Promise<number> {
     const headingText = await this.getText(this.resultsHeading);
-    if (!headingText) return 0;
 
     const match = headingText.match(/Found (\d+) books?/);
     if (match) {
@@ -58,7 +57,7 @@ export class SearchPage extends BasePage {
       return 0;
     }
 
-    return 0;
+    throw new Error(`Unexpected results heading: "${headingText}"`);
   }
 
   async getBookTitles(): Promise<string[]> {
