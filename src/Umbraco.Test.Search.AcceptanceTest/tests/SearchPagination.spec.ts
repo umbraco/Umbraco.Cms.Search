@@ -17,12 +17,6 @@ test.describe('Search Pagination', () => {
   });
 
   test('can navigate to next page', async ({searchUi}) => {
-    // Arrange
-    if (resultCount <= 5) {
-      test.skip();
-      return;
-    }
-
     // Act
     const firstPageTitles = await searchUi.search.getBookTitles();
     await searchUi.search.goToPage(2);
