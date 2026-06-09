@@ -1,10 +1,10 @@
 import {Page} from '@playwright/test';
-import {SearchPage} from '../pageobjects/SearchPage';
+import {SearchPageUiHelper} from './SearchPageUiHelper';
 
 export class UiHelpers {
-  readonly search: SearchPage;
+  readonly search: SearchPageUiHelper;
 
   constructor(page: Page, baseURL: string) {
-    this.search = new SearchPage(page, baseURL);
+    this.search = new SearchPageUiHelper(page, baseURL);
   }
 }

@@ -1,7 +1,7 @@
 import {Page, Locator, expect} from '@playwright/test';
 import {BasePage} from './BasePage';
 
-export class SearchPage extends BasePage {
+export class SearchPageUiHelper extends BasePage {
   readonly searchInput: Locator;
   readonly searchResults: Locator;
   readonly searchFilters: Locator;

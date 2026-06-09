@@ -88,12 +88,11 @@ Umbraco.Test.Search.AcceptanceTest/
 ├── lib/                    # Test helpers, fixtures, and page objects
 │   ├── index.ts            # Public API (test fixture, page objects, ConstantHelper)
 │   ├── fixtures.ts         # Extended Playwright test with the searchUi fixture
-│   ├── helpers/
-│   │   ├── ConstantHelper.ts  # Timeout/wait constants
-│   │   └── UiHelpers.ts       # searchUi aggregator (page objects)
-│   └── pageobjects/
-│       ├── BasePage.ts     # Base page class
-│       └── SearchPage.ts   # Search page object
+│   └── helpers/
+│       ├── ConstantHelper.ts       # Timeout/wait constants
+│       ├── UiHelpers.ts            # searchUi aggregator (page objects)
+│       ├── BasePage.ts             # Base page class
+│       └── SearchPageUiHelper.ts   # Search page object
 ├── tests/
 │   └── *.spec.ts           # Test files
 └── results/                # Test results and reports
@@ -108,7 +107,7 @@ This project uses the Page Object Model (POM) pattern to organize test code:
 
 ### Creating a New Page Object
 
-1. Create a new file in `lib/pageobjects/` (e.g., `SearchResultsPage.ts`)
+1. Create a new file in `lib/helpers/` (e.g., `SearchResultsUiHelper.ts`)
 2. Extend `BasePage` and define locators and actions
 3. Export it from `lib/index.ts` and expose it on `UiHelpers` (`lib/helpers/UiHelpers.ts`)
 

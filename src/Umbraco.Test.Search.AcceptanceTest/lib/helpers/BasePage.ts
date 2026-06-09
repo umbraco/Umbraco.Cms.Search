@@ -1,5 +1,5 @@
 import {Page, Locator, expect} from '@playwright/test';
-import {ConstantHelper} from '../helpers/ConstantHelper';
+import {ConstantHelper} from './ConstantHelper';
 
 export class BasePage {
   readonly page: Page;
