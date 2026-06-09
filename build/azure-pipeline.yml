@@ -378,10 +378,11 @@ stages:
             displayName: Restore NPM packages
             workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
 
-          # Generate HTTPS dev certificate
-          - script: dotnet dev-certs https --trust
+          # Generate HTTPS dev certificate (needed for Kestrel to serve HTTPS in Development).
+          # No --trust: OS trust fails on Linux CI and isn't needed — Playwright uses
+          # ignoreHTTPSErrors and wait-on uses NODE_TLS_REJECT_UNAUTHORIZED=0.
+          - script: dotnet dev-certs https
             displayName: Generate HTTPS dev certificate
-            continueOnError: true
 
           # Publish the test site as a self-contained folder. Publishing bundles all static web
           # assets into the app's own wwwroot, so the runtime does NOT use the build-time static
