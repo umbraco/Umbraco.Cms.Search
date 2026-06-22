@@ -8,7 +8,7 @@ namespace Umbraco.Test.Search.Integration.Services;
 internal class LocalServerMessenger : ServerMessengerBase
 {
     public LocalServerMessenger()
-        : base(false, new SystemTextJsonSerializer())
+        : base(false, new SystemTextJsonSerializer(new DefaultJsonSerializerEncoderFactory()))
     {
     }
 

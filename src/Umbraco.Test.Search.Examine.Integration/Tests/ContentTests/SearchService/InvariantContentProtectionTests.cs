@@ -50,7 +50,7 @@ public class InvariantContentProtectionTests : SearcherTestBase
     public async Task CannotGetProtectedContent_Member(bool publish)
     {
         IMemberType memberType = MemberTypeBuilder.CreateSimpleMemberType();
-        MemberTypeService.Save(memberType);
+        await MemberTypeService.CreateAsync(memberType, Constants.Security.SuperUserKey);
         Member customMember = MemberBuilder.CreateSimpleMember(memberType, "hello", "hello@test.com", "hello", "hello");
         MemberService.Save(customMember);
 
@@ -91,7 +91,7 @@ public class InvariantContentProtectionTests : SearcherTestBase
         });
 
         IMemberType memberType = MemberTypeBuilder.CreateSimpleMemberType();
-        MemberTypeService.Save(memberType);
+        await MemberTypeService.CreateAsync(memberType, Constants.Security.SuperUserKey);
 
         Member customMember = MemberBuilder.CreateSimpleMember(memberType, "hello", "hello@test.com", "hello", "hello");
         MemberService.Save(customMember);
@@ -109,7 +109,7 @@ public class InvariantContentProtectionTests : SearcherTestBase
     public async Task CanGetProtectedContent_Member(bool publish)
     {
         IMemberType memberType = MemberTypeBuilder.CreateSimpleMemberType();
-        MemberTypeService.Save(memberType);
+        await MemberTypeService.CreateAsync(memberType, Constants.Security.SuperUserKey);
 
         Member customMember = MemberBuilder.CreateSimpleMember(memberType, "hello", "hello@test.com", "hello", "hello");
         MemberService.Save(customMember);
@@ -155,7 +155,7 @@ public class InvariantContentProtectionTests : SearcherTestBase
 
 
         IMemberType memberType = MemberTypeBuilder.CreateSimpleMemberType();
-        MemberTypeService.Save(memberType);
+        await MemberTypeService.CreateAsync(memberType, Constants.Security.SuperUserKey);
 
         Member customMember = MemberBuilder.CreateSimpleMember(memberType, "hello", "hello@test.com", "hello", "hello");
         MemberService.Save(customMember);
@@ -201,7 +201,7 @@ public class InvariantContentProtectionTests : SearcherTestBase
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
             .Done()
             .Build();
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
 
         Content root = new ContentBuilder()
             .WithKey(RootKey)

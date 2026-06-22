@@ -401,7 +401,7 @@ public class ExplicitSegmentIndexTests : IndexTestBase
             .WithPropertyEditorAlias(Cms.Core.Constants.PropertyEditors.Aliases.TextBox)
             .Done()
             .Build();
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Cms.Core.Constants.Security.SuperUserKey);
 
         // Document 1: Has distinct values in null-segment, segment-1, and segment-2
         Content docWithAllSegments = new ContentBuilder()

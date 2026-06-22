@@ -227,7 +227,7 @@ public class DeleteCulturesTests : TestBase
                 .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
                 .Done()
             .Build();
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
 
         Content root = new ContentBuilder()
             .WithKey(RootKey)
@@ -283,7 +283,7 @@ public class DeleteCulturesTests : TestBase
                 .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
                 .Done()
             .Build();
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
 
         Content root = new ContentBuilder()
             .WithKey(RootKey)
@@ -334,7 +334,7 @@ public class DeleteCulturesTests : TestBase
                 .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
                 .Done()
             .Build();
-        ContentTypeService.Save(variantType);
+        await ContentTypeService.CreateAsync(variantType, Constants.Security.SuperUserKey);
 
         // Invariant content type
         IContentType invariantType = new ContentTypeBuilder()
@@ -347,7 +347,7 @@ public class DeleteCulturesTests : TestBase
                 .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
                 .Done()
             .Build();
-        ContentTypeService.Save(invariantType);
+        await ContentTypeService.CreateAsync(invariantType, Constants.Security.SuperUserKey);
 
         var indexAlias = GetIndexAlias(publish);
 

@@ -186,7 +186,7 @@ public class InvariantDocumentTests : IndexTestBase
             .Done()
             .Build();
 
-        DataTypeService.Save(dataType);
+        await DataTypeService.CreateAsync(dataType, Cms.Core.Constants.Security.SuperUserKey);
         IContentType contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
             .AddPropertyType()
@@ -210,7 +210,7 @@ public class InvariantDocumentTests : IndexTestBase
             .WithPropertyEditorAlias(Cms.Core.Constants.PropertyEditors.Aliases.Decimal)
             .Done()
             .Build();
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Cms.Core.Constants.Security.SuperUserKey);
 
         CurrentDateTime = CurrentDateTimeOffset.DateTime.TruncateTo(DateTimeExtensions.DateTruncate.Second);
 

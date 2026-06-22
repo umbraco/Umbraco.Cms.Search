@@ -967,7 +967,7 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
             .WithAlias(Constants.PropertyEditors.Aliases.Decimal)
             .Done()
             .Build();
-        DataTypeService.Save(decimalDataType);
+        await DataTypeService.CreateAsync(decimalDataType, Constants.Security.SuperUserKey);
 
         IContentType contentType = new ContentTypeBuilder()
             .WithAlias("segmentTestType")
@@ -997,7 +997,7 @@ public class ExplicitSegmentSearchTests : SearcherTestBase
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.DateTime)
             .Done()
             .Build();
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
 
         // Document 1: Has distinct values in null-segment, segment-1, and segment-2
         // This allows us to test that searches are isolated to the correct segment

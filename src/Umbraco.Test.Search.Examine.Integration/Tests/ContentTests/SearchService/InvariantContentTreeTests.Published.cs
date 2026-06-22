@@ -10,10 +10,9 @@ public partial class InvariantContentTreeTests
     public async Task PublishStructure_WithRootInRecycleBin_YieldsNoDocuments()
     {
         var indexAlias = GetIndexAlias(true);
-        await WaitForIndexing(indexAlias, () =>
+        await WaitForIndexing(indexAlias, async () =>
         {
-            CreateInvariantDocumentTree(true);
-            return Task.CompletedTask;
+            await CreateInvariantDocumentTree(true);
         });
 
         await WaitForIndexing(indexAlias, () =>
@@ -41,10 +40,9 @@ public partial class InvariantContentTreeTests
     public async Task PublishStructure_WithChildUnpublished_YieldsNothingBelowRoot()
     {
         var indexAlias = GetIndexAlias(true);
-        await WaitForIndexing(indexAlias, () =>
+        await WaitForIndexing(indexAlias, async () =>
         {
-            CreateInvariantDocumentTree(true);
-            return Task.CompletedTask;
+            await CreateInvariantDocumentTree(true);
         });
 
         await WaitForIndexing(indexAlias, () =>
@@ -71,10 +69,9 @@ public partial class InvariantContentTreeTests
     public async Task PublishStructure_WithGrandchildUnpublished_YieldsNothingBelowChild()
     {
         var indexAlias = GetIndexAlias(true);
-        await WaitForIndexing(indexAlias, () =>
+        await WaitForIndexing(indexAlias, async () =>
         {
-            CreateInvariantDocumentTree(true);
-            return Task.CompletedTask;
+            await CreateInvariantDocumentTree(true);
         });
 
         await WaitForIndexing(indexAlias, () =>

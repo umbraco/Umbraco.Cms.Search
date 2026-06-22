@@ -122,7 +122,7 @@ public class InvariantDocumentTests : SearcherTestBase
             .Done()
             .Build();
 
-        DataTypeService.Save(dataType);
+        await DataTypeService.CreateAsync(dataType, Constants.Security.SuperUserKey);
         IContentType contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
             .AddPropertyType()
@@ -146,7 +146,7 @@ public class InvariantDocumentTests : SearcherTestBase
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Decimal)
             .Done()
             .Build();
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
 
         Content root = new ContentBuilder()
             .WithKey(RootKey)

@@ -374,7 +374,7 @@ public class InvariantSortingTests : SearcherTestBase
             .Done()
             .Build();
 
-        DataTypeService.Save(dataType);
+        await DataTypeService.CreateAsync(dataType, Constants.Security.SuperUserKey);
         ContentType = new ContentTypeBuilder()
             .WithAlias("invariant")
             .AddPropertyType()

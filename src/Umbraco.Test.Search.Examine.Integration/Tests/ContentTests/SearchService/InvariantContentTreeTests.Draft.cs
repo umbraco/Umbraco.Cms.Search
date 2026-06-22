@@ -12,12 +12,11 @@ public partial class InvariantContentTreeTests : SearcherTestBase
     [Test]
     public async Task DraftStructure_WithRootInRecycleBin_YieldsAllDocuments()
     {
-        await WaitForIndexing(GetIndexAlias(false), () =>
+        await WaitForIndexing(GetIndexAlias(false), async () =>
         {
-            CreateInvariantDocumentTree(false);
+            await CreateInvariantDocumentTree(false);
             IContent root = ContentService.GetById(RootKey)!;
             ContentService.MoveToRecycleBin(root);
-            return Task.CompletedTask;
         });
 
         var indexAlias = GetIndexAlias(false);
@@ -41,10 +40,9 @@ public partial class InvariantContentTreeTests : SearcherTestBase
     public async Task DraftStructure_WithChildDeleted_YieldsNothingBelowRoot()
     {
         var indexAlias = GetIndexAlias(false);
-        await WaitForIndexing(indexAlias, () =>
+        await WaitForIndexing(indexAlias, async () =>
         {
-            CreateInvariantDocumentTree(false);
-            return Task.CompletedTask;
+            await CreateInvariantDocumentTree(false);
         });
 
         await WaitForIndexing(indexAlias, () =>
@@ -71,10 +69,9 @@ public partial class InvariantContentTreeTests : SearcherTestBase
     public async Task DraftStructure_WithGrandchildDeleted_YieldsNothingBelowChild()
     {
         var indexAlias = GetIndexAlias(false);
-        await WaitForIndexing(indexAlias, () =>
+        await WaitForIndexing(indexAlias, async () =>
         {
-            CreateInvariantDocumentTree(false);
-            return Task.CompletedTask;
+            await CreateInvariantDocumentTree(false);
         });
 
         await WaitForIndexing(indexAlias, () =>
@@ -98,7 +95,7 @@ public partial class InvariantContentTreeTests : SearcherTestBase
         });
     }
 
-    private void CreateInvariantDocumentTree(bool publish)
+    private async Task CreateInvariantDocumentTree(bool publish)
     {
         DataType dataType = new DataTypeBuilder()
             .WithId(0)
@@ -109,7 +106,7 @@ public partial class InvariantContentTreeTests : SearcherTestBase
             .Done()
             .Build();
 
-        DataTypeService.Save(dataType);
+        await DataTypeService.CreateAsync(dataType, Umbraco.Cms.Core.Constants.Security.SuperUserKey);
         IContentType contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
             .AddPropertyType()
@@ -133,9 +130,9 @@ public partial class InvariantContentTreeTests : SearcherTestBase
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Decimal)
             .Done()
             .Build();
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Umbraco.Cms.Core.Constants.Security.SuperUserKey);
         contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.UpdateAsync(contentType, Umbraco.Cms.Core.Constants.Security.SuperUserKey);
 
         Content root = new ContentBuilder()
             .WithKey(RootKey)

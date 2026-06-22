@@ -305,7 +305,7 @@ public class InvariantFilterTests : SearcherTestBase
             .Done()
             .Build();
 
-        DataTypeService.Save(dataType);
+        await DataTypeService.CreateAsync(dataType, Constants.Security.SuperUserKey);
         IContentType contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
             .AddPropertyType()
@@ -329,9 +329,9 @@ public class InvariantFilterTests : SearcherTestBase
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Decimal)
             .Done()
             .Build();
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
         contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.UpdateAsync(contentType, Constants.Security.SuperUserKey);
 
         Content root = new ContentBuilder()
             .WithKey(RootKey)

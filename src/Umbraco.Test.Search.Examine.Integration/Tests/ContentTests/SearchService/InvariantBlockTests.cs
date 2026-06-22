@@ -81,7 +81,7 @@ public class InvariantBlockTests : SearcherTestBase
     {
         ContentType elementType = ContentTypeBuilder.CreateAllTypesContentType("myElementType", "My Element Type");
         elementType.IsElement = true;
-        ContentTypeService.Save(elementType);
+        await ContentTypeService.CreateAsync(elementType, Constants.Security.SuperUserKey);
 
         IContentType blockListContentType = await CreateBlockListContentType(elementType);
 
@@ -165,7 +165,7 @@ public class InvariantBlockTests : SearcherTestBase
             .WithDataTypeId(blockListDataType.Id)
             .Done()
             .Build();
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
 
         // re-fetch to wire up all key bindings (particularly to the datatype)
         return await ContentTypeService.GetAsync(contentType.Key) ?? null!;

@@ -175,7 +175,7 @@ public class VariantDocumentTests : IndexTestBase
             .Done()
             .Build();
 
-        DataTypeService.Save(dataType);
+        await DataTypeService.CreateAsync(dataType, Cms.Core.Constants.Security.SuperUserKey);
 
         ILanguage langDk = new LanguageBuilder()
             .WithCultureInfo("da-DK")
@@ -222,7 +222,7 @@ public class VariantDocumentTests : IndexTestBase
             .WithPropertyEditorAlias(Cms.Core.Constants.PropertyEditors.Aliases.TextBox)
             .Done()
             .Build();
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Cms.Core.Constants.Security.SuperUserKey);
 
         Content root = new ContentBuilder()
             .WithKey(RootKey)

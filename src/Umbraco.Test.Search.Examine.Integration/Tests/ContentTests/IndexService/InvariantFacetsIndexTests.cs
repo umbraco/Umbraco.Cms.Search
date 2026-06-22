@@ -187,7 +187,7 @@ public class InvariantFacetsIndexTests : IndexTestBase
             .Done()
             .Build();
 
-        DataTypeService.Save(dataType);
+        await DataTypeService.CreateAsync(dataType, Cms.Core.Constants.Security.SuperUserKey);
         ContentType = new ContentTypeBuilder()
             .WithAlias("invariant")
             .AddPropertyType()

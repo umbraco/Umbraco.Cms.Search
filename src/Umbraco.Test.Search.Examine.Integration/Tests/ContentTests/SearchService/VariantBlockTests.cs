@@ -84,7 +84,7 @@ public class VariantBlockTests : SearcherTestBase
         elementType.PropertyTypes.First(p => p.Alias == "number").Variations = ContentVariation.Culture;
 
         elementType.IsElement = true;
-        ContentTypeService.Save(elementType);
+        await ContentTypeService.CreateAsync(elementType, Constants.Security.SuperUserKey);
 
         IContentType blockListContentType = await CreateBlockListContentType(elementType);
 
@@ -171,7 +171,7 @@ public class VariantBlockTests : SearcherTestBase
             .Done()
             .WithContentVariation(ContentVariation.Culture)
             .Build();
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
 
         // re-fetch to wire up all key bindings (particularly to the datatype)
         return await ContentTypeService.GetAsync(contentType.Key) ?? null!;

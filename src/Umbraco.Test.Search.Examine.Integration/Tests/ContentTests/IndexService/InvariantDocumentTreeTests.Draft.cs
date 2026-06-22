@@ -119,7 +119,7 @@ public partial class InvariantDocumentTreeTests
             .Done()
             .Build();
 
-        DataTypeService.Save(dataType);
+        await DataTypeService.CreateAsync(dataType, Umbraco.Cms.Core.Constants.Security.SuperUserKey);
         IContentType contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
             .AddPropertyType()
@@ -143,9 +143,9 @@ public partial class InvariantDocumentTreeTests
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.Decimal)
             .Done()
             .Build();
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Umbraco.Cms.Core.Constants.Security.SuperUserKey);
         contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Umbraco.Cms.Core.Constants.Security.SuperUserKey);
 
         Content root = new ContentBuilder()
             .WithKey(RootKey)

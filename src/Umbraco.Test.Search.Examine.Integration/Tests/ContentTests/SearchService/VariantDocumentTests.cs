@@ -130,7 +130,7 @@ public class VariantDocumentTests : SearcherTestBase
             .WithPropertyEditorAlias(Constants.PropertyEditors.Aliases.TextBox)
             .Done()
             .Build();
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
 
         Content root = new ContentBuilder()
             .WithKey(RootKey)

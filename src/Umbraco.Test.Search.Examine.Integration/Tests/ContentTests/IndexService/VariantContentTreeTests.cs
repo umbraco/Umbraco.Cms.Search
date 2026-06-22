@@ -251,9 +251,9 @@ public class VariantContentTreeTests : IndexTestBase
             .Done()
             .Build();
 
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.CreateAsync(contentType, Constants.Security.SuperUserKey);
         contentType.AllowedContentTypes = [new ContentTypeSort(contentType.Key, 0, contentType.Alias)];
-        ContentTypeService.Save(contentType);
+        await ContentTypeService.UpdateAsync(contentType, Constants.Security.SuperUserKey);
 
         Content root = new ContentBuilder()
             .WithKey(RootKey)
