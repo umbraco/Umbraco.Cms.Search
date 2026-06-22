@@ -1,15 +1,11 @@
-using Asp.Versioning;
 using Examine;
 using Examine.Lucene.Directories;
 using Examine.Lucene.Providers;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using Umbraco.Cms.Api.Common.OpenApi;
 using Umbraco.Cms.Api.Management.OpenApi;
 using Umbraco.Cms.Core.DependencyInjection;
@@ -78,18 +74,23 @@ public static class UmbracoBuilderExtensions
 
         builder.Services.AddExamineSearchProviderServices();
 
-        builder.Services.AddSingleton<IOperationIdHandler, ExamineOperationHandler>();
+        builder.AddBackOfficeOpenApiDocument(
+            Constants.Api.Name,
+            document => document
+                .WithTitle("Umbraco Search Examine API")
+                .WithBackOfficeAuthentication()
+                .ConfigureOpenApiOptions(options =>
+                {
+                    options.AddDocumentTransformer((openApiDocument, _, _) =>
+                    {
+                        openApiDocument.Info.Version = "1.0";
+                        return Task.CompletedTask;
+                    });
 
-        builder.Services.Configure<SwaggerGenOptions>(opt =>
-        {
-            opt.SwaggerDoc(Constants.Api.Name, new OpenApiInfo
-            {
-                Title = "Umbraco Search Examine API",
-                Version = "1.0",
-            });
-
-            opt.OperationFilter<ExamineOperationSecurityFilter>();
-        });
+                    // Emit short operation IDs (the controller action name) so the generated TypeScript
+                    // client has concise method names instead of the verbose path-based defaults.
+                    options.AddOperationTransformer<ActionNameOperationIdTransformer>();
+                }));
 
         return builder;
     }
@@ -111,19 +112,20 @@ public static class UmbracoBuilderExtensions
         return builder;
     }
 
-    private class ExamineOperationSecurityFilter : BackOfficeSecurityRequirementsOperationFilterBase
+    // Sets each operation's ID to the controller action name, matching the operation IDs the generated
+    // TypeScript client was built against.
+    private sealed class ActionNameOperationIdTransformer : IOpenApiOperationTransformer
     {
-        protected override string ApiName => Constants.Api.Name;
-    }
+        public Task TransformAsync(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+        {
+            if (context.Description.ActionDescriptor.RouteValues.TryGetValue("action", out var action)
+                && string.IsNullOrWhiteSpace(action) is false)
+            {
+                operation.OperationId = action;
+            }
 
-    private class ExamineOperationHandler(IOptions<ApiVersioningOptions> apiVersioningOptions)
-        : OperationIdHandler(apiVersioningOptions)
-    {
-        protected override bool CanHandle(ApiDescription apiDescription, ControllerActionDescriptor controllerActionDescriptor)
-            => controllerActionDescriptor.ControllerTypeInfo.Namespace?.StartsWith("Umbraco.Cms.Search.Provider.Examine.Controllers", StringComparison.InvariantCultureIgnoreCase) is true;
-
-        public override string Handle(ApiDescription apiDescription)
-            => $"{apiDescription.ActionDescriptor.RouteValues["action"]}";
+            return Task.CompletedTask;
+        }
     }
 
     private static void AddActiveAndShadowIndex(this IUmbracoBuilder builder, string alias)

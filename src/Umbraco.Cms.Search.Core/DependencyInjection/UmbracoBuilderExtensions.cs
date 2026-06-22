@@ -1,10 +1,6 @@
-﻿using Asp.Versioning;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.AspNetCore.Mvc.Controllers;
+﻿using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using Umbraco.Cms.Api.Common.OpenApi;
 using Umbraco.Cms.Api.Management.OpenApi;
 using Umbraco.Cms.Core.DependencyInjection;
@@ -107,42 +103,44 @@ public static class UmbracoBuilderExtensions
 
         builder.AddCustomCacheRefresherNotificationHandlers();
 
-        builder.Services.AddSingleton<IOperationIdHandler, CustomOperationHandler>();
+        // Add a dedicated OpenAPI document for our own package that can be browsed via the Swagger UI,
+        // along with a generated swagger JSON file used to auto-generate the TypeScript client.
+        builder.AddBackOfficeOpenApiDocument(
+            Constants.Api.Name,
+            document => document
+                .WithTitle("Umbraco Search Management API")
+                .WithBackOfficeAuthentication()
+                .ConfigureOpenApiOptions(options =>
+                {
+                    options.AddDocumentTransformer((openApiDocument, _, _) =>
+                    {
+                        openApiDocument.Info.Version = "1.0";
+                        return Task.CompletedTask;
+                    });
 
-        builder.Services.Configure<SwaggerGenOptions>(opt =>
-        {
-            // Configure the Swagger generation options
-            // Add in a new Swagger API document solely for our own package that can be browsed via Swagger UI
-            // Along with having a generated swagger JSON file that we can use to auto generate a TypeScript client
-            opt.SwaggerDoc(Constants.Api.Name, new OpenApiInfo
-            {
-                Title = "Umbraco Search Management API",
-                Version = "1.0",
-            });
-
-            // Enable Umbraco authentication for the "Search" Swagger document
-            // PR: https://github.com/umbraco/Umbraco-CMS/pull/15699
-            opt.OperationFilter<SearchOperationSecurityFilter>();
-        });
+                    // Emit short operation IDs (the controller action name) so the generated TypeScript
+                    // client has concise method names instead of the verbose path-based defaults.
+                    options.AddOperationTransformer<ActionNameOperationIdTransformer>();
+                }));
 
         return builder;
     }
 
-    private class SearchOperationSecurityFilter : BackOfficeSecurityRequirementsOperationFilterBase
-    {
-        protected override string ApiName => Constants.Api.Name;
-    }
-
-    // This is used to generate nice operation IDs in our swagger json file
-    // So that the generated TypeScript client has nice method names and not too verbose
+    // Sets each operation's ID to the controller action name, matching the operation IDs the generated
+    // TypeScript client was built against.
     // https://docs.umbraco.com/umbraco-cms/tutorials/creating-a-backoffice-api/umbraco-schema-and-operation-ids#operation-ids
-    public class CustomOperationHandler(IOptions<ApiVersioningOptions> apiVersioningOptions)
-        : OperationIdHandler(apiVersioningOptions)
+    private sealed class ActionNameOperationIdTransformer : IOpenApiOperationTransformer
     {
-        protected override bool CanHandle(ApiDescription apiDescription, ControllerActionDescriptor controllerActionDescriptor)
-            => controllerActionDescriptor.ControllerTypeInfo.Namespace?.StartsWith("Umbraco.Cms.Search.Core.Controllers", comparisonType: StringComparison.InvariantCultureIgnoreCase) is true;
+        public Task TransformAsync(OpenApiOperation operation, OpenApiOperationTransformerContext context, CancellationToken cancellationToken)
+        {
+            if (context.Description.ActionDescriptor.RouteValues.TryGetValue("action", out var action)
+                && string.IsNullOrWhiteSpace(action) is false)
+            {
+                operation.OperationId = action;
+            }
 
-        public override string Handle(ApiDescription apiDescription) => $"{apiDescription.ActionDescriptor.RouteValues["action"]}";
+            return Task.CompletedTask;
+        }
     }
 
     /// <summary>
