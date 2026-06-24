@@ -1,7 +1,7 @@
 {
   "id": "Umbraco.Cms.Search.Provider.Examine",
   "name": "@umbraco-cms/search/examine",
-  "version": "1.0.0",
+  "version": "17.0.0",
   "allowTelemetry": true,
   "extensions": [
     {
