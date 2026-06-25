@@ -110,6 +110,7 @@ public static class UmbracoBuilderExtensions
             document => document
                 .WithTitle("Umbraco Search Management API")
                 .WithBackOfficeAuthentication()
+                .WithJsonOptions(Umbraco.Cms.Core.Constants.JsonOptionsNames.BackOffice)
                 .ConfigureOpenApiOptions(options =>
                 {
                     options.AddDocumentTransformer((openApiDocument, _, _) =>
