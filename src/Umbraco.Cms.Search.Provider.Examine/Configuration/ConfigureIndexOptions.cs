@@ -28,6 +28,8 @@ internal sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirec
 
     private void AddOptions(LuceneDirectoryIndexOptions options)
     {
+        // None of the search indexes use the Taxonomy index, as we instead use the non-taxonomy types like (FacetInteger / FacetDouble) so disable it.
+        options.UseTaxonomyIndex = false;
         AddFields(options, ExamineSystemFieldsOptions(), (field, _) => field.PropertyName);
         AddFields(options, CoreSystemFieldsOptions(), (field, fieldValues) => FieldNameHelper.FieldName(field.PropertyName, fieldValues));
         AddFields(options, _fieldOptions.Fields, (field, fieldValues) => FieldNameHelper.FieldName(field.PropertyName, fieldValues));
