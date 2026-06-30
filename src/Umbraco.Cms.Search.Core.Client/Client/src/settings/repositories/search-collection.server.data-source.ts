@@ -20,7 +20,7 @@ export class UmbSearchCollectionServerDataSource implements UmbSearchCollectionD
     const { data, error } = await tryExecute(
       this.#host,
       indexes({
-        client: client as never,
+        client: client,
       }),
     );
 

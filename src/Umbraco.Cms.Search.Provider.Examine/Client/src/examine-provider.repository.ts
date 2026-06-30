@@ -22,7 +22,7 @@ export class UmbSearchExamineProviderRepository extends UmbRepositoryBase {
     const { data, error } = await tryExecute(
       this,
       getDocument({
-        client: umbHttpClient as never,
+        client: umbHttpClient,
         path: {
           documentKey,
           indexAlias,

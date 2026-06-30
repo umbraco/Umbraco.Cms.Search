@@ -11,6 +11,7 @@ npm install --save-dev @umbraco-cms/search
 ```
 
 > **Prereleases** are published under the `next` dist-tag:
+>
 > ```bash
 > npm install --save-dev @umbraco-cms/search@next
 > ```
@@ -21,10 +22,10 @@ npm install --save-dev @umbraco-cms/search
 
 The package exposes two subpath entry points:
 
-| Import path                     | Contents                                                                                  |
-| ------------------------------- | ----------------------------------------------------------------------------------------- |
-| `@umbraco-cms/search/global`    | Entity-type constants, workspace aliases, and shared manifest types.                      |
-| `@umbraco-cms/search/settings`  | Workspace context tokens (`UMB_SEARCH_WORKSPACE_CONTEXT`), repositories, and view types.  |
+| Import path                    | Contents                                                                                 |
+| ------------------------------ | ---------------------------------------------------------------------------------------- |
+| `@umbraco-cms/search/global`   | Entity-type constants, workspace aliases, and shared manifest types.                     |
+| `@umbraco-cms/search/settings` | Workspace context tokens (`UMB_SEARCH_WORKSPACE_CONTEXT`), repositories, and view types. |
 
 ## Usage
 
