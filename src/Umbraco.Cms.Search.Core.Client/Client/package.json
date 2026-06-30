@@ -21,7 +21,9 @@
       "types": "./dist-types/settings/index.d.ts"
     }
   },
-  "files": ["dist-types"],
+  "files": [
+    "dist-types"
+  ],
   "peerDependencies": {
     "@umbraco-cms/backoffice": ">=17.0.0"
   },

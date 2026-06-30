@@ -40,10 +40,7 @@ export class UmbSearchDetailRepository extends UmbDetailRepositoryBase<UmbSearch
     });
 
     // Call API
-    const { error } = await tryExecute(
-      this,
-      rebuild({ query: { indexAlias }, client: client as never }),
-    );
+    const { error } = await tryExecute(this, rebuild({ query: { indexAlias }, client: client }));
     if (error) throw error;
 
     // Mark user waiting for completion notification

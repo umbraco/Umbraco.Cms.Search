@@ -2,7 +2,6 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     /* Path mappings */
-    "baseUrl": ".",
     "paths": {
       "@umbraco-cms/search/global": ["./src/global/index.ts"],
       "@umbraco-cms/search/settings": ["./src/settings/index.ts"]
