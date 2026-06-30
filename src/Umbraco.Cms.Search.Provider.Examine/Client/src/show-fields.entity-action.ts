@@ -7,9 +7,7 @@ export class UmbSearchExamineShowFieldsEntityAction extends UmbEntityActionBase<
     const unique = this.args.unique ?? null;
     if (!unique) return '#';
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     const workspaceContext = await this.getContext(UMB_SEARCH_WORKSPACE_CONTEXT);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     const culture = workspaceContext?.getSelectedCulture() ?? 'none';
 
     return fieldsRouteBuilder?.({ documentUnique: unique, culture }) ?? '#';

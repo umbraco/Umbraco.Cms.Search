@@ -518,17 +518,19 @@ export class UmbSearchIndexSearchBoxElement extends UmbLitElement {
           aria-label=${this.localize.term('search_resultsTable')}
         >
         </umb-table>
-        ${this._totalPages > 1
-          ? html`
-              <uui-pagination
-                .current=${this._currentPage}
-                .total=${this._totalPages}
-                ?disabled=${this._isSearching}
-                @change=${this.#onPageChange}
-                aria-label=${this.localize.term('search_paginationLabel')}
-              ></uui-pagination>
-            `
-          : nothing}
+        ${
+          this._totalPages > 1
+            ? html`
+                <uui-pagination
+                  .current=${this._currentPage}
+                  .total=${this._totalPages}
+                  ?disabled=${this._isSearching}
+                  @change=${this.#onPageChange}
+                  aria-label=${this.localize.term('search_paginationLabel')}
+                ></uui-pagination>
+              `
+            : nothing
+        }
       </div>
     `;
   }

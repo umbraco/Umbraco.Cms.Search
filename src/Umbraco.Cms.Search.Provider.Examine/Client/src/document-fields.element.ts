@@ -83,9 +83,11 @@ export class UmbSearchExamineDocumentFieldsElement extends UmbLitElement {
         <span class="value-content">
           ${isExpanded ? value : `${value.substring(0, MAX_VALUE_LENGTH)}...`}
           <button class="see-more" @click=${() => this.#toggleExpanded(fieldKey)}>
-            ${isExpanded
-              ? this.localize.term('searchExamine_seeLess')
-              : this.localize.term('searchExamine_seeMore')}
+            ${
+              isExpanded
+                ? this.localize.term('searchExamine_seeLess')
+                : this.localize.term('searchExamine_seeMore')
+            }
           </button>
         </span>
         <uui-button-copy-text
@@ -106,13 +108,15 @@ export class UmbSearchExamineDocumentFieldsElement extends UmbLitElement {
       <tr class="field-row">
         <td class="field-name">
           ${field.name}
-          ${field.type
-            ? html`<uui-icon
-                name="icon-info"
-                title=${this.localize.term('searchExamine_fieldType', field.type)}
-                class="type-icon"
-              ></uui-icon>`
-            : nothing}
+          ${
+            field.type
+              ? html`<uui-icon
+                  name="icon-info"
+                  title=${this.localize.term('searchExamine_fieldType', field.type)}
+                  class="type-icon"
+                ></uui-icon>`
+              : nothing
+          }
         </td>
         <td class="field-value">
           ${field.values.map((value, index) => this.#renderValue(field, value, index, showIndex))}
@@ -143,8 +147,7 @@ export class UmbSearchExamineDocumentFieldsElement extends UmbLitElement {
       </div>
       ${when(
         this.fields.length === 0,
-        () =>
-          html`<div class="empty-state">${this.localize.term('searchExamine_noFields')}</div>`,
+        () => html`<div class="empty-state">${this.localize.term('searchExamine_noFields')}</div>`,
         () =>
           when(
             this.#filteredAndSortedFields.length > 0,

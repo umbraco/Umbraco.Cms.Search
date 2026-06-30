@@ -24,7 +24,7 @@ export class UmbSearchQueryServerDataSource extends UmbControllerBase {
           skip: request.skip ?? 0,
           take: request.take ?? 10,
         },
-        client: client as never,
+        client: client,
       }),
     );
 
