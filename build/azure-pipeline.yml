@@ -186,7 +186,7 @@ stages:
         steps:
           - checkout: self
             submodules: false
-            lfs: false,
+            lfs: false
             fetchDepth: 1
             fetchFilter: tree:0
 
@@ -297,6 +297,194 @@ stages:
           - pwsh: SqlLocalDB stop MSSQLLocalDB
             displayName: Stop SQL Server LocalDB (Windows)
             condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+
+  - stage: E2E
+    displayName: E2E Tests
+    dependsOn: Build
+    variables:
+      npm_config_cache_e2e: $(Pipeline.Workspace)/.npm_e2e
+      # Enable console logging in Release mode
+      SERILOG__WRITETO__0__NAME: Async
+      SERILOG__WRITETO__0__ARGS__CONFIGURE__0__NAME: Console
+      # Set unattended install settings
+      UMBRACO__CMS__UNATTENDED__INSTALLUNATTENDED: true
+      UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERNAME: Playwright Test
+      UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERPASSWORD: UmbracoAcceptance123!
+      UMBRACO__CMS__UNATTENDED__UNATTENDEDUSEREMAIL: playwright@umbraco.com
+      # Custom Umbraco settings
+      UMBRACO__CMS__CONTENT__CONTENTVERSIONCLEANUPPOLICY__ENABLECLEANUP: false
+      UMBRACO__CMS__GLOBAL__DISABLEELECTIONFORSINGLESERVER: true
+      UMBRACO__CMS__GLOBAL__INSTALLMISSINGDATABASE: true
+      UMBRACO__CMS__GLOBAL__ID: 00000000-0000-0000-0000-000000000042
+      UMBRACO__CMS__GLOBAL__VERSIONCHECKPERIOD: 0
+      UMBRACO__CMS__GLOBAL__USEHTTPS: true
+      UMBRACO__CMS__HEALTHCHECKS__NOTIFICATION__ENABLED: false
+      UMBRACO__CMS__KEEPALIVE__DISABLEKEEPALIVETASK: true
+      UMBRACO__CMS__WEBROUTING__UMBRACOAPPLICATIONURL: https://localhost:44324/
+      ASPNETCORE_URLS: https://localhost:44324
+    jobs:
+      - job:
+        displayName: E2E Tests (SQLite)
+        pool:
+          vmImage: 'ubuntu-latest'
+        variables:
+          CONNECTIONSTRINGS__UMBRACODBDSN: "Data Source=|DataDirectory|/Umbraco.sqlite.db;Cache=Shared;Foreign Keys=True;Pooling=True"
+          CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME: Microsoft.Data.Sqlite
+        steps:
+          # Checkout source (full clone for Nerdbank.GitVersioning)
+          - checkout: self
+            fetchDepth: 0
+
+          # Setup environment
+          - task: DownloadPipelineArtifact@2
+            displayName: Download NuGet artifacts
+            inputs:
+              artifact: build_output
+              path: $(Build.SourcesDirectory)
+
+          - task: UseDotNet@2
+            displayName: Use .NET SDK from global.json
+            inputs:
+              useGlobalJson: true
+
+          - task: NodeTool@0
+            displayName: Use Node.js
+            inputs:
+              versionSpec: '22.x'
+
+          - pwsh: |
+              "UMBRACO_USER_LOGIN=$(UMBRACO__CMS__UNATTENDED__UNATTENDEDUSEREMAIL)
+              UMBRACO_USER_PASSWORD=$(UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERPASSWORD)
+              URL=$(ASPNETCORE_URLS)" | Out-File .env
+            displayName: Generate .env
+            workingDirectory: $(Build.SourcesDirectory)/src/Umbraco.Test.Search.AcceptanceTest
+
+          # Cache NPM packages
+          - script: mkdir -p $(npm_config_cache_e2e)
+            displayName: Create NPM cache directory
+
+          - task: Cache@2
+            displayName: Cache NPM packages
+            inputs:
+              key: '"npm_e2e" | "$(Agent.OS)" | src/Umbraco.Test.Search.AcceptanceTest/package-lock.json'
+              restoreKeys: |
+                "npm_e2e" | "$(Agent.OS)"
+                "npm_e2e"
+              path: $(npm_config_cache_e2e)
+
+          # Restore NPM packages
+          - script: npm ci --no-fund --no-audit --prefer-offline
+            displayName: Restore NPM packages
+            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
+
+          # Generate HTTPS dev certificate
+          - script: dotnet dev-certs https
+            displayName: Generate HTTPS dev certificate
+
+          # Publish the test site as a self-contained folder. Publishing bundles all static web
+          # assets into the app's own wwwroot, so the runtime does NOT use the build-time static
+          # web assets manifest (which references the NuGet cache and each project's source wwwroot
+          # by absolute path — paths not reproduced in this job from the build_output artifact).
+          - script: dotnet publish src/Umbraco.Web.TestSite.V17/Umbraco.Web.TestSite.V17.csproj --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/testsite
+            displayName: Publish test site
+
+          # uSync data must sit next to the app so the Development path "../_uSync/Shared/" resolves.
+          - script: cp -r $(Build.SourcesDirectory)/src/_uSync $(Build.ArtifactStagingDirectory)/
+            displayName: Copy uSync data
+
+          # Run the published app via the shared dotnet host (no apphost +x needed). PID -> variable.
+          - bash: |
+              nohup dotnet Umbraco.Web.TestSite.V17.dll > $(Build.ArtifactStagingDirectory)/testsite.log 2>&1 &
+              echo "##vso[task.setvariable variable=AcceptanceTestProcessId]$!"
+            displayName: Run application
+            workingDirectory: $(Build.ArtifactStagingDirectory)/testsite
+            env:
+              ASPNETCORE_ENVIRONMENT: Development
+              ASPNETCORE_URLS: $(ASPNETCORE_URLS)
+              UMBRACO__CMS__UNATTENDED__INSTALLUNATTENDED: $(UMBRACO__CMS__UNATTENDED__INSTALLUNATTENDED)
+              UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERNAME: $(UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERNAME)
+              UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERPASSWORD: $(UMBRACO__CMS__UNATTENDED__UNATTENDEDUSERPASSWORD)
+              UMBRACO__CMS__UNATTENDED__UNATTENDEDUSEREMAIL: $(UMBRACO__CMS__UNATTENDED__UNATTENDEDUSEREMAIL)
+              UMBRACO__CMS__GLOBAL__INSTALLMISSINGDATABASE: $(UMBRACO__CMS__GLOBAL__INSTALLMISSINGDATABASE)
+              UMBRACO__CMS__GLOBAL__USEHTTPS: $(UMBRACO__CMS__GLOBAL__USEHTTPS)
+              UMBRACO__CMS__GLOBAL__DISABLEELECTIONFORSINGLESERVER: $(UMBRACO__CMS__GLOBAL__DISABLEELECTIONFORSINGLESERVER)
+              UMBRACO__CMS__GLOBAL__VERSIONCHECKPERIOD: $(UMBRACO__CMS__GLOBAL__VERSIONCHECKPERIOD)
+              UMBRACO__CMS__CONTENT__CONTENTVERSIONCLEANUPPOLICY__ENABLECLEANUP: $(UMBRACO__CMS__CONTENT__CONTENTVERSIONCLEANUPPOLICY__ENABLECLEANUP)
+              UMBRACO__CMS__HEALTHCHECKS__NOTIFICATION__ENABLED: $(UMBRACO__CMS__HEALTHCHECKS__NOTIFICATION__ENABLED)
+              UMBRACO__CMS__KEEPALIVE__DISABLEKEEPALIVETASK: $(UMBRACO__CMS__KEEPALIVE__DISABLEKEEPALIVETASK)
+              CONNECTIONSTRINGS__UMBRACODBDSN: $(CONNECTIONSTRINGS__UMBRACODBDSN)
+              CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME: $(CONNECTIONSTRINGS__UMBRACODBDSN_PROVIDERNAME)
+
+          # DIAGNOSTIC: confirm the published app survived startup; surface the log if it died
+          - bash: |
+              echo "=== Published test site ==="
+              ls -la Umbraco.Web.TestSite.V17.dll || echo "DLL NOT FOUND in publish output"
+              echo "=== Waiting 15s, then checking process $(AcceptanceTestProcessId) ==="
+              sleep 15
+              if kill -0 $(AcceptanceTestProcessId) 2>/dev/null; then
+                echo "Test site process is alive."
+              else
+                echo "##[error]Test site process $(AcceptanceTestProcessId) is NOT running — it exited during startup."
+                echo "=== testsite.log ==="
+                cat $(Build.ArtifactStagingDirectory)/testsite.log || echo "(no testsite.log found)"
+                exit 1
+              fi
+            displayName: Diagnose test site startup
+            workingDirectory: $(Build.ArtifactStagingDirectory)/testsite
+
+          # Wait for the application to respond (HTTP 200), bypassing the self-signed dev cert
+          - script: npm install wait-on
+            displayName: Install wait-on package
+            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
+
+          - bash: |
+              set +e
+              npx wait-on -v --interval 1000 --timeout 120000 https-get://localhost:44324
+              code=$?
+              if [ $code -ne 0 ]; then
+                echo "##[error]Application did not respond within timeout. testsite.log:"
+                cat $(Build.ArtifactStagingDirectory)/testsite.log || echo "(no testsite.log found)"
+              fi
+              exit $code
+            displayName: Wait for application
+            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
+            env:
+              NODE_TLS_REJECT_UNAUTHORIZED: 0
+
+          # Install Playwright (Chromium)
+          - script: npx playwright install --with-deps chromium
+            displayName: Install Playwright (Chromium)
+            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
+
+          # Run acceptance tests
+          - script: npm run test
+            displayName: Run Playwright tests
+            workingDirectory: src/Umbraco.Test.Search.AcceptanceTest
+            env:
+              CI: true
+
+          # Stop the application
+          - bash: kill -15 $(AcceptanceTestProcessId)
+            displayName: Stop application
+            condition: and(succeededOrFailed(), ne(variables.AcceptanceTestProcessId, ''))
+
+          # Publish test artifacts
+          - task: PublishPipelineArtifact@1
+            displayName: Publish test artifacts
+            condition: succeededOrFailed()
+            inputs:
+              targetPath: src/Umbraco.Test.Search.AcceptanceTest/results
+              artifactName: "Acceptance Test Results - $(Agent.JobName) - Attempt #$(System.JobAttempt)"
+
+          # Publish test results
+          - task: PublishTestResults@2
+            displayName: Publish test results
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: 'src/Umbraco.Test.Search.AcceptanceTest/results/results.xml'
+              testRunTitle: 'Acceptance Test Results'
+              failTaskOnFailedTests: true
 
   - stage: Dependency_Track
     displayName: Dependency Track
