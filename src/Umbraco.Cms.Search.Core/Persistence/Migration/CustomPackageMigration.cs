@@ -29,9 +29,8 @@ public class CustomPackageMigration : AsyncPackageMigrationBase
             shortStringHelper,
             contentTypeBaseServiceProvider,
             context,
-            packageMigrationsSettings)
-    {
-    }
+            packageMigrationsSettings) =>
+        RebuildCache = false;
 
     protected override Task MigrateAsync()
     {

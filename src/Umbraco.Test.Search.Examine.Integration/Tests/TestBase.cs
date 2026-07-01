@@ -106,7 +106,7 @@ public abstract class TestBase : UmbracoIntegrationTest
                 hasDoneAction = true;
             }
 
-            if (stopWatch.ElapsedMilliseconds > 600000)
+            if (stopWatch.ElapsedMilliseconds > TimeSpan.FromSeconds(30).TotalMilliseconds)
             {
                 throw new TimeoutException("Indexing timed out");
             }
