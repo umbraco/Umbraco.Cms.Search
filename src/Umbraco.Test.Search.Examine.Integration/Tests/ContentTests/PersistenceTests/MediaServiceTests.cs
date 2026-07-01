@@ -10,7 +10,6 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.ServerEvents;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
-using Umbraco.Cms.Infrastructure.Install;
 using Umbraco.Cms.Infrastructure.Scoping;
 using Umbraco.Cms.Search.Core.Cache.Language;
 using Umbraco.Cms.Search.Core.DependencyInjection;
@@ -35,8 +34,6 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.Persistence
 public class MediaServiceTests : UmbracoIntegrationTest
 {
     private bool _indexingComplete;
-
-    private PackageMigrationRunner PackageMigrationRunner => GetRequiredService<PackageMigrationRunner>();
 
     private IRuntimeState RuntimeState => Services.GetRequiredService<IRuntimeState>();
 
@@ -146,8 +143,7 @@ public class MediaServiceTests : UmbracoIntegrationTest
 
     private async Task TestSetup()
     {
-        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
-        Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
+        await WaitForPackageMigrationsAsync();
 
         IMediaType mediaType = new MediaTypeBuilder()
             .WithAlias("testMediaType")
@@ -207,6 +203,26 @@ public class MediaServiceTests : UmbracoIntegrationTest
     }
 
     private void IndexCommited(object? sender, EventArgs e) => _indexingComplete = true;
+
+    private async Task WaitForPackageMigrationsAsync()
+    {
+        var stopWatch = Stopwatch.StartNew();
+
+        while (RuntimeState.Level != RuntimeLevel.Run)
+        {
+            if (RuntimeState.Level == RuntimeLevel.BootFailed)
+            {
+                throw new InvalidOperationException("Runtime boot failed while waiting for package migrations to run.", RuntimeState.BootFailedException);
+            }
+
+            if (stopWatch.ElapsedMilliseconds > 30000)
+            {
+                throw new TimeoutException($"Timed out waiting for package migrations to complete (RuntimeState.Level is currently {RuntimeState.Level}).");
+            }
+
+            await Task.Delay(250);
+        }
+    }
 
     private static bool FieldsContainText(IndexField[] fields, string text)
         => fields.Any(f =>

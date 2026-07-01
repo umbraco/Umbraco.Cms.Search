@@ -3,12 +3,12 @@ using System.Reflection;
 using Examine;
 using Examine.Lucene.Providers;
 using NUnit.Framework;
+using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.HostedServices;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.ServerEvents;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
-using Umbraco.Cms.Infrastructure.Install;
 using Umbraco.Cms.Search.Core.Cache.Language;
 using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
@@ -47,8 +47,6 @@ public abstract class TestBase : UmbracoIntegrationTest
     protected IDataTypeService DataTypeService => GetRequiredService<IDataTypeService>();
 
     protected ILanguageService LanguageService => GetRequiredService<ILanguageService>();
-
-    protected PackageMigrationRunner PackageMigrationRunner => GetRequiredService<PackageMigrationRunner>();
 
     protected IRuntimeState RuntimeState => GetRequiredService<IRuntimeState>();
 
@@ -126,4 +124,28 @@ public abstract class TestBase : UmbracoIntegrationTest
     }
 
     protected string GetIndexAlias(bool publish) => publish ? Cms.Search.Core.Constants.IndexAliases.PublishedContent : Cms.Search.Core.Constants.IndexAliases.DraftContent;
+
+    /// <summary>
+    /// Package migrations now run automatically on a background hosted service, so this waits for
+    /// <see cref="IRuntimeState.Level"/> to reach <see cref="RuntimeLevel.Run"/> instead of running them explicitly.
+    /// </summary>
+    protected async Task WaitForPackageMigrationsAsync()
+    {
+        var stopWatch = Stopwatch.StartNew();
+
+        while (RuntimeState.Level != RuntimeLevel.Run)
+        {
+            if (RuntimeState.Level == RuntimeLevel.BootFailed)
+            {
+                throw new InvalidOperationException("Runtime boot failed while waiting for package migrations to run.", RuntimeState.BootFailedException);
+            }
+
+            if (stopWatch.ElapsedMilliseconds > 30000)
+            {
+                throw new TimeoutException($"Timed out waiting for package migrations to complete (RuntimeState.Level is currently {RuntimeState.Level}).");
+            }
+
+            await Task.Delay(250);
+        }
+    }
 }

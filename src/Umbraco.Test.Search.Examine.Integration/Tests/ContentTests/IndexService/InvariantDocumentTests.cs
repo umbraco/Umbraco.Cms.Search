@@ -174,8 +174,7 @@ public class InvariantDocumentTests : IndexTestBase
     [SetUp]
     public async Task CreateInvariantDocument()
     {
-        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
-        Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
+        await WaitForPackageMigrationsAsync();
 
         DataType dataType = new DataTypeBuilder()
             .WithId(0)

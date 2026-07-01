@@ -383,8 +383,7 @@ public class ExplicitSegmentIndexTests : IndexTestBase
     [SetUp]
     public async Task CreateTestDocuments()
     {
-        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
-        Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
+        await WaitForPackageMigrationsAsync();
 
         ILanguage langDk = new LanguageBuilder()
             .WithCultureInfo("da-DK")

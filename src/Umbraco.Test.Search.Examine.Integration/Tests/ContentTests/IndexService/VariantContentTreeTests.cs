@@ -219,8 +219,7 @@ public class VariantContentTreeTests : IndexTestBase
     [SetUp]
     public async Task CreateVariantDocumentTree()
     {
-        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
-        Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
+        await WaitForPackageMigrationsAsync();
 
         ILanguage langDk = new LanguageBuilder()
             .WithCultureInfo("da-DK")

@@ -11,7 +11,6 @@ public abstract class SearcherTestBase : TestBase
     [SetUp]
     public async Task RunMigrations()
     {
-        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
-        Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
+        await WaitForPackageMigrationsAsync();
     }
 }

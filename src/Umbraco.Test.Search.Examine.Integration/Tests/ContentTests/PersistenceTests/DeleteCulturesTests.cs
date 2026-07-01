@@ -103,7 +103,7 @@ public class DeleteCulturesTests : TestBase
     [Test]
     public async Task DeleteAllPresentCultures_CleansUpIndexDocuments()
     {
-        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
+        await WaitForPackageMigrationsAsync();
 
         var documentKey = Guid.NewGuid();
 
@@ -154,7 +154,7 @@ public class DeleteCulturesTests : TestBase
     [Test]
     public async Task DeleteCultures_CanHandleMultipleSqlPages()
     {
-        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
+        await WaitForPackageMigrationsAsync();
 
         var documentKeys = new List<Guid>();
 
@@ -204,8 +204,7 @@ public class DeleteCulturesTests : TestBase
 
     private async Task CreateVariantContent(bool publish)
     {
-        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
-        Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
+        await WaitForPackageMigrationsAsync();
 
         ILanguage langDk = new LanguageBuilder()
             .WithCultureInfo("da-DK")
@@ -256,8 +255,7 @@ public class DeleteCulturesTests : TestBase
 
     private async Task CreateVariantContentWithThreeCultures(bool publish)
     {
-        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
-        Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
+        await WaitForPackageMigrationsAsync();
 
         ILanguage langDk = new LanguageBuilder()
             .WithCultureInfo("da-DK")
@@ -314,8 +312,7 @@ public class DeleteCulturesTests : TestBase
 
     private async Task CreateInvariantAndVariantContent(bool publish)
     {
-        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
-        Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
+        await WaitForPackageMigrationsAsync();
 
         ILanguage langDk = new LanguageBuilder()
             .WithCultureInfo("da-DK")
