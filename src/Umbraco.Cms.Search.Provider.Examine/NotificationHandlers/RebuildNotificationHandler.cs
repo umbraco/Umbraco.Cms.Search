@@ -44,10 +44,8 @@ public class RebuildNotificationHandler : INotificationHandler<UmbracoApplicatio
 
             if (_examineManager.TryGetIndex(activePhysicalName, out IIndex? index))
             {
-                // Check if active physical index exists and has content, if it does, we can skip rebuilding.
-                // IndexExists() alone is not enough: Examine commits an empty index as soon as it opens it,
-                // so a never-populated index still reports as "existing".
-                if (index.IndexExists() && index is IIndexStats stats && stats.GetDocumentCount() > 0)
+                // Check if active physical index exists, if it does, we can skip rebuilding
+                if (index.IndexExists())
                 {
                     continue;
                 }
