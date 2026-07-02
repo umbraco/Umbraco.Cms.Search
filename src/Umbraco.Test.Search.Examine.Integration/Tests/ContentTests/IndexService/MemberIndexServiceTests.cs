@@ -20,12 +20,6 @@ public class MemberIndexServiceTests : IndexTestBase
         Assert.That(results.TotalItemCount, Is.EqualTo(1));
     }
 
-    [SetUp]
-    public async Task RunMigrations()
-    {
-        await WaitForPackageMigrationsAsync();
-    }
-
     private async Task CreateMemberAsync()
     {
         IMemberType memberType = new MemberTypeBuilder()

@@ -360,8 +360,6 @@ public class ZeroDowntimeReindexingTests : TestBase
 
     private async Task SetUpContent(bool publish)
     {
-        await WaitForPackageMigrationsAsync();
-
         ContentTypeCreateModel contentTypeCreateModel = ContentTypeEditingBuilder.CreateSimpleContentType(
             "testZeroDowntime",
             "Test Zero Downtime");

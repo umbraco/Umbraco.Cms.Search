@@ -1,6 +1,5 @@
 using Examine;
 using NUnit.Framework;
-using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
@@ -383,8 +382,6 @@ public class ExplicitSegmentIndexTests : IndexTestBase
     [SetUp]
     public async Task CreateTestDocuments()
     {
-        await WaitForPackageMigrationsAsync();
-
         ILanguage langDk = new LanguageBuilder()
             .WithCultureInfo("da-DK")
             .Build();

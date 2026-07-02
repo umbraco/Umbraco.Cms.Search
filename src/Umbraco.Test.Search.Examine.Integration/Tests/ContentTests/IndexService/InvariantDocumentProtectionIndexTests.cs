@@ -84,7 +84,6 @@ public class InvariantDocumentProtectionIndexTests : IndexTestBase
     [SetUp]
     public async Task CreateInvariantDocument()
     {
-        await WaitForPackageMigrationsAsync();
         IContentType contentType = new ContentTypeBuilder()
             .WithAlias("invariant")
             .AddPropertyType()

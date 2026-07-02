@@ -11,12 +11,11 @@ using Umbraco.Cms.Search.Core.Models.Persistence;
 using Umbraco.Cms.Search.Core.Persistence;
 using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
-using Umbraco.Cms.Tests.Integration.Testing;
 using Umbraco.Test.Search.Integration.Services;
 
 namespace Umbraco.Test.Search.Integration.Tests;
 
-public abstract class TestBase : UmbracoIntegrationTest
+public abstract class TestBase : UmbracoIntegrationTestWithPackageMigrations
 {
     // these tests all run against the test indexer, which does not care about the origin
     // of content changes, so the origin value does not matter unless explicitly stated

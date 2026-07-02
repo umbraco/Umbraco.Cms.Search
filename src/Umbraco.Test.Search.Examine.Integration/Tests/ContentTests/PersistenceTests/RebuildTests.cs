@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Reflection;
 using Examine;
 using Examine.Lucene.Providers;
-using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.HostedServices;
@@ -37,8 +36,6 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.Persistence
 public class RebuildTests : UmbracoIntegrationTest
 {
     private bool _indexingComplete;
-
-    private IRuntimeState RuntimeState => Services.GetRequiredService<IRuntimeState>();
 
     private IContentTypeEditingService ContentTypeEditingService => GetRequiredService<IContentTypeEditingService>();
 
@@ -202,8 +199,6 @@ public class RebuildTests : UmbracoIntegrationTest
     /// </summary>
     private async Task CreateContentWithPersistence(bool publish)
     {
-        await WaitForPackageMigrationsAsync();
-
         // Create content type
         ContentTypeCreateModel contentTypeCreateModel = ContentTypeEditingBuilder.CreateSimpleContentType(
             "testType",
@@ -265,29 +260,6 @@ public class RebuildTests : UmbracoIntegrationTest
     }
 
     private void IndexCommited(object? sender, EventArgs e) => _indexingComplete = true;
-
-    private async Task WaitForPackageMigrationsAsync()
-    {
-        var stopWatch = Stopwatch.StartNew();
-
-        while (RuntimeState.Level != RuntimeLevel.Run)
-        {
-            if (RuntimeState.Level == RuntimeLevel.BootFailed)
-            {
-                throw new InvalidOperationException("Runtime boot failed while waiting for package migrations to run.", RuntimeState.BootFailedException);
-            }
-
-            if (stopWatch.ElapsedMilliseconds > 30000)
-            {
-                throw new TimeoutException($"Timed out waiting for package migrations to complete (RuntimeState.Level is currently {RuntimeState.Level}).");
-            }
-
-            await Task.Delay(250);
-        }
-
-        // one final await, because there is a small window where even though we are now running, there is still a small window where we can lock the database.
-        await Task.Delay(500);
-    }
 
     private static bool FieldsContainText(IndexField[] fields, string text)
         => fields.Any(f =>

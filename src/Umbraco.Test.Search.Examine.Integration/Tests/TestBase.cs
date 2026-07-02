@@ -3,7 +3,6 @@ using System.Reflection;
 using Examine;
 using Examine.Lucene.Providers;
 using NUnit.Framework;
-using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.HostedServices;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.ServerEvents;
@@ -14,16 +13,16 @@ using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
 using Umbraco.Cms.Search.Provider.Examine.Services;
 using Umbraco.Cms.Tests.Common.Testing;
-using Umbraco.Cms.Tests.Integration.Testing;
 using Umbraco.Test.Search.Examine.Integration.Attributes;
 using Umbraco.Test.Search.Examine.Integration.Extensions;
 using Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
+using Umbraco.Test.Search.Integration;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests;
 
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
-public abstract class TestBase : UmbracoIntegrationTest
+public abstract class TestBase : UmbracoIntegrationTestWithPackageMigrations
 {
     // these tests all run against the Examine search provider, which does not care about the origin
     // of content changes, so the origin value does not matter.
@@ -119,31 +118,4 @@ public abstract class TestBase : UmbracoIntegrationTest
     }
 
     protected string GetIndexAlias(bool publish) => publish ? Cms.Search.Core.Constants.IndexAliases.PublishedContent : Cms.Search.Core.Constants.IndexAliases.DraftContent;
-
-    /// <summary>
-    /// Package migrations now run automatically on a background hosted service, so this waits for
-    /// <see cref="IRuntimeState.Level"/> to reach <see cref="RuntimeLevel.Run"/> instead of running them explicitly.
-    /// </summary>
-    protected async Task WaitForPackageMigrationsAsync()
-    {
-        var stopWatch = Stopwatch.StartNew();
-
-        while (RuntimeState.Level != RuntimeLevel.Run)
-        {
-            if (RuntimeState.Level == RuntimeLevel.BootFailed)
-            {
-                throw new InvalidOperationException("Runtime boot failed while waiting for package migrations to run.", RuntimeState.BootFailedException);
-            }
-
-            if (stopWatch.ElapsedMilliseconds > 30000)
-            {
-                throw new TimeoutException($"Timed out waiting for package migrations to complete (RuntimeState.Level is currently {RuntimeState.Level}).");
-            }
-
-            await Task.Delay(250);
-        }
-
-        // one final await, because there is a small window where even though we are now running, there is still a small window where we can lock the database.
-        await Task.Delay(500);
-    }
 }

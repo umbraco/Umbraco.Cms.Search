@@ -2,9 +2,7 @@ using System.Diagnostics;
 using System.Reflection;
 using Examine;
 using Examine.Lucene.Providers;
-using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.HostedServices;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.ServerEvents;
@@ -21,21 +19,19 @@ using Umbraco.Cms.Search.Provider.Examine.Services;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 using Umbraco.Cms.Tests.Common.Testing;
-using Umbraco.Cms.Tests.Integration.Testing;
 using Umbraco.Test.Search.Examine.Integration.Attributes;
 using Umbraco.Test.Search.Examine.Integration.Extensions;
 using Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
+using Umbraco.Test.Search.Integration;
 using Constants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.PersistenceTests;
 
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
-public class MediaServiceTests : UmbracoIntegrationTest
+public class MediaServiceTests : UmbracoIntegrationTestWithPackageMigrations
 {
     private bool _indexingComplete;
-
-    private IRuntimeState RuntimeState => Services.GetRequiredService<IRuntimeState>();
 
     private IMediaTypeService MediaTypeService => GetRequiredService<IMediaTypeService>();
 
@@ -143,8 +139,6 @@ public class MediaServiceTests : UmbracoIntegrationTest
 
     private async Task TestSetup()
     {
-        await WaitForPackageMigrationsAsync();
-
         IMediaType mediaType = new MediaTypeBuilder()
             .WithAlias("testMediaType")
             .AddPropertyGroup()
@@ -203,29 +197,6 @@ public class MediaServiceTests : UmbracoIntegrationTest
     }
 
     private void IndexCommited(object? sender, EventArgs e) => _indexingComplete = true;
-
-    private async Task WaitForPackageMigrationsAsync()
-    {
-        var stopWatch = Stopwatch.StartNew();
-
-        while (RuntimeState.Level != RuntimeLevel.Run)
-        {
-            if (RuntimeState.Level == RuntimeLevel.BootFailed)
-            {
-                throw new InvalidOperationException("Runtime boot failed while waiting for package migrations to run.", RuntimeState.BootFailedException);
-            }
-
-            if (stopWatch.ElapsedMilliseconds > 30000)
-            {
-                throw new TimeoutException($"Timed out waiting for package migrations to complete (RuntimeState.Level is currently {RuntimeState.Level}).");
-            }
-
-            await Task.Delay(250);
-        }
-
-        // one final await, because there is a small window where even though we are now running, there is still a small window where we can lock the database.
-        await Task.Delay(500);
-    }
 
     private static bool FieldsContainText(IndexField[] fields, string text)
         => fields.Any(f =>

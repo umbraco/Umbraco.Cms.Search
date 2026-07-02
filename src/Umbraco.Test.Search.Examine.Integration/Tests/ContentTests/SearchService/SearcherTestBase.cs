@@ -7,10 +7,4 @@ namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.SearchServi
 public abstract class SearcherTestBase : TestBase
 {
     protected ISearcher Searcher => GetRequiredService<ISearcher>();
-
-    [SetUp]
-    public async Task RunMigrations()
-    {
-        await WaitForPackageMigrationsAsync();
-    }
 }

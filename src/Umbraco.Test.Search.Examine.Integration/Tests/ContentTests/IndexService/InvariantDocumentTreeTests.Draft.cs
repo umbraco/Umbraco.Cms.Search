@@ -107,8 +107,6 @@ public partial class InvariantDocumentTreeTests
 
     private async Task CreateInvariantDocumentTree(bool publish)
     {
-        await WaitForPackageMigrationsAsync();
-
         DataType dataType = new DataTypeBuilder()
             .WithId(0)
             .WithoutIdentity()

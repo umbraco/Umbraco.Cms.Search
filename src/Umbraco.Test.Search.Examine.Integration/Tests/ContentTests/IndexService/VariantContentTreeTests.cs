@@ -219,8 +219,6 @@ public class VariantContentTreeTests : IndexTestBase
     [SetUp]
     public async Task CreateVariantDocumentTree()
     {
-        await WaitForPackageMigrationsAsync();
-
         ILanguage langDk = new LanguageBuilder()
             .WithCultureInfo("da-DK")
             .WithIsDefault(true)

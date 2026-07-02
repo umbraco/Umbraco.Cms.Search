@@ -3,7 +3,6 @@ using Examine;
 using Examine.Lucene;
 using Examine.Search;
 using NUnit.Framework;
-using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using Umbraco.Cms.Tests.Common.Builders;
@@ -116,12 +115,6 @@ public class InvariantFacetsIndexTests : IndexTestBase
             Assert.That(firstFacet!.Value, Is.EqualTo(2));
             Assert.That(secondFacet!.Value, Is.EqualTo(2));
         });
-    }
-
-    [SetUp]
-    public async Task RunMigrations()
-    {
-        await WaitForPackageMigrationsAsync();
     }
 
     private async Task CreateCountDocType()

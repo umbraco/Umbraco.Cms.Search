@@ -21,12 +21,6 @@ public class MediaIndexServiceTests : IndexTestBase
         Assert.That(results.TotalItemCount, Is.EqualTo(1));
     }
 
-    [SetUp]
-    public async Task RunMigrations()
-    {
-        await WaitForPackageMigrationsAsync();
-    }
-
     private async Task CreateMediaAsync()
     {
         IMediaType mediaType = new MediaTypeBuilder()

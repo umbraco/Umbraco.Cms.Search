@@ -103,8 +103,6 @@ public class DeleteCulturesTests : TestBase
     [Test]
     public async Task DeleteAllPresentCultures_CleansUpIndexDocuments()
     {
-        await WaitForPackageMigrationsAsync();
-
         var documentKey = Guid.NewGuid();
 
         // Insert a document that only has culture-specific fields (no invariant)
@@ -154,8 +152,6 @@ public class DeleteCulturesTests : TestBase
     [Test]
     public async Task DeleteCultures_CanHandleMultipleSqlPages()
     {
-        await WaitForPackageMigrationsAsync();
-
         var documentKeys = new List<Guid>();
 
         // Insert a document that only has culture-specific fields (no invariant)
@@ -204,8 +200,6 @@ public class DeleteCulturesTests : TestBase
 
     private async Task CreateVariantContent(bool publish)
     {
-        await WaitForPackageMigrationsAsync();
-
         ILanguage langDk = new LanguageBuilder()
             .WithCultureInfo("da-DK")
             .Build();
@@ -255,8 +249,6 @@ public class DeleteCulturesTests : TestBase
 
     private async Task CreateVariantContentWithThreeCultures(bool publish)
     {
-        await WaitForPackageMigrationsAsync();
-
         ILanguage langDk = new LanguageBuilder()
             .WithCultureInfo("da-DK")
             .Build();
@@ -312,8 +304,6 @@ public class DeleteCulturesTests : TestBase
 
     private async Task CreateInvariantAndVariantContent(bool publish)
     {
-        await WaitForPackageMigrationsAsync();
-
         ILanguage langDk = new LanguageBuilder()
             .WithCultureInfo("da-DK")
             .Build();

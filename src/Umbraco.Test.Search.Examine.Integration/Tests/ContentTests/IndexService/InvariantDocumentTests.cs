@@ -1,7 +1,6 @@
 ﻿using Examine;
 using Examine.Search;
 using NUnit.Framework;
-using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
 using Umbraco.Cms.Tests.Common.Builders;
@@ -174,8 +173,6 @@ public class InvariantDocumentTests : IndexTestBase
     [SetUp]
     public async Task CreateInvariantDocument()
     {
-        await WaitForPackageMigrationsAsync();
-
         DataType dataType = new DataTypeBuilder()
             .WithId(0)
             .WithoutIdentity()
