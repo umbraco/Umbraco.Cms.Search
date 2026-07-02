@@ -13,7 +13,6 @@ using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Services.ContentTypeEditing;
 using Umbraco.Cms.Core.Services.OperationStatus;
 using Umbraco.Cms.Core.Sync;
-using Umbraco.Cms.Infrastructure.Install;
 using Umbraco.Cms.Infrastructure.Scoping;
 using Umbraco.Cms.Search.Core.Cache.Language;
 using Umbraco.Cms.Search.Core.DependencyInjection;
@@ -28,19 +27,16 @@ using Umbraco.Test.Search.Examine.Integration.Attributes;
 using Umbraco.Cms.Search.Provider.Examine.Services;
 using Umbraco.Test.Search.Examine.Integration.Extensions;
 using Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
+using Umbraco.Test.Search.Integration;
 using Constants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.PersistenceTests;
 
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
-public class ContentServiceTests : UmbracoIntegrationTest
+public class ContentServiceTests : UmbracoIntegrationTestWithPackageMigrations
 {
     private bool _indexingComplete;
-
-    private PackageMigrationRunner PackageMigrationRunner => GetRequiredService<PackageMigrationRunner>();
-
-    private IRuntimeState RuntimeState => GetRequiredService<IRuntimeState>();
 
     private IContentTypeEditingService ContentTypeEditingService => GetRequiredService<IContentTypeEditingService>();
 
@@ -174,9 +170,6 @@ public class ContentServiceTests : UmbracoIntegrationTest
 
     public async Task TestSetup(bool publish)
     {
-        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
-        Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
-
         ContentTypeCreateModel contentTypeCreateModel = ContentTypeEditingBuilder.CreateSimpleContentType(
             "parentType",
             "Parent Type");

@@ -360,9 +360,6 @@ public class ZeroDowntimeReindexingTests : TestBase
 
     private async Task SetUpContent(bool publish)
     {
-        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
-        Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
-
         ContentTypeCreateModel contentTypeCreateModel = ContentTypeEditingBuilder.CreateSimpleContentType(
             "testZeroDowntime",
             "Test Zero Downtime");

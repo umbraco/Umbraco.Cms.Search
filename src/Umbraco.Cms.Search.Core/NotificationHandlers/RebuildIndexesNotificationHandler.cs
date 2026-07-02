@@ -88,7 +88,7 @@ internal sealed class RebuildIndexesNotificationHandler : IndexingNotificationHa
     private void HandleContentTypeChanges(IEnumerable<(Guid ContentTypeKey, ContentTypeChangeTypes ChangeTypes)> changes, UmbracoObjectTypes objectType, string origin)
     {
         Guid[] affectedContentTypeKeys = changes
-            .Where(change => change.ChangeTypes is ContentTypeChangeTypes.RefreshMain or ContentTypeChangeTypes.Remove)
+            .Where(change => change.ChangeTypes.HasFlag(ContentTypeChangeTypes.RefreshMain) || change.ChangeTypes.HasFlag(ContentTypeChangeTypes.Remove))
             .Select(change => change.ContentTypeKey)
             .Distinct()
             .ToArray();

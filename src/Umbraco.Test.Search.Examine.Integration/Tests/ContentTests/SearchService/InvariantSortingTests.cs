@@ -48,7 +48,7 @@ public class InvariantSortingTests : SearcherTestBase
     [TestCase(false, Direction.Ascending)]
     public async Task CanSortDecimals(bool publish, Direction direction)
     {
-        double[] doubles = [5,12412d, 0,51251d, 1.15215d, 3.251d, 2.2515125d, 125.5215d, 142.214124d];
+        double[] doubles = [5,12412d, 0,51251d, 1.15215d, 3.251d, 2.251512d, 125.5215d, 142.214124d];
         KeyValuePair<Guid, double>[] keys = (await CreateDecimalDocuments(doubles)).OrderBy(x => x.Value, direction).ToArray();
 
         var indexAlias = GetIndexAlias(publish);

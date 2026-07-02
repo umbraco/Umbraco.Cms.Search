@@ -8,7 +8,7 @@ namespace Umbraco.Test.Search.Integration.Tests;
 
 // This test fixture is here to ensure that we don't accidentally make it too cumbersome to index custom data.
 [TestFixture]
-[UmbracoTest(Database = UmbracoTestOptions.Database.None)]
+[UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerFixture)]
 public class CustomIndexDataTests : TestBase
 {
     [Test]

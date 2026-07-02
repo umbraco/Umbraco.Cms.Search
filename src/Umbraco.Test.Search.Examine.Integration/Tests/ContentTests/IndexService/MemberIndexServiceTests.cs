@@ -20,13 +20,6 @@ public class MemberIndexServiceTests : IndexTestBase
         Assert.That(results.TotalItemCount, Is.EqualTo(1));
     }
 
-    [SetUp]
-    public async Task RunMigrations()
-    {
-        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
-        Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
-    }
-
     private async Task CreateMemberAsync()
     {
         IMemberType memberType = new MemberTypeBuilder()

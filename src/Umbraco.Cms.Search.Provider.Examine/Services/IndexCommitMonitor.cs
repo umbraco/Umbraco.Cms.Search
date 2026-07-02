@@ -47,7 +47,7 @@ internal sealed class IndexCommitMonitor : IIndexCommitMonitor
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             while (!committed && stopwatch.Elapsed < _commitTimeout)
             {
-                await Task.Delay(_commitTimeout, cancellationToken);
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
             }
 
             stopwatch.Stop();

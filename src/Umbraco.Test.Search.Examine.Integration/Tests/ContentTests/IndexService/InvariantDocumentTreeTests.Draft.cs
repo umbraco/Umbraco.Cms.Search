@@ -107,9 +107,6 @@ public partial class InvariantDocumentTreeTests
 
     private async Task CreateInvariantDocumentTree(bool publish)
     {
-        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
-        Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
-
         DataType dataType = new DataTypeBuilder()
             .WithId(0)
             .WithoutIdentity()

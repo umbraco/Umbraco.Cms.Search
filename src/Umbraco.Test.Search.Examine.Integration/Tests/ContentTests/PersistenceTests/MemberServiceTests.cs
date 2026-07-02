@@ -2,15 +2,12 @@ using System.Diagnostics;
 using System.Reflection;
 using Examine;
 using Examine.Lucene.Providers;
-using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.HostedServices;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.ServerEvents;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
-using Umbraco.Cms.Infrastructure.Install;
 using Umbraco.Cms.Infrastructure.Scoping;
 using Umbraco.Cms.Search.Core.Cache.Language;
 using Umbraco.Cms.Search.Core.DependencyInjection;
@@ -22,23 +19,19 @@ using Umbraco.Cms.Search.Provider.Examine.Services;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Builders.Extensions;
 using Umbraco.Cms.Tests.Common.Testing;
-using Umbraco.Cms.Tests.Integration.Testing;
 using Umbraco.Test.Search.Examine.Integration.Attributes;
 using Umbraco.Test.Search.Examine.Integration.Extensions;
 using Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
+using Umbraco.Test.Search.Integration;
 using Constants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.PersistenceTests;
 
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
-public class MemberServiceTests : UmbracoIntegrationTest
+public class MemberServiceTests : UmbracoIntegrationTestWithPackageMigrations
 {
     private bool _indexingComplete;
-
-    private PackageMigrationRunner PackageMigrationRunner => GetRequiredService<PackageMigrationRunner>();
-
-    private IRuntimeState RuntimeState => Services.GetRequiredService<IRuntimeState>();
 
     private IMemberTypeService MemberTypeService => GetRequiredService<IMemberTypeService>();
 
@@ -144,9 +137,6 @@ public class MemberServiceTests : UmbracoIntegrationTest
 
     private async Task TestSetup()
     {
-        await PackageMigrationRunner.RunPackageMigrationsIfPendingAsync("Umbraco CMS Search").ConfigureAwait(false);
-        Assert.That(RuntimeState.Level, Is.EqualTo(RuntimeLevel.Run));
-
         IMemberType memberType = new MemberTypeBuilder()
             .WithAlias("testMemberType")
             .AddPropertyGroup()

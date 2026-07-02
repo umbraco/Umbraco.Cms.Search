@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Umbraco.Cms.Search.Provider.Examine\Umbraco.Cms.Search.Provider.Examine.csproj"/>
+    <ProjectReference Include="..\Umbraco.Test.Search.Integration\Umbraco.Test.Search.Integration.csproj" />
   </ItemGroup>
 
 </Project>

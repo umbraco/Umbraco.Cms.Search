@@ -8,22 +8,21 @@ using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.ServerEvents;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Core.Sync;
-using Umbraco.Cms.Infrastructure.Install;
 using Umbraco.Cms.Search.Core.Cache.Language;
 using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.NotificationHandlers;
 using Umbraco.Cms.Search.Provider.Examine.Services;
 using Umbraco.Cms.Tests.Common.Testing;
-using Umbraco.Cms.Tests.Integration.Testing;
 using Umbraco.Test.Search.Examine.Integration.Attributes;
 using Umbraco.Test.Search.Examine.Integration.Extensions;
 using Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
+using Umbraco.Test.Search.Integration;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests;
 
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
-public abstract class TestBase : UmbracoIntegrationTest
+public abstract class TestBase : UmbracoIntegrationTestWithPackageMigrations
 {
     // these tests all run against the Examine search provider, which does not care about the origin
     // of content changes, so the origin value does not matter.
@@ -38,7 +37,8 @@ public abstract class TestBase : UmbracoIntegrationTest
 
     protected DateTimeOffset CurrentDateTimeOffset { get; } = DateTimeOffset.Now;
 
-    protected decimal DecimalValue { get; } = 12.431167165486823626216m;
+    // Maximum value for default step in Umbraco 18+,  min=0.0 and step=0.000001
+    protected decimal DecimalValue { get; } = 12.431167m;
 
     protected IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>();
 
@@ -47,8 +47,6 @@ public abstract class TestBase : UmbracoIntegrationTest
     protected IDataTypeService DataTypeService => GetRequiredService<IDataTypeService>();
 
     protected ILanguageService LanguageService => GetRequiredService<ILanguageService>();
-
-    protected PackageMigrationRunner PackageMigrationRunner => GetRequiredService<PackageMigrationRunner>();
 
     protected IRuntimeState RuntimeState => GetRequiredService<IRuntimeState>();
 
@@ -96,19 +94,13 @@ public abstract class TestBase : UmbracoIntegrationTest
         var index = (LuceneIndex)GetRequiredService<IExamineManager>().GetIndex(physicalName);
         index.IndexCommitted += IndexCommited;
 
-        var hasDoneAction = false;
+        await indexUpdatingAction();
 
         var stopWatch = Stopwatch.StartNew();
 
         while (_indexingComplete is false)
         {
-            if (hasDoneAction is false)
-            {
-                await indexUpdatingAction();
-                hasDoneAction = true;
-            }
-
-            if (stopWatch.ElapsedMilliseconds > 600000)
+            if (stopWatch.ElapsedMilliseconds > TimeSpan.FromSeconds(30).TotalMilliseconds)
             {
                 throw new TimeoutException("Indexing timed out");
             }
