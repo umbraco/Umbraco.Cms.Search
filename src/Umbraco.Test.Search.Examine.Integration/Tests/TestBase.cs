@@ -38,7 +38,8 @@ public abstract class TestBase : UmbracoIntegrationTest
 
     protected DateTimeOffset CurrentDateTimeOffset { get; } = DateTimeOffset.Now;
 
-    protected decimal DecimalValue { get; } = 12.431167165486823626216m;
+    // Maximum value for default step in Umbraco 18+,  min=0.0 and step=0.000001
+    protected decimal DecimalValue { get; } = 12.431167m;
 
     protected IContentTypeService ContentTypeService => GetRequiredService<IContentTypeService>();
 
