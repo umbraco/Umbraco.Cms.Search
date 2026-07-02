@@ -250,6 +250,9 @@ public class ContentServiceTests : UmbracoIntegrationTest
 
             await Task.Delay(250);
         }
+
+        // one final await, because there is a small window where even though we are now running, there is still a small window where we can lock the database.
+        await Task.Delay(500);
     }
 
     private static bool FieldsContainText(IndexField[] fields, string text)
