@@ -10,7 +10,7 @@
   },
   "publicReleaseRefSpec": [
     "^refs/heads/main$",
-    "^refs/tags/release-"
+    "^refs/heads/release/"
   ],
   "cloudBuild": {
     "buildNumber": {
