@@ -23,17 +23,17 @@ using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Search.Provider.Examine.Services;
 using Umbraco.Cms.Tests.Common.Builders;
 using Umbraco.Cms.Tests.Common.Testing;
-using Umbraco.Cms.Tests.Integration.Testing;
 using Umbraco.Test.Search.Examine.Integration.Attributes;
 using Umbraco.Test.Search.Examine.Integration.Extensions;
 using Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.IndexService;
+using Umbraco.Test.Search.Integration;
 using Constants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Umbraco.Test.Search.Examine.Integration.Tests.ContentTests.PersistenceTests;
 
 [TestFixture]
 [UmbracoTest(Database = UmbracoTestOptions.Database.NewSchemaPerTest)]
-public class RebuildTests : UmbracoIntegrationTest
+public class RebuildTests : UmbracoIntegrationTestWithPackageMigrations
 {
     private bool _indexingComplete;
 
