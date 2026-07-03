@@ -96,18 +96,12 @@ public abstract class TestBase : UmbracoIntegrationTest
         var index = (LuceneIndex)GetRequiredService<IExamineManager>().GetIndex(physicalName);
         index.IndexCommitted += IndexCommited;
 
-        var hasDoneAction = false;
+        await indexUpdatingAction();
 
         var stopWatch = Stopwatch.StartNew();
 
         while (_indexingComplete is false)
         {
-            if (hasDoneAction is false)
-            {
-                await indexUpdatingAction();
-                hasDoneAction = true;
-            }
-
             if (stopWatch.ElapsedMilliseconds > 600000)
             {
                 throw new TimeoutException("Indexing timed out");
