@@ -5,6 +5,7 @@ trigger:
   branches:
     include:
       - main
+      - release/*
   paths:
     include:
       - src
@@ -367,4 +368,3 @@ stages:
               dtrackAPIKey: $(DT_API_KEY)
               dtrackURI: $(DT_API_URL)
               dtrackProjAutoCreate: true
-
