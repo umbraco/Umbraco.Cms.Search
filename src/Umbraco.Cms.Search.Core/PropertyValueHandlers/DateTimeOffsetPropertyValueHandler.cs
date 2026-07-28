@@ -30,7 +30,7 @@ internal sealed class DateTimeOffsetPropertyValueHandler : IPropertyValueHandler
         DateTimeOffset? dateTimeOffset = property.GetValue(culture, segment, published) switch
         {
             DateTime dateTime => _dateTimeOffsetConverter.ToDateTimeOffset(dateTime),
-            string jsonValue => ParseDateTimeDto(jsonValue),
+            string jsonValue => ParseDateTimeOffset(jsonValue),
             _ => null
         };
 
@@ -39,7 +39,7 @@ internal sealed class DateTimeOffsetPropertyValueHandler : IPropertyValueHandler
             : [];
     }
 
-    private DateTimeOffset? ParseDateTimeDto(string jsonValue)
+    private DateTimeOffset? ParseDateTimeOffset(string jsonValue)
     {
         try
         {
