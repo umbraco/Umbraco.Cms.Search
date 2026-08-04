@@ -4,8 +4,10 @@ using Lucene.Net.Index;
 using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Search.Provider.Examine.Helpers;
+using Umbraco.Cms.Search.Provider.Examine.Services;
 using Umbraco.Extensions;
 using CoreConstants = Umbraco.Cms.Search.Core.Constants;
+using IndexOptions = Umbraco.Cms.Search.Core.Configuration.IndexOptions;
 
 namespace Umbraco.Cms.Search.Provider.Examine.Configuration;
 
@@ -13,18 +15,33 @@ internal sealed class ConfigureIndexOptions : IConfigureNamedOptions<LuceneDirec
 {
     private readonly IndexCreatorSettings _indexCreatorSettings;
     private readonly FieldOptions _fieldOptions;
+    private readonly IndexOptions _indexOptions;
 
-    public ConfigureIndexOptions(IOptions<FieldOptions> options, IOptions<IndexCreatorSettings> settings)
+    public ConfigureIndexOptions(IOptions<FieldOptions> options, IOptions<IndexCreatorSettings> settings, IOptions<IndexOptions> indexOptions)
     {
         _indexCreatorSettings = settings.Value;
         _fieldOptions = options.Value;
+        _indexOptions = indexOptions.Value;
     }
 
     public void Configure(string? name, LuceneDirectoryIndexOptions options)
-        => AddOptions(options);
+    {
+        // only apply our field/facet configuration to the indexes registered by this package - other indexes
+        // (e.g. Umbraco's own default Examine indexes, or third-party indexes) must be left untouched.
+        if (name is not null && IsManagedIndex(name))
+        {
+            AddOptions(options);
+        }
+    }
 
     public void Configure(LuceneDirectoryIndexOptions options)
         => Configure(string.Empty, options);
+
+    private bool IsManagedIndex(string name)
+        => _indexOptions.GetContentIndexRegistrations().Any(registration =>
+            name == registration.IndexAlias
+            || name == registration.IndexAlias + ActiveIndexManager.SuffixA
+            || name == registration.IndexAlias + ActiveIndexManager.SuffixB);
 
     private void AddOptions(LuceneDirectoryIndexOptions options)
     {
