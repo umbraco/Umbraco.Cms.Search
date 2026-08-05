@@ -25,6 +25,9 @@ internal sealed class DateTimeOffsetPropertyValueHandler : IPropertyValueHandler
             or Cms.Core.Constants.PropertyEditors.Aliases.DateTimeWithTimeZone
             or Cms.Core.Constants.PropertyEditors.Aliases.DateTimeUnspecified;
 
+    public bool CanHandle(IPropertyType propertyType)
+        => CanHandle(propertyType.PropertyEditorAlias);
+
     public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
         DateTimeOffset? dateTimeOffset = property.GetValue(culture, segment, published) switch

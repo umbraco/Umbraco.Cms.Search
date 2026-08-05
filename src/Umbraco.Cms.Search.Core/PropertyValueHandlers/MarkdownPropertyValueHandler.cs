@@ -14,6 +14,9 @@ internal sealed class MarkdownPropertyValueHandler : IPropertyValueHandler, ICor
     public bool CanHandle(string propertyEditorAlias)
         => propertyEditorAlias is Cms.Core.Constants.PropertyEditors.Aliases.MarkdownEditor;
 
+    public bool CanHandle(IPropertyType propertyType)
+        => CanHandle(propertyType.PropertyEditorAlias);
+
     public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
         if (property.GetValue(culture, segment, published) is not string markdown)
