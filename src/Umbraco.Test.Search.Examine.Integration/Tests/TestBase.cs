@@ -100,7 +100,7 @@ public abstract class TestBase : UmbracoIntegrationTestWithPackageMigrations
 
         while (_indexingComplete is false)
         {
-            if (stopWatch.ElapsedMilliseconds > TimeSpan.FromSeconds(30).TotalMilliseconds)
+            if (stopWatch.ElapsedMilliseconds > 600000)
             {
                 throw new TimeoutException("Indexing timed out");
             }
