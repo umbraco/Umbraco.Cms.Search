@@ -11,6 +11,9 @@ internal sealed class ContentPickerPropertyValueHandler : IPropertyValueHandler,
     public bool CanHandle(string propertyEditorAlias)
         => propertyEditorAlias is Umbraco.Cms.Core.Constants.PropertyEditors.Aliases.ContentPicker;
 
+    public bool CanHandle(IPropertyType propertyType)
+        => CanHandle(propertyType.PropertyEditorAlias);
+
     public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
         Guid? key = ParsePropertyValue(property, culture, segment, published);

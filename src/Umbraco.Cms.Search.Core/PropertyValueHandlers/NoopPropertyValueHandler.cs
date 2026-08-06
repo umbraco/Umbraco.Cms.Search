@@ -13,6 +13,9 @@ internal sealed class NoopPropertyValueHandler : IPropertyValueHandler, ICorePro
             or Cms.Core.Constants.PropertyEditors.Aliases.ImageCropper
             or Cms.Core.Constants.PropertyEditors.Aliases.UploadField;
 
+    public bool CanHandle(IPropertyType propertyType)
+        => CanHandle(propertyType.PropertyEditorAlias);
+
     public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
         => [];
 }

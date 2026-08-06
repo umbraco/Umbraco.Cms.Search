@@ -15,6 +15,9 @@ internal sealed class KeywordStringPropertyValueHandler : IPropertyValueHandler,
     public bool CanHandle(string propertyEditorAlias)
         => propertyEditorAlias is Cms.Core.Constants.PropertyEditors.Aliases.DropDownListFlexible or Cms.Core.Constants.PropertyEditors.Aliases.RadioButtonList or Cms.Core.Constants.PropertyEditors.Aliases.CheckBoxList;
 
+    public bool CanHandle(IPropertyType propertyType)
+        => CanHandle(propertyType.PropertyEditorAlias);
+
     public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
         var value = property.GetValue(culture, segment, published) as string;

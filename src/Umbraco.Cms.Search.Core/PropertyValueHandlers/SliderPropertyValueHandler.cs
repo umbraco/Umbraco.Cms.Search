@@ -10,6 +10,9 @@ internal sealed class SliderPropertyValueHandler : IPropertyValueHandler, ICoreP
     public bool CanHandle(string propertyEditorAlias)
         => propertyEditorAlias is Umbraco.Cms.Core.Constants.PropertyEditors.Aliases.Slider;
 
+    public bool CanHandle(IPropertyType propertyType)
+        => CanHandle(propertyType.PropertyEditorAlias);
+
     public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
         var values = ParsePropertyValue(property, culture, segment, published);
