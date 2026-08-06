@@ -11,7 +11,15 @@ public interface IPropertyValueHandler : IDiscoverable
     /// </summary>
     /// <param name="propertyEditorAlias">The property editor alias of the property.</param>
     /// <returns>True if the property can be handled, false otherwise.</returns>
+    [Obsolete("Please implement the overload that accepts IPropertyType instead. Will be removed when Umbraco Search is included in Umbraco CMS.")]
     bool CanHandle(string propertyEditorAlias);
+
+    /// <summary>
+    /// Determines whether the property value handler can handle a concrete property.
+    /// </summary>
+    /// <param name="propertyType">The property type of the property.</param>
+    /// <returns>True if the property can be handled, false otherwise.</returns>
+    bool CanHandle(IPropertyType propertyType) => CanHandle(propertyType.PropertyEditorAlias);
 
     /// <summary>
     /// Parses index fields for a property.

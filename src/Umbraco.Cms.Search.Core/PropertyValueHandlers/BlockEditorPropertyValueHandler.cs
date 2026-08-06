@@ -36,6 +36,9 @@ internal abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
 
     public abstract bool CanHandle(string propertyEditorAlias);
 
+    public bool CanHandle(IPropertyType propertyType)
+        => CanHandle(propertyType.PropertyEditorAlias);
+
     public virtual IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
         BlockValue? blockValue = ParsePropertyValue(property, culture, segment, published);

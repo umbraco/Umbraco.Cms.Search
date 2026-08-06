@@ -9,6 +9,9 @@ internal sealed class IntegerPropertyValueHandler : IPropertyValueHandler, ICore
         => propertyEditorAlias is Cms.Core.Constants.PropertyEditors.Aliases.Integer
             or Cms.Core.Constants.PropertyEditors.Aliases.PlainInteger;
 
+    public bool CanHandle(IPropertyType propertyType)
+        => CanHandle(propertyType.PropertyEditorAlias);
+
     public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
         => property.GetValue(culture, segment, published) is int integerValue
             ? [new IndexField(property.Alias, new IndexValue { Integers = [integerValue] }, culture, segment)]

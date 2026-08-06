@@ -10,6 +10,9 @@ internal sealed class PlainStringPropertyValueHandler : IPropertyValueHandler, I
             or Cms.Core.Constants.PropertyEditors.Aliases.TextArea
             or Cms.Core.Constants.PropertyEditors.Aliases.PlainString;
 
+    public bool CanHandle(IPropertyType propertyType)
+        => CanHandle(propertyType.PropertyEditorAlias);
+
     public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
         => property.GetValue(culture, segment, published) is string stringValue
            && string.IsNullOrWhiteSpace(stringValue) is false
