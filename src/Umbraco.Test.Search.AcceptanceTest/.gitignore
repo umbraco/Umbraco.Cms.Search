@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+
+# Playwright
+playwright/.auth/
+results/
+test-results/
+
+# Build
+dist/
+
+# IDE
+.idea/
+.vscode/
+
+# GitHub / Copilot agent config (local only)
+.github/
+
+# OS
+.DS_Store
+Thumbs.db
