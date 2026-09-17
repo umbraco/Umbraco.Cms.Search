@@ -50,15 +50,22 @@ internal sealed class ContentIndexingDataCollectionService : IContentIndexingDat
             IEnumerable<IndexField> fields = await contentIndexer.GetIndexFieldsAsync(content, cultures, published, cancellationToken);
             foreach (IndexField field in fields)
             {
-                if (fieldsByIdentifier.TryAdd(Identifier(field), field) is false)
+                var identifier = Identifier(field);
+                if (fieldsByIdentifier.TryGetValue(identifier, out IndexField? existingField))
                 {
-                    _logger.LogWarning(
-                        "Duplicate index field with alias {alias} (culture {culture}, segment {segment}) was detected and ignored - caused by indexer {indexer} while indexing content item {contentKey}",
+                    // If multiple contex indexers have the same field, merge the values.
+                    _logger.LogDebug(
+                        "Index field with alias {alias} (culture {culture}, segment {segment}) was contributed by more than one indexer - merging values from {indexer} while indexing content item {contentKey}",
                         field.FieldName,
                         field.Culture ?? "[null]",
                         field.Segment ?? "[null]",
                         contentIndexer.GetType().FullName,
                         content.Key);
+                    fieldsByIdentifier[identifier] = existingField with { Value = MergeIndexValues(existingField.Value, field.Value) };
+                }
+                else
+                {
+                    fieldsByIdentifier.Add(identifier, field);
                 }
             }
         }
@@ -73,5 +80,28 @@ internal sealed class ContentIndexingDataCollectionService : IContentIndexingDat
         });
 
         return fieldsArray;
+    }
+
+    private static IndexValue MergeIndexValues(IndexValue original, IndexValue toMerge)
+        => new()
+        {
+            TextsR1 = MergeValues(original.TextsR1, toMerge.TextsR1),
+            TextsR2 = MergeValues(original.TextsR2, toMerge.TextsR2),
+            TextsR3 = MergeValues(original.TextsR3, toMerge.TextsR3),
+            Texts = MergeValues(original.Texts, toMerge.Texts),
+            Keywords = MergeValues(original.Keywords, toMerge.Keywords),
+            Integers = MergeValues(original.Integers, toMerge.Integers),
+            Decimals = MergeValues(original.Decimals, toMerge.Decimals),
+            DateTimeOffsets = MergeValues(original.DateTimeOffsets, toMerge.DateTimeOffsets),
+        };
+
+    private static IEnumerable<T>? MergeValues<T>(IEnumerable<T>? one, IEnumerable<T>? other)
+    {
+        if (one is null)
+        {
+            return other;
+        }
+
+        return other is null ? one : one.Concat(other).Distinct();
     }
 }
