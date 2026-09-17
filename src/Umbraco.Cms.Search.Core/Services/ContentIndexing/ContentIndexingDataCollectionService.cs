@@ -53,7 +53,7 @@ internal sealed class ContentIndexingDataCollectionService : IContentIndexingDat
                 var identifier = Identifier(field);
                 if (fieldsByIdentifier.TryGetValue(identifier, out IndexField? existingField))
                 {
-                    // If multiple contex indexers have the same field, merge the values.
+                    // If multiple content indexers yield the same field, merge the values.
                     _logger.LogDebug(
                         "Index field with alias {alias} (culture {culture}, segment {segment}) was contributed by more than one indexer - merging values from {indexer} while indexing content item {contentKey}",
                         field.FieldName,
