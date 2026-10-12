@@ -322,11 +322,49 @@ stages:
                 Write-Host "Version from version.json: $version"
                 Write-Host "##vso[task.setvariable variable=VersionNumber]$version"
 
-          # NuGet SBOM
-          - script: dotnet tool install --global CycloneDX
-            displayName: 'Install CycloneDX .NET Tool'
+          - task: UseDotNet@2
+            displayName: Use .NET SDK from global.json
+            inputs:
+              useGlobalJson: true
 
-          - script: dotnet CycloneDX --spec-version 1.5 $(solution)
+          - script: dotnet tool install --tool-path "$(Agent.TempDirectory)/umbraco-sbom" Umbraco.Internal.Sbom
+            displayName: 'Install Umbraco.Internal.Sbom'
+
+          - pwsh: |
+              function Test-IsLatest([string] $name, [string] $version) {
+                  try {
+                      $versions = Invoke-RestMethod -Uri "$($env:DT_URL.TrimEnd('/'))/api/v1/project?name=$([uri]::EscapeDataString($name))&pageSize=1000" -Headers @{ 'X-Api-Key' = $env:DT_KEY }
+                  } catch {
+                      Write-Host "##vso[task.logissue type=warning]Could not read the versions of '$name' from Dependency-Track, so it is not marked as latest: $_"
+                      return $false
+                  }
+                  $latest = @($versions | Where-Object { $_.isLatest })[0]
+                  $latestMajor = 0
+                  $isLatest = -not ($latest -and [int]::TryParse($latest.version.Split('.')[0], [ref] $latestMajor) -and $latestMajor -gt [int] $version.Split('.')[0])
+                  Write-Host "Latest version of '$name' in Dependency-Track: $(if ($latest) { $latest.version } else { 'none' }). Mark $version as latest: $isLatest"
+                  return $isLatest
+              }
+
+              # Only a released version (no prerelease suffix) may become the latest version.
+              $isReleased = '$(VersionNumber)' -notmatch '-'
+              $isLatest = $isReleased -and (Test-IsLatest '$(Build.Repository.Name)' '$(VersionNumber)')
+              $isLatestClient = $isReleased -and (Test-IsLatest '$(Build.Repository.Name)-client' '$(VersionNumber)')
+              Write-Host "##vso[task.setvariable variable=isLatest]$($isLatest.ToString().ToLower())"
+              Write-Host "##vso[task.setvariable variable=isLatestClient]$($isLatestClient.ToString().ToLower())"
+            displayName: 'Determine whether to mark as latest'
+            env:
+              DT_URL: $(DT_API_URL)
+              DT_KEY: $(DT_API_KEY)
+
+          # NuGet SBOM
+          - script: dotnet restore $(solution) --locked-mode
+            displayName: 'Restore NuGet packages'
+
+          - pwsh: |
+              & "$(Agent.TempDirectory)/umbraco-sbom/umbraco-sbom" $(solution) --output-file "$(Build.SourcesDirectory)/bom.xml"
+              # Exit code 10 means the SBOM was written, with warnings for unresolved licenses.
+              if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 10) { exit $LASTEXITCODE }
+              exit 0
             displayName: 'Generate NuGet SBOM'
 
           - publish: bom.xml
@@ -339,20 +377,20 @@ stages:
               bomFilePath: bom.xml
               dtrackProjName: $(Build.Repository.Name)
               dtrackProjVersion: $(VersionNumber)
+              dtrackProjClassifier: APPLICATION
+              dtrackIsLatest: $(isLatest)
               dtrackAPIKey: $(DT_API_KEY)
               dtrackURI: $(DT_API_URL)
               dtrackProjAutoCreate: true
 
           # NPM SBOM
-          - task: NodeTool@0
-            displayName: Use Node.js
-            inputs:
-              versionSource: 'fromFile'
-              versionFilePath: src/.nvmrc
-
-          - script: npx --yes @cyclonedx/cyclonedx-npm --package-lock-only --output-file $(Build.SourcesDirectory)/bom-npm.xml
+          # The package.json is passed explicitly, as src also contains the solution and the tool rejects mixed-ecosystem folders.
+          - pwsh: |
+              & "$(Agent.TempDirectory)/umbraco-sbom/umbraco-sbom" src/package.json --output-file "$(Build.SourcesDirectory)/bom-npm.xml"
+              # Exit code 10 means the SBOM was written, with warnings for unresolved licenses.
+              if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 10) { exit $LASTEXITCODE }
+              exit 0
             displayName: 'Generate NPM SBOM'
-            workingDirectory: src
 
           - publish: bom-npm.xml
             artifact: sbom-npm
@@ -364,6 +402,8 @@ stages:
               bomFilePath: bom-npm.xml
               dtrackProjName: $(Build.Repository.Name)-client
               dtrackProjVersion: $(VersionNumber)
+              dtrackProjClassifier: APPLICATION
+              dtrackIsLatest: $(isLatestClient)
               dtrackAPIKey: $(DT_API_KEY)
               dtrackURI: $(DT_API_URL)
               dtrackProjAutoCreate: true
