@@ -257,9 +257,9 @@ internal abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
 
     protected class BlockValue
     {
-        public required List<BlockItemData> ContentData { get; init; }
+        public List<BlockItemData> ContentData { get; init; } = [];
 
-        public required List<BlockItemVariation> Expose { get; init; }
+        public List<BlockItemVariation> Expose { get; init; } = [];
     }
 
     protected record CumulativeIndexValue
