@@ -54,9 +54,29 @@ internal abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
     private BlockValue? ParsePropertyValue(IProperty property, string? culture, string? segment, bool published)
     {
         var value = property.GetValue(culture, segment, published) as string;
-        return value?.DetectIsJson() is true
-            ? _jsonSerializer.Deserialize<BlockValue>(value)
-            : null;
+
+        if (value?.DetectIsJson() is not true)
+        {
+            return null;
+        }
+
+        try
+        {
+            return _jsonSerializer.Deserialize<BlockValue>(value);
+        }
+        catch (Exception ex)
+        {
+            var rawSnippet = value.Length > 250 ? value[..250] + "..." : value;
+
+            _logger.LogWarning(
+                    ex,
+                    "Failed to deserialize block value for property {PropertyAlias} (Culture: {Culture}, Segment: {Segment}). Raw snippet: {RawValueSnippet}",
+                    property.Alias,
+                    culture,
+                    segment,
+                    rawSnippet);
+        }
+        return null;
     }
 
     protected Dictionary<(string? Culture, string? Segment), CumulativeIndexValue> GetCumulativeIndexValues(
