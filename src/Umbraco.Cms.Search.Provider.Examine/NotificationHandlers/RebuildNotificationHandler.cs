@@ -45,7 +45,7 @@ public class RebuildNotificationHandler : INotificationHandler<UmbracoApplicatio
             if (_examineManager.TryGetIndex(activePhysicalName, out IIndex? index))
             {
                 // Check if active physical index exists, if it does, we can skip rebuilding
-                if (index.IndexExists())
+                if (IndexExists(index, indexRegistration.IndexAlias) is not false)
                 {
                     continue;
                 }
@@ -58,6 +58,22 @@ public class RebuildNotificationHandler : INotificationHandler<UmbracoApplicatio
 
             _logger.LogInformation("Rebuilding index {IndexRegistrationIndexAlias}", indexRegistration.IndexAlias);
             _contentIndexingService.Rebuild(indexRegistration.IndexAlias, _originProvider.GetCurrent());
+        }
+    }
+
+    // Opening the index directory can fail transiently, e.g. while a previous instance still holds the index
+    // files during an overlapping restart. Examine retries the directory on next access, so skip the index
+    // (null) rather than let the exception abort the remaining indexes and fail application startup.
+    private bool? IndexExists(IIndex index, string indexAlias)
+    {
+        try
+        {
+            return index.IndexExists();
+        }
+        catch (IOException ex)
+        {
+            _logger.LogWarning(ex, "Could not determine whether index {IndexAlias} exists, skipping rebuild check", indexAlias);
+            return null;
         }
     }
 }
