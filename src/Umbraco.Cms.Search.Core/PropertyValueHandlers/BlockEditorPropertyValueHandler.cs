@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Models.Blocks;
@@ -54,9 +55,25 @@ internal abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
     private BlockValue? ParsePropertyValue(IProperty property, string? culture, string? segment, bool published)
     {
         var value = property.GetValue(culture, segment, published) as string;
-        return value?.DetectIsJson() is true
-            ? _jsonSerializer.Deserialize<BlockValue>(value)
-            : null;
+        if (value?.DetectIsJson() is not true)
+        {
+            return null;
+        }
+
+        try
+        {
+            return _jsonSerializer.Deserialize<BlockValue>(value);
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Failed to deserialize block value for property {PropertyAlias} (Culture: {Culture}, Segment: {Segment}) - skipped indexing of property value.",
+                property.Alias,
+                culture,
+                segment);
+            return null;
+        }
     }
 
     protected Dictionary<(string? Culture, string? Segment), CumulativeIndexValue> GetCumulativeIndexValues(
@@ -257,9 +274,10 @@ internal abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
 
     protected class BlockValue
     {
-        public required List<BlockItemData> ContentData { get; init; }
+        public List<BlockItemData> ContentData { get; init; } = [];
 
-        public required List<BlockItemVariation> Expose { get; init; }
+        // block values stored before "expose" was introduced will not contain this property
+        public List<BlockItemVariation> Expose { get; init; } = [];
     }
 
     protected record CumulativeIndexValue
