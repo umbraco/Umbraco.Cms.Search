@@ -27,10 +27,23 @@ internal sealed class KeywordStringPropertyValueHandler : IPropertyValueHandler,
         }
 
         var keywords = value.DetectIsJson()
-            ? _jsonSerializer.Deserialize<string[]>(value)
+            ? ParseJsonValue(value)
             : [value];
         return keywords?.Length > 0
             ? [new IndexField(property.Alias, new IndexValue { Keywords = keywords }, culture, segment)]
             : [];
+    }
+
+    private string[]? ParseJsonValue(string value)
+    {
+        try
+        {
+            return _jsonSerializer.Deserialize<string[]>(value);
+        }
+        catch
+        {
+            // silently fail - this is an invalid property value, expect it to be reported elsewhere
+            return null;
+        }
     }
 }

@@ -47,9 +47,22 @@ internal sealed class TagsPropertyValueHandler : IPropertyValueHandler, ICorePro
 
         return tagConfiguration.StorageType switch
         {
-            TagsStorageType.Json when value.DetectIsJson() => _jsonSerializer.Deserialize<string[]>(value),
+            TagsStorageType.Json when value.DetectIsJson() => ParseJsonValue(value),
             TagsStorageType.Csv => value.Split(tagConfiguration.Delimiter, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
             _ => null
         };
+    }
+
+    private string[]? ParseJsonValue(string value)
+    {
+        try
+        {
+            return _jsonSerializer.Deserialize<string[]>(value);
+        }
+        catch
+        {
+            // silently fail - this is an invalid property value, expect it to be reported elsewhere
+            return null;
+        }
     }
 }

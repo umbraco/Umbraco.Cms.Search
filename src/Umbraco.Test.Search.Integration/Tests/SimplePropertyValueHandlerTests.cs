@@ -164,6 +164,33 @@ public class SimplePropertyValueHandlerTests : PropertyValueHandlerTestsBase
         });
     }
 
+    [TestCase("tagsAsJsonValue")]
+    [TestCase("dropdownMultipleValue")]
+    public void MalformedJsonValue_DoesNotPreventIndexing(string propertyAlias)
+    {
+        Content content = new ContentBuilder()
+            .WithContentType(GetAllSimpleEditorsContentType())
+            .WithName("Malformed JSON")
+            .Build();
+        content.SetValue("textBoxValue", "The TextBox value");
+        content.SetValue(propertyAlias, "{\"not\":\"a string array\"}");
+
+        ContentService.Save(content);
+        ContentService.Publish(content, ["*"]);
+
+        IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(IndexAliases.PublishedContent);
+        Assert.That(documents, Has.Count.EqualTo(1));
+
+        TestIndexDocument document = documents.Single();
+        Assert.Multiple(() =>
+        {
+            var textBoxValue = document.Fields.FirstOrDefault(f => f.FieldName == "textBoxValue")?.Value.Texts?.SingleOrDefault();
+            Assert.That(textBoxValue, Is.EqualTo("The TextBox value"));
+
+            Assert.That(document.Fields.Any(f => f.FieldName == propertyAlias), Is.False);
+        });
+    }
+
     [Test]
     public void AllCorePropertyValueHandlers_HaveTheCorePropertyValueHandlerMarkerInterface()
     {
@@ -174,5 +201,9 @@ public class SimplePropertyValueHandlerTests : PropertyValueHandlerTestsBase
 
     [SetUp]
     public async Task SetupTest()
-        => await CreateAllSimpleEditorsContentType();
+    {
+        await CreateAllSimpleEditorsContentType();
+
+        IndexerAndSearcher.Reset();
+    }
 }
