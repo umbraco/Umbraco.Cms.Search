@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Text.Json.Nodes;
+using Microsoft.Extensions.DependencyInjection;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Configuration.Models;
 using Umbraco.Cms.Core.Models;
@@ -199,6 +200,60 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
 
                 CollectionAssert.AreEqual(new [] { "One", "Two", "Three", "Four", "Five", "Six", "55bf7f6d-acd2-4f1e-92bd-f0b5c41dbfed" }, indexValue.Keywords);
             });
+        }
+    }
+
+    [Test]
+    public async Task ValueWithoutExpose_CanBeIndexed()
+    {
+        var (contentType, elementType) = await SetupSimpleEditorsTest();
+
+        var contentElementKey = Guid.NewGuid();
+        var blockListValue = new BlockListValue([
+            new () { ContentKey = contentElementKey }
+        ])
+        {
+            ContentData =
+            [
+                new (contentElementKey, elementType.Key, elementType.Alias)
+                {
+                    Values =
+                    [
+                        new ()
+                        {
+                            Alias = "textBoxValue",
+                            Value = "The TextBox value"
+                        }
+                    ]
+                }
+            ]
+        };
+
+        // stored block values do not always contain the "expose" property
+        var blocksJson = JsonNode.Parse(JsonSerializer.Serialize(blockListValue))!.AsObject();
+        blocksJson.Remove("expose");
+
+        Content content = new ContentBuilder()
+            .WithContentType(contentType)
+            .WithName("My Blocks")
+            .WithPropertyValues(new { blocks = blocksJson.ToJsonString() })
+            .Build();
+        ContentService.Save(content);
+        ContentService.Publish(content, ["*"]);
+
+        AssertDocumentFields(IndexAliases.DraftContent);
+        AssertDocumentFields(IndexAliases.PublishedContent);
+
+        return;
+
+        void AssertDocumentFields(string indexAlias)
+        {
+            IReadOnlyList<TestIndexDocument> documents = IndexerAndSearcher.Dump(indexAlias);
+            Assert.That(documents, Has.Count.EqualTo(1));
+
+            IndexValue? indexValue = documents.Single().Fields.FirstOrDefault(f => f.FieldName == "blocks")?.Value;
+            Assert.That(indexValue, Is.Not.Null);
+            CollectionAssert.AreEqual(new[] { "The TextBox value" }, indexValue.Texts);
         }
     }
 
