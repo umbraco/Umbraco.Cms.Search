@@ -277,7 +277,7 @@ internal abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
     {
         public List<BlockItemData> ContentData { get; init; } = [];
 
-        // block values stored before "expose" was introduced will not contain this property
+        // stored block values do not always contain this property
         public List<BlockItemVariation> Expose { get; init; } = [];
     }
 

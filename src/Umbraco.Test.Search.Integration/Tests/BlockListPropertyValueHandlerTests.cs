@@ -204,7 +204,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
     }
 
     [Test]
-    public async Task LegacyValueWithoutExpose_CanBeIndexed()
+    public async Task ValueWithoutExpose_CanBeIndexed()
     {
         var (contentType, elementType) = await SetupSimpleEditorsTest();
 
@@ -229,7 +229,7 @@ public class BlockListPropertyValueHandlerTests : PropertyValueHandlerTestsBase
             ]
         };
 
-        // block values stored before "expose" was introduced do not contain the "expose" property
+        // stored block values do not always contain the "expose" property
         var blocksJson = JsonNode.Parse(JsonSerializer.Serialize(blockListValue))!.AsObject();
         blocksJson.Remove("expose");
 
