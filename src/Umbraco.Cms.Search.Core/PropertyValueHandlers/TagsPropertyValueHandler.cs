@@ -1,4 +1,6 @@
-﻿using Umbraco.Cms.Core.Cache;
+﻿using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Umbraco.Cms.Core.Cache;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.PropertyEditors;
 using Umbraco.Cms.Core.Serialization;
@@ -12,11 +14,13 @@ internal sealed class TagsPropertyValueHandler : IPropertyValueHandler, ICorePro
 {
     private readonly IJsonSerializer _jsonSerializer;
     private readonly IDataTypeConfigurationCache _dataTypeConfigurationCache;
+    private readonly ILogger<TagsPropertyValueHandler> _logger;
 
-    public TagsPropertyValueHandler(IJsonSerializer jsonSerializer, IDataTypeConfigurationCache dataTypeConfigurationCache)
+    public TagsPropertyValueHandler(IJsonSerializer jsonSerializer, IDataTypeConfigurationCache dataTypeConfigurationCache, ILogger<TagsPropertyValueHandler> logger)
     {
         _jsonSerializer = jsonSerializer;
         _dataTypeConfigurationCache = dataTypeConfigurationCache;
+        _logger = logger;
     }
 
     public bool CanHandle(string propertyEditorAlias)
@@ -27,13 +31,13 @@ internal sealed class TagsPropertyValueHandler : IPropertyValueHandler, ICorePro
 
     public IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
-        var values = ParsePropertyValue(property, culture, segment, published);
+        var values = ParsePropertyValue(property, culture, segment, published, contentContext);
         return values?.Length > 0
             ? [new IndexField(property.Alias, new IndexValue { Keywords = values }, culture, segment)]
             : [];
     }
 
-    private string[]? ParsePropertyValue(IProperty property, string? culture, string? segment, bool published)
+    private string[]? ParsePropertyValue(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
         var value = property.GetValue(culture, segment, published) as string;
         if (value.IsNullOrWhiteSpace())
@@ -47,21 +51,27 @@ internal sealed class TagsPropertyValueHandler : IPropertyValueHandler, ICorePro
 
         return tagConfiguration.StorageType switch
         {
-            TagsStorageType.Json when value.DetectIsJson() => ParseJsonValue(value),
+            TagsStorageType.Json when value.DetectIsJson() => ParseJsonValue(value, property, culture, segment, contentContext),
             TagsStorageType.Csv => value.Split(tagConfiguration.Delimiter, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
             _ => null
         };
     }
 
-    private string[]? ParseJsonValue(string value)
+    private string[]? ParseJsonValue(string value, IProperty property, string? culture, string? segment, IContentBase contentContext)
     {
         try
         {
             return _jsonSerializer.Deserialize<string[]>(value);
         }
-        catch
+        catch (JsonException ex)
         {
-            // silently fail - this is an invalid property value, expect it to be reported elsewhere
+            _logger.LogWarning(
+                ex,
+                "Failed to deserialize tags value for property {PropertyAlias} of content {ContentKey} (Culture: {Culture}, Segment: {Segment}) - skipped indexing of property value.",
+                property.Alias,
+                contentContext.Key,
+                culture,
+                segment);
             return null;
         }
     }
