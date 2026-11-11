@@ -42,7 +42,7 @@ internal abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
 
     public virtual IEnumerable<IndexField> GetIndexFields(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
-        BlockValue? blockValue = ParsePropertyValue(property, culture, segment, published);
+        BlockValue? blockValue = ParsePropertyValue(property, culture, segment, published, contentContext);
         if (blockValue is null || blockValue.ContentData.Count == 0)
         {
             return [];
@@ -52,7 +52,7 @@ internal abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
         return ToIndexFields(blockIndexValues, property.Alias);
     }
 
-    private BlockValue? ParsePropertyValue(IProperty property, string? culture, string? segment, bool published)
+    private BlockValue? ParsePropertyValue(IProperty property, string? culture, string? segment, bool published, IContentBase contentContext)
     {
         var value = property.GetValue(culture, segment, published) as string;
         if (value?.DetectIsJson() is not true)
@@ -68,8 +68,9 @@ internal abstract class BlockEditorPropertyValueHandler : IPropertyValueHandler
         {
             _logger.LogWarning(
                 ex,
-                "Failed to deserialize block value for property {PropertyAlias} (Culture: {Culture}, Segment: {Segment}) - skipped indexing of property value.",
+                "Failed to deserialize block value for property {PropertyAlias} of content {ContentKey} (Culture: {Culture}, Segment: {Segment}) - skipped indexing of property value.",
                 property.Alias,
+                contentContext.Key,
                 culture,
                 segment);
             return null;
